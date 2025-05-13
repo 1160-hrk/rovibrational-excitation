@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+scipy
+tqdm
+requests
+python-dateutil
+pytz
+tzdata
+sympy
+ipykernel
+numba

@@ -1,0 +1,32 @@
+[project]
+name = "rovibrational-excitation"
+version = "0.3.4"
+description = "分子の振動回転励起のシミュレーションを行う"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [
+  { name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com" }
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+# 本番依存
+dependencies = [
+  "numpy",
+  "scipy",
+  "matplotlib",
+  "numba",
+]
+
+# dev extras
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "flake8>=5.0",
+  "black>=23.1",
+  "isort>=5.10",
+]
+
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
