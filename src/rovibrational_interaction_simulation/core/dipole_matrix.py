@@ -1,6 +1,6 @@
 from typing import Callable
 import numpy as np
-from .basis import VJMBasis, VJBasis
+from .basis import LinMolBasis
 from ._tdm_rot import tdm_j, tdm_jm_dict
 from ._tdm_vib import tdm_v_dict, omega01_domega_to_N
 
@@ -8,7 +8,7 @@ PLANCK_CONSTANT = 6.62607015e-19  # J*fs
 DIRAC_CONSTANT = PLANCK_CONSTANT/(2*np.pi)  # J*fs
 
 def generate_dipole_matrix_j(
-    basis: VJBasis
+    basis: LinMolBasis
     ) -> np.ndarray:
     """
     遷移双極子行列を生成（数値）
@@ -22,7 +22,7 @@ def generate_dipole_matrix_j(
     return mu
 
 def generate_dipole_matrix_jm(
-    basis: VJMBasis,
+    basis: LinMolBasis,
     axis='z'
     ) -> np.ndarray:
     """
@@ -39,7 +39,7 @@ def generate_dipole_matrix_jm(
     return mu
 
 def generate_dipole_matrix_vj(
-    basis: VJBasis,
+    basis: LinMolBasis,
     omega01:float = 1.0,
     domega:float = 0.0,
     mu0_cm:float = 1.0,
@@ -66,7 +66,7 @@ def generate_dipole_matrix_vj(
     return mu * mu0
 
 def generate_dipole_matrix_vjm(
-    basis: VJMBasis,
+    basis: LinMolBasis,
     omega01:float = 1.0,
     domega:float = 0.0,
     mu0_cm:float = 1.0,

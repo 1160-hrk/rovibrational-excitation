@@ -1,10 +1,10 @@
 import sys
 sys.path.append('..')
 from src.rovibrational_interaction_simulation.core.dipole_matrix import generate_dipole_matrix_vjm, generate_dipole_matrix_jm, generate_dipole_matrix_vj, generate_dipole_matrix_j
-from src.rovibrational_interaction_simulation.core.basis import VJMBasis
+from src.rovibrational_interaction_simulation.core.basis import LinMolBasis
 import numpy as np
 
-basis = VJMBasis(V_max=4, J_max=4)
+basis = LinMolBasis(V_max=4, J_max=4, use_M=True)
 dm_jm_x = generate_dipole_matrix_jm(basis=basis,axis='x')
 dm_jm_y = generate_dipole_matrix_jm(basis=basis,axis='y')
 dm_jm_z = generate_dipole_matrix_jm(basis=basis,axis='z')
