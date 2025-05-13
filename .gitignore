@@ -6,6 +6,11 @@ __pycache__/
 # pandas、numpy などの大きなデータ
 *.h5
 *.csv
+*.png
+*.pdf
+*.svg
+/results/
+
 
 # VS Code
 .vscode/
