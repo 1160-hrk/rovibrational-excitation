@@ -3,7 +3,7 @@ import numpy as np
 from .basis import LinMolBasis
 import numpy as np
 
-def generate_free_hamiltonian(basis: LinMolBasis, omega_phz=1.0, delta_omega_phz=0.0, B_phz=1.0, alpha_phz=0.0):
+def generate_H0_LinMol(basis: LinMolBasis, omega_phz=1.0, delta_omega_phz=0.0, B_phz=1.0, alpha_phz=0.0):
     """
     分子の自由ハミルトニアン H0 を生成
     E(V, J) = ω*(V+1/2) - Δω*(V+1/2)**2 + (B - α*(V+1/2))*J*(J+1)

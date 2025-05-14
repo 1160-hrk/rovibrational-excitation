@@ -17,13 +17,15 @@ def load_params(params_path):
 
 
 def extract_serializable_params(params):
-    allowed_types = (str, int, float, bool, list, dict, tuple, type(None), np.ndarray, np.generic, np.float64, np.int64)
+    allowed_types = (str, int, float, bool, list, dict, tuple, type(None), np.ndarray, np.generic, np.float64, np.int64, np.complex128)
     param_dict = {}
     for k in dir(params):
         if k.startswith("__"):
             continue
         val = getattr(params, k)
         if isinstance(val, allowed_types):
+            if hasattr(val, "__iter__"):
+                val = np.array(val)
             param_dict[k] = val
     return param_dict
 

@@ -10,8 +10,8 @@ class StateVector:
         self.basis = basis
         self.data = np.zeros((basis.size(),), dtype=np.complex128)
 
-    def set_state(self, V, J, M, amplitude=1.0):
-        index = self.basis.get_index(V, J, M)
+    def set_state(self, state, amplitude=1.0):
+        index = self.basis.get_index(state)
         if index is not None:
             self.data[:] = 0  # 他をゼロに
             self.data[index] = amplitude

@@ -5,25 +5,36 @@ import numpy as np
 
 duration = 20
 amplitude = 1
-carrier_frequency = 0.2
+carrier_frequency = 0.05
 
 ti, tf, dt = 0, 1000, 0.1
 time = np.arange(ti, tf+dt, dt)
 tc = (time[-1]+time[0])/2
 
-param_envelope = [tc, duration]
-
 polarization = np.array(
     [1, 0]
 )
-Efield = ElectricField(
-    tlist=time,
+Efield = ElectricField(tlist=time)
+
+Efield.add_Efield_disp(
     envelope_func=gaussian_fwhm,
-    param_env=param_envelope,
+    duration=duration,
+    t_center=tc,
     carrier_freq=carrier_frequency,
     amplitude=amplitude,
     polarization=polarization,
-    gdd=2e2
+    gdd=-5e2,
     )
+
+Efield.add_Efield_disp(
+    envelope_func=gaussian_fwhm,
+    duration=duration,
+    t_center=tc+100,
+    carrier_freq=carrier_frequency,
+    amplitude=amplitude,
+    polarization=[1, 0],
+    gdd=-5e2,
+    )
+
 
 Efield.plot()

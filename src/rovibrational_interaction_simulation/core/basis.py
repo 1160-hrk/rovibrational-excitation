@@ -37,6 +37,9 @@ class LinMolBasis:
         """
         量子数からインデックスを取得
         """
+        if hasattr(state, '__iter__'):
+            if not isinstance(state, tuple):
+                state = tuple(state)
         return self.index_map.get(state, None)
 
     def get_state(self, index):
@@ -51,5 +54,19 @@ class LinMolBasis:
         """
         return len(self.basis)
 
+    def get_border_indices_j(self):
+        if self.use_M:
+            inds = np.matlib.repmat(np.arange(self.J_max+1)**2, self.V_max+1, 1) + np.arange(self.V_max+1).reshape((self.V_max+1, 1))*(self.J_max+1)**2
+            return inds.flatten()
+        else:
+            raise ValueError('M is not defined, so each index is the border of J number.')
+    
+    def get_border_indices_v(self):
+        if self.use_M:
+            inds = np.arange(0, self.size(), (self.J_max+1)**2)
+        else:
+            inds = np.arange(0, self.size(), self.J_max+1)
+        return inds
+        
     def __repr__(self):
         return f"VJMBasis(V_max={self.V_max}, J_max={self.J_max}, size={self.size()})"

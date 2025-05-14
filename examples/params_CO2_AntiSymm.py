@@ -12,7 +12,11 @@ def make_tlist(delay):
 
 # === 電場波形の設定 ===
 gauss_widths = [50.0, 80.0]                  # fs
-polarizations = [[1, 0], [1/np.sqrt(2), 1j/np.sqrt(2)]]  # 直線偏光, 円偏光
+polarizations = [
+    [1, 0],
+    [1/np.sqrt(2), 1j/np.sqrt(2)],
+    [1/np.sqrt(2), (1+1j)/2]
+    ]
 carrier_freq = 2349.0 * 2 * np.pi * 1e12 * 1e-15  # rad/fs, 2349 cm^-1 → CO2 非対称伸縮振動の赤外線吸収周波数
 amplitude = 1.0
 
