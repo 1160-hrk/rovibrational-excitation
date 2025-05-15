@@ -1,6 +1,7 @@
 import sys
-sys.path.append('..')
-from src.rovibrational_interaction_simulation.core.basis import LinMolBasis
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+from rovibrational_excitation.core.basis import LinMolBasis
 
 V_max = 4
 J_max = 4

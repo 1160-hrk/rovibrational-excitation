@@ -8,7 +8,7 @@ class StateVector:
     """
     def __init__(self, basis):
         self.basis = basis
-        self.data = np.zeros((basis.size(),), dtype=np.complex128)
+        self.data = np.zeros((basis.size(), 1), dtype=np.complex128)
 
     def set_state(self, state, amplitude=1.0):
         index = self.basis.get_index(state)

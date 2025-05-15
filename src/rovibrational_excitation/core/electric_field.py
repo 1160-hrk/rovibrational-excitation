@@ -21,6 +21,9 @@ class ElectricField:
             時間軸（fs）
         """
         self.tlist = tlist
+        self.dt = (tlist[1] - tlist[0])
+        self.dt_state = self.dt * 2
+        self.steps_state = len(tlist) // 2
         self.Efield = np.zeros((len(tlist), 2))
         self.add_history = []
     

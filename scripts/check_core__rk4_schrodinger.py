@@ -1,6 +1,7 @@
 import sys
-sys.path.append("..")
-from src.rovibrational_interaction_simulation.core._rk4_schrodinger import rk4_schrodinger_traj
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger_traj
 import numpy as np
 import matplotlib.pyplot as plt
 import time

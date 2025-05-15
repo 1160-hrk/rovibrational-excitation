@@ -1,7 +1,8 @@
 import sys
-sys.path.append('..')
-from src.rovibrational_interaction_simulation.core.hamiltonian import generate_H0_LinMol
-from src.rovibrational_interaction_simulation.core.basis import VJMBasis
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
+from rovibrational_excitation.core.basis import VJMBasis
 import numpy as np
 
 basis = VJMBasis(V_max=4, J_max=4)

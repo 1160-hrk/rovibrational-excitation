@@ -7,6 +7,34 @@ from ._tdm_vib import tdm_v_dict, omega01_domega_to_N
 PLANCK_CONSTANT = 6.62607015e-19  # J*fs
 DIRAC_CONSTANT = PLANCK_CONSTANT/(2*np.pi)  # J*fs
 
+class LinMolDipoleMatrix:
+    def __init__(self, basis:LinMolBasis, mu0_cm, omega01, domega, potential_type="harmonic"):
+        self.basis = basis
+        self.mu0_cm = mu0_cm
+        self.omega01 = omega01
+        self.domega = domega
+        self.potential_type = potential_type
+        self.use_M = self.basis.use_M
+        self._generatie_dipole_matrix()
+    def _generatie_dipole_matrix(self):
+        params = dict(
+            basis=self.basis,
+            omega01=self.omega01,
+            domega=self.domega,
+            mu0_cm=self.mu0_cm,
+            potential_type=self.potential_type
+            )
+        if self.use_M:
+            p = params.copy()
+            p['axis'] = 'x'
+            self.mu_x = generate_dipole_matrix_vjm(**p)
+            p['axis'] = 'y'
+            self.mu_y = generate_dipole_matrix_vjm(**p)
+            p['axis'] = 'z'
+            self.mu_z = generate_dipole_matrix_vjm(**p)
+        else:
+            self.mu = generate_dipole_matrix_vj(**p)
+            
 def generate_dipole_matrix_j(
     basis: LinMolBasis
     ) -> np.ndarray:
