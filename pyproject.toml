@@ -18,7 +18,9 @@ dependencies = [
   "matplotlib>=3.5",
   "numba>=0.57"
 ]
-
+[tool.poetry.dependencies]
+# すでに numpy, scipy, numba, cupy などがある前提で…
+linmol_dipole = {path = "src/linmol_dipole", develop = true}
 # -------------------------
 # 追加オプション
 # -------------------------
