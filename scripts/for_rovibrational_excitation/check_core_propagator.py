@@ -1,9 +1,10 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.dipole_matrix import LinMolDipoleMatrix
+from linmol_dipole.cache import LinMolDipoleMatrix
+from vib_tdms.morse import omega01_domega_to_N
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
 from rovibrational_excitation.core.states import StateVector
@@ -12,12 +13,21 @@ import matplotlib.pyplot as plt
 import time
 
 V_max, J_max = 1, 1
-omega01, domega, mu0_cm = 1.0, 0, 1e-30
+omega01, domega, mu0_cm = 1.0, 0.01, 1e-30
+omega01_domega_to_N(omega01=omega01, domega=domega)
 axes = "xy"
 
 basis = LinMolBasis(V_max, J_max)
 H0 = generate_H0_LinMol(basis)
-dipole_matrix = LinMolDipoleMatrix(basis, mu0_cm=mu0_cm, omega01=omega01, domega=domega)
+
+dipole_matrix = LinMolDipoleMatrix(
+    basis,              # ← 1. で用意した基底
+    mu0=mu0_cm,           # 縮尺係数（a.u. → C·m など）     *任意*
+    potential_type="harmonic",   #  'harmonic' / 'morse'
+    backend="numpy",    #  'numpy' か 'cupy'  (GPU のときは 'cupy')
+    dense=True          #  True→ndarray / False→CSR sparse
+)
+
 state = StateVector(basis)
 state.set_state((0, 0, 0), 1)
 
@@ -32,7 +42,7 @@ num_rabi_cycles = 1
 # amplitude = num_rabi_cycles / (duration*np.sqrt(2*np.pi)) * 2*np.pi 
 amplitude = 3e9
 polarization = np.array(
-    [1, 1j]
+    [1, -1j]
 )
 Efield = ElectricField(tlist=time4Efield)
 Efield.add_Efield_disp(

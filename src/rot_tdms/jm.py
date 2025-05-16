@@ -48,12 +48,12 @@ def tdm_jm_y(J1, M1, J2, M2):
     dM = M2 - M1
     if dJ == 1 and dM in (1, -1):
         return (-1j) * 0.5 * np.sqrt(
-            (J2 - dM * M2 + 1) * (J2 - dM * M2 + 2)
+            (J2 + dM * M2 + 1) * (J2 + dM * M2 + 2)
             / ((2 * J2 + 1) * (2 * J2 + 3))
         )
     elif dJ == -1 and dM in (1, -1):
         return (1j) * 0.5 * np.sqrt(
-            (J1 + dM * M1 + 1) * (J1 + dM * M1 + 2)
+            (J1 - dM * M1 + 1) * (J1 - dM * M1 + 2)
             / ((2 * J1 + 1) * (2 * J1 + 3))
         )
     return 0.0 + 0.0j
@@ -87,16 +87,3 @@ def tdm_jm_z(J1, M1, J2, M2):
 # 軸 → 関数マッピング
 # --------------------------------------------------------------------
 tdm_jm_dict = {"x": tdm_jm_x, "y": tdm_jm_y, "z": tdm_jm_z}
-
-
-# --------------------------------------------------------------------
-# （参考）J‐only 近似
-# --------------------------------------------------------------------
-@njit(complex128(int64, int64), cache=True, fastmath=True)
-def tdm_j(J1: int, J2: int):
-    dJ = J2 - J1
-    if dJ == 1:
-        return 0.5 * np.sqrt(J1 / (2 * J1 + 1)) + 0.0j
-    if dJ == -1:
-        return 0.5 * np.sqrt((J1 + 1) / (2 * J1 + 1)) + 0.0j
-    return 0.0 + 0.0j
