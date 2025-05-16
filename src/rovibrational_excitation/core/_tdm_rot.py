@@ -35,7 +35,7 @@ def tdm_jm_y(quanta1, quanta2):
     if delta[0] == 1:
         if delta[1] in [1, -1]:
             tdm = -1j * np.sqrt(
-                (J2 - delta[1] * M2 + 1) * (J2 - delta[1] * M2 + 2)
+                (J2 + delta[1] * M2 + 1) * (J2 + delta[1] * M2 + 2)
                 / ((2 * J2 + 1) * (2 * J2 + 3))
                 ) / 2
         else:
@@ -43,7 +43,7 @@ def tdm_jm_y(quanta1, quanta2):
     elif delta[0] == -1:
         if delta[1] in [1, -1]:
             tdm = 1j * np.sqrt(
-                (J1 + delta[1] * M1 + 1) * (J1 + delta[1] * M1 + 2)
+                (J1 - delta[1] * M1 + 1) * (J1 - delta[1] * M1 + 2)
                 / ((2 * J1 + 1) * (2 * J1 + 3))
                 ) / 2
         else:
