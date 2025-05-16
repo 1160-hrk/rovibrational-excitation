@@ -8,17 +8,7 @@ def omega01_domega_to_N(omega01, domega):
     N = (omega01+domega)/domega-1/2
     return None
 
-def tdm_v_harm(v1, v2):
-    if v1 == v2 + 1:
-        return np.sqrt(v1)
-    elif v1 == v2 - 1:
-        return np.sqrt(v2)
-    else:
-        return 0.0
-
-
-
-def tdm_v_morse(v1, v2):
+def tdm_vib_morse(v1, v2):
     global N
     tdm0 = 2/(2*N-1)*np.sqrt((N-1)*N/(2*N))
     if v1 > v2:
@@ -38,7 +28,3 @@ def tdm_v_morse(v1, v2):
         /tdm0
         )
     return tdm
-
-tdm_v_dict = {
-    'harmonic': tdm_v_harm,
-    'morse': tdm_v_morse,}

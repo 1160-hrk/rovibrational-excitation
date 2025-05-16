@@ -1,7 +1,7 @@
 # 基底とインデックス変換
 # basis.py
 import numpy as np
-
+__all__ = ["LinMolBasis"]
 class LinMolBasis:
     """
     振動(V), 回転(J), 磁気(M)量子数の直積空間における基底の生成と管理を行うクラス。

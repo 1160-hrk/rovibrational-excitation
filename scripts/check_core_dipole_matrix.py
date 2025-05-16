@@ -8,7 +8,7 @@ import numpy as np
 def test_func(a, b):
     return a+b
 
-basis = LinMolBasis(V_max=4, J_max=4, use_M=True)
+basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
 dipole_matrix = LinMolDipoleMatrix(
     basis=basis, mu0_cm=3.33564e-30, omega01=1.0, domega=0.01,
     potential_type='harmonic'
@@ -26,14 +26,22 @@ import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots()
 map = ax.pcolormesh(np.real(dm_jm_x), cmap="bwr")
+ax.set_title(r"$\mu_{jm}^x$")
 pp = plt.colorbar(map)
 
 fig, ax = plt.subplots()
 map = ax.pcolormesh(np.imag(dm_jm_y), cmap="bwr")
+ax.set_title(r"$\mu_{jm}^y$")
 pp = plt.colorbar(map)
 
 fig, ax = plt.subplots()
 map = ax.pcolormesh(np.real(dm_jm_z), cmap="bwr")
+ax.set_title(r"$\mu_{jm}^z$")
+pp = plt.colorbar(map)
+
+fig, ax = plt.subplots()
+map = ax.pcolormesh(np.real(dm_jm_x + 1j*dm_jm_y), cmap="bwr")
+ax.set_title(r"$\mu_{jm}^x + 1j*\mu_{jm}^y$")
 pp = plt.colorbar(map)
 
 fig, ax = plt.subplots()
