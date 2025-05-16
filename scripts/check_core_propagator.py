@@ -21,18 +21,18 @@ dipole_matrix = LinMolDipoleMatrix(basis, mu0_cm=mu0_cm, omega01=omega01, domega
 state = StateVector(basis)
 state.set_state((0, 0, 0), 1)
 
-ti, tf = 0.0, 1000
+ti, tf = 0.0, 100
 dt4Efield = 0.01
 time4Efield = np.arange(ti, tf + 3*dt4Efield, dt4Efield)
 
-duration = 100
+duration = 10
 tc = (time4Efield[-1] + time4Efield[0]) / 2
 envelope = np.exp(-(time4Efield-tc)**2 / (2 * duration**2))
 num_rabi_cycles = 1
 # amplitude = num_rabi_cycles / (duration*np.sqrt(2*np.pi)) * 2*np.pi 
 amplitude = 3e9
 polarization = np.array(
-    [1, 1j]
+    [1, -1j]
 )
 Efield = ElectricField(tlist=time4Efield)
 Efield.add_Efield_disp(
