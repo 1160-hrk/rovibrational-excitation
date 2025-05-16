@@ -11,9 +11,9 @@ class LinMolBasis:
         self.J_max = J_max
         self.use_M = use_M
         self.basis = self._generate_basis()
-        self.v_array = self.basis[:, 0]
-        self.j_array = self.basis[:, 1]
-        self.m_array = self.basis[:, 2]
+        self.V_array = self.basis[:, 0]
+        self.J_array = self.basis[:, 1]
+        self.M_array = self.basis[:, 2]
         self.index_map = {tuple(state): i for i, state in enumerate(self.basis)}
 
     def _generate_basis(self):

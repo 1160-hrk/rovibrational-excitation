@@ -1,44 +1,53 @@
 """
-propagator.py  ―  軸マッピング機能付き
--------------------------------------
-* `axes` キーワードを追加  
-    - 例 `"xy"`  →  Ex ↔ μ_x,  Ey ↔ μ_y  (従来どおり)  
-    - 例 `"zx"`  →  Ex ↔ μ_z,  Ey ↔ μ_x
-* LinMolDipoleMatrix に **mu_z** が定義されていることを前提
-  （無い場合は AttributeError を投げて知らせる）
+rovibrational_excitation/core/propagator.py
+------------------------------------------
+* axes="xy"  → Ex ↔ μ_x,  Ey ↔ μ_y   (デフォルト)
+* axes="zx"  → Ex ↔ μ_z,  Ey ↔ μ_x
 """
 
 from __future__ import annotations
+from typing import Iterable, Tuple, Union, TYPE_CHECKING
+
 import numpy as np
-from typing import Iterable, Tuple, Union
+
+# ---------------------------------------------------------------------
+# optional CuPy
 try:
-    import cupy as _cp
+    import cupy as _cp                   # noqa: N811
 except ImportError:
-    _cp = None
+    _cp = None                           # type: ignore[assignment]
 
-Array = Union[np.ndarray, "cupy.ndarray"]
+# ---------------------------------------------------------------------
+# type-hints
+if TYPE_CHECKING:
+    Array = Union[np.ndarray, "_cp.ndarray"]
+    from .electric_field import ElectricField
+    from linmol_dipole.cache import LinMolDipoleMatrix
+else:
+    Array = np.ndarray  # runtime dummy
 
+# ---------------------------------------------------------------------
+# constants / helpers
+_DIRAC_HBAR = 6.62607015e-019 / (2*np.pi)  # J fs
 
-# ----------------------------------------------------------------------
-# 内部ユーティリティ
-# ----------------------------------------------------------------------
+def _cm_to_rad_phz(mu: Array) -> Array:
+    """μ (C·m) → rad / (PHz/(V·m⁻¹))."""
+    return mu / (_DIRAC_HBAR)      # divide once; xp 対応は呼び出し側で
 
-def _backend(xp: str):
-    if xp == "cupy":
+def _backend(name: str):
+    if name == "cupy":
         if _cp is None:
-            raise RuntimeError("CuPy not installed")
+            raise RuntimeError("CuPy backend requested but CuPy not installed")
         return _cp
     return np
 
-
 def _pick_mu(dip, axis: str) -> Array:
-    """'x','y','z' の文字から双極子行列を取得"""
     attr = f"mu_{axis}"
     if not hasattr(dip, attr):
         raise AttributeError(f"{type(dip).__name__} has no attribute '{attr}'")
     return getattr(dip, attr)
 
-
+# ---------------------------------------------------------------------
 def _prepare_args(
     H0: Array,
     E: "ElectricField",
@@ -48,48 +57,39 @@ def _prepare_args(
     dt: float | None = None,
 ) -> Tuple[Array, Array, Array, Array, Array, float, int]:
     """
-    共通前処理  
-    Ex/Ey と双極子行列 μa/μb の **対応** を axes で指定する。
-    """
-    if len(axes) != 2 or any(a not in "xyz" for a in axes.lower()):
-        raise ValueError("axes must be like 'xy', 'zx', etc.")
-    ax0, ax1 = axes.lower()
+    共通前処理
 
-    use_cupy = (_cp is not None) and isinstance(H0, _cp.ndarray)
-    xp = _cp if use_cupy else np
+    Returns (順序は旧バージョンと互換):
+        H0, μ_a, μ_b, Ex, Ey, dt, steps
+        └─ μ_a: Ex に対応 / μ_b: Ey に対応
+    """
+    axes = axes.lower()
+    if len(axes) != 2 or any(a not in "xyz" for a in axes):
+        raise ValueError("axes must be like 'xy', 'zx', ...")
+
+    ax0, ax1 = axes
+    xp = _cp if (_cp is not None and isinstance(H0, (_cp.ndarray,))) else np
 
     dt_half = E.dt if dt is None else dt / 2
     steps   = E.steps_state
 
-    Ex, Ey = E.Efield[:, 0], E.Efield[:, 1]
-    mu_a   = _pick_mu(dip, ax0)
-    mu_b   = _pick_mu(dip, ax1)
+    Ex, Ey  = E.Efield[:, 0], E.Efield[:, 1]
 
-    return (
-        H0,
-        mu_a,           # ← Ex に対応する μ
-        mu_b,           # ← Ey に対応する μ
-        xp.asarray(Ex),
-        xp.asarray(Ey),
-        dt_half * 2,
-        steps,
-    )
+    mu_a = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax0)))
+    mu_b = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax1)))
 
+    return H0, mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
 
-# ----------------------------------------------------------------------
-# 伝搬ラッパ
-# ----------------------------------------------------------------------
-
-from ._rk4_lvne import rk4_lvne_traj, rk4_lvne
+# ---------------------------------------------------------------------
+# RK4 kernels
+from ._rk4_lvne        import rk4_lvne_traj, rk4_lvne
 from ._rk4_schrodinger import rk4_schrodinger_traj, rk4_schrodinger
-from .electric_field import ElectricField
-from .dipole_matrix import LinMolDipoleMatrix
 
-
+# ---------------------------------------------------------------------
 def schrodinger_propagation(
     H0: Array,
-    Efield: ElectricField,
-    dipole_matrix: LinMolDipoleMatrix,
+    Efield: "ElectricField",
+    dipole_matrix: "LinMolDipoleMatrix",
     psi0: Array,
     *,
     axes: str = "xy",
@@ -102,22 +102,16 @@ def schrodinger_propagation(
         H0, Efield, dipole_matrix, axes=axes
     )
 
-    rk4_args = (
-        H0_, mu_a, mu_b,
-        Ex, Ey,
-        xp.asarray(psi0),
-        dt, steps,
-    )
-
+    rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt, steps)
     rk4 = rk4_schrodinger_traj if return_traj else rk4_schrodinger
     return rk4(*rk4_args, sample_stride) if return_traj else rk4(*rk4_args)
 
-
+# ---------------------------------------------------------------------
 def mixed_state_propagation(
     H0: Array,
-    Efield: ElectricField,
+    Efield: "ElectricField",
     psi0_array: Iterable[Array],
-    dipole_matrix: LinMolDipoleMatrix,
+    dipole_matrix: "LinMolDipoleMatrix",
     *,
     axes: str = "xy",
     return_traj: bool = True,
@@ -132,22 +126,20 @@ def mixed_state_propagation(
     for psi0 in psi0_array:
         psi_t = schrodinger_propagation(
             H0, Efield, dipole_matrix, psi0,
-            axes=axes,
-            return_traj=return_traj,
-            sample_stride=sample_stride,
-            backend=backend,
+            axes=axes, return_traj=return_traj,
+            sample_stride=sample_stride, backend=backend
         )
         if return_traj:
-            rho_out += xp.einsum("t i, t j -> t i j", psi_t, psi_t.conj())
+            rho_out += xp.einsum("ti, tj -> tij", psi_t, psi_t.conj())
         else:
             rho_out += psi_t @ psi_t.conj().T
     return rho_out
 
-
+# ---------------------------------------------------------------------
 def liouville_propagation(
     H0: Array,
-    Efield: ElectricField,
-    dipole_matrix: LinMolDipoleMatrix,
+    Efield: "ElectricField",
+    dipole_matrix: "LinMolDipoleMatrix",
     rho0: Array,
     *,
     axes: str = "xy",
@@ -160,12 +152,6 @@ def liouville_propagation(
         H0, Efield, dipole_matrix, axes=axes
     )
 
-    rk4_args = (
-        H0_, mu_a, mu_b,
-        Ex, Ey,
-        xp.asarray(rho0),
-        dt, steps,
-    )
-
+    rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(rho0), dt, steps)
     rk4 = rk4_lvne_traj if return_traj else rk4_lvne
     return rk4(*rk4_args, sample_stride) if return_traj else rk4(*rk4_args)
