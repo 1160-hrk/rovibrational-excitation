@@ -1,32 +1,62 @@
 [project]
 name = "rovibrational-excitation"
-version = "0.3.4"
-description = "分子の振動回転励起のシミュレーションを行う"
-readme = { file = "README.md", content-type = "text/markdown" }
+version = "0.1.0"
+description = "Simulation library for electric-field-driven rovibrational excitation of molecules"
+readme = "README.md"
 authors = [
   { name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com" }
 ]
-license = "MIT"
-license-files = ["LICENSE"]
+license = { text = "MIT" }
+requires-python = ">=3.9"
 
-# 本番依存
+# -------------------------
+# 必須（CPU 版のみで動く）
+# -------------------------
 dependencies = [
-  "numpy",
-  "scipy",
-  "matplotlib",
-  "numba",
+  "numpy>=1.22",
+  "scipy>=1.10",
+  "matplotlib>=3.5",
+  "numba>=0.57"
 ]
 
-# dev extras
+# -------------------------
+# 追加オプション
+# -------------------------
 [project.optional-dependencies]
+# CUDA 12.x 用ビルド（他のバージョンは cupy-cuda11x などに置き換える）
+cuda12 = ["cupy-cuda12x>=13.0"]   # NVIDIA GPU + CUDA 12.x 仕様
+# CUDA 11.x 用
+cuda11 = ["cupy-cuda11x>=12.0"]
+# ROCm 6.x 用（AMD GPU）
+rocm   = ["cupy-rocm-6-0>=13.0"]
+# macOS Metal 用（CuPy v13 以降で正式対応）
+metal  = ["cupy-metal>=13.0"]      # 将来の Metal 対応 wheel が前提
+
+# 開発・テスト向け
 dev = [
   "pytest>=7.0",
-  "flake8>=5.0",
-  "black>=23.1",
-  "isort>=5.10",
+  "mypy>=1.0",
+  "black>=23.0",
+  "flake8>=6.0",
+  "ipython>=8.0"
 ]
-
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["rovibrational_excitation"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/rovibrational_excitation"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.flake8]
+max-line-length = 88

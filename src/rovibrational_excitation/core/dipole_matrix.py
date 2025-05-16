@@ -33,7 +33,11 @@ class LinMolDipoleMatrix:
             p['axis'] = 'z'
             self.mu_z = generate_dipole_matrix_vjm(**p)
         else:
-            self.mu = generate_dipole_matrix_vj(**p)
+            self.mu_x = generate_dipole_matrix_vj(**p)
+            self.mu_y = self.mu_x.copy()
+            self.mu_z = self.mu_x.copy()
+    def __repr__(self):
+        return f"LinMolDipoleMatrix(mu0_cm={self.mu0_cm}, omega01={self.omega01}, domega={self.domega}, potential_type={self.potential_type})"
             
 def generate_dipole_matrix_j(
     basis: LinMolBasis
