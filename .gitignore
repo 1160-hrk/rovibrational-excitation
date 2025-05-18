@@ -9,6 +9,8 @@ __pycache__/
 *.png
 *.pdf
 *.svg
+*.npy
+scripts/rovibrational_excitation/results/
 /results/
 
 
