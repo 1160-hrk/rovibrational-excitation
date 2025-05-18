@@ -1,34 +1,82 @@
 """
 rovibrational_excitation/simulation/runner.py
 ============================================
-1 ケース実行 → 保存、バッチ & 並列ラッパ
+・パラメータ sweep → 逐次／並列実行
+・結果を results/<timestamp>_<desc>/… に保存
+・JSON 変換安全化／進捗バー／npz 圧縮など改善
 
-* 依存モジュール（相対 import）は **core. …** ではなく
-  `linmol_dipole`, `rovibrational_excitation.core` を使用
-* `LinMolDipoleMatrix` で μ 行列を lazy-build & キャッシュ
-* `propagator` には axes="xy" 等で電場 ↔ μ 行列の対応を渡す
+依存：
+    numpy, pandas, (tqdm は任意)
 """
-
 from __future__ import annotations
 
-import itertools
 import importlib.util
+import itertools
 import json
 import os
 import shutil
 import time
+import types
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
-from typing import Any, Dict, Iterable, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 
-# ----------------------------------------------------------------------
-# ヘルパ関数
-# ----------------------------------------------------------------------
+try:
+    from tqdm import tqdm
+except ImportError:  # 進捗バーが無くても動く
+    tqdm = lambda x, **k: x  # type: ignore
 
 
+# ---------------------------------------------------------------------
+# JSON 安全変換
+# ---------------------------------------------------------------------
+def _json_safe(obj: Any) -> Any:
+    """complex / ndarray などを JSON 可能へ再帰変換"""
+    if isinstance(obj, complex):
+        return {"__complex__": True, "r": obj.real, "i": obj.imag}
+
+    if callable(obj):  # 関数・メソッド・クラス等
+        return f"{getattr(obj, '__module__', 'builtins')}.{getattr(obj, '__qualname__', str(obj))}"
+
+    if isinstance(obj, types.ModuleType):
+        return obj.__name__
+
+    if isinstance(obj, np.generic):
+        return obj.item()  # np.float64 → float など
+
+    if isinstance(obj, np.ndarray):
+        return [_json_safe(v) for v in obj.tolist()]
+
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+
+    return obj  # str, int, float, bool, None などはそのまま
+
+
+# ---------------------------------------------------------------------
+# polarization dict ⇄ complex array
+# ---------------------------------------------------------------------
+def _deserialize_pol(seq: list[dict | float | int | complex]) -> np.ndarray:
+    return np.asarray(
+        [
+            complex(d["r"], d["i"]) if isinstance(d, dict) and d.get("__complex__")
+            else complex(d)
+            for d in seq
+        ],
+        dtype=complex,
+    )
+
+
+# ---------------------------------------------------------------------
+# パラメータファイル読み込み
+# ---------------------------------------------------------------------
 def _load_params(path: str):
     spec = importlib.util.spec_from_file_location("params", path)
     mod = importlib.util.module_from_spec(spec)
@@ -36,117 +84,87 @@ def _load_params(path: str):
     return mod
 
 
-def _serializable_params(mod) -> Dict[str, Any]:
-    keep = (str, int, float, bool, list, dict, tuple,
-            type(None), np.ndarray, np.generic)
-    out: Dict[str, Any] = {}
-    for k in dir(mod):
-        if k.startswith("__"):
-            continue
-        v = getattr(mod, k)
-        if isinstance(v, keep):
-            try:
-                out[k] = _convert(v)
-            except Exception:
-                pass
-    return out
+# ---------------------------------------------------------------------
+# sweep する / しない変数を分離してデータ点展開
+# ---------------------------------------------------------------------
+def _expand_cases(base: Dict[str, Any]):
+    """list, tuple, ndarray など *イテラブル* を sweep 対象とみなす"""
+    sweep_keys = [k for k, v in base.items()
+                  if hasattr(v, "__iter__") and not isinstance(v, (str, bytes))]
+    static = {k: v for k, v in base.items() if k not in sweep_keys}
 
-def _convert(obj):
-        if isinstance(obj, complex):
-            return {"real": obj.real, "imag": obj.imag}
-        elif isinstance(obj, np.ndarray):
-            return [_convert(x) for x in obj.tolist()]
-        elif isinstance(obj, (list, tuple)):
-            return [_convert(x) for x in obj]
-        elif isinstance(obj, dict):
-            return {k: _convert(v) for k, v in obj.items()}
-        elif isinstance(obj, (np.generic, float, int)):
-            return obj.item() if hasattr(obj, "item") else obj
-        else:
-            return obj
+    iterables = (base[k] for k in sweep_keys)
+    for combo in itertools.product(*iterables):
+        d = static.copy()
+        d.update(dict(zip(sweep_keys, combo)))
+        yield d, sweep_keys   # sweep_keys を戻しておく
 
+# --- ラベル整形 -------------------------------------------
+def _label(v: Any) -> str:
+    if isinstance(v, (int, float)):
+        return f"{v:g}"
+    return str(v).replace(" ", "").replace("\n", "")
 
-def _deserialize_pol(seq):
-    out = np.zeros((len(seq), ), dtype=complex)
-    for i, d in enumerate(seq):
-        if isinstance(d, (int, float)):
-            out[i] = d
-        elif isinstance(d, dict):
-            out[i] = complex(d["real"], d["imag"])
-        else:
-            raise ValueError(f"Invalid polarization format: {d}")
-    return out
-
-
-def _make_root(desc: str) -> str:
-    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    root = os.path.join("results", f"{now}_{desc}")
-    os.makedirs(root, exist_ok=True)
+# ---------------------------------------------------------------------
+# 結果ルート作成
+# ---------------------------------------------------------------------
+def _make_root(desc: str) -> Path:
+    root = Path("results") / f"{datetime.now():%Y-%m-%d_%H-%M-%S}_{desc}"
+    root.mkdir(parents=True, exist_ok=True)
     return root
 
 
-# ----------------------------------------------------------------------
-# コア計算：単一ケース
-# ----------------------------------------------------------------------
-
-
+# ---------------------------------------------------------------------
+# 1 ケース実行
+# ---------------------------------------------------------------------
 def _run_one(params: Dict[str, Any]) -> np.ndarray:
     """
-    1 パラメータセット実行し、population(t) を return
+    1 パラメータセット実行し population(t) を返す。
+    heavy import は関数内 (fork 後キャッシュされる) に移動
     """
     from rovibrational_excitation.core.basis import LinMolBasis
     from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
-    from rovibrational_excitation.core.states import StateVector, DensityMatrix
-    from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+    from rovibrational_excitation.core.states import StateVector
+    from rovibrational_excitation.core.electric_field import (
+        ElectricField,
+        gaussian_fwhm,
+    )
     from rovibrational_excitation.core.propagator import schrodinger_propagation
     from linmol_dipole import LinMolDipoleMatrix
 
-    pol = _deserialize_pol(params.get("polarization", np.array([1, 0])))
-
-    # ---- Electric field --------------------------------------------
-    time_Efield = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
-
-    Efield = ElectricField(tlist=time_Efield)
-    Efield.add_Efield_disp(
+    # ---------- Electric field -------------------------------------
+    t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
+    E = ElectricField(tlist=t_E)
+    E.add_Efield_disp(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
         duration=params["duration"],
         t_center=params["t_center"],
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],
-        polarization=pol,
+        polarization=_deserialize_pol(params["polarization"]),
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
     )
-    if params.get("add_sinusoidal_mod", False):
-        Efield.add_sinusoidal_mod(
-            center_freq=params["carrier_freq"],
-            amplitude_ratio=params["amplitude_sin_mod"],
-            carrier_freq=params["carrier_freq_sin_mod"],
-            phase_rad=params.get("phase_rad_sin_mod", 0.0),
-            type_mod=params.get("type_sin_mod", "phase"),
-        )
-    # ---- Basis & initial state -------------------------------------
-    basis = LinMolBasis(params["V_max"], params["J_max"], use_M=params.get("use_M", True))
 
+    # ---------- Basis / initial state ------------------------------
+    basis = LinMolBasis(
+        params["V_max"],
+        params["J_max"],
+        use_M=params.get("use_M", True),
+    )
     sv = StateVector(basis)
-    initial_states = params.get("initial_states", [0])
-    for i_s in initial_states:
-        state = basis.get_state(i_s)
-        sv.set_state(state, 1)
+    for idx in params.get("initial_states", [0]):
+        sv.set_state(basis.get_state(idx), 1)
     sv.normalize()
 
-    dm = DensityMatrix(basis)
-    dm.set_pure_state(sv)
-
-    # ---- Hamiltonian & dipole matrices -----------------------------
+    # ---------- Hamiltonian & dipole -------------------------------
     H0 = generate_H0_LinMol(
         basis,
         omega_rad_phz=params["omega_rad_phz"],
-        delta_omega_rad_phz=params.get("delta_omega_rad_phz", 0),
-        B_rad_phz=params.get("B_rad_phz", 0),
-        alpha_rad_phz=params.get("alpha_rad_phz", 0),
+        delta_omega_rad_phz=params.get("delta_omega_rad_phz", 0.0),
+        B_rad_phz=params.get("B_rad_phz", 0.0),
+        alpha_rad_phz=params.get("alpha_rad_phz", 0.0),
     )
-
     dip = LinMolDipoleMatrix(
         basis,
         mu0=params["mu0_Cm"],
@@ -155,121 +173,97 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
         dense=params.get("dense", True),
     )
 
-    # ---- Propagation -----------------------------------------------
-    return_traj = params.get("return_traj", True)
-    return_time_psi = params.get("return_time_psi", True)
-    result = schrodinger_propagation(
+    # ---------- Propagation ----------------------------------------
+    psi_t = schrodinger_propagation(
         H0,
-        Efield,
+        E,
         dip,
         sv.data,
-        axes=params.get("axes", "xy"),                # e.g. "xy"
-        return_traj=return_traj,
-        return_time_psi=return_time_psi,
-        sample_stride=params.get("sample_stride", 1),
+        axes=params.get("axes", "xy"),
+        return_traj=params.get("return_traj", True),
+        return_time_psi=params.get("return_time_psi", True),
         backend=params.get("backend", "numpy"),
+        sample_stride=params.get("sample_stride", 1),
     )
-    # ---- Save -------------------------------------------------------
-    outdir = params["outdir"]
-    if return_time_psi:
-        time_psi = result[0]
-        psi_t = result[1]
-        np.save(os.path.join(outdir, "time_psi.npy"), time_psi)
+    if isinstance(psi_t, (list, tuple)) and len(psi_t) == 2:
+        t_p, psi_t = psi_t
     else:
-        psi_t = result
-    if return_traj:
-        np.save(os.path.join(outdir, "psi_trajectory.npy"), psi_t)
-    pop_t = np.abs(psi_t) ** 2
-    np.save(os.path.join(outdir, "pop_trajectory.npy"), pop_t)
-    np.save(os.path.join(outdir, "time_Efield.npy"), time_Efield)
-    np.save(os.path.join(outdir, "Efield_vector.npy"), Efield.Efield)
+        t_p = np.array([0.0])  # dummy
 
-    with open(os.path.join(outdir, "parameters.json"), "w") as f:
-        json.dump(params, f, indent=2)
+    pop_t = np.abs(psi_t) ** 2  # (t, dim)
+
+    # ---------- Save (npz 圧縮) ------------------------------------
+    if params.get("save", True):
+        outdir = Path(params["outdir"])
+        np.savez_compressed(outdir / "result.npz", t_E=t_E, psi=psi_t, pop=pop_t, E=E.Efield, t_p=t_p)
+        with open(outdir / "parameters.json", "w") as f:
+            json.dump(_json_safe(params), f, indent=2)
+
     return pop_t
 
 
-# ----------------------------------------------------------------------
-# パラメータ空間の展開
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# メイン：全ケース実行
+# ---------------------------------------------------------------------
+def run_all(param_path: str, *, nproc: int | None = None, save: bool = True, dry_run: bool = False):
+    mod = _load_params(param_path)
+    base_dict = {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
+    
+    if save:
+        root = _make_root(mod.description)
+        shutil.copy(param_path, root / "params.py")
+
+    # --------------------------------------------------------------
+    # ケース展開 & 出力ディレクトリ決定
+    # --------------------------------------------------------------
+    cases: List[Dict[str, Any]] = []
+    for case, sweep_keys in _expand_cases(base_dict):
+        case["save"] = save
+        if save:
+            rel = Path(*[f"{k}_{_label(case[k])}" for k in sweep_keys])
+            outdir = root / rel
+            outdir.mkdir(parents=True, exist_ok=True)
+            case["outdir"] = str(outdir)
+        cases.append(case)
+
+    if dry_run:
+        print(f"[Dry-run] would execute {len(cases)} cases")
+        return
+
+    # --------------------------------------------------------------
+    # 実行
+    # --------------------------------------------------------------
+    nproc = min(cpu_count(), nproc or 1)
+    runner = Pool(nproc).map if nproc > 1 else map
+    results = list(tqdm(runner(_run_one, cases), total=len(cases), desc="Cases"))
+
+    # --------------------------------------------------------------
+    # summary.csv
+    # --------------------------------------------------------------
+    if save:
+        rows: List[Dict[str, Any]] = []
+        for case, pop in zip(cases, results):
+            row = {k: v for k, v in case.items() if k != "outdir"}
+            row.update({f"pop_{i}": float(p) for i, p in enumerate(pop[-1])})
+            rows.append(row)
+
+        pd.DataFrame(rows).to_csv(root / "summary.csv", index=False)
+    return results
 
 
-def _params_iter_not_iter(params: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
-    params_iter = {}
-    params_not_iter = {}
-    for k, v in params.items():
-        if hasattr(v, "__iter__") and not isinstance(v, str):
-            if len(v) > 0:
-                params_iter[k] = v
-            else:
-                params_not_iter[k] = v
-        else:
-            params_not_iter[k] = v
-    return params_iter, params_not_iter
-
-def _case_paths(root: str, params) -> Tuple[List[Tuple], List[str]]:
-    keys = params.keys()
-    values = params.values()
-    cases = list(itertools.product(*values))
-    paths = []
-    cases_dict = []
-    for case in cases:
-        relpath = ""
-        for c, k in zip(case, keys):
-            if isinstance(c, (int, float)):
-                relpath = os.path.join(relpath, f"{k}_{c:.2e}")
-            else:
-                relpath = os.path.join(relpath, f"{k}_{c}")
-        out = os.path.join(root, relpath)
-        os.makedirs(out, exist_ok=True)
-        paths.append(out)
-        cases_dict.append(dict(zip(keys, case)))
-    return cases_dict, paths
-
-
-
-# ----------------------------------------------------------------------
-# 逐次 & 並列ラッパ
-# ----------------------------------------------------------------------
-
-
-def run_all(param_path: str, parallel: bool = False):
-    params = _load_params(param_path)
-    p_dict = _serializable_params(params)
-
-    root = _make_root(params.description)
-    shutil.copy(param_path, os.path.join(root, "params.py"))
-    params_iter, params_not_iter = _params_iter_not_iter(p_dict)
-    cases_dict, paths = _case_paths(root, params_iter)
-    for di, path in zip(cases_dict, paths):
-        di.update(**params_not_iter, outdir=path)
-    if parallel:
-        with Pool(cpu_count()) as pool:
-            results = pool.starmap(_run_one, cases_dict)
-    else:
-        results = [_run_one(case) for case in cases_dict]
-
-    # ---- summary CSV ------------------------------------------------
-    rows = []
-    for case, pop in zip(cases_dict, results):
-        for i, p in enumerate(pop[-1]):
-            print(p)
-            case.update(**{f"pop_{i}": float(p)})
-        rows.append(case)
-    pd.DataFrame(rows).to_csv(os.path.join(root, "summary.csv"), index=False)
-
-
-# ----------------------------------------------------------------------
-# CLI エントリポイント
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------
 if __name__ == "__main__":
     import argparse
 
-    ap = argparse.ArgumentParser()
-    ap.add_argument("paramfile", help="パラメータ .py ファイル")
-    ap.add_argument("-P", "--parallel", action="store_true", help="並列実行 (multiprocessing)")
+    ap = argparse.ArgumentParser(description="Run rovibrational simulation batch")
+    ap.add_argument("paramfile", help=".py file with parameter definitions")
+    ap.add_argument("-j", "--nproc", type=int, help="processes (default=1)")
+    ap.add_argument("--no-save", action="store_true", help="do not write any files")
+    ap.add_argument("--dry-run", action="store_true", help="list cases only (no run)")
     args = ap.parse_args()
 
     t0 = time.perf_counter()
-    run_all(args.paramfile, parallel=args.parallel)
-    print(f"Finished in {(time.perf_counter()-t0):.1f}s")
+    run_all(args.paramfile, nproc=args.nproc, save=not args.no_save, dry_run=args.dry_run)
+    print(f"Finished in {time.perf_counter() - t0:.1f} s")

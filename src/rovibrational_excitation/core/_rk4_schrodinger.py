@@ -81,7 +81,9 @@ def _rk4_core(
         if record_traj and ((s + 1) % stride == 0):
             out[out_idx] = psi
             out_idx += 1
-
+    if not record_traj:
+        # 1 ステップだけ記録する場合は最後の行を返す
+        out[0] = psi
     # 非記録モードでも shape を (1, dim) にそろえて返す
     return out
 

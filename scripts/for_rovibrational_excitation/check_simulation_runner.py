@@ -24,38 +24,17 @@ PARAM_FILE = os.path.join(
     "params_CO2_AntiSymm.py"
     )
 
-params = runner._load_params(PARAM_FILE)
-p_dict = runner._serializable_params(params)
-
-root = runner._make_root(params.description)
-shutil.copy(PARAM_FILE, os.path.join(root, "params.py"))
-params_iter, params_not_iter = runner._params_iter_not_iter(p_dict)
-cases_dict, paths = runner._case_paths(root, params_iter)
-inputs = [di.update(**params_not_iter, outdir=path) for di, path in zip(cases_dict, paths)]
-
 # %%
 # ---------------------------------------------------------------
-# 一時コピーを作り，gauss_widths / polarizations / delays を 1 要素に絞る
+
 tmpdir = tempfile.mkdtemp()
 tmp_param = os.path.join(tmpdir, "param.py")
-
-with open(PARAM_FILE, "r", encoding="utf-8") as src, \
-     open(tmp_param, "w", encoding="utf-8") as dst:
-    code = src.read()
-    # ↓ リストを 1 つだけ残す
-    code = code.replace("gauss_widths = [50.0, 80.0]",
-                        "gauss_widths = [50.0]")
-    code = code.replace("delays = [0.0, 100.0, 200.0]",
-                        "delays = [0.0]")
-    dst.write(code)
-
-print("✔  Copied param file to", tmp_param)
 
 # ---------------------------------------------------------------
 # 実行
 
 t0 = time.perf_counter()
-runner.run_all(tmp_param, parallel=False)
+results = runner.run_all(PARAM_FILE, save=False)
 dt = time.perf_counter() - t0
 
 print(f"✔  runner.run_all finished in {dt:.2f} s")

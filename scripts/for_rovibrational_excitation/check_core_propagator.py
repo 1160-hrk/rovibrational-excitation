@@ -59,16 +59,16 @@ psi0 = state.data
 start = time.time()
 print("start")
 sample_stride = 1
-results = schrodinger_propagation(
+time4psi, psi_t = schrodinger_propagation(
     H0=H0,
     Efield=Efield,
     dipole_matrix=dipole_matrix,
     psi0=psi0,
     axes=axes,
     return_traj=True,
+    return_time_psi=True,
     sample_stride=sample_stride
     )
-time4psi = time4Efield[::2][:-1:sample_stride]
 runtime = time.time() - start
 print("end")
 print("time:", runtime)
@@ -83,8 +83,8 @@ fig, ax = plt.subplots(
 ax[0].plot(time4Efield, Efield.Efield[:, 0], label=r"$E_x$")   
 ax[1].plot(time4Efield, Efield.Efield[:, 1], label=r"$E_y$")
 for i, st in enumerate(basis.basis):
-    ax[2].plot(time4psi, np.abs(results[:-1, i])**2, label=r"$|\psi_{"f"{','.join([str(int(s)) for s in st])}"r"}|^2$")
-ax[2].plot(time4psi, np.sum(np.abs(results[:-1, :]**2), axis=1), ls=':', c='k')
+    ax[2].plot(time4psi, np.abs(psi_t[:, i])**2, label=r"$|\psi_{"f"{','.join([str(int(s)) for s in st])}"r"}|^2$")
+ax[2].plot(time4psi, np.sum(np.abs(psi_t[:, :]**2), axis=1), ls=':', c='k')
 ax[2].set_xlabel("Time")
 ax[2].set_ylabel("Probability")
 ax[2].legend(loc=6)

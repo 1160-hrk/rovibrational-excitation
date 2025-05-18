@@ -1,0 +1,35 @@
+{
+  "B_rad_phz": 7.355096720584423e-08,
+  "J_max": 2,
+  "V_max": 2,
+  "alpha_rad_phz": 0.0,
+  "amplitude": 1.0,
+  "axes": "xy",
+  "backend": "numpy",
+  "carrier_freq": 0.44277606859694546,
+  "debye_unit": 3.33564e-30,
+  "delta_omega_rad_phz": 0.001884955592153876,
+  "dense": true,
+  "description": "CO2_antisymm_stretch",
+  "dt": 0.1,
+  "gdd": 0.0,
+  "mu0_Cm": 1.0006919999999999e-30,
+  "np": "numpy",
+  "omega_rad_phz": 2.7820440885790685,
+  "potential_type": "harmonic",
+  "sample_stride": 1,
+  "t_end": 1000.0,
+  "t_start": 0,
+  "tod": 0.0,
+  "duration": 50.0,
+  "polarization": [
+    0.7071067811865475,
+    {
+      "__complex__": true,
+      "r": 0.0,
+      "i": 0.7071067811865475
+    }
+  ],
+  "t_center": 0.0,
+  "outdir": "results/2025-05-18_12-52-04_CO2_antisymm_stretch/duration_50/polarization_[np.float64(0.7071067811865475),0.7071067811865475j]/t_center_0"
+}
