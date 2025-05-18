@@ -1,22 +1,23 @@
 """
-simulation/runner.py  ―  修正版
--------------------------------
-* 新しい propagator API に合わせて
-  - `liouville_propagation` / `schrodinger_propagation`
-    の引数を **dipole_matrix オブジェクト** に変更
-  - `tlist`・`mu_x`・`mu_y` を渡さない
-* dipole行列は `LinMolDipoleMatrix` で一括生成
-* 電場クラスの API 変更に追従（`Efield.vector` → `Efield.Efield` などはそのまま）
-* その他：型ヒントを追加し，コメントを整理
+rovibrational_excitation/simulation/runner.py
+============================================
+1 ケース実行 → 保存、バッチ & 並列ラッパ
+
+* 依存モジュール（相対 import）は **core. …** ではなく
+  `linmol_dipole`, `rovibrational_excitation.core` を使用
+* `LinMolDipoleMatrix` で μ 行列を lazy-build & キャッシュ
+* `propagator` には axes="xy" 等で電場 ↔ μ 行列の対応を渡す
 """
 
 from __future__ import annotations
-import os
-import shutil
+
 import itertools
-from datetime import datetime
 import importlib.util
 import json
+import os
+import shutil
+import time
+from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from typing import Any, Dict, Iterable, List, Tuple
 
@@ -24,195 +25,224 @@ import numpy as np
 import pandas as pd
 
 # ----------------------------------------------------------------------
-# ヘルパ
+# ヘルパ関数
 # ----------------------------------------------------------------------
 
-def load_params(params_path: str):
-    spec = importlib.util.spec_from_file_location("params", params_path)
-    params = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(params)
-    return params
+
+def _load_params(path: str):
+    spec = importlib.util.spec_from_file_location("params", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[arg-type]
+    return mod
 
 
-def extract_serializable_params(params) -> Dict[str, Any]:
-    """
-    JSON に書ける or numpy で cast できる型だけ抽出
-    """
-    allowed = (str, int, float, bool, list, dict, tuple,
-               type(None), np.ndarray, np.generic,
-               np.float64, np.int64, np.complex128)
-    out = {}
-    for k in dir(params):
+def _serializable_params(mod) -> Dict[str, Any]:
+    keep = (str, int, float, bool, list, dict, tuple,
+            type(None), np.ndarray, np.generic)
+    out: Dict[str, Any] = {}
+    for k in dir(mod):
         if k.startswith("__"):
             continue
-        v = getattr(params, k)
-        if isinstance(v, allowed):
-            if hasattr(v, "__iter__") and not isinstance(v, (str, bytes)):
-                v = np.array(v)
-            out[k] = v
+        v = getattr(mod, k)
+        if isinstance(v, keep):
+            try:
+                out[k] = _convert(v)
+            except Exception:
+                pass
     return out
 
+def _convert(obj):
+        if isinstance(obj, complex):
+            return {"real": obj.real, "imag": obj.imag}
+        elif isinstance(obj, np.ndarray):
+            return [_convert(x) for x in obj.tolist()]
+        elif isinstance(obj, (list, tuple)):
+            return [_convert(x) for x in obj]
+        elif isinstance(obj, dict):
+            return {k: _convert(v) for k, v in obj.items()}
+        elif isinstance(obj, (np.generic, float, int)):
+            return obj.item() if hasattr(obj, "item") else obj
+        else:
+            return obj
 
-def serialize_polarization(pol: np.ndarray) -> List[Dict[str, float]]:
-    return [{"real": z.real, "imag": z.imag} for z in pol]
+def _serialize_pol(pol: np.ndarray):
+    return [{"real": c.real, "imag": c.imag} for c in pol]
 
 
-def deserialize_polarization(seq: Iterable[Dict[str, float]]) -> np.ndarray:
-    return np.array([complex(p["real"], p["imag"]) for p in seq])
+def _deserialize_pol(seq):
+    return np.array([complex(d["real"], d["imag"]) for d in seq])
 
 
-def make_result_root(description: str = "Sim") -> str:
+def _make_root(desc: str) -> str:
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    root = os.path.join("results", f"{now}_{description}")
+    root = os.path.join("results", f"{now}_{desc}")
     os.makedirs(root, exist_ok=True)
     return root
 
 
 # ----------------------------------------------------------------------
-# 単一条件の実行
+# コア計算：単一ケース
 # ----------------------------------------------------------------------
 
-def run_simulation_one_case(
-    gauss_width: float,
-    pol_serialized: Iterable[Dict[str, float]],
+
+def _run_one(
+    duration: float,
+    pol_ser: List[Dict[str, float]],
     delay: float,
     outdir: str,
     p: Dict[str, Any],
-):
+) -> np.ndarray:
     """
-    1 組み合わせだけ走らせて結果を保存
+    1 パラメータセット実行し、population(t) を return
     """
-    from core.basis import LinMolBasis
-    from core.states import StateVector, DensityMatrix
-    from core.hamiltonian import generate_free_hamiltonian
-    from core.dipole_matrix import LinMolDipoleMatrix
-    from core.electric_field import ElectricField
-    from core.propagator import liouville_propagation  # 新 API
+    from rovibrational_excitation.core.basis import LinMolBasis
+    from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
+    from rovibrational_excitation.core.states import StateVector, DensityMatrix
+    from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+    from rovibrational_excitation.core.propagator import schrodinger_propagation
+    from linmol_dipole import LinMolDipoleMatrix
 
-    print(f"Running: width={gauss_width}, delay={delay}")
+    pol = _deserialize_pol(pol_ser)
 
-    # --- 電場 ----------------------------------------------------------
-    pol = deserialize_polarization(pol_serialized)
-    tlist = np.linspace(p["t_start"] + delay, p["t_end"] + delay, p["t_points"])
-    envelope = lambda t: np.exp(-((t - delay) / gauss_width) ** 2)
+    # ---- Electric field --------------------------------------------
+    time_Efield = np.arange(p["t_start"], p["t_end"] + p["dt"], p["dt"])
 
-    Efield = ElectricField(
-        tlist=tlist,
-        envelope_func=envelope,
+    Efield = ElectricField(tlist=time_Efield)
+    Efield.add_Efield_disp(
+        envelope_func=gaussian_fwhm,
+        duration=duration,
+        t_center=delay,
         carrier_freq=p["carrier_freq"],
         amplitude=p["amplitude"],
         polarization=pol,
         gdd=p["gdd"],
         tod=p["tod"],
     )
-
-    # --- 基底 & 状態 ---------------------------------------------------
+    # ---- Basis & initial state -------------------------------------
     basis = LinMolBasis(p["V_max"], p["J_max"])
 
     sv = StateVector(basis)
-    sv.set_state(0, 0, 0)
+    sv.set_state((0, 0, 0), 1)
     sv.normalize()
 
     dm = DensityMatrix(basis)
     dm.set_pure_state(sv)
 
-    # --- ハミルトニアン & 双極子 ---------------------------------------
-    H0 = generate_free_hamiltonian(
+    # ---- Hamiltonian & dipole matrices -----------------------------
+    H0 = generate_H0_LinMol(
         basis,
-        h=p["h"],
-        omega=p["omega"],
-        delta_omega=p["delta_omega"],
-        B=p["B"],
-        alpha=p["alpha"],
+        omega_rad_phz=p["omega"],
+        delta_omega_rad_phz=p["delta_omega"],
+        B_rad_phz=p["B"],
+        alpha_rad_phz=p["alpha"],
     )
 
-    dipole_matrix = LinMolDipoleMatrix(basis, mu0=p["dipole_constant"])
+    dip = LinMolDipoleMatrix(
+        basis,
+        mu0=p["mu0_Cm"],
+        potential_type=p["potential_type"],
+        backend=p["backend"],
+        dense=p["dense"],
+    )
 
-    # --- 伝搬 -----------------------------------------------------------
-    rho_t = liouville_propagation(
+    # ---- Propagation -----------------------------------------------
+    time_psi, psi_t = schrodinger_propagation(
         H0,
         Efield,
-        dm.rho,
-        dipole_matrix,
+        dip,
+        sv.data,
+        axes=p["axes"],                # e.g. "xy"
         return_traj=True,
-        sample_stride=p.get("sample_stride", 1),
+        sample_stride=p["sample_stride"],
+        backend=p["backend"],
     )
-
-    # --- 保存 -----------------------------------------------------------
-    np.save(os.path.join(outdir, "rho_t.npy"), rho_t)
-    np.save(os.path.join(outdir, "tlist.npy"), tlist)
-    np.save(os.path.join(outdir, "population.npy"), np.real(np.diagonal(rho_t, axis1=1, axis2=2)))
+    pop_t = np.abs(psi_t) ** 2
+    # ---- Save -------------------------------------------------------
+    np.save(os.path.join(outdir, "time_psi.npy"), time_psi)
+    np.save(os.path.join(outdir, "psi_trajectory.npy"), psi_t)
+    np.save(os.path.join(outdir, "pop_trajectory.npy"), pop_t)
+    np.save(os.path.join(outdir, "time_Efield.npy"), time_Efield)
     np.save(os.path.join(outdir, "Efield_vector.npy"), Efield.Efield)
 
     with open(os.path.join(outdir, "parameters.json"), "w") as f:
-        json.dump(p, f, indent=2, default=str)
+        json.dump(p, f, indent=2)
 
-    return np.real(np.diagonal(rho_t, axis1=1, axis2=2))
+    return pop_t
 
 
 # ----------------------------------------------------------------------
-# バッチ実行（逐次 & 並列）
+# パラメータ空間の展開
 # ----------------------------------------------------------------------
 
-def _make_case_paths(
-    result_root: str,
-    gauss_widths, polarizations, delays
-) -> List[Tuple]:
-    cases = list(itertools.product(gauss_widths, polarizations, delays))
+
+def _case_paths(root: str, gw, pols, dlys):
+    cases = list(itertools.product(gw, pols, dlys))
     paths = []
-    for gw, pol, d in cases:
-        rel = f"gw_{gw}/pol_{pol}/dly_{d}"
-        out = os.path.join(result_root, rel)
+    for g, p, d in cases:
+        rel = f"gw_{g}/pol_{p}/dly_{d}"
+        out = os.path.join(root, rel)
         os.makedirs(out, exist_ok=True)
-        paths.append((gw, serialize_polarization(pol), d, out))
+        paths.append(out)
     return cases, paths
 
 
-def run_all(params_path: str):
-    params = load_params(params_path)
-    result_root = make_result_root(params.description)
-    shutil.copy(params_path, os.path.join(result_root, "params.py"))
+# ----------------------------------------------------------------------
+# 逐次 & 並列ラッパ
+# ----------------------------------------------------------------------
 
-    cases, paths = _make_case_paths(
-        result_root, params.gauss_widths, params.polarizations, params.delays
+
+def run_all(param_path: str, parallel: bool = False):
+    params = _load_params(param_path)
+    p_dict = _serializable_params(params)
+
+    root = _make_root(params.description)
+    shutil.copy(param_path, os.path.join(root, "params.py"))
+
+    cases, outdirs = _case_paths(
+        root, params.durations, params.polarizations, params.delays
     )
-    p_dict = extract_serializable_params(params)
+    inputs = [
+        (
+            gw,
+            _serialize_pol(pol),
+            dly,
+            out,
+            p_dict,
+        )
+        for (gw, pol, dly), out in zip(cases, outdirs)
+    ]
 
-    summary = []
-    for (gw, pol, dly), (gw_, pol_s, dly_, outdir) in zip(cases, paths):
-        pop = run_simulation_one_case(gw_, pol_s, dly_, outdir, p_dict)
-        summary.append({
-            "gauss_width": gw,
-            "polarization": str(pol),
-            "delay": dly,
-            "final_population_sum": float(np.sum(pop[-1])),
-        })
+    if parallel:
+        with Pool(cpu_count()) as pool:
+            results = pool.starmap(_run_one, inputs)
+    else:
+        results = [_run_one(*inp) for inp in inputs]
 
-    pd.DataFrame(summary).to_csv(os.path.join(result_root, "summary.csv"), index=False)
-
-
-def run_all_parallel(params_path: str):
-    params = load_params(params_path)
-    result_root = make_result_root(params.description)
-    shutil.copy(params_path, os.path.join(result_root, "params.py"))
-
-    cases, paths = _make_case_paths(
-        result_root, params.gauss_widths, params.polarizations, params.delays
-    )
-    p_dict = extract_serializable_params(params)
-
-    inputs = [(gw, pol_s, dly, outdir, p_dict) for (_, pol_s, dly, outdir), (gw, _, dly) in zip(paths, cases)]
-
-    with Pool(processes=cpu_count()) as pool:
-        results = pool.starmap(run_simulation_one_case, inputs)
-
-    summary = []
+    # ---- summary CSV ------------------------------------------------
+    rows = []
     for (gw, pol, dly), pop in zip(cases, results):
-        summary.append({
-            "gauss_width": gw,
-            "polarization": str(pol),
-            "delay": dly,
-            "final_population_sum": float(np.sum(pop[-1])),
-        })
+        rows.append(
+            dict(
+                gauss_width=gw,
+                polarization=str(pol),
+                delay=dly,
+                final_population_sum=float(np.sum(pop[-1])),
+            )
+        )
+    pd.DataFrame(rows).to_csv(os.path.join(root, "summary.csv"), index=False)
 
-    pd.DataFrame(summary).to_csv(os.path.join(result_root, "summary.csv"), index=False)
+
+# ----------------------------------------------------------------------
+# CLI エントリポイント
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("paramfile", help="パラメータ .py ファイル")
+    ap.add_argument("-P", "--parallel", action="store_true", help="並列実行 (multiprocessing)")
+    args = ap.parse_args()
+
+    t0 = time.perf_counter()
+    run_all(args.paramfile, parallel=args.parallel)
+    print(f"Finished in {(time.perf_counter()-t0):.1f}s")

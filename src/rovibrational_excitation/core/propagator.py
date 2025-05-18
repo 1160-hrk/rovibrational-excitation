@@ -94,6 +94,7 @@ def schrodinger_propagation(
     *,
     axes: str = "xy",
     return_traj: bool = True,
+    return_time_psi: bool = True,
     sample_stride: int = 1,
     backend: str = "numpy",
 ) -> Array:
@@ -104,7 +105,15 @@ def schrodinger_propagation(
 
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt, steps)
     rk4 = rk4_schrodinger_traj if return_traj else rk4_schrodinger
-    return rk4(*rk4_args, sample_stride) if return_traj else rk4(*rk4_args)
+    if return_traj:
+        if return_time_psi:
+            dt_psi = dt * 2 * sample_stride
+            time_psi = xp.arange(0, (steps+1)*dt_psi, dt_psi)
+            return time_psi, rk4(*rk4_args, sample_stride)
+        else:
+            return rk4(*rk4_args, sample_stride)
+    else:
+        return rk4(*rk4_args)
 
 # ---------------------------------------------------------------------
 def mixed_state_propagation(
@@ -115,6 +124,7 @@ def mixed_state_propagation(
     *,
     axes: str = "xy",
     return_traj: bool = True,
+    return_time_rho: bool = True,
     sample_stride: int = 1,
     backend: str = "numpy",
 ) -> Array:
@@ -133,7 +143,16 @@ def mixed_state_propagation(
             rho_out += xp.einsum("ti, tj -> tij", psi_t, psi_t.conj())
         else:
             rho_out += psi_t @ psi_t.conj().T
-    return rho_out
+    if return_traj:
+        if return_time_rho:
+            dt_rho = Efield.dt_state * sample_stride
+            steps = Efield.steps_state
+            time_psi = xp.arange(0, (steps+1)*dt_rho, dt_rho)
+            return time_psi, rho_out
+        else:
+            return rho_out
+    else:
+        return rho_out
 
 # ---------------------------------------------------------------------
 def liouville_propagation(
