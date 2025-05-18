@@ -65,12 +65,17 @@ def _convert(obj):
         else:
             return obj
 
-def _serialize_pol(pol: np.ndarray):
-    return [{"real": c.real, "imag": c.imag} for c in pol]
-
 
 def _deserialize_pol(seq):
-    return np.array([complex(d["real"], d["imag"]) for d in seq])
+    out = np.zeros((len(seq), ), dtype=complex)
+    for i, d in enumerate(seq):
+        if isinstance(d, (int, float)):
+            out[i] = d
+        elif isinstance(d, dict):
+            out[i] = complex(d["real"], d["imag"])
+        else:
+            raise ValueError(f"Invalid polarization format: {d}")
+    return out
 
 
 def _make_root(desc: str) -> str:
@@ -96,7 +101,7 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     from rovibrational_excitation.core.propagator import schrodinger_propagation
     from linmol_dipole import LinMolDipoleMatrix
 
-    pol = params.get("polarization", np.array([1, 0]))
+    pol = _deserialize_pol(params.get("polarization", np.array([1, 0])))
 
     # ---- Electric field --------------------------------------------
     time_Efield = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
@@ -211,7 +216,10 @@ def _case_paths(root: str, params) -> Tuple[List[Tuple], List[str]]:
     for case in cases:
         relpath = ""
         for c, k in zip(case, keys):
-            relpath = os.path.join(relpath, f"{k}_{c}")
+            if isinstance(c, (int, float)):
+                relpath = os.path.join(relpath, f"{k}_{c:.2e}")
+            else:
+                relpath = os.path.join(relpath, f"{k}_{c}")
         out = os.path.join(root, relpath)
         os.makedirs(out, exist_ok=True)
         paths.append(out)
@@ -233,17 +241,21 @@ def run_all(param_path: str, parallel: bool = False):
     shutil.copy(param_path, os.path.join(root, "params.py"))
     params_iter, params_not_iter = _params_iter_not_iter(p_dict)
     cases_dict, paths = _case_paths(root, params_iter)
-    inputs = [di.update(**params_not_iter, outdir=path) for di, path in zip(cases_dict, paths)]
+    for di, path in zip(cases_dict, paths):
+        di.update(**params_not_iter, outdir=path)
     if parallel:
         with Pool(cpu_count()) as pool:
-            results = pool.starmap(_run_one, inputs)
+            results = pool.starmap(_run_one, cases_dict)
     else:
-        results = [_run_one(*inp) for inp in inputs]
+        results = [_run_one(case) for case in cases_dict]
 
     # ---- summary CSV ------------------------------------------------
     rows = []
     for case, pop in zip(cases_dict, results):
-        rows.append(case.update(final_population_sum=float(np.sum(pop[-1]))))
+        for i, p in enumerate(pop[-1]):
+            print(p)
+            case.update(**{f"pop_{i}": float(p)})
+        rows.append(case)
     pd.DataFrame(rows).to_csv(os.path.join(root, "summary.csv"), index=False)
 
 

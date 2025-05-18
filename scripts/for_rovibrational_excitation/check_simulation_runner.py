@@ -13,9 +13,10 @@ scripts/check_runner.py
 
 from __future__ import annotations
 import os, sys, shutil, tempfile, time, importlib.util
+from rovibrational_excitation.simulation import runner
 
 import numpy as np
-
+# %%
 # ---------------------------------------------------------------
 # 対象パラメータファイル
 PARAM_FILE = os.path.join(
@@ -23,6 +24,16 @@ PARAM_FILE = os.path.join(
     "params_CO2_AntiSymm.py"
     )
 
+params = runner._load_params(PARAM_FILE)
+p_dict = runner._serializable_params(params)
+
+root = runner._make_root(params.description)
+shutil.copy(PARAM_FILE, os.path.join(root, "params.py"))
+params_iter, params_not_iter = runner._params_iter_not_iter(p_dict)
+cases_dict, paths = runner._case_paths(root, params_iter)
+inputs = [di.update(**params_not_iter, outdir=path) for di, path in zip(cases_dict, paths)]
+
+# %%
 # ---------------------------------------------------------------
 # 一時コピーを作り，gauss_widths / polarizations / delays を 1 要素に絞る
 tmpdir = tempfile.mkdtemp()
@@ -42,7 +53,6 @@ print("✔  Copied param file to", tmp_param)
 
 # ---------------------------------------------------------------
 # 実行
-from rovibrational_excitation.simulation import runner
 
 t0 = time.perf_counter()
 runner.run_all(tmp_param, parallel=False)
@@ -59,7 +69,7 @@ results_root = sorted(
 
 expect_files = [
     "summary.csv",
-    "gw_50.0/pol_[1, 0]/dly_0.0/rho_t.npy",
+    "duration_50.0/polarization_[1, 0]/t_center_0.0/rho_t.npy",
 ]
 
 missing = [f for f in expect_files if not os.path.exists(os.path.join(results_root, f))]
