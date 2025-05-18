@@ -85,13 +85,7 @@ def _make_root(desc: str) -> str:
 # ----------------------------------------------------------------------
 
 
-def _run_one(
-    duration: float,
-    pol_ser: List[Dict[str, float]],
-    delay: float,
-    outdir: str,
-    p: Dict[str, Any],
-) -> np.ndarray:
+def _run_one(params: Dict[str, Any]) -> np.ndarray:
     """
     1 パラメータセット実行し、population(t) を return
     """
@@ -102,27 +96,38 @@ def _run_one(
     from rovibrational_excitation.core.propagator import schrodinger_propagation
     from linmol_dipole import LinMolDipoleMatrix
 
-    pol = _deserialize_pol(pol_ser)
+    pol = params.get("polarization", np.array([1, 0]))
 
     # ---- Electric field --------------------------------------------
-    time_Efield = np.arange(p["t_start"], p["t_end"] + p["dt"], p["dt"])
+    time_Efield = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
 
     Efield = ElectricField(tlist=time_Efield)
     Efield.add_Efield_disp(
-        envelope_func=gaussian_fwhm,
-        duration=duration,
-        t_center=delay,
-        carrier_freq=p["carrier_freq"],
-        amplitude=p["amplitude"],
+        envelope_func=params.get("envelope_func", gaussian_fwhm),
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
         polarization=pol,
-        gdd=p["gdd"],
-        tod=p["tod"],
+        gdd=params.get("gdd", 0.0),
+        tod=params.get("tod", 0.0),
     )
+    if params.get("add_sinusoidal_mod", False):
+        Efield.add_sinusoidal_mod(
+            center_freq=params["carrier_freq"],
+            amplitude_ratio=params["amplitude_sin_mod"],
+            carrier_freq=params["carrier_freq_sin_mod"],
+            phase_rad=params.get("phase_rad_sin_mod", 0.0),
+            type_mod=params.get("type_sin_mod", "phase"),
+        )
     # ---- Basis & initial state -------------------------------------
-    basis = LinMolBasis(p["V_max"], p["J_max"])
+    basis = LinMolBasis(params["V_max"], params["J_max"], use_M=params.get("use_M", True))
 
     sv = StateVector(basis)
-    sv.set_state((0, 0, 0), 1)
+    initial_states = params.get("initial_states", [0])
+    for i_s in initial_states:
+        state = basis.get_state(i_s)
+        sv.set_state(state, 1)
     sv.normalize()
 
     dm = DensityMatrix(basis)
@@ -131,42 +136,51 @@ def _run_one(
     # ---- Hamiltonian & dipole matrices -----------------------------
     H0 = generate_H0_LinMol(
         basis,
-        omega_rad_phz=p["omega"],
-        delta_omega_rad_phz=p["delta_omega"],
-        B_rad_phz=p["B"],
-        alpha_rad_phz=p["alpha"],
+        omega_rad_phz=params["omega_rad_phz"],
+        delta_omega_rad_phz=params.get("delta_omega_rad_phz", 0),
+        B_rad_phz=params.get("B_rad_phz", 0),
+        alpha_rad_phz=params.get("alpha_rad_phz", 0),
     )
 
     dip = LinMolDipoleMatrix(
         basis,
-        mu0=p["mu0_Cm"],
-        potential_type=p["potential_type"],
-        backend=p["backend"],
-        dense=p["dense"],
+        mu0=params["mu0_Cm"],
+        potential_type=params.get("potential_type", "harmonic"),
+        backend=params.get("backend", "numpy"),
+        dense=params.get("dense", True),
     )
 
     # ---- Propagation -----------------------------------------------
-    time_psi, psi_t = schrodinger_propagation(
+    return_traj = params.get("return_traj", True)
+    return_time_psi = params.get("return_time_psi", True)
+    result = schrodinger_propagation(
         H0,
         Efield,
         dip,
         sv.data,
-        axes=p["axes"],                # e.g. "xy"
-        return_traj=True,
-        sample_stride=p["sample_stride"],
-        backend=p["backend"],
+        axes=params.get("axes", "xy"),                # e.g. "xy"
+        return_traj=return_traj,
+        return_time_psi=return_time_psi,
+        sample_stride=params.get("sample_stride", 1),
+        backend=params.get("backend", "numpy"),
     )
-    pop_t = np.abs(psi_t) ** 2
     # ---- Save -------------------------------------------------------
-    np.save(os.path.join(outdir, "time_psi.npy"), time_psi)
-    np.save(os.path.join(outdir, "psi_trajectory.npy"), psi_t)
+    outdir = params["outdir"]
+    if return_time_psi:
+        time_psi = result[0]
+        psi_t = result[1]
+        np.save(os.path.join(outdir, "time_psi.npy"), time_psi)
+    else:
+        psi_t = result
+    if return_traj:
+        np.save(os.path.join(outdir, "psi_trajectory.npy"), psi_t)
+    pop_t = np.abs(psi_t) ** 2
     np.save(os.path.join(outdir, "pop_trajectory.npy"), pop_t)
     np.save(os.path.join(outdir, "time_Efield.npy"), time_Efield)
     np.save(os.path.join(outdir, "Efield_vector.npy"), Efield.Efield)
 
     with open(os.path.join(outdir, "parameters.json"), "w") as f:
-        json.dump(p, f, indent=2)
-
+        json.dump(params, f, indent=2)
     return pop_t
 
 
@@ -175,15 +189,35 @@ def _run_one(
 # ----------------------------------------------------------------------
 
 
-def _case_paths(root: str, gw, pols, dlys):
-    cases = list(itertools.product(gw, pols, dlys))
+def _params_iter_not_iter(params: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+    params_iter = {}
+    params_not_iter = {}
+    for k, v in params.items():
+        if hasattr(v, "__iter__") and not isinstance(v, str):
+            if len(v) > 0:
+                params_iter[k] = v
+            else:
+                params_not_iter[k] = v
+        else:
+            params_not_iter[k] = v
+    return params_iter, params_not_iter
+
+def _case_paths(root: str, params) -> Tuple[List[Tuple], List[str]]:
+    keys = params.keys()
+    values = params.values()
+    cases = list(itertools.product(*values))
     paths = []
-    for g, p, d in cases:
-        rel = f"gw_{g}/pol_{p}/dly_{d}"
-        out = os.path.join(root, rel)
+    cases_dict = []
+    for case in cases:
+        relpath = ""
+        for c, k in zip(case, keys):
+            relpath = os.path.join(relpath, f"{k}_{c}")
+        out = os.path.join(root, relpath)
         os.makedirs(out, exist_ok=True)
         paths.append(out)
-    return cases, paths
+        cases_dict.append(dict(zip(keys, case)))
+    return cases_dict, paths
+
 
 
 # ----------------------------------------------------------------------
@@ -197,21 +231,9 @@ def run_all(param_path: str, parallel: bool = False):
 
     root = _make_root(params.description)
     shutil.copy(param_path, os.path.join(root, "params.py"))
-
-    cases, outdirs = _case_paths(
-        root, params.durations, params.polarizations, params.delays
-    )
-    inputs = [
-        (
-            gw,
-            _serialize_pol(pol),
-            dly,
-            out,
-            p_dict,
-        )
-        for (gw, pol, dly), out in zip(cases, outdirs)
-    ]
-
+    params_iter, params_not_iter = _params_iter_not_iter(p_dict)
+    cases_dict, paths = _case_paths(root, params_iter)
+    inputs = [di.update(**params_not_iter, outdir=path) for di, path in zip(cases_dict, paths)]
     if parallel:
         with Pool(cpu_count()) as pool:
             results = pool.starmap(_run_one, inputs)
@@ -220,15 +242,8 @@ def run_all(param_path: str, parallel: bool = False):
 
     # ---- summary CSV ------------------------------------------------
     rows = []
-    for (gw, pol, dly), pop in zip(cases, results):
-        rows.append(
-            dict(
-                gauss_width=gw,
-                polarization=str(pol),
-                delay=dly,
-                final_population_sum=float(np.sum(pop[-1])),
-            )
-        )
+    for case, pop in zip(cases_dict, results):
+        rows.append(case.update(final_population_sum=float(np.sum(pop[-1]))))
     pd.DataFrame(rows).to_csv(os.path.join(root, "summary.csv"), index=False)
 
 

@@ -68,7 +68,7 @@ def _prepare_args(
         raise ValueError("axes must be like 'xy', 'zx', ...")
 
     ax0, ax1 = axes
-    xp = _cp if (_cp is not None and isinstance(H0, (_cp.ndarray,))) else np
+    xp = _cp if _cp is not None else np
 
     dt_half = E.dt if dt is None else dt / 2
     steps   = E.steps_state
@@ -78,7 +78,7 @@ def _prepare_args(
     mu_a = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax0)))
     mu_b = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax1)))
 
-    return H0, mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
+    return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
 
 # ---------------------------------------------------------------------
 # RK4 kernels

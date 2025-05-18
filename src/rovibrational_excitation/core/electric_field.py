@@ -52,6 +52,30 @@ class ElectricField:
         Efield_disp = apply_dispersion(self.tlist, Efield, carrier_freq, gdd, tod)
         Efield_vec = np.real(np.outer(Efield_disp, polarization))
         self.Efield += Efield_vec
+    
+    def add_sinusoidal_mod(
+        self,
+        center_freq: float,
+        amplitude_ratio: float,
+        carrier_freq: float,
+        phase_rad: float = 0.0,
+        type_mod: str = "phase",
+    ):
+        """
+        Parameters
+        ----------
+        center_freq : float
+            中心周波数（rad/fs）
+        amplitude_ratio : float
+            振幅比
+        carrier_freq : float
+            キャリア周波数（rad/fs）
+        phase_rad : float, optional
+            位相（rad）, by default 0.0
+        type_mod : str, optional
+            "phase" or "amplitude", by default "phase"
+        """
+        self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude_ratio, carrier_freq, phase_rad, type_mod)
 
     def plot(self):
         import matplotlib.pyplot as plt
@@ -63,6 +87,22 @@ class ElectricField:
         ax[0].set_ylabel(r"$E_x$ (V/m)")
         ax[1].set_ylabel(r"$E_y$ (V/m)")
         plt.show()
+
+def apply_sinusoidal_mod(tlist, Efield, center_freq, amplitude, carrier_freq, phase_rad=0.0, type_mod="phase"):
+    freq = fftfreq(len(tlist), d=(tlist[1] - tlist[0]))
+    E_freq = fft(Efield, axis=0)
+    factor = np.where(
+            freq >= 0,
+            amplitude * np.sin(carrier_freq * (freq - center_freq) + phase_rad) + amplitude,
+            -amplitude * np.sin(carrier_freq * (freq + center_freq) + phase_rad) - amplitude
+            ).reshape((len(freq), 1))
+    if type_mod == "phase":
+        factor = np.clip(factor, -1e4, 1e4)  # 位相のクリッピング
+        E_freq_mod = E_freq * np.exp(-1j * factor)
+    else:
+        factor = np.abs(factor)
+        E_freq_mod = E_freq * factor
+    return np.real(ifft(E_freq_mod))
 
 def apply_dispersion(tlist, Efield, center_freq, gdd=0.0, tod=0.0):
     """
