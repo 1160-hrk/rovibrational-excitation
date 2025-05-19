@@ -66,8 +66,8 @@ V_max = 2
 J_max = 4
 
 basis = rve.LinMolBasis(
-            V_max=2,
-            J_max=4,
+            V_max=V_max,
+            J_max=J_max,
             use_M = True,
             omega_rad_phz = omega01_rad_phz,
             delta_omega_rad_phz = delta_omega_rad_phz
