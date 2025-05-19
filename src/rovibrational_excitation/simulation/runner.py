@@ -20,7 +20,7 @@ import types
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Mapping
 
 import numpy as np
 import pandas as pd
@@ -79,27 +79,43 @@ def _deserialize_pol(seq: list[dict | float | int | complex]) -> np.ndarray:
 # ---------------------------------------------------------------------
 # パラメータファイル読み込み
 # ---------------------------------------------------------------------
-def _load_params(path: str):
+def _load_params_file(path: str) -> Dict[str, Any]:
     spec = importlib.util.spec_from_file_location("params", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)  # type: ignore[arg-type]
-    return mod
+    return {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
 
 
 # ---------------------------------------------------------------------
 # sweep する / しない変数を分離してデータ点展開
 # ---------------------------------------------------------------------
 def _expand_cases(base: Dict[str, Any]):
-    """list, tuple, ndarray など *イテラブル* を sweep 対象とみなす"""
-    sweep_keys = [k for k, v in base.items()
-                  if hasattr(v, "__iter__") and not isinstance(v, (str, bytes))]
-    static = {k: v for k, v in base.items() if k not in sweep_keys}
+    sweep_keys: list[str] = []
+    static: Dict[str, Any] = {}
+
+    for k, v in base.items():
+        if isinstance(v, (str, bytes)):
+            static[k] = v
+            continue
+        if hasattr(v, "__iter__"):
+            try:
+                if len(v) > 1:              # ★ ここが「>1」で判定
+                    sweep_keys.append(k)
+                    continue
+            except TypeError:               # len() 不可 (ジェネレータ等)
+                pass
+        static[k] = v                       # 固定値に回す
+
+    if not sweep_keys:                      # sweep 無し → 1 ケースのみ
+        yield static, []
+        return
 
     iterables = (base[k] for k in sweep_keys)
     for combo in itertools.product(*iterables):
         d = static.copy()
         d.update(dict(zip(sweep_keys, combo)))
-        yield d, sweep_keys   # sweep_keys を戻しておく
+        yield d, sweep_keys                 # sweep_keys を返す
+
 
 # --- ラベル整形 -------------------------------------------
 def _label(v: Any) -> str:
@@ -226,17 +242,30 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
 # ---------------------------------------------------------------------
 # メイン：全ケース実行
 # ---------------------------------------------------------------------
-def run_all(param_path: str, *, nproc: int | None = None, save: bool = True, dry_run: bool = False):
-    mod = _load_params(param_path)
-    base_dict = {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
-    
-    if save:
-        root = _make_root(mod.description)
-        shutil.copy(param_path, root / "params.py")
+def run_all(
+    params: str | Mapping[str, Any],
+    *,
+    nproc: int | None = None,
+    save: bool = True,
+    dry_run: bool = False
+    ):
+    # ---------- パラメータ読み込み ---------------------------------
+    if isinstance(params, str):
+        base_dict = _load_params_file(params)
+        description = base_dict.get("description", Path(params).stem)
+        param_file_path = Path(params)
+    elif isinstance(params, Mapping):
+        base_dict = dict(params)
+        description = base_dict.get("description", "run")
+        param_file_path = None
+    else:
+        raise TypeError("params must be filepath str or dict-like")
+    # ---------- ルートディレクトリ ---------------------------------
+    root = _make_root(description) if save else None
+    if save and param_file_path is not None:
+        shutil.copy(param_file_path, root / "params.py")
 
-    # --------------------------------------------------------------
-    # ケース展開 & 出力ディレクトリ決定
-    # --------------------------------------------------------------
+    # ---------- ケース展開 -----------------------------------------
     cases: List[Dict[str, Any]] = []
     for case, sweep_keys in _expand_cases(base_dict):
         case["save"] = save
@@ -251,17 +280,13 @@ def run_all(param_path: str, *, nproc: int | None = None, save: bool = True, dry
         print(f"[Dry-run] would execute {len(cases)} cases")
         return
 
-    # --------------------------------------------------------------
-    # 実行
-    # --------------------------------------------------------------
+    ## ---------- 実行 -----------------------------------------------
     nproc = min(cpu_count(), nproc or 1)
     runner = Pool(nproc).map if nproc > 1 else map
     results = list(tqdm(runner(_run_one, cases), total=len(cases), desc="Cases"))
 
-    # --------------------------------------------------------------
-    # summary.csv
-    # --------------------------------------------------------------
-    if save:
+    # ---------- summary.csv ----------------------------------------
+    if save and root is not None:
         rows: List[Dict[str, Any]] = []
         for case, pop in zip(cases, results):
             row = {k: v for k, v in case.items() if k != "outdir"}
