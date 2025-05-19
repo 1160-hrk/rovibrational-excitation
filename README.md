@@ -57,11 +57,11 @@ import rovibrational_excitation as rve
 # --- 1. Basis & dipole matrices ----------------------------------
 c_vacuum = 299792458 * 1e2 / 1e15  # cm/fs
 debye_unit = 3.33564e-30                       # 1 D → C·m
-omega01_rad_phz = 2349*2*np.pi*c_vacuum
-delta_omega_rad_phz = 25*2*np.pi*c_vacuum
+Omega01_rad_phz = 2349*2*np.pi*c_vacuum
+Delta_omega_rad_phz = 25*2*np.pi*c_vacuum
 B_rad_phz = 0.39e-3*2*np.pi*c_vacuum
-mu0_Cm = 0.3 * debye_unit                      # 0.3 Debye 相当
-potential_type = "harmonic"  # or "morse"
+Mu0_Cm = 0.3 * debye_unit                      # 0.3 Debye 相当
+Potential_type = "harmonic"  # or "morse"
 V_max = 2
 J_max = 4
 
@@ -69,12 +69,12 @@ basis = rve.LinMolBasis(
             V_max=V_max,
             J_max=J_max,
             use_M = True,
-            omega_rad_phz = omega01_rad_phz,
-            delta_omega_rad_phz = delta_omega_rad_phz
+            omega_rad_phz = Omega01_rad_phz,
+            delta_omega_rad_phz = Delta_omega_rad_phz
             )           # |v J M⟩ direct-product
 
 dip   = rve.LinMolDipoleMatrix(
-            basis, mu0=mu0_Cm, potential_type=potential_type,
+            basis, mu0=Mu0_Cm, potential_type=Potential_type,
             backend="numpy", dense=False)            # CSR on GPU
 
 mu_x  = dip.mu_x            # lazy-built, cached thereafter
@@ -84,8 +84,8 @@ mu_z  = dip.mu_z
 # --- 2. Hamiltonian ----------------------------------------------
 H0 = rve.generate_H0_LinMol(
         basis,
-        omega_rad_phz       = omega01_rad_phz,
-        delta_omega_rad_phz = delta_omega_rad_phz
+        omega_rad_phz       = Omega01_rad_phz,
+        delta_omega_rad_phz = Delta_omega_rad_phz
         B_rad_phz           = B_rad_phz,
 )
 
@@ -142,7 +142,7 @@ amplitude      = 1.0e9                        # V/m
 
 # --- molecular constants ----------------------------------------
 V_max, J_max   = 2, 4
-omega_rad_phz  = carrier_freq
+omega_rad_phz  = carrier_freq * 2 * np.pi
 mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
 ```
 
