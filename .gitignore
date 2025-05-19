@@ -11,13 +11,8 @@ __pycache__/
 *.svg
 *.npy
 *.npz
-<<<<<<< HEAD
 scripts/for_rovibrational_excitation/results/
 examples/results/
-=======
-/scripts/for_rovibrational_excitation/results/
-/examples/results/
->>>>>>> feature/runner-modified
 /results/
 
 
