@@ -74,8 +74,8 @@ basis = rve.LinMolBasis(
             )           # |v J M⟩ direct-product
 
 dip   = rve.LinMolDipoleMatrix(
-            basis, mu0=mu0_Cm, potential_type="harmonic",
-            backend="cupy", dense=False)            # CSR on GPU
+            basis, mu0=mu0_Cm, potential_type=potential_type,
+            backend="numpy", dense=False)            # CSR on GPU
 
 mu_x  = dip.mu_x            # lazy-built, cached thereafter
 mu_y  = dip.mu_y
