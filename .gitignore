@@ -11,7 +11,8 @@ __pycache__/
 *.svg
 *.npy
 *.npz
-scripts/for_rovibrational_excitation/results/
+/scripts/for_rovibrational_excitation/results/
+/examples/results/
 /results/
 
 

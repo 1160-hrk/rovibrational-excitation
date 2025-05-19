@@ -31,7 +31,7 @@ tmp_param = os.path.join(tmpdir, "param.py")
 # 実行
 
 t0 = time.perf_counter()
-results = runner.run_all(PARAM_FILE, save=False)
+results = runner.run_all(PARAM_FILE, save=True)
 dt = time.perf_counter() - t0
 
 print(f"✔  runner.run_all finished in {dt:.2f} s")

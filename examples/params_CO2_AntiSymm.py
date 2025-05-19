@@ -40,7 +40,7 @@ carrier_freq = 2349.0 * (3e10*1e-15)  # 2349 cm⁻¹ → /fs
 amplitude    = 1e11                          # V·m⁻¹
 gdd          = 0.0                            # fs²
 tod          = 0.0                            # fs³
-t_center        = 500.0                       # fs
+t_center        = [500.0]                       # fs
 
 axes         = "xy"                           # Ex↔μ_x, Ey↔μ_y
 

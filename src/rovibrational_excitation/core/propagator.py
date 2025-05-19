@@ -113,7 +113,7 @@ def schrodinger_propagation(
         else:
             return rk4(*rk4_args, sample_stride)
     else:
-        return rk4(*rk4_args)
+        return rk4(*rk4_args).reshape((1, len(psi0))) 
 
 # ---------------------------------------------------------------------
 def mixed_state_propagation(
