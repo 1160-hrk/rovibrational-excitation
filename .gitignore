@@ -12,6 +12,7 @@ __pycache__/
 *.npy
 *.npz
 scripts/for_rovibrational_excitation/results/
+examples/results/
 /results/
 
 
