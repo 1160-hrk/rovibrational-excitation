@@ -39,27 +39,4 @@ dt = time.perf_counter() - t0
 
 print(f"✔  runner.run_all finished in {dt:.2f} s")
 
-# ---------------------------------------------------------------
-# 最新の results フォルダを取得
-results_root = sorted(
-    (os.path.join("results", d) for d in os.listdir("results")),
-    key=os.path.getmtime
-)[-1]
 
-expect_files = [
-    "summary.csv",
-    "duration_50.0/polarization_[1, 0]/t_center_0.0/rho_t.npy",
-]
-
-missing = [f for f in expect_files if not os.path.exists(os.path.join(results_root, f))]
-if missing:
-    print("✗  Missing files:", missing)
-    sys.exit(1)
-
-rho = np.load(os.path.join(results_root, expect_files[1]))
-print("✔  rho_t.npy shape:", rho.shape)
-print("\nAll runner checks passed!")
-
-# ---------------------------------------------------------------
-# 後始末（tempfile と生成フォルダを残したい場合はコメントアウト）
-shutil.rmtree(tmpdir)

@@ -28,4 +28,5 @@ configs/config.json
 /dist/
 /build/
 /*.egg-info/
+/src/*.egg-info/
 

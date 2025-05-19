@@ -1,64 +1,33 @@
-[project]
-name = "rovibrational-excitation"
-version = "0.1.0"
-description = "Simulation library for electric-field-driven rovibrational excitation of molecules"
-readme = "README.md"
-authors = [
-  { name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com" }
-]
-license = { text = "MIT" }
-requires-python = ">=3.9"
-
-# -------------------------
-# 必須（CPU 版のみで動く）
-# -------------------------
-dependencies = [
-  "numpy>=1.22",
-  "scipy>=1.10",
-  "matplotlib>=3.5",
-  "numba>=0.57"
-]
-[tool.poetry.dependencies]
-# すでに numpy, scipy, numba, cupy などがある前提で…
-linmol_dipole = {path = "src/linmol_dipole", develop = true}
-# -------------------------
-# 追加オプション
-# -------------------------
-[project.optional-dependencies]
-# CUDA 12.x 用ビルド（他のバージョンは cupy-cuda11x などに置き換える）
-cuda12 = ["cupy-cuda12x>=13.0"]   # NVIDIA GPU + CUDA 12.x 仕様
-# CUDA 11.x 用
-cuda11 = ["cupy-cuda11x>=12.0"]
-# ROCm 6.x 用（AMD GPU）
-rocm   = ["cupy-rocm-6-0>=13.0"]
-# macOS Metal 用（CuPy v13 以降で正式対応）
-metal  = ["cupy-metal>=13.0"]      # 将来の Metal 対応 wheel が前提
-
-# 開発・テスト向け
-dev = [
-  "pytest>=7.0",
-  "mypy>=1.0",
-  "black>=23.0",
-  "flake8>=6.0",
-  "ipython>=8.0"
-]
-
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "rovibrational_excitation"
+version = "0.0.4"        # bump!
+description = "Rovibrational wave-packet simulation toolkit"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com"}]
+license = {text = "MIT"}   # 例
+
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.10",
+    "numba>=0.59",
+    "cupy; extra == \"gpu\"",
+    "pandas",
+    "tqdm",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["rovibrational_excitation"]
 
-[tool.mypy]
-python_version = "3.11"
-strict = true
-files = ["src/rovibrational_excitation"]
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["rovibrational_excitation*", "linmol_dipole*", "rot_tdms*", "vib_tdms*"]
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
-[tool.black]
-line-length = 88
-target-version = ["py311"]
-
-[tool.flake8]
-max-line-length = 88
+[project.optional-dependencies]
+gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
+dev = ["pytest", "build", "twine"]

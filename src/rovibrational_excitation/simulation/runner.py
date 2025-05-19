@@ -32,7 +32,9 @@ except ImportError:  # 進捗バーが無くても動く
 
 
 # ---------------------------------------------------------------------
-# JSON 安全変換
+# JSON変換の安全化
+# 複素数に対応していないので、実部・虚部を分けて辞書化
+# list, tuple, np.ndarrayなども再帰的に変換
 # ---------------------------------------------------------------------
 def _json_safe(obj: Any) -> Any:
     """complex / ndarray などを JSON 可能へ再帰変換"""
@@ -145,6 +147,14 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
     )
+    if params.get("Sinusoidal_modulation", False):
+        E.add_sinusoidal_mod(
+            center_freq=params["carrier_freq"],
+            amplitude=params["amplitude_sin_mod"],
+            carrier_freq=params["carrier_freq_sin_mod"],
+            phase_rad=params.get("phase_rad_sin_mod", 0.0),
+            type_mod=params.get("type_mod_sin_mod", "phase"),
+        )
 
     # ---------- Basis / initial state ------------------------------
     basis = LinMolBasis(
@@ -246,7 +256,6 @@ def run_all(param_path: str, *, nproc: int | None = None, save: bool = True, dry
             row = {k: v for k, v in case.items() if k != "outdir"}
             row.update({f"pop_{i}": float(p) for i, p in enumerate(pop[-1])})
             rows.append(row)
-
         pd.DataFrame(rows).to_csv(root / "summary.csv", index=False)
     return results
 

@@ -56,7 +56,7 @@ class ElectricField:
     def add_sinusoidal_mod(
         self,
         center_freq: float,
-        amplitude_ratio: float,
+        amplitude: float,
         carrier_freq: float,
         phase_rad: float = 0.0,
         type_mod: str = "phase",
@@ -75,7 +75,7 @@ class ElectricField:
         type_mod : str, optional
             "phase" or "amplitude", by default "phase"
         """
-        self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude_ratio, carrier_freq, phase_rad, type_mod)
+        self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude, carrier_freq, phase_rad, type_mod)
 
     def plot(self):
         import matplotlib.pyplot as plt
