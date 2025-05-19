@@ -75,7 +75,7 @@ basis = rve.LinMolBasis(
 
 dip   = rve.LinMolDipoleMatrix(
             basis, mu0=Mu0_Cm, potential_type=Potential_type,
-            backend="numpy", dense=False)            # CSR on GPU
+            backend="numpy", dense=True)            # CSR on GPU
 
 mu_x  = dip.mu_x            # lazy-built, cached thereafter
 mu_y  = dip.mu_y
@@ -85,7 +85,7 @@ mu_z  = dip.mu_z
 H0 = rve.generate_H0_LinMol(
         basis,
         omega_rad_phz       = Omega01_rad_phz,
-        delta_omega_rad_phz = Delta_omega_rad_phz
+        delta_omega_rad_phz = Delta_omega_rad_phz,
         B_rad_phz           = B_rad_phz,
 )
 
