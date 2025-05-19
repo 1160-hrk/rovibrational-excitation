@@ -1,5 +1,5 @@
 """
-linmol_dipole/builder.py
+rovibrational_excitation.dipole.linmol/builder.py
 ========================
 μ-axis 行列 (x, y, z) を高速生成
 
@@ -22,9 +22,9 @@ except ImportError:
     _cp = None
     _csp = None
 
-from rot_tdms.jm import tdm_jm_x, tdm_jm_y, tdm_jm_z
-from vib_tdms.harmonic import tdm_vib_harm           # Python 版
-from vib_tdms.morse    import tdm_vib_morse          # Python 版
+from rovibrational_excitation.dipole.rot.jm import tdm_jm_x, tdm_jm_y, tdm_jm_z
+from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm                                # Python 版
+from rovibrational_excitation.dipole.vib.morse    import tdm_vib_morse, omega01_domega_to_N          # Python 版
 
 # ----------------------------------------------------------------------
 # 型エイリアス
@@ -198,7 +198,8 @@ def build_mu(
     axis_idx     = "xyz".index(axis)
     vib_is_morse = pot == "morse"
     vib_func     = tdm_vib_morse if vib_is_morse else tdm_vib_harm
-
+    if vib_is_morse:
+        omega01_domega_to_N(basis.omega_rad_phz, basis.delta_omega_rad_phz)
     # ---- GPU ---------------------------------------------------------
     if backend == "cupy":
         if _cp is None:

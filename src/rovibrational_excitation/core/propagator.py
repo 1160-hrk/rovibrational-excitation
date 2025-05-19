@@ -22,7 +22,7 @@ except ImportError:
 if TYPE_CHECKING:
     Array = Union[np.ndarray, "_cp.ndarray"]
     from .electric_field import ElectricField
-    from linmol_dipole.cache import LinMolDipoleMatrix
+    from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 else:
     Array = np.ndarray  # runtime dummy
 

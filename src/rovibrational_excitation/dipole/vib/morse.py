@@ -1,11 +1,12 @@
 import numpy as np
 
 global N
-N = 100
+N = 200
 
 def omega01_domega_to_N(omega01, domega):
     global N
-    N = (omega01+domega)/domega-1/2
+    if domega != 0:
+        N = (omega01+domega)/domega-1/2
     return None
 
 def tdm_vib_morse(v1, v2):

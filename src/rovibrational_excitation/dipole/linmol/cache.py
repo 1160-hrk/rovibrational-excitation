@@ -1,7 +1,7 @@
 """
-linmol_dipole/cache.py
+rovibrational_excitation.dipole.linmol/cache.py
 ======================
-Lazy, cached wrapper around ``linmol_dipole.builder`` that supports
+Lazy, cached wrapper around ``rovibrational_excitation.dipole.linmol.builder`` that supports
 
 * NumPy / CuPy backend
 * dense or CSR-sparse matrices
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 else:
     Array = np.ndarray                     # runtime alias (for annotations)
 
-from linmol_dipole.builder import build_mu
+from rovibrational_excitation.dipole.linmol.builder import build_mu
 
 
 # ----------------------------------------------------------------------

@@ -1,5 +1,5 @@
 """
-rot_tdms/jm.py  ―  rigid-rotor TDM matrix elements |J M⟩ ↔ |J' M'⟩
+rovibrational_excitation.dipole.rot/jm.py  ―  rigid-rotor TDM matrix elements |J M⟩ ↔ |J' M'⟩
 ===================================================================
 
 * 参照式（Hönl–London，線形分子）をそのまま実装  

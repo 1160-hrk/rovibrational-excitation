@@ -132,7 +132,8 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
         gaussian_fwhm,
     )
     from rovibrational_excitation.core.propagator import schrodinger_propagation
-    from linmol_dipole import LinMolDipoleMatrix
+    from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+    from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
 
     # ---------- Electric field -------------------------------------
     t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
@@ -168,13 +169,23 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     sv.normalize()
 
     # ---------- Hamiltonian & dipole -------------------------------
+    delta_omega_rad_phz = params.get("delta_omega_rad_phz", 0.0)
+    potential_type = params.get("potential_type", "harmonic")
+    
+    if delta_omega_rad_phz == 0.0:
+        params.update({"potential_type": "harmonic"})
+
+    if potential_type == 'morse':
+        omega01_domega_to_N(params["omega_rad_phz"], delta_omega_rad_phz)
+    
     H0 = generate_H0_LinMol(
         basis,
         omega_rad_phz=params["omega_rad_phz"],
-        delta_omega_rad_phz=params.get("delta_omega_rad_phz", 0.0),
+        delta_omega_rad_phz=delta_omega_rad_phz,
         B_rad_phz=params.get("B_rad_phz", 0.0),
         alpha_rad_phz=params.get("alpha_rad_phz", 0.0),
     )
+    
     dip = LinMolDipoleMatrix(
         basis,
         mu0=params["mu0_Cm"],

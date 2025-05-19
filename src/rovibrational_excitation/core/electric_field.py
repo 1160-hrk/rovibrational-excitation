@@ -77,6 +77,36 @@ class ElectricField:
         """
         self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude, carrier_freq, phase_rad, type_mod)
 
+    def add_arbitrary_mod(self, mod_spectrum: np.ndarray, mod_type: str = "phase"):
+        """
+        Parameters
+        ----------
+        mod_spectrum : np.ndarray
+            モジュレーションスペクトル（len(tlist), 2） or (len(tlist),1)
+        mod_type : str, optional
+            "phase" or "amplitude", by default "phase"
+        """
+        if len(mod_spectrum.shape) != len(self.Efield.shape) and mod_spectrum.shape[0] != self.Efield.shape[0]:
+            raise ValueError("mod_spectrum shape mismatch")
+        E_freq = fft(self.Efield, axis=0)
+        if mod_type == "phase":
+            mod_spectrum = np.clip(mod_spectrum, -1e4, 1e4)
+            E_freq_mod = E_freq * np.exp(-1j * mod_spectrum)
+        elif mod_type == "amplitude":
+            mod_spectrum = np.abs(mod_spectrum)
+            E_freq_mod = E_freq * mod_spectrum
+        return np.real(ifft(E_freq_mod, axis=0))
+    def add_arbitrary_Efield(self, Efield: np.ndarray):
+        """
+        Parameters
+        ----------
+        Efield : np.ndarray (len(tlist), 2)
+            電場（V/m）
+        """
+        if Efield.shape != self.Efield.shape:
+            raise ValueError("Efield shape mismatch")
+        self.Efield += Efield
+    
     def plot(self):
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(2, 1, sharex=True)
