@@ -55,10 +55,26 @@ import numpy as np
 import rovibrational_excitation as rve
 
 # --- 1. Basis & dipole matrices ----------------------------------
-basis = rve.LinMolBasis(V_max=2, J_max=4)           # |v J M⟩ direct-product
+c_vacuum = 299792458 * 1e2 / 1e15  # cm/fs
+debye_unit = 3.33564e-30                       # 1 D → C·m
+omega01_rad_phz = 2349*2*np.pi*c_vacuum
+delta_omega_rad_phz = 25*2*np.pi*c_vacuum
+B_rad_phz = 0.39e-3*2*np.pi*c_vacuum
+mu0_Cm = 0.3 * debye_unit                      # 0.3 Debye 相当
+potential_type = "harmonic"  # or "morse"
+V_max = 2
+J_max = 4
+
+basis = rve.LinMolBasis(
+            V_max=2,
+            J_max=4,
+            use_M = True,
+            omega_rad_phz = omega01_rad_phz,
+            delta_omega_rad_phz = delta_omega_rad_phz
+            )           # |v J M⟩ direct-product
 
 dip   = rve.LinMolDipoleMatrix(
-            basis, mu0=0.4, potential_type="harmonic",
+            basis, mu0=mu0_Cm, potential_type="harmonic",
             backend="cupy", dense=False)            # CSR on GPU
 
 mu_x  = dip.mu_x            # lazy-built, cached thereafter
@@ -68,8 +84,9 @@ mu_z  = dip.mu_z
 # --- 2. Hamiltonian ----------------------------------------------
 H0 = rve.generate_H0_LinMol(
         basis,
-        omega_rad_phz=2349*2*np.pi*1e12*1e-15,
-        B_rad_phz    =0.39e-3*2*np.pi*1e12*1e-15,
+        omega_rad_phz       = omega01_rad_phz,
+        delta_omega_rad_phz = delta_omega_rad_phz
+        B_rad_phz           = B_rad_phz,
 )
 
 # --- 3. Electric field -------------------------------------------
@@ -79,7 +96,7 @@ E.add_Efield_disp(
         envelope_func=rve.core.electric_field.gaussian_fwhm,
         duration=50.0,             # FWHM (fs)
         t_center=0.0,
-        carrier_freq=2349*2*np.pi*1e12*1e-15,   # rad/fs
+        carrier_freq=2349*2*np.pi*c_vacuum,   # rad/fs
         amplitude=1.0,
         polarization=[1.0, 0.0],   # x-pol.
 )
