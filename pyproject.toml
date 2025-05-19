@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rovibrational_excitation"
-version = "0.0.4"        # bump!
+version = "0.1.0"        # bump!
 description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"
 requires-python = ">=3.9"
