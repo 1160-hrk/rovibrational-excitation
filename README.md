@@ -1,0 +1,185 @@
+# rovibrational-excitation
+
+High-performance Python package for **time-dependent quantum dynamics** of
+linear molecules (rotation × vibration) driven by femtosecond–picosecond
+laser pulses.
+
+<div align="center">
+
+| CPU / GPU (CuPy) | Numba-JIT RK4 propagator | Lazy, cached dipole matrices |
+|------------------|--------------------------|------------------------------|
+
+</div>
+
+---
+
+## Key features
+
+* **Runge–Kutta 4 (RK-4)** propagators for the Schrödinger and
+  Liouville–von Neumann equations (`complex128`, cache-friendly).
+* **Lazy, high-speed construction** of transition-dipole matrices  
+  (`rovibrational_excitation.dipole.*`)  
+  * rigid-rotor + harmonic / Morse vibration  
+  * Numba (CPU) or CuPy (GPU) backend
+* **Vector electric-field objects** with Gaussian envelopes, chirp, optional
+  sinusoidal modulation.
+* **Batch runner** for pump–probe / parameter sweeps with automatic
+  directory creation, progress-bar and compressed output (`.npz`).
+* 100 % pure-Python, **no compiled extension to ship** (Numba
+  compiles at runtime).
+
+---
+
+## Installation
+
+```bash
+# From PyPI  (stable)
+pip install rovibrational-excitation          # installs sub-packages as well
+
+# Or from GitHub (main branch, bleeding-edge)
+pip install git+https://github.com/yourname/rovibrational-excitation.git
+````
+
+> **CuPy (optional)** – for GPU acceleration
+>
+> ```bash
+> pip install cupy-cuda12x     # pick the wheel that matches your CUDA
+> ```
+
+---
+
+## Quick start : library API
+
+```python
+import numpy as np
+import rovibrational_excitation as rve
+
+# --- 1. Basis & dipole matrices ----------------------------------
+basis = rve.LinMolBasis(V_max=2, J_max=4)           # |v J M⟩ direct-product
+
+dip   = rve.LinMolDipoleMatrix(
+            basis, mu0=0.4, potential_type="harmonic",
+            backend="cupy", dense=False)            # CSR on GPU
+
+mu_x  = dip.mu_x            # lazy-built, cached thereafter
+mu_y  = dip.mu_y
+mu_z  = dip.mu_z
+
+# --- 2. Hamiltonian ----------------------------------------------
+H0 = rve.generate_H0_LinMol(
+        basis,
+        omega_rad_phz=2349*2*np.pi*1e12*1e-15,
+        B_rad_phz    =0.39e-3*2*np.pi*1e12*1e-15,
+)
+
+# --- 3. Electric field -------------------------------------------
+t  = np.linspace(-200, 200, 4001)                   # fs
+E  = rve.ElectricField(tlist=t)
+E.add_Efield_disp(
+        envelope_func=rve.core.electric_field.gaussian_fwhm,
+        duration=50.0,             # FWHM (fs)
+        t_center=0.0,
+        carrier_freq=2349*2*np.pi*1e12*1e-15,   # rad/fs
+        amplitude=1.0,
+        polarization=[1.0, 0.0],   # x-pol.
+)
+
+# --- 4. Initial state |v=0,J=0,M=0⟩ ------------------------------
+from rovibrational_excitation.core.states import StateVector
+psi0 = StateVector(basis)
+psi0.set_state((0,0,0), 1.0)
+psi0.normalize()
+
+# --- 5. Time propagation (Schrödinger) ---------------------------
+psi_t = rve.schrodinger_propagation(
+            H0, E, dip,
+            psi0.data,
+            axes="xy",              # Ex→μx, Ey→μy
+            sample_stride=10,
+            backend="numpy")        # or "cupy"
+
+population = np.abs(psi_t)**2
+print(population.shape)            # (Nt, dim)
+```
+
+---
+
+## Quick start : batch runner
+
+1. **Create a parameter file** (`params_CO2.py`)
+
+```python
+# description is used in results/<timestamp>_<description>/
+description = "CO2_antisymm_stretch"
+
+# --- time axis (fs) ---------------------------------------------
+t_start, t_end, dt = -200.0, 200.0, 0.1
+
+# --- electric-field scan ----------------------------------------
+duration       = [50.0, 80.0]                 # Gaussian FWHM (fs)
+polarization   = [[1,0], [1/2**0.5,1j/2**0.5]]
+t_center       = [0.0, 100.0]
+
+carrier_freq   = 2349*2*np.pi*1e12*1e-15      # rad/fs
+amplitude      = 1.0
+
+# --- molecular constants ----------------------------------------
+V_max, J_max   = 2, 4
+omega_rad_phz  = carrier_freq
+mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
+```
+
+2. **Run**
+
+```bash
+python -m rovibrational_excitation.simulation.runner \
+       examples/params_CO2.py     -j 4      # 4 processes
+```
+
+* Creates `results/YYYY-MM-DD_hh-mm-ss_CO2_antisymm_stretch/…`
+* For each case a folder with `result.npz`, `parameters.json`
+* Top-level `summary.csv` (final populations etc.)
+
+> Add `--dry-run` to just list cases without running.
+
+---
+
+## Directory layout (after refactor)
+
+```
+rovibrational_excitation/
+  __init__.py                # public re-export
+  core/                      # low-level numerics
+    basis.py, propagator.py, ...
+  dipole/
+    linmol/                  # high-level dipole API
+      builder.py, cache.py
+    rot/                     # rotational TDM formulae
+      jm.py, j.py
+    vib/
+      harmonic.py, morse.py
+  plots/                     # helper scripts (matplotlib)
+  simulation/                # batch manager, CLI
+```
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/yourname/rovibrational-excitation.git
+cd rovibrational-excitation
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest -v
+```
+
+Black + Ruff + MyPy configs are in *pyproject.toml*.
+
+---
+
+## License
+
+[MIT](LICENSE)
+
+© 2025 Hiroki Tsusaka. All rights reserved.
