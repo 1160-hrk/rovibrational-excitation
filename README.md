@@ -130,7 +130,7 @@ print(population.shape)            # (Nt, dim)
 description = "CO2_antisymm_stretch"
 
 # --- time axis (fs) ---------------------------------------------
-t_start, t_end, dt = -200.0, 200.0, 0.1
+t_start, t_end, dt = -200.0, 200.0, 0.1       # Unit is fs
 
 # --- electric-field scan ----------------------------------------
 duration       = [50.0, 80.0]                 # Gaussian FWHM (fs)
@@ -138,7 +138,7 @@ polarization   = [[1,0], [1/2**0.5,1j/2**0.5]]
 t_center       = [0.0, 100.0]
 
 carrier_freq   = 2349*2*np.pi*1e12*1e-15      # rad/fs
-amplitude      = 1.0
+amplitude      = 1.0e9                        # V/m
 
 # --- molecular constants ----------------------------------------
 V_max, J_max   = 2, 4
