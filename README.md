@@ -1,6 +1,8 @@
 # rovibrational-excitation
+[![PyPI version](https://img.shields.io/pypi/v/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
 
-High-performance Python package for **time-dependent quantum dynamics** of
+Python package for **time-dependent quantum dynamics** of
 linear molecules (rotation × vibration) driven by femtosecond–picosecond
 laser pulses.
 
