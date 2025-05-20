@@ -3,7 +3,7 @@
 import numpy as np
 from numpy import pi
 from scipy.fft import fft, ifft, fftfreq
-from typing import Union
+from typing import Union, Optional
 from scipy.special import erf as scipy_erf, wofz
 import inspect
 
@@ -27,7 +27,14 @@ class ElectricField:
         self.Efield = np.zeros((len(tlist), 2))
         self.add_history = []
     
-    def add_Efield_disp(
+    def init_Efield(self):
+        """
+        電場をゼロに初期化
+        """
+        self.Efield = np.zeros((len(self.tlist), 2))
+        return self
+    
+    def add_dispersed_Efield(
         self,
         envelope_func,
         duration: float,
@@ -43,9 +50,11 @@ class ElectricField:
         if polarization.shape != (2,):
             raise ValueError("polarization must be a 2-element vector")
         polarization /= np.linalg.norm(polarization)
+        # -------- add args to history -------
         frame = inspect.currentframe()
         args, _, _, values = inspect.getargvalues(frame)
         self.add_history.append({k: values[k] for k in args})
+        # -------- set Efield ---------------------
         envelope = envelope_func(self.tlist, t_center, duration) * amplitude
         carrier = np.exp(1j * (2 * pi * carrier_freq * (self.tlist-t_center)+phase_rad))
         Efield = envelope * carrier
@@ -53,7 +62,7 @@ class ElectricField:
         Efield_vec = np.real(np.outer(Efield_disp, polarization))
         self.Efield += Efield_vec
     
-    def add_sinusoidal_mod(
+    def apply_sinusoidal_mod(
         self,
         center_freq: float,
         amplitude: float,
@@ -77,7 +86,54 @@ class ElectricField:
         """
         self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude, carrier_freq, phase_rad, type_mod)
 
-    def add_arbitrary_mod(self, mod_spectrum: np.ndarray, mod_type: str = "phase"):
+    def apply_binned_mod(
+        self,
+        min_index: int,
+        bin_width: int,
+        mod_values: np.ndarray,
+        mode: str = "phase",
+        window: Optional[str] = None,
+    ) -> "ElectricField":
+        """
+        ビン幅指定変調 + オプションで移動平均(窓関数)を適用
+
+        Parameters
+        ----------
+        min_index : int
+            周波数スペクトル配列の開始インデックス
+        bin_width : int
+            ビン幅（インデックス単位）
+        mod_values : np.ndarray
+            1D (nbins,) または (nbins,2)配列
+        mode : str
+            'phase', 'amp'  または両方('both')
+        window : str, optional
+            'blackman', 'hamming', 'hann' のいずれかを移動平均窓関数として適用
+        """
+        n = self.Efield.shape[0]
+        nbins = mod_values.shape[0]
+
+        # 初期スペクトルをゼロ
+        spec = np.zeros(n, dtype=np.complex128)
+        # ビンごとに値を設定
+        for i in range(nbins):
+            start = min_index + i * bin_width
+            end = start + bin_width
+            val = mod_values[i] if mod_values.ndim == 1 else mod_values[i]
+            spec[start:end] = val
+            spec[-end:-start] = np.conj(spec[start:end])
+
+        # 窓関数による移動平均（スペクトル平滑化）
+        if window:
+            win = _select_window(window, bin_width)
+            win = win / win.sum()
+            spec = np.convolve(spec, win, mode='same')
+
+        # 各偏光成分に適用
+        self.Efield = self.apply_arbitrary_mod(spec, mode)
+        return self
+
+    def apply_arbitrary_mod(self, mod_spectrum: np.ndarray, mod_type: str = "phase"):
         """
         Parameters
         ----------
@@ -86,7 +142,7 @@ class ElectricField:
         mod_type : str, optional
             "phase" or "amplitude", by default "phase"
         """
-        if len(mod_spectrum.shape) != len(self.Efield.shape) and mod_spectrum.shape[0] != self.Efield.shape[0]:
+        if len(mod_spectrum.shape) != len(self.Efield.shape) or mod_spectrum.shape[0] != self.Efield.shape[0]:
             raise ValueError("mod_spectrum shape mismatch")
         E_freq = fft(self.Efield, axis=0)
         if mod_type == "phase":
@@ -95,7 +151,14 @@ class ElectricField:
         elif mod_type == "amplitude":
             mod_spectrum = np.abs(mod_spectrum)
             E_freq_mod = E_freq * mod_spectrum
-        return np.real(ifft(E_freq_mod, axis=0))
+        elif mod_type == "both":
+            if mod_spectrum.shape[1] != 2:
+                raise ValueError("mod_spectrum.shape[1] must be 2 for both mode")
+            mod_spectrum[:, 0] = np.clip(mod_spectrum[:, 0], -1e4, 1e4)
+            E_freq_mod = E_freq * np.exp(-1j * mod_spectrum[:, 0]) * mod_spectrum[:, 1]
+        self.Efield = np.real(ifft(E_freq_mod, axis=0))
+        return self
+    
     def add_arbitrary_Efield(self, Efield: np.ndarray):
         """
         Parameters
@@ -106,6 +169,7 @@ class ElectricField:
         if Efield.shape != self.Efield.shape:
             raise ValueError("Efield shape mismatch")
         self.Efield += Efield
+        return self
     
     def plot(self):
         import matplotlib.pyplot as plt
@@ -117,6 +181,16 @@ class ElectricField:
         ax[0].set_ylabel(r"$E_x$ (V/m)")
         ax[1].set_ylabel(r"$E_y$ (V/m)")
         plt.show()
+
+def _select_window(name: str, length: int) -> np.ndarray:
+    name = name.lower()
+    if name == 'blackman':
+        return np.blackman(length)
+    if name == 'hamming':
+        return np.hamming(length)
+    if name == 'hann':
+        return np.hanning(length)
+    raise ValueError(f"Unknown window: {name}")
 
 def apply_sinusoidal_mod(tlist, Efield, center_freq, amplitude, carrier_freq, phase_rad=0.0, type_mod="phase"):
     freq = fftfreq(len(tlist), d=(tlist[1] - tlist[0]))
@@ -132,7 +206,19 @@ def apply_sinusoidal_mod(tlist, Efield, center_freq, amplitude, carrier_freq, ph
     else:
         factor = np.abs(factor)
         E_freq_mod = E_freq * factor
-    return np.real(ifft(E_freq_mod))
+    return np.real(ifft(E_freq_mod, axis=0))
+
+
+def _select_window(name: str, length: int) -> np.ndarray:
+    name = name.lower()
+    if name == 'blackman':
+        return np.blackman(length)
+    if name == 'hamming':
+        return np.hamming(length)
+    if name == 'hann':
+        return np.hanning(length)
+    raise ValueError(f"Unknown window: {name}")
+
 
 def apply_dispersion(tlist, Efield, center_freq, gdd=0.0, tod=0.0):
     """

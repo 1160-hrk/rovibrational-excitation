@@ -154,7 +154,7 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     # ---------- Electric field -------------------------------------
     t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
     E = ElectricField(tlist=t_E)
-    E.add_Efield_disp(
+    E.add_dispersed_Efield(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
         duration=params["duration"],
         t_center=params["t_center"],
@@ -165,7 +165,7 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
         tod=params.get("tod", 0.0),
     )
     if params.get("Sinusoidal_modulation", False):
-        E.add_sinusoidal_mod(
+        E.apply_sinusoidal_mod(
             center_freq=params["carrier_freq"],
             amplitude=params["amplitude_sin_mod"],
             carrier_freq=params["carrier_freq_sin_mod"],
