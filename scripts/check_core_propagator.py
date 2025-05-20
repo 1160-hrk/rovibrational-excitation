@@ -3,8 +3,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from linmol_dipole.cache import LinMolDipoleMatrix
-from vib_tdms.morse import omega01_domega_to_N
+from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
 from rovibrational_excitation.core.states import StateVector
@@ -45,7 +45,7 @@ polarization = np.array(
     [1, -1j]
 )
 Efield = ElectricField(tlist=time4Efield)
-Efield.add_Efield_disp(
+Efield.add_dispersed_Efield(
     envelope_func=gaussian,
     duration=duration,
     t_center=tc,

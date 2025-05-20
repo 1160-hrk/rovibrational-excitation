@@ -10,10 +10,11 @@ LinMolDipoleMatrix のキャッシュ挙動を確認しつつ
 BACKEND=cupy   : GPU で実行（CuPy インストール必須）
 DENSE=false    : CSR sparse で生成し dense に変換して描画
 """
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from __future__ import annotations
-import os, time
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -29,7 +30,7 @@ except ImportError:
         raise RuntimeError("CuPy 未インストールですが BACKEND=cupy が指定されました")
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from linmol_dipole import LinMolDipoleMatrix
+from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 # util ----------------------------------------------------------------
 def xp():

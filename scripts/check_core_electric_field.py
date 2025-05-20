@@ -17,7 +17,7 @@ polarization = np.array(
 )
 Efield = ElectricField(tlist=time)
 
-Efield.add_Efield_disp(
+Efield.add_dispersed_Efield(
     envelope_func=gaussian_fwhm,
     duration=duration,
     t_center=tc,
@@ -27,13 +27,13 @@ Efield.add_Efield_disp(
     gdd=-5e2,
     )
 
-Efield.add_Efield_disp(
+Efield.add_dispersed_Efield(
     envelope_func=gaussian_fwhm,
     duration=duration,
     t_center=tc+100,
     carrier_freq=carrier_frequency,
     amplitude=amplitude,
-    polarization=[1, 0],
+    polarization=np.array([1, 0]),
     gdd=-5e2,
     )
 

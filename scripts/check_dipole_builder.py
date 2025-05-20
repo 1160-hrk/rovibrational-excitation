@@ -9,16 +9,16 @@ rovibrational_excitation/scripts/for_linmol_dipole/check_builder.py
 $ python -m rovibrational_excitation.scripts.for_linmol_dipole.check_builder
 $ BACKEND=cupy DENSE=false python -m ...
 """
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from __future__ import annotations
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
 import matplotlib.pyplot as plt
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from linmol_dipole.builder import build_mu
-from vib_tdms.morse import omega01_domega_to_N
+from rovibrational_excitation.dipole.linmol.builder import build_mu
+from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
 
 BACKEND = os.getenv("BACKEND", "numpy").lower()
 DENSE   = os.getenv("DENSE", "true").lower() == "true"
