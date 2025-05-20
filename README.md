@@ -37,7 +37,7 @@ laser pulses.
 pip install rovibrational-excitation          # installs sub-packages as well
 
 # Or from GitHub (main branch, bleeding-edge)
-pip install git+https://github.com/yourname/rovibrational-excitation.git
+pip install git+https://github.com/1160-hrk/rovibrational-excitation.git
 ````
 
 > **CuPy (optional)** – for GPU acceleration
@@ -184,7 +184,7 @@ rovibrational_excitation/
 ## Development
 
 ```bash
-git clone https://github.com/yourname/rovibrational-excitation.git
+git clone https://github.com/1160-hrk/rovibrational-excitation.git
 cd rovibrational-excitation
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
