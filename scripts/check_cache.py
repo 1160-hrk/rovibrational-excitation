@@ -11,7 +11,7 @@ BACKEND=cupy   : GPU で実行（CuPy インストール必須）
 DENSE=false    : CSR sparse で生成し dense に変換して描画
 """
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from __future__ import annotations
 import os, time
 import numpy as np

@@ -10,7 +10,7 @@ $ python -m rovibrational_excitation.scripts.for_linmol_dipole.check_builder
 $ BACKEND=cupy DENSE=false python -m ...
 """
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 from __future__ import annotations
 import os
 import numpy as np
