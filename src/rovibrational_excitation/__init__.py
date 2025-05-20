@@ -28,7 +28,7 @@ try:
 except PackageNotFoundError:    # ソースから直接実行
     __version__ = "0.0.0+dev"
 
-__author__  = "Your-Name"
+__author__  = "Hiroki Tsusaka"
 __all__: list[str] = [
     # re-export される公開 API
     "LinMolBasis",

@@ -84,11 +84,11 @@ class ElectricField:
         type_mod : str, optional
             "phase" or "amplitude", by default "phase"
         """
-        self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield[:, 0], center_freq, amplitude, carrier_freq, phase_rad, type_mod)
+        self.Efield = apply_sinusoidal_mod(self.tlist, self.Efield, center_freq, amplitude, carrier_freq, phase_rad, type_mod)
 
     def apply_binned_mod(
         self,
-        min_index: int,
+        initial_freq: int,
         bin_width: int,
         mod_values: np.ndarray,
         mode: str = "phase",
@@ -110,25 +110,18 @@ class ElectricField:
         window : str, optional
             'blackman', 'hamming', 'hann' のいずれかを移動平均窓関数として適用
         """
-        n = self.Efield.shape[0]
-        nbins = mod_values.shape[0]
-
-        # 初期スペクトルをゼロ
-        spec = np.zeros(n, dtype=np.complex128)
-        # ビンごとに値を設定
-        for i in range(nbins):
-            start = min_index + i * bin_width
-            end = start + bin_width
-            val = mod_values[i] if mod_values.ndim == 1 else mod_values[i]
-            spec[start:end] = val
-            spec[-end:-start] = np.conj(spec[start:end])
-
+        
+        spec = get_mod_spectrum_from_bin_setting(
+            initial_freq,
+            bin_width,
+            mod_values,
+            self.tlist
+        )
         # 窓関数による移動平均（スペクトル平滑化）
         if window:
             win = _select_window(window, bin_width)
             win = win / win.sum()
             spec = np.convolve(spec, win, mode='same')
-
         # 各偏光成分に適用
         self.Efield = self.apply_arbitrary_mod(spec, mode)
         return self
@@ -155,7 +148,7 @@ class ElectricField:
             if mod_spectrum.shape[1] != 2:
                 raise ValueError("mod_spectrum.shape[1] must be 2 for both mode")
             mod_spectrum[:, 0] = np.clip(mod_spectrum[:, 0], -1e4, 1e4)
-            E_freq_mod = E_freq * np.exp(-1j * mod_spectrum[:, 0]) * mod_spectrum[:, 1]
+            E_freq_mod = E_freq * np.exp(-1j * mod_spectrum[:, 0]) * np.abs(mod_spectrum[:, 1])
         self.Efield = np.real(ifft(E_freq_mod, axis=0))
         return self
     
@@ -182,6 +175,36 @@ class ElectricField:
         ax[1].set_ylabel(r"$E_y$ (V/m)")
         plt.show()
 
+def get_mod_spectrum_from_bin_setting(
+    initial_freq: float,
+    bin_width: float,
+    mod_values: np.ndarray,
+    tlist: np.ndarray,
+    ):
+    mod_values = np.array(mod_values)
+    freq = fftfreq(len(tlist), d=(tlist[1] - tlist[0]))
+    df = freq[1] - freq[0]
+    initial_index_p = int(initial_freq / df)
+    bin_width = int(bin_width / df)
+    nbins = mod_values.shape[0]
+    ndim = len(mod_values.shape)
+    # 初期スペクトルをゼロ
+    spec = np.zeros_like((len(freq), ndim), dtype=np.complex128)
+    # ビンごとに値を設定
+    half_freq = len(freq) // 2
+    for i in range(nbins):
+        start_p = initial_index_p + i * bin_width
+        end_p = start_p + bin_width
+        if start_p > half_freq:
+            continue
+        if end_p > half_freq:
+            end_p = half_freq
+        val = mod_values[i]
+        spec[start_p:end_p] = val
+        spec[-end_p:-start_p] = -val[::-1]
+    return spec
+    
+
 def _select_window(name: str, length: int) -> np.ndarray:
     name = name.lower()
     if name == 'blackman':
@@ -207,17 +230,6 @@ def apply_sinusoidal_mod(tlist, Efield, center_freq, amplitude, carrier_freq, ph
         factor = np.abs(factor)
         E_freq_mod = E_freq * factor
     return np.real(ifft(E_freq_mod, axis=0))
-
-
-def _select_window(name: str, length: int) -> np.ndarray:
-    name = name.lower()
-    if name == 'blackman':
-        return np.blackman(length)
-    if name == 'hamming':
-        return np.hamming(length)
-    if name == 'hann':
-        return np.hanning(length)
-    raise ValueError(f"Unknown window: {name}")
 
 
 def apply_dispersion(tlist, Efield, center_freq, gdd=0.0, tod=0.0):
