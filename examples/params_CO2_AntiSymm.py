@@ -38,7 +38,7 @@ polarization = [
 ]
 carrier_freq = 2349.0 * (3e10*1e-15)  # 2349 cm⁻¹ → /fs
 amplitude    = 1e9                            # V·m⁻¹
-gdd          = 0.0                            # fs²
+gdd          = 1e3                            # fs²
 tod          = 0.0                            # fs³
 t_center        = [500.0]                       # fs
 
@@ -47,8 +47,8 @@ axes         = "xy"                           # Ex↔μ_x, Ey↔μ_y
 # ------------------------------------------------------------------
 # 系パラメータ  (CO₂ 非対称伸縮)
 # ------------------------------------------------------------------
-V_max = 10
-J_max = 10
+V_max = 5
+J_max = 3
 
 # Morse / Harmonic 切替え
 potential_type = "harmonic"                   # or "morse"
