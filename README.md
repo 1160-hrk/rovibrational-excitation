@@ -17,18 +17,15 @@ laser pulses.
 
 ## Key features
 
-* **Runge–Kutta 4 (RK-4)** propagators for the Schrödinger and
-  Liouville–von Neumann equations (`complex128`, cache-friendly).
-* **Lazy, high-speed construction** of transition-dipole matrices  
-  (`rovibrational_excitation.dipole.*`)  
+* **Runge–Kutta 4 (RK-4)** propagators for the Schrödinger and Liouville–von Neumann equations (`complex128`, cache-friendly).
+* **Lazy, high-speed construction** of transition-dipole matrices (`rovibrational_excitation.dipole.*`)  
   * rigid-rotor + harmonic / Morse vibration  
   * Numba (CPU) or CuPy (GPU) backend
-* **Vector electric-field objects** with Gaussian envelopes, chirp, optional
-  sinusoidal modulation.
-* **Batch runner** for pump–probe / parameter sweeps with automatic
-  directory creation, progress-bar and compressed output (`.npz`).
-* 100 % pure-Python, **no compiled extension to ship** (Numba
-  compiles at runtime).
+* **Vector electric-field objects** with Gaussian envelopes, chirp, optional sinusoidal and binned modulation.
+* **Batch runner** for pump–probe / parameter sweeps with automatic directory creation, progress-bar and compressed output (`.npz`).
+* 100 % pure-Python, **no compiled extension to ship** (Numba compiles at runtime).
+* Currently, only linear molecules are supported; that is, only the rotational quantum numbers J and M are taken into account.
+
 
 ---
 
