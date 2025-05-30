@@ -24,10 +24,9 @@ from numba import njit
 # -------------------------------------------------------------------
 # 0. 共通ヘルパ
 # -------------------------------------------------------------------
-def _prepare_field(field: np.ndarray, steps: int) -> np.ndarray:
-    exp = 2 * steps + 1
-    if field.size != exp:
-        raise ValueError(f"field length {field.size} != 2*steps+1 ({exp})")
+def _prepare_field(field: np.ndarray) -> np.ndarray:
+    if field.size % 2 != 1:
+        raise ValueError(f"field length {field.size} != odd number")
     return np.column_stack((field[0:-2:2], field[1:-1:2], field[2::2])) \
             .astype(np.float64, copy=False)
 
@@ -212,24 +211,27 @@ def _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3,
 # 3. 公開 API
 # -------------------------------------------------------------------
 def rk4_schrodinger(
-    H0, mux, muy,
-    E_x, E_y, psi0,
-    dt, steps,
+    H0,
+    mux, muy,
+    E_x, E_y,
+    psi0,
+    dt,
     return_traj: bool = False,
     renorm: bool = False,
     stride: int = 1,
     backend: str = "numpy",
 ):
     """backend='numpy'|'cupy'"""
-    Ex3 = _prepare_field(E_x, steps)
-    Ey3 = _prepare_field(E_y, steps)
+    steps = len(E_x) // 2
+    Ex3 = _prepare_field(E_x)
+    Ey3 = _prepare_field(E_y)
     psi0 = np.asarray(psi0, np.complex128).ravel()
 
     if backend == "cupy":
         out = _rk4_core_gpu_raw(
                 H0, mux, muy, Ex3, Ey3,
                 psi0, float(dt), steps)
-        return out[0]
+        return out
 
     out = _rk4_core_cpu(
         np.ascontiguousarray(H0, np.complex128),
@@ -238,4 +240,4 @@ def rk4_schrodinger(
         Ex3, Ey3, psi0,
         float(dt), steps, stride,
         return_traj, renorm)
-    return out[0]
+    return out

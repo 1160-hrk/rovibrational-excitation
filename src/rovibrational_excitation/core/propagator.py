@@ -71,19 +71,18 @@ def _prepare_args(
     xp = _cp if _cp is not None else np
 
     dt_half = E.dt if dt is None else dt / 2
-    steps   = E.steps_state
 
     Ex, Ey  = E.Efield[:, 0], E.Efield[:, 1]
 
     mu_a = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax0)))
     mu_b = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax1)))
 
-    return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
+    return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2
 
 # ---------------------------------------------------------------------
 # RK4 kernels
 from ._rk4_lvne        import rk4_lvne_traj, rk4_lvne
-from ._rk4_schrodinger import rk4_schrodinger_traj, rk4_schrodinger
+from ._rk4_schrodinger import rk4_schrodinger
 
 # ---------------------------------------------------------------------
 def schrodinger_propagation(
@@ -99,21 +98,26 @@ def schrodinger_propagation(
     backend: str = "numpy",
 ) -> Array:
     xp = _backend(backend)
-    H0_, mu_a, mu_b, Ex, Ey, dt, steps = _prepare_args(
+    H0_, mu_a, mu_b, Ex, Ey, dt = _prepare_args(
         H0, Efield, dipole_matrix, axes=axes
     )
 
-    rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt, steps)
-    rk4 = rk4_schrodinger_traj if return_traj else rk4_schrodinger
+    rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt)
     if return_traj:
         if return_time_psi:
             dt_psi = dt * 2 * sample_stride
+            psi_traj = rk4_schrodinger(
+                *rk4_args, return_traj=return_traj, stride=sample_stride
+                )
+            steps = psi_traj.shape[0]
             time_psi = xp.arange(0, (steps+1)*dt_psi, dt_psi)
-            return time_psi, rk4(*rk4_args, sample_stride)
+            return time_psi, 
         else:
-            return rk4(*rk4_args, sample_stride)
+            return rk4_schrodinger(
+                *rk4_args, return_traj=return_traj, stride=sample_stride
+                )
     else:
-        return rk4(*rk4_args).reshape((1, len(psi0))) 
+        return rk4_schrodinger(*rk4_args).reshape((1, len(psi0))) 
 
 # ---------------------------------------------------------------------
 def mixed_state_propagation(
