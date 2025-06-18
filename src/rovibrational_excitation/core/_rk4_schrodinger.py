@@ -25,8 +25,8 @@ from numba import njit
 # 0. 共通ヘルパ
 # -------------------------------------------------------------------
 def _prepare_field(field: np.ndarray) -> np.ndarray:
-    if field.size % 2 != 1:
-        raise ValueError(f"field length {field.size} != odd number")
+    # if field.size % 2 != 1:
+    #     raise ValueError(f"field length {field.size} != odd number")
     return np.column_stack((field[0:-2:2], field[1:-1:2], field[2::2])) \
             .astype(np.float64, copy=False)
 

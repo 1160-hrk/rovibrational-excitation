@@ -33,7 +33,7 @@ state.set_state((0, 0, 0), 1)
 
 ti, tf = 0.0, 1000
 dt4Efield = 0.01
-time4Efield = np.arange(ti, tf + 3*dt4Efield, dt4Efield)
+time4Efield = np.arange(ti, tf + 2*dt4Efield, dt4Efield)
 
 duration = 100
 tc = (time4Efield[-1] + time4Efield[0]) / 2

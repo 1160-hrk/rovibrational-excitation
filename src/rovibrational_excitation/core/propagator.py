@@ -105,13 +105,15 @@ def schrodinger_propagation(
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt)
     if return_traj:
         if return_time_psi:
-            dt_psi = dt * 2 * sample_stride
+            dt_psi = dt * sample_stride
             psi_traj = rk4_schrodinger(
                 *rk4_args, return_traj=return_traj, stride=sample_stride
                 )
-            steps = psi_traj.shape[0]
-            time_psi = xp.arange(0, (steps+1)*dt_psi, dt_psi)
-            return time_psi, 
+            len_traj= psi_traj.shape[0]
+            time_psi = xp.arange(0, len_traj*dt_psi, dt_psi)
+            return time_psi, rk4_schrodinger(
+                *rk4_args, return_traj=return_traj, stride=sample_stride
+                )
         else:
             return rk4_schrodinger(
                 *rk4_args, return_traj=return_traj, stride=sample_stride
