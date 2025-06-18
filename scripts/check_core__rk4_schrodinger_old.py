@@ -1,17 +1,17 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger
+from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger_traj
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 
 ti, tf = 0.0, 100000
 dt4Efield = 0.01
-sample_stride = 1
 dt = dt4Efield * 2
 time4Efield = np.arange(ti, tf + 3*dt4Efield, dt4Efield)
-time4psi = time4Efield[::2][::sample_stride]
+time4psi = time4Efield[:-1:2]
+steps = len(time4psi)
 print(len(time4psi), len(time4Efield))
 omega0 = 1
 H0 = np.array(
@@ -49,7 +49,7 @@ print(psi0.shape)
 
 start = time.time()
 print("start")
-results = rk4_schrodinger(
+results = rk4_schrodinger_traj(
     H0,
     mu_x,
     mu_y,
@@ -57,9 +57,7 @@ results = rk4_schrodinger(
     Efield_y,
     psi0,
     dt,
-    return_traj=True,
-    stride=sample_stride,
-    backend='numpy'
+    steps,
 )
 runtime = time.time() - start
 print("end")
@@ -72,9 +70,9 @@ fig, ax = plt.subplots(
     gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 1]}
     )
 ax[0].plot(time4Efield, Efield_x, label="|psi_0|^2")   
-ax[1].plot(time4psi, np.abs(results[:, 0])**2, label=r"$|\psi_0|^2$")
-ax[1].plot(time4psi, np.abs(results[:, 1])**2, label=r"$|\psi_1|^2$")
-ax[1].plot(time4psi, np.abs(results[:, 0])**2 + np.abs(results[:, 1])**2, label=r"$|\psi|^2$")
+ax[1].plot(time4psi, np.abs(results[:-1, 0])**2, label=r"$|\psi_0|^2$")
+ax[1].plot(time4psi, np.abs(results[:-1, 1])**2, label=r"$|\psi_1|^2$")
+ax[1].plot(time4psi, np.abs(results[:-1, 0])**2 + np.abs(results[:-1, 1])**2, label=r"$|\psi|^2$")
 ax[1].set_xlabel("Time")
 ax[1].set_ylabel("Probability")
 ax[1].legend(loc=6)
