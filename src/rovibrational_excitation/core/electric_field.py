@@ -27,6 +27,8 @@ class ElectricField:
         self.steps_state = len(tlist) // 2
         self.Efield = np.zeros((len(tlist), 2))
         self.add_history = []
+        self._constant_pol: np.ndarray | None = None
+        self._scalar_field: np.ndarray | None = None
     
     def init_Efield(self):
         """
@@ -44,6 +46,20 @@ class ElectricField:
             電場（V/m）
         """
         return self.Efield
+    
+    def get_scalar_and_pol(self) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Returns
+        -------
+        scalar : (N,) float64   実電場
+        pol    : (2,) complex   一定偏光
+        Raises
+        ------
+        ValueError : 偏光が時間依存フラグのとき
+        """
+        if isinstance(self._constant_pol, np.ndarray) and self._scalar_field is not None:
+            return self._scalar_field.astype(np.float64, copy=False), self._constant_pol
+        raise ValueError("Polarisation is time-dependent (use RK4 path).")
     
     def get_Efield_spectrum(self):
         """
@@ -70,15 +86,33 @@ class ElectricField:
         phase_rad: float = 0.0,
         gdd: float = 0.0,
         tod: float = 0.0,
+        const_polarisation: bool | None = None,
     ):
         polarization = np.array(polarization, dtype=np.complex128)
         if polarization.shape != (2,):
             raise ValueError("polarization must be a 2-element vector")
         polarization /= np.linalg.norm(polarization)
+        # --- constant / variable 判定 ---------------------------
+        if const_polarisation is None:                      # 従来の自動判定
+            if self._constant_pol is None:
+                self._constant_pol = polarization.copy()
+            elif isinstance(self._constant_pol, np.ndarray):
+                if not np.allclose(polarization, self._constant_pol):
+                    self._constant_pol = False
+        else:                                               # ★NEW : 明示指定
+            if const_polarisation:      # True → 一定と宣言
+                self._constant_pol = polarization.copy()
+            else:                       # False → 可変
+                self._constant_pol = False
+        if self._constant_pol is None:
+            self._constant_pol = polarization.copy()
+        elif not np.allclose(polarization, self._constant_pol):
+            # 途中で別偏光が来たら可変と見なす
+            self._constant_pol = False
         # -------- add args to history -------
         frame = inspect.currentframe()
         args, _, _, values = inspect.getargvalues(frame)
-        self.add_history.append({k: values[k] for k in args})
+        self.add_history.append({k: values[k] for k in args if k != 'self'})
         # -------- set Efield ---------------------
         envelope = envelope_func(self.tlist, t_center, duration) * amplitude
         carrier = np.exp(1j * (2 * pi * carrier_freq * (self.tlist-t_center)+phase_rad))
@@ -86,6 +120,12 @@ class ElectricField:
         Efield_vec = np.real(np.outer(Efield, polarization))
         Efield_vec_disp = apply_dispersion(self.tlist, Efield_vec, carrier_freq, gdd, tod)
         self.Efield += np.real(Efield_vec_disp)
+        # --- Split-Op 用スカラー場を保持 ------------------------ ★NEW
+        if const_polarisation is True or (
+            const_polarisation is None and isinstance(self._constant_pol, np.ndarray)
+        ):
+            # 保存しておく（実数に変換）
+            self._scalar_field = np.real(apply_dispersion(self.tlist, Efield, carrier_freq, gdd, tod))
     
     def apply_sinusoidal_mod(
         self,

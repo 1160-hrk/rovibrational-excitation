@@ -34,14 +34,24 @@ mu_y = np.array(
     ], dtype=np.complex128
 )
 
-duration = 10000
-tc = (time4Efield[-1] + time4Efield[0]) / 2
-envelope = np.exp(-(time4Efield-tc)**2 / (2 * duration**2))
-num_rabi_cycles = 1
-amplitude = num_rabi_cycles / (duration*np.sqrt(2*np.pi)) * 2*np.pi
-Efield_x = amplitude * envelope * np.cos(omega0 * (time4Efield-tc))
-Efield_x = Efield_x.astype(np.float64)
-Efield_y = np.zeros_like(Efield_x, dtype=np.float64)
+# --- Gaussian パルス（FWHM ≈ 2.355*duration）
+duration = 10000.0
+tc       = 0.5*(time4Efield[0] + time4Efield[-1])
+env      = np.exp(-(time4Efield-tc)**2 / (2*duration**2))
+
+num_rabi = 1
+amp      = num_rabi / (duration*np.sqrt(2*np.pi)) * 2*np.pi     # 1 Rabi 周期
+Efield   = amp * env * np.cos(omega0*(time4Efield-tc))                  # 実電場
+Efield   = Efield.astype(np.float64)
+
+# 偏光ベクトル p = [1,0]  (x 偏光, 複素型で与える)
+pol = np.array([1.0+0.0j, 0.0+0.0j], dtype=np.complex128)
+pol = np.array([1.0+0.0j, 0.0+1.0j], dtype=np.complex128)
+pol /= np.linalg.norm(pol)  # 正規化
+
+Efield_x = np.real(Efield * pol[0])
+Efield_y = np.imag(Efield * pol[1])
+
 
 psi0 = np.array([1, 0], dtype=np.complex128)
 psi0 = psi0.reshape((len(psi0), 1))

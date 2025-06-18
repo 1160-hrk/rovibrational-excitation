@@ -83,6 +83,7 @@ def _prepare_args(
 # RK4 kernels
 from ._rk4_lvne        import rk4_lvne_traj, rk4_lvne
 from ._rk4_schrodinger import rk4_schrodinger
+from ._splitop_schrodinger import splitop_schrodinger
 
 # ---------------------------------------------------------------------
 def schrodinger_propagation(
@@ -101,7 +102,38 @@ def schrodinger_propagation(
     H0_, mu_a, mu_b, Ex, Ey, dt = _prepare_args(
         H0, Efield, dipole_matrix, axes=axes
     )
+    # ---------------------------------------------------------
+    # 0) まず split-operator が適用できるか試す
+    #    （ElectricField に「一定偏光＋実スカラー場」が
+    #      保持されている場合だけ使用）
+    # ---------------------------------------------------------
+    try:
+        Escalar, pol = Efield.get_scalar_and_pol()          # ← ElectricField で追加した util
 
+        traj_split = splitop_schrodinger(
+            H0_,
+            mu_a, mu_b,                                    # μ_x, μ_y
+            pol,                                           # (2,) complex
+            Escalar,                                       # (N,) real
+            xp.asarray(psi0), dt,
+            steps=(len(Escalar)-1)//2,
+            sample_stride=sample_stride,
+            backend=backend,
+        )
+        if return_traj:
+            if return_time_psi:
+                time_psi = xp.arange(0,
+                                     traj_split.shape[0]*dt*sample_stride,
+                                     dt*sample_stride)
+                return time_psi, traj_split.squeeze()
+            return traj_split.squeeze()
+
+        return traj_split[-1:].reshape((1, len(psi0)))
+
+    except ValueError:
+        # 偏光が時間依存 → 旧来の RK4 へフォールバック
+        pass
+    
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt)
     if return_traj:
         if return_time_psi:
