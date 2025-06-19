@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-V_max, J_max = 2, 2  # スパース効果を確認するため大きなサイズに
+V_max, J_max = 4, 4  # スパース効果を確認するため大きなサイズに
 omega01, domega, mu0_cm = 1.0, 0.01, 1e-30
 omega01_domega_to_N(omega01=omega01, domega=domega)
 axes = "xy"
@@ -30,7 +30,7 @@ dipole_matrix = LinMolDipoleMatrix(
     mu0=mu0_cm,           # 縮尺係数（a.u. → C·m など）     *任意*
     potential_type="harmonic",   #  'harmonic' / 'morse'
     backend="numpy",    #  'numpy' か 'cupy'  (GPU のときは 'cupy')
-    dense=False         #  False→CSR sparse でメモリ節約
+    dense=True         #  False→CSR sparse でメモリ節約
 )
 
 state = StateVector(basis)
@@ -57,7 +57,7 @@ Efield.add_dispersed_Efield(
     carrier_freq=omega01/(2*np.pi),
     amplitude=amplitude,
     polarization=polarization,
-    const_polarisation=True,
+    const_polarisation=False,
     )
 
 psi0 = state.data
