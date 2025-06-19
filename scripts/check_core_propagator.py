@@ -31,11 +31,11 @@ dipole_matrix = LinMolDipoleMatrix(
 state = StateVector(basis)
 state.set_state((0, 0, 0), 1)
 
-ti, tf = 0.0, 1000
+ti, tf = 0.0, 500
 dt4Efield = 0.01
 time4Efield = np.arange(ti, tf + 2*dt4Efield, dt4Efield)
 
-duration = 100
+duration = 20
 tc = (time4Efield[-1] + time4Efield[0]) / 2
 envelope = np.exp(-(time4Efield-tc)**2 / (2 * duration**2))
 num_rabi_cycles = 1
@@ -51,40 +51,44 @@ Efield.add_dispersed_Efield(
     t_center=tc,
     carrier_freq=3/(2*np.pi),
     amplitude=amplitude,
-    polarization=polarization
+    polarization=polarization,
+    const_polarisation=True,
     )
 
 psi0 = state.data
 
-start = time.time()
-print("start")
-sample_stride = 1
-time4psi, psi_t = schrodinger_propagation(
-    H0=H0,
-    Efield=Efield,
-    dipole_matrix=dipole_matrix,
-    psi0=psi0,
-    axes=axes,
-    return_traj=True,
-    return_time_psi=True,
-    sample_stride=sample_stride
-    )
-runtime = time.time() - start
-print("end")
-print("time:", runtime)
+if __name__ == "__main__":
+    start = time.time()
+    print("start")
+    sample_stride = 1
+    time4psi, psi_t = schrodinger_propagation(
+        H0=H0,
+        Efield=Efield,
+        dipole_matrix=dipole_matrix,
+        psi0=psi0,
+        axes=axes,
+        return_traj=True,
+        return_time_psi=True,
+        sample_stride=sample_stride
+        )
+    runtime = time.time() - start
+    print("end")
+    print("time:", runtime)
 
-# %%
-fig, ax = plt.subplots(
-    3, 1,
-    figsize=(6, 6),
-    sharex=True,
-    gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 0.2,  1]}
-    )
-ax[0].plot(time4Efield, Efield.Efield[:, 0], label=r"$E_x$")   
-ax[1].plot(time4Efield, Efield.Efield[:, 1], label=r"$E_y$")
-for i, st in enumerate(basis.basis):
-    ax[2].plot(time4psi, np.abs(psi_t[:, i])**2, label=r"$|\psi_{"f"{','.join([str(int(s)) for s in st])}"r"}|^2$")
-ax[2].plot(time4psi, np.sum(np.abs(psi_t[:, :]**2), axis=1), ls=':', c='k')
-ax[2].set_xlabel("Time")
-ax[2].set_ylabel("Probability")
-ax[2].legend(loc=6)
+    fig, ax = plt.subplots(
+        3, 1,
+        figsize=(6, 6),
+        sharex=True,
+        gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 0.2,  1]}
+        )
+    Efield_data = Efield.get_Efield()
+    ax[0].plot(time4Efield, Efield_data[:, 0], label=r"$E_x$")   
+    ax[1].plot(time4Efield, Efield_data[:, 1], label=r"$E_y$")
+    for i, st in enumerate(basis.basis):
+        ax[2].plot(time4psi, np.abs(psi_t[:, i])**2, label=r"$|\psi_{"f"{','.join([str(int(s)) for s in st])}"r"}|^2$")
+    ax[2].plot(time4psi, np.sum(np.abs(psi_t[:, :]**2), axis=1), ls=':', c='k')
+    ax[2].set_xlabel("Time")
+    ax[2].set_ylabel("Probability")
+    ax[2].legend(loc=6)
+    plt.savefig("propagator_check_result.png", dpi=300, bbox_inches='tight')
+    print("プロットを propagator_check_result.png に保存しました")

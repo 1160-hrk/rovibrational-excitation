@@ -66,14 +66,14 @@ def _json_safe(obj: Any) -> Any:
 # polarization dict ⇄ complex array
 # ---------------------------------------------------------------------
 def _deserialize_pol(seq: list[dict | float | int | complex]) -> np.ndarray:
-    return np.asarray(
-        [
-            complex(d["r"], d["i"]) if isinstance(d, dict) and d.get("__complex__")
-            else complex(d)
-            for d in seq
-        ],
-        dtype=complex,
-    )
+    def to_complex(d):
+        if isinstance(d, dict) and d.get("__complex__"):
+            return complex(d["r"], d["i"])
+        elif isinstance(d, (float, int, complex)):
+            return complex(d)
+        else:
+            raise TypeError(f"Invalid type in polarization sequence: {type(d)}")
+    return np.asarray([to_complex(d) for d in seq], dtype=complex)
 
 
 # ---------------------------------------------------------------------
@@ -81,6 +81,8 @@ def _deserialize_pol(seq: list[dict | float | int | complex]) -> np.ndarray:
 # ---------------------------------------------------------------------
 def _load_params_file(path: str) -> Dict[str, Any]:
     spec = importlib.util.spec_from_file_location("params", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load spec from {path}")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)  # type: ignore[arg-type]
     return {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
@@ -232,7 +234,7 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     # ---------- Save (npz 圧縮) ------------------------------------
     if params.get("save", True):
         outdir = Path(params["outdir"])
-        np.savez_compressed(outdir / "result.npz", t_E=t_E, psi=psi_t, pop=pop_t, E=E.Efield, t_p=t_p)
+        np.savez_compressed(outdir / "result.npz", t_E=t_E, psi=psi_t, pop=pop_t, E=np.array(E.Efield), t_p=t_p)
         with open(outdir / "parameters.json", "w") as f:
             json.dump(_json_safe(params), f, indent=2)
 
@@ -262,14 +264,14 @@ def run_all(
         raise TypeError("params must be filepath str or dict-like")
     # ---------- ルートディレクトリ ---------------------------------
     root = _make_root(description) if save else None
-    if save and param_file_path is not None:
+    if save and root is not None and param_file_path is not None:
         shutil.copy(param_file_path, root / "params.py")
 
     # ---------- ケース展開 -----------------------------------------
     cases: List[Dict[str, Any]] = []
     for case, sweep_keys in _expand_cases(base_dict):
         case["save"] = save
-        if save:
+        if save and root is not None:
             rel = Path(*[f"{k}_{_label(case[k])}" for k in sweep_keys])
             outdir = root / rel
             outdir.mkdir(parents=True, exist_ok=True)

@@ -46,7 +46,6 @@ Efield   = Efield.astype(np.float64)
 
 # 偏光ベクトル p = [1,0]  (x 偏光, 複素型で与える)
 pol = np.array([1.0+0.0j, 0.0+0.0j], dtype=np.complex128)
-pol = np.array([1.0+0.0j, 0.0+1.0j], dtype=np.complex128)
 pol /= np.linalg.norm(pol)  # 正規化
 
 Efield_x = np.real(Efield * pol[0])
@@ -57,34 +56,35 @@ psi0 = np.array([1, 0], dtype=np.complex128)
 psi0 = psi0.reshape((len(psi0), 1))
 print(psi0.shape)
 
-start = time.time()
-print("start")
-results = rk4_schrodinger(
-    H0,
-    mu_x,
-    mu_y,
-    Efield_x,
-    Efield_y,
-    psi0,
-    dt,
-    return_traj=True,
-    stride=sample_stride,
-    backend='numpy'
-)
-runtime = time.time() - start
-print("end")
-print("time:", runtime)
-
-fig, ax = plt.subplots(
-    2, 1,
-    figsize=(6, 6),
-    sharex=True,
-    gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 1]}
+if __name__ == "__main__":
+    start = time.time()
+    print("start")
+    results = rk4_schrodinger(
+        H0,
+        mu_x,
+        mu_y,
+        Efield_x,
+        Efield_y,
+        psi0,
+        dt,
+        return_traj=True,
+        stride=sample_stride,
+        backend='numpy'
     )
-ax[0].plot(time4Efield, Efield_x, label="|psi_0|^2")   
-ax[1].plot(time4psi, np.abs(results[:, 0])**2, label=r"$|\psi_0|^2$")
-ax[1].plot(time4psi, np.abs(results[:, 1])**2, label=r"$|\psi_1|^2$")
-ax[1].plot(time4psi, np.abs(results[:, 0])**2 + np.abs(results[:, 1])**2, label=r"$|\psi|^2$")
-ax[1].set_xlabel("Time")
-ax[1].set_ylabel("Probability")
-ax[1].legend(loc=6)
+    runtime = time.time() - start
+    print("end")
+    print("time:", runtime)
+
+    fig, ax = plt.subplots(
+        2, 1,
+        figsize=(6, 6),
+        sharex=True,
+        gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 1]}
+        )
+    ax[0].plot(time4Efield, Efield_x, label="|psi_0|^2")   
+    ax[1].plot(time4psi, np.abs(results[:, 0])**2, label=r"$|\psi_0|^2$")
+    ax[1].plot(time4psi, np.abs(results[:, 1])**2, label=r"$|\psi_1|^2$")
+    ax[1].plot(time4psi, np.abs(results[:, 0])**2 + np.abs(results[:, 1])**2, label=r"$|\psi|^2$")
+    ax[1].set_xlabel("Time")
+    ax[1].set_ylabel("Probability")
+    ax[1].legend(loc=6)

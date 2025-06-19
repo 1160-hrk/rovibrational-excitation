@@ -27,7 +27,7 @@ class ElectricField:
         self.steps_state = len(tlist) // 2
         self.Efield = np.zeros((len(tlist), 2))
         self.add_history = []
-        self._constant_pol: np.ndarray | None = None
+        self._constant_pol: np.ndarray | None | bool = None
         self._scalar_field: np.ndarray | None = None
     
     def init_Efield(self):
@@ -111,21 +111,30 @@ class ElectricField:
             self._constant_pol = False
         # -------- add args to history -------
         frame = inspect.currentframe()
-        args, _, _, values = inspect.getargvalues(frame)
-        self.add_history.append({k: values[k] for k in args if k != 'self'})
+        if frame is not None:
+            args, _, _, values = inspect.getargvalues(frame)
+            self.add_history.append({k: values[k] for k in args if k != 'self'})
         # -------- set Efield ---------------------
         envelope = envelope_func(self.tlist, t_center, duration) * amplitude
         carrier = np.exp(1j * (2 * pi * carrier_freq * (self.tlist-t_center)+phase_rad))
         Efield = envelope * carrier
         Efield_vec = np.real(np.outer(Efield, polarization))
         Efield_vec_disp = apply_dispersion(self.tlist, Efield_vec, carrier_freq, gdd, tod)
+        if isinstance(Efield_vec_disp, tuple):
+            Efield_vec_disp = Efield_vec_disp[0]
+        Efield_vec_disp = np.asarray(Efield_vec_disp)
         self.Efield += np.real(Efield_vec_disp)
         # --- Split-Op 用スカラー場を保持 ------------------------ ★NEW
         if const_polarisation is True or (
             const_polarisation is None and isinstance(self._constant_pol, np.ndarray)
         ):
             # 保存しておく（実数に変換）
-            self._scalar_field = np.real(apply_dispersion(self.tlist, Efield, carrier_freq, gdd, tod))
+            ef_real = np.real(np.asarray(Efield))
+            ef_disp = apply_dispersion(self.tlist, ef_real, carrier_freq, gdd, tod)
+            if isinstance(ef_disp, tuple):
+                ef_disp = ef_disp[0]
+            ef_disp = np.asarray(ef_disp)
+            self._scalar_field = np.real(ef_disp)
     
     def apply_sinusoidal_mod(
         self,

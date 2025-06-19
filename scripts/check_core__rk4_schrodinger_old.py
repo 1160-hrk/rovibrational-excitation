@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger_traj
+from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -41,38 +41,41 @@ num_rabi_cycles = 1
 amplitude = num_rabi_cycles / (duration*np.sqrt(2*np.pi)) * 2*np.pi
 Efield_x = amplitude * envelope * np.cos(omega0 * (time4Efield-tc))
 Efield_x = Efield_x.astype(np.float64)
-Efield_y = np.zeros_like(Efield_x, dtype=np.float64)
+Efield_y = np.zeros_like(Efield_x, dtype=np.float64)  # y偏光成分はゼロ
 
 psi0 = np.array([1, 0], dtype=np.complex128)
 psi0 = psi0.reshape((len(psi0), 1))
 print(psi0.shape)
 
-start = time.time()
-print("start")
-results = rk4_schrodinger_traj(
-    H0,
-    mu_x,
-    mu_y,
-    Efield_x,
-    Efield_y,
-    psi0,
-    dt,
-    steps,
-)
-runtime = time.time() - start
-print("end")
-print("time:", runtime)
-
-fig, ax = plt.subplots(
-    2, 1,
-    figsize=(6, 6),
-    sharex=True,
-    gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 1]}
+if __name__ == "__main__":
+    start = time.time()
+    print("start")
+    results = rk4_schrodinger(
+        H0,
+        mu_x,
+        mu_y,
+        Efield_x,
+        Efield_y,
+        psi0,
+        dt,
+        return_traj=True,
+        stride=1,
+        backend='numpy'
     )
-ax[0].plot(time4Efield, Efield_x, label="|psi_0|^2")   
-ax[1].plot(time4psi, np.abs(results[:-1, 0])**2, label=r"$|\psi_0|^2$")
-ax[1].plot(time4psi, np.abs(results[:-1, 1])**2, label=r"$|\psi_1|^2$")
-ax[1].plot(time4psi, np.abs(results[:-1, 0])**2 + np.abs(results[:-1, 1])**2, label=r"$|\psi|^2$")
-ax[1].set_xlabel("Time")
-ax[1].set_ylabel("Probability")
-ax[1].legend(loc=6)
+    runtime = time.time() - start
+    print("end")
+    print("time:", runtime)
+
+    fig, ax = plt.subplots(
+        2, 1,
+        figsize=(6, 6),
+        sharex=True,
+        gridspec_kw={"hspace": 0.0, "height_ratios": [0.2, 1]}
+        )
+    ax[0].plot(time4Efield, Efield_x, label="|psi_0|^2")   
+    ax[1].plot(time4psi, np.abs(results[:-1, 0])**2, label=r"$|\psi_0|^2$")
+    ax[1].plot(time4psi, np.abs(results[:-1, 1])**2, label=r"$|\psi_1|^2$")
+    ax[1].plot(time4psi, np.abs(results[:-1, 0])**2 + np.abs(results[:-1, 1])**2, label=r"$|\psi|^2$")
+    ax[1].set_xlabel("Time")
+    ax[1].set_ylabel("Probability")
+    ax[1].legend(loc=6)

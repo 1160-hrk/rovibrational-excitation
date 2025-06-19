@@ -53,7 +53,6 @@ Efield   = Efield.astype(np.float64)
 
 # 偏光ベクトル p = [1,0]  (x 偏光, 複素型で与える)
 pol = np.array([1.0+0.0j, 0.0+0.0j], dtype=np.complex128)
-pol = np.array([1.0+0.0j, 0.0+1.0j], dtype=np.complex128)
 
 # 初期状態 |ψ(0)⟩ = (1,0)ᵀ
 psi0 = np.array([1.0+0.0j, 0.0+0.0j], dtype=np.complex128)
@@ -61,40 +60,36 @@ psi0 = np.array([1.0+0.0j, 0.0+0.0j], dtype=np.complex128)
 # ステップ数は (len(Efield)-1)//2
 steps = (len(Efield)-1)//2
 
-# ----------------------------------------------------------------------
-# 2. 伝搬
-# ----------------------------------------------------------------------
-print("propagating …")
-t0 = time.time()
-psi_traj = splitop_schrodinger(
-    H0,
-    mu_x,
-    mu_y,
-    pol,
-    Efield,
-    psi0,
-    dt,
-    steps,
-    sample_stride=sample_stride,
-)
-print(f"done   (elapsed {time.time()-t0:.2f} s)")
+if __name__ == "__main__":
+    # --- 伝搬・可視化部分をインデントしてmainガード内に移動 ---
+    print("propagating …")
+    t0 = time.time()
+    psi_traj = splitop_schrodinger(
+        H0,
+        mu_x,
+        mu_y,
+        pol,
+        Efield,
+        psi0,
+        dt,
+        steps,
+        sample_stride=sample_stride,
+    )
+    print(f"done   (elapsed {time.time()-t0:.2f} s)")
 
-# ----------------------------------------------------------------------
-# 3. 可視化
-# ----------------------------------------------------------------------
-fig, ax = plt.subplots(
-    2, 1, figsize=(6, 6),
-    sharex=True, gridspec_kw=dict(hspace=0.0, height_ratios=[0.2, 1])
-)
+    fig, ax = plt.subplots(
+        2, 1, figsize=(6, 6),
+        sharex=True, gridspec_kw=dict(hspace=0.0, height_ratios=[0.2, 1])
+    )
 
-ax[0].plot(t_E, Efield, color="tab:gray")
-ax[0].set_ylabel("E(t)")
+    ax[0].plot(t_E, Efield, color="tab:gray")
+    ax[0].set_ylabel("E(t)")
 
-ax[1].plot(t_psi, np.abs(psi_traj[:, 0])**2, label=r"|ψ₀|²")
-ax[1].plot(t_psi, np.abs(psi_traj[:, 1])**2, label=r"|ψ₁|²")
-ax[1].plot(t_psi, (np.abs(psi_traj)**2).sum(axis=1), label=r"|ψ|²", lw=0.7)
-ax[1].set_xlabel("Time")
-ax[1].set_ylabel("Population")
-ax[1].legend(loc="upper right")
+    ax[1].plot(t_psi, np.abs(psi_traj[:, 0])**2, label=r"|ψ₀|²")
+    ax[1].plot(t_psi, np.abs(psi_traj[:, 1])**2, label=r"|ψ₁|²")
+    ax[1].plot(t_psi, (np.abs(psi_traj)**2).sum(axis=1), label=r"|ψ|²", lw=0.7)
+    ax[1].set_xlabel("Time")
+    ax[1].set_ylabel("Population")
+    ax[1].legend(loc="upper right")
 
-plt.show()
+    plt.show()

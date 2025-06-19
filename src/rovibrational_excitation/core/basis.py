@@ -13,7 +13,8 @@ class LinMolBasis:
         self.basis = self._generate_basis()
         self.V_array = self.basis[:, 0]
         self.J_array = self.basis[:, 1]
-        self.M_array = self.basis[:, 2]
+        if self.use_M:
+            self.M_array = self.basis[:, 2]
         self.index_map = {tuple(state): i for i, state in enumerate(self.basis)}
         self.omega_rad_phz = omega_rad_phz
         self.delta_omega_rad_phz = delta_omega_rad_phz

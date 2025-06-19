@@ -6,7 +6,7 @@ but allows two execution back‑ends:
 
 * **CuPy**  – for GPU acceleration (if ``cupy`` is available and the user passes
   ``backend='cupy'``).
-* **NumPy + Numba** – CPU execution with an inner loop compiled by ``@njit`` when
+* **NumPy + Numba** – CPU execution with an inner loop compiled by ``@njit`` when
   CuPy is not selected (or not installed).
 
 Only *real* electric‑field envelopes are considered, and Hermiticity of the
@@ -47,13 +47,13 @@ except ImportError:  # NumPy fallback（遅くなるが動く）
 
     _HAS_NUMBA = False
 
-__all__ = ["split_operator_schrodinger_traj"]
+__all__ = ["splitop_schrodinger"]
 
 # ---------------------------------------------------------------------------
 # Helper (CPU, Numba) --------------------------------------------------------
 # ---------------------------------------------------------------------------
 
-@njit(cache=True, fastmath=True)
+@njit(fastmath=True, cache=True)
 def _propagate_numpy(
     U: np.ndarray,  # (dim, dim)  unitary eigenvector matrix
     U_H: np.ndarray,  # U.conj().T  – Hermitian adjoint
@@ -175,6 +175,8 @@ def _splitop_cupy(
     hbar: float,
 ):
     """GPU implementation (requires CuPy)."""
+
+    assert cp is not None, "CuPy backend requested but CuPy is not installed."
 
     # Convert to CuPy arrays once
     H0_cp = cp.asarray(np.diag(H0) if H0.ndim == 2 else H0, dtype=cp.float64)
