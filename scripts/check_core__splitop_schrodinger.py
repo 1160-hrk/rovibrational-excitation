@@ -23,7 +23,7 @@ from rovibrational_excitation.core._splitop_schrodinger import splitop_schroding
 # ----------------------------------------------------------------------
 # 1. シミュレーション条件
 # ----------------------------------------------------------------------
-ti, tf          = 0.0, 100000.0
+ti, tf          = 0.0, 1000000.0
 dt_E            = 0.01                # 電場サンプリング幅
 dt              = dt_E * 2            # ψ を進める dt (=2*dt_E)
 sample_stride   = 1

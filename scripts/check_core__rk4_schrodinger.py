@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-ti, tf = 0.0, 100000
+ti, tf = 0.0, 1000000
 dt4Efield = 0.01
 sample_stride = 1
 dt = dt4Efield * 2
