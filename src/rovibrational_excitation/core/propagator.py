@@ -74,8 +74,23 @@ def _prepare_args(
 
     Ex, Ey  = E.Efield[:, 0], E.Efield[:, 1]
 
-    mu_a = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax0)))
-    mu_b = xp.asarray(_cm_to_rad_phz(_pick_mu(dip, ax1)))
+    # スパース行列対応: スパース行列の場合はそのまま使用
+    mu_a_raw = _pick_mu(dip, ax0)
+    mu_b_raw = _pick_mu(dip, ax1)
+    
+    try:
+        import scipy.sparse as sp
+        if sp.issparse(mu_a_raw):
+            mu_a = _cm_to_rad_phz(mu_a_raw)  # スパース行列の場合はそのまま
+        else:
+            mu_a = xp.asarray(_cm_to_rad_phz(mu_a_raw))
+        if sp.issparse(mu_b_raw):
+            mu_b = _cm_to_rad_phz(mu_b_raw)  # スパース行列の場合はそのまま
+        else:
+            mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
+    except ImportError:
+        mu_a = xp.asarray(_cm_to_rad_phz(mu_a_raw))
+        mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
 
     return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2
 

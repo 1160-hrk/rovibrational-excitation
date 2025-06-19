@@ -11,7 +11,7 @@ but allows two execution back‑ends:
 
 Only *real* electric‑field envelopes are considered, and Hermiticity of the
 interaction Hamiltonian is enforced via
-:math:`A = (M + M^\dagger)/2` with
+:math:`A = (M + M^\\dagger)/2` with
 :math:`M = p_x\,\mu_x + p_y\,\mu_y`.
 
 The returned trajectory has exactly the same shape as the one produced by
@@ -129,21 +129,60 @@ def splitop_schrodinger(
 
     # ---------------- CPU / NumPy (+Numba) path ---------------------------
     H0 = np.asarray(H0, dtype=np.float64)
-    mu_x = np.asarray(mu_x, dtype=np.complex128)
-    mu_y = np.asarray(mu_y, dtype=np.complex128)
+    
+    # スパース行列の場合は適切に処理
+    try:
+        import scipy.sparse as sp
+        if sp.issparse(mu_x):
+            pass  # スパース行列の場合はそのまま使用
+        else:
+            mu_x = np.asarray(mu_x, dtype=np.complex128)
+        if sp.issparse(mu_y):
+            pass  # スパース行列の場合はそのまま使用
+        else:
+            mu_y = np.asarray(mu_y, dtype=np.complex128)
+    except ImportError:
+        mu_x = np.asarray(mu_x, dtype=np.complex128)
+        mu_y = np.asarray(mu_y, dtype=np.complex128)
+    
     pol = np.asarray(pol, dtype=np.complex128)
     Efield = np.asarray(Efield, dtype=np.float64)
-    psi = np.asarray(psi, dtype=np.complex128)
+    psi = np.asarray(psi, dtype=np.complex128).flatten()  # 1次元に変換
 
     # ½‑step phase from diagonal H0
     diag_H0 = np.diag(H0) if H0.ndim == 2 else H0
     exp_half = np.exp(-1j * diag_H0 * dt / (2.0 * hbar))
 
     # Hermitian A = (M+M†)/2  with  M = p·μ
-    M_raw = pol[0] * mu_x + pol[1] * mu_y
-    A = 0.5 * (M_raw + M_raw.conj().T)
-
-    eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
+    # スパース行列の場合は適切に処理
+    try:
+        import scipy.sparse as sp
+        if sp.issparse(mu_x) or sp.issparse(mu_y):
+            # スパース行列の演算
+            M_raw = pol[0] * mu_x + pol[1] * mu_y
+            if sp.issparse(M_raw):
+                A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
+                # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
+                if A.shape[0] <= 100:
+                    A_dense = A.toarray()
+                    eigvals, U = np.linalg.eigh(A_dense)
+                else:
+                    # 大サイズの場合はdenseでの固有値分解にフォールバック
+                    A_dense = A.toarray()
+                    eigvals, U = np.linalg.eigh(A_dense)
+            else:
+                A = 0.5 * (M_raw + M_raw.conj().T)
+                eigvals, U = np.linalg.eigh(A)
+        else:
+            # Dense行列の場合（従来の処理）
+            M_raw = pol[0] * mu_x + pol[1] * mu_y
+            A = 0.5 * (M_raw + M_raw.conj().T)
+            eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
+    except ImportError:
+        # scipy が無い場合は従来の処理
+        M_raw = pol[0] * mu_x + pol[1] * mu_y
+        A = 0.5 * (M_raw + M_raw.conj().T)
+        eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
     U_H = U.conj().T
 
     # midpoint electric field samples (len = steps)

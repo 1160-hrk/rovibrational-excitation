@@ -129,12 +129,15 @@ class ElectricField:
             const_polarisation is None and isinstance(self._constant_pol, np.ndarray)
         ):
             # 保存しておく（実数に変換）
-            ef_real = np.real(np.asarray(Efield))
-            ef_disp = apply_dispersion(self.tlist, ef_real, carrier_freq, gdd, tod)
+            ef_real = np.real(np.asarray(Efield))  # 1次元配列
+            # apply_dispersionは2次元配列を期待するので、reshapeしてから適用
+            ef_real_2d = ef_real.reshape(-1, 1)
+            ef_disp = apply_dispersion(self.tlist, ef_real_2d, carrier_freq, gdd, tod)
             if isinstance(ef_disp, tuple):
                 ef_disp = ef_disp[0]
             ef_disp = np.asarray(ef_disp)
-            self._scalar_field = np.real(ef_disp)
+            # 1次元に戻す
+            self._scalar_field = np.real(ef_disp).flatten()
     
     def apply_sinusoidal_mod(
         self,

@@ -79,7 +79,9 @@ def _dense_core(v_arr, J_arr, M_arr,
             #     continue
             if abs(J1 - J2) != 1:
                 continue
-            if abs(M1 - M2) > 1:
+            if abs(J1 - J2) > 1:        # 回転選択則: ΔJ = 0, ±1
+                continue
+            if abs(M1 - M2) > 1:        # 磁気選択則: ΔM = 0, ±1
                 continue
 
             # --- 回転要素 ----------------------------------------------
@@ -111,13 +113,10 @@ def _sparse_cpu(v_arr, J_arr, M_arr,
     data, row, col = [], [], []
 
     for i, (v1, J1, M1) in enumerate(zip(v_arr, J_arr, M_arr)):
-        if J1 == 0:
-            continue
+        # J=0状態もスキップしない（dense版と同じ）
         mask = (
-            (abs(v1 - v_arr) == 1)
-            & (abs(J1 - J_arr) == 1)
-            & (abs(M1 - M_arr) <= 1)
-            & (J_arr != 0)
+            (abs(J1 - J_arr) <= 1)    # 回転選択則: ΔJ = 0, ±1
+            & (abs(M1 - M_arr) <= 1)    # 磁気選択則: ΔM = 0, ±1
         )
         for j in _np.nonzero(mask)[0]:
             r = rot_func(J1, M1, J_arr[j], M_arr[j])
@@ -129,7 +128,9 @@ def _sparse_cpu(v_arr, J_arr, M_arr,
             data.append(mu0 * r * vfac)
             row.append(i); col.append(j)
 
-    return _sp.csr_matrix((data, (row, col)), dtype=_np.complex128)
+    # 空の場合はshapeを明示的に指定
+    shape = (len(v_arr), len(v_arr))
+    return _sp.csr_matrix((data, (row, col)), shape=shape, dtype=_np.complex128)
 
 # ----------------------------------------------------------------------
 # --- 4. GPU dense helper ---------------------------------------------
