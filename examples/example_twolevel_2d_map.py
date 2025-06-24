@@ -35,19 +35,19 @@ class SimulationConfig:
     
     # 時間グリッド設定
     time_start: float = 0.0
-    time_end: float = 10000.0
-    dt_efield: float = 0.2
+    time_end: float = 400.0
+    dt_efield: float = 0.5
     sample_stride: int = 50
     
     # デフォルトケース設定
     default_detuning: float = 0.0
     
     # 2次元スイープ設定
-    duration_min: float = 1000.0
-    duration_max: float = 3000.0
+    duration_min: float = 0.0
+    duration_max: float = 110.0
     duration_points: int = 200
     amplitude_min: float = 0
-    amplitude_max: float = 5e11
+    amplitude_max: float = 1.9e11
     amplitude_points: int = 200
     
     @property
@@ -61,10 +61,13 @@ class PlotConfig:
     """プロット設定を管理するクラス"""
     figsize: Tuple[int, int] = (10, 8)
     dpi: int = 300
-    condition_line_colors: Tuple[str, ...] = ('red', 'orange', 'yellow', 'cyan', 'magenta')
+    condition_line_colors: Tuple[str, ...] = (
+        'tab:red', 'tab:orange', 'tab:green', 'tab:blue', 'tab:purple',
+        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan',
+    ) * 4  # 40色まで対応（10色を4回繰り返し）
     condition_line_width: int = 2
     condition_line_style: str = '--'
-    contour_levels: int = 21
+    contour_levels: int = 100
     results_dir: str = "examples/results"
 
 
@@ -76,7 +79,7 @@ plot_config = PlotConfig()
 execution_time = ""
 
 
-def calculate_condition_lines(durations: np.ndarray, n_max: int = 4) -> Dict[int, Tuple[np.ndarray, np.ndarray]]:
+def calculate_condition_lines(durations: np.ndarray, n_max: int = 20) -> Dict[int, Tuple[np.ndarray, np.ndarray]]:
     """
     MU0*amplitude * duration * sqrt(2*pi)/DIRAC_CONSTANT = (2n+1)*pi
     の条件線を計算
@@ -290,11 +293,9 @@ def plot_contour_map(amplitudes: np.ndarray, durations: np.ndarray, final_popula
     # メッシュグリッド作成（x, y軸を反転）
     D, A = np.meshgrid(durations, amplitudes)
     
-    # 等高線プロット
+    # 等高線プロット（塗りつぶしのみ）
     levels = np.linspace(0, 1, plot_config.contour_levels)
-    cs = ax.contour(D, A, final_populations.T, levels=levels, colors='black', linewidths=0.5)
-    cs_filled = ax.contourf(D, A, final_populations.T, levels=levels, cmap='viridis', alpha=0.8)
-    ax.clabel(cs, inline=True, fontsize=8, fmt='%.2f')
+    cs_filled = ax.contourf(D, A, final_populations.T, levels=levels, cmap='viridis')
     
     setup_plot_axes(ax, 'Final Population in Excited State |1⟩ (Contour)')
     add_condition_lines(ax, durations)
