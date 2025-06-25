@@ -14,6 +14,9 @@ import os
 from typing import Dict, Tuple, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
+import multiprocessing as mp
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 import numpy as np
@@ -23,6 +26,37 @@ from rovibrational_excitation.core.states import StateVector
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
+
+
+# ======================================================================
+# 主要設定 (Main Configuration) - 編集はここで行う
+# ======================================================================
+
+# プロット軸ラベル設定
+XLABEL = 'Pulse Duration [fs]'
+YLABEL = 'Electric Field Amplitude [a.u.]'
+
+# 条件線設定
+CONDITION_LINE_N_MAX = 20  # 条件線の最大n値 (n=0 から n_max まで描画)
+CONDITION_LINE_COLORS = (
+    'tab:red', 'tab:orange', 'tab:green', 'tab:blue', 'tab:purple',
+    'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan',
+) * 4  # 40色まで対応（10色を4回繰り返し）
+
+# 2次元スイープ範囲設定
+DURATION_MIN = 0.0        # パルス時間幅の最小値 [fs]
+DURATION_MAX = 500.0      # パルス時間幅の最大値 [fs]
+DURATION_POINTS = 1000     # パルス時間幅の点数
+
+AMPLITUDE_MIN = 0         # 電場振幅の最小値 [a.u.]
+AMPLITUDE_MAX = 4e11    # 電場振幅の最大値 [a.u.]
+AMPLITUDE_POINTS = 1000    # 電場振幅の点数
+
+# 並列計算設定
+MAX_WORKERS = mp.cpu_count()  # 使用するCPUコア数（自動検出）
+CHUNK_SIZE = 100  # 一度に処理するタスク数
+
+# ======================================================================
 
 
 @dataclass
@@ -35,20 +69,20 @@ class SimulationConfig:
     
     # 時間グリッド設定
     time_start: float = 0.0
-    time_end: float = 400.0
-    dt_efield: float = 0.5
+    time_end: float = DURATION_MAX * 5  # 4: E=1/e^2
+    dt_efield: float = 0.1
     sample_stride: int = 50
     
     # デフォルトケース設定
     default_detuning: float = 0.0
     
-    # 2次元スイープ設定
-    duration_min: float = 0.0
-    duration_max: float = 110.0
-    duration_points: int = 200
-    amplitude_min: float = 0
-    amplitude_max: float = 1.9e11
-    amplitude_points: int = 200
+    # 2次元スイープ設定（上部の定数を参照）
+    duration_min: float = DURATION_MIN
+    duration_max: float = DURATION_MAX
+    duration_points: int = DURATION_POINTS
+    amplitude_min: float = AMPLITUDE_MIN
+    amplitude_max: float = AMPLITUDE_MAX
+    amplitude_points: int = AMPLITUDE_POINTS
     
     @property
     def dirac_constant(self) -> float:
@@ -61,10 +95,7 @@ class PlotConfig:
     """プロット設定を管理するクラス"""
     figsize: Tuple[int, int] = (10, 8)
     dpi: int = 300
-    condition_line_colors: Tuple[str, ...] = (
-        'tab:red', 'tab:orange', 'tab:green', 'tab:blue', 'tab:purple',
-        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan',
-    ) * 4  # 40色まで対応（10色を4回繰り返し）
+    condition_line_colors: Tuple[str, ...] = CONDITION_LINE_COLORS
     condition_line_width: int = 2
     condition_line_style: str = '--'
     contour_levels: int = 100
@@ -79,7 +110,7 @@ plot_config = PlotConfig()
 execution_time = ""
 
 
-def calculate_condition_lines(durations: np.ndarray, n_max: int = 20) -> Dict[int, Tuple[np.ndarray, np.ndarray]]:
+def calculate_condition_lines(durations: np.ndarray, n_max: int = CONDITION_LINE_N_MAX) -> Dict[int, Tuple[np.ndarray, np.ndarray]]:
     """
     MU0*amplitude * duration * sqrt(2*pi)/DIRAC_CONSTANT = (2n+1)*pi
     の条件線を計算
@@ -108,8 +139,8 @@ def calculate_condition_lines(durations: np.ndarray, n_max: int = 20) -> Dict[in
 
 def setup_plot_axes(ax: plt.Axes, title: str) -> None:
     """プロット軸の共通設定を行う"""
-    ax.set_xlabel('Pulse Duration [fs]')
-    ax.set_ylabel('Electric Field Amplitude [a.u.]')
+    ax.set_xlabel(XLABEL)
+    ax.set_ylabel(YLABEL)
     ax.set_title(title)
     ax.set_ylim(config.amplitude_min, config.amplitude_max)
     ax.ticklabel_format(style='scientific', axis='y', scilimits=(0,0))
@@ -121,11 +152,16 @@ def add_condition_lines(ax: plt.Axes, durations: np.ndarray) -> None:
     
     for n, (dur, amp) in condition_lines.items():
         if n < len(plot_config.condition_line_colors):
+            if n == 0:
+                label = f'pulse area = {2*n+1}π'
+            else:
+                label = f'                  = {2*n+1}π'
+            
             ax.plot(dur, amp, 
                    color=plot_config.condition_line_colors[n], 
                    linewidth=plot_config.condition_line_width,
                    linestyle=plot_config.condition_line_style,
-                   label=f'n={n}: (2n+1)π condition')
+                   label=label)
     
     ax.legend(loc='upper right')
 
@@ -199,9 +235,30 @@ def run_twolevel_simulation(detuning: Optional[float] = None, amplitude: float =
     return time4Efield, Efield, time4psi, psi_t
 
 
+def compute_single_case(params: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    """単一の計算ケースを実行（並列化用）"""
+    amplitude, duration, detuning = params
+    
+    try:
+        _, _, time4psi, psi_t = run_twolevel_simulation(
+            detuning=detuning,
+            amplitude=amplitude,
+            pulse_duration=duration
+        )
+        
+        prob_1 = np.abs(psi_t[:, 1])**2  # 励起状態の確率
+        final_population = prob_1[-1]  # 最終確率
+        
+        return amplitude, duration, final_population
+        
+    except Exception as e:
+        print(f"Error in case (A={amplitude:.2e}, D={duration:.1f}): {e}")
+        return amplitude, duration, 0.0
+
+
 def amplitude_duration_2d_sweep() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """電場振幅とパルス時間幅の2次元スイープ"""
-    print("=== 2D Sweep: Electric Field Amplitude vs Pulse Duration ===")
+    """電場振幅とパルス時間幅の2次元スイープ（並列化版）"""
+    print("=== 2D Sweep: Electric Field Amplitude vs Pulse Duration (Parallel) ===")
     
     amplitudes = np.linspace(config.amplitude_min, config.amplitude_max, config.amplitude_points)
     durations = np.linspace(config.duration_min, config.duration_max, config.duration_points)
@@ -209,29 +266,43 @@ def amplitude_duration_2d_sweep() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # 結果を格納する2次元配列
     final_populations = np.zeros((len(durations), len(amplitudes)))
     
-    total_cases = len(amplitudes) * len(durations)
-    case_count = 0
-    
+    # 計算パラメータリストを準備
+    params_list = []
     for i, duration in enumerate(durations):
         for j, amplitude in enumerate(amplitudes):
-            case_count += 1
-            if case_count % 500 == 0 or case_count <= 10:  # 進捗表示を調整
-                print(f"Case {case_count}/{total_cases}: Amplitude={amplitude:.2e}, Duration={duration:.1f}fs")
-            
-            try:
-                _, _, time4psi, psi_t = run_twolevel_simulation(
-                    detuning=config.default_detuning,
-                    amplitude=amplitude,
-                    pulse_duration=duration
-                )
-                
-                prob_1 = np.abs(psi_t[:, 1])**2  # 励起状態の確率
-                final_populations[i, j] = prob_1[-1]  # 最終確率
-                
-            except Exception as e:
-                print(f"Error in case {case_count}: {e}")
-                final_populations[i, j] = 0.0
+            params_list.append((amplitude, duration, config.default_detuning))
     
+    total_cases = len(params_list)
+    print(f"Total cases: {total_cases}")
+    print(f"Using {MAX_WORKERS} CPU cores")
+    print(f"Chunk size: {CHUNK_SIZE}")
+    print("Starting parallel computation...")
+    
+    # 並列計算実行
+    completed_cases = 0
+    results = {}
+    
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # タスクを送信
+        future_to_params = {executor.submit(compute_single_case, params): params 
+                           for params in params_list}
+        
+        # 結果を収集
+        for future in as_completed(future_to_params):
+            amplitude, duration, final_pop = future.result()
+            results[(amplitude, duration)] = final_pop
+            
+            completed_cases += 1
+            if completed_cases % (CHUNK_SIZE * 10) == 0 or completed_cases <= 10:
+                print(f"Completed: {completed_cases}/{total_cases} ({completed_cases/total_cases*100:.1f}%)")
+    
+    # 結果を2次元配列に格納
+    print("Organizing results...")
+    for i, duration in enumerate(durations):
+        for j, amplitude in enumerate(amplitudes):
+            final_populations[i, j] = results.get((amplitude, duration), 0.0)
+    
+    print("Parallel computation completed!")
     return amplitudes, durations, final_populations
 
 
@@ -321,9 +392,11 @@ def main() -> None:
     print("=" * 50)
     print(f"Execution time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Configuration:")
-    print(f"  Duration range: {config.duration_min} - {config.duration_max} fs ({config.duration_points} points)")
-    print(f"  Amplitude range: {config.amplitude_min:.2e} - {config.amplitude_max:.2e} a.u. ({config.amplitude_points} points)")
-    print(f"  Total calculations: {config.duration_points * config.amplitude_points}")
+    print(f"  Duration range: {DURATION_MIN} - {DURATION_MAX} fs ({DURATION_POINTS} points)")
+    print(f"  Amplitude range: {AMPLITUDE_MIN:.2e} - {AMPLITUDE_MAX:.2e} a.u. ({AMPLITUDE_POINTS} points)")
+    print(f"  Total calculations: {DURATION_POINTS * AMPLITUDE_POINTS}")
+    print(f"  Condition lines: n=0 to n={CONDITION_LINE_N_MAX}")
+    print(f"  Parallel processing: {MAX_WORKERS} CPU cores, chunk size: {CHUNK_SIZE}")
     print("=" * 50)
     
     # 2次元スイープ実行
