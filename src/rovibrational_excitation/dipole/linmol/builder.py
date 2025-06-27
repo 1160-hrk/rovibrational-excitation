@@ -36,7 +36,7 @@ else:
     Array = _np.ndarray
 
 # ----------------------------------------------------------------------
-# --- 1. 小さな “ラッパー” を JIT しておく ------------------------------
+# --- 1. 小さな "ラッパー" を JIT しておく ------------------------------
 #   * Numba カーネル側で未型 global が残らないようにする
 # ----------------------------------------------------------------------
 @njit(cache=True, fastmath=True, inline="always")
@@ -178,7 +178,7 @@ def build_mu(
 
     Parameters
     ----------
-    basis : LinMolBasis   (must expose .V_array, .J_array, .M_array)
+    basis : LinMolBasis   (must expose .V_array, .J_array, and optionally .M_array)
     axis  : 'x' | 'y' | 'z'
     mu0   : overall scaling
     potential_type : 'harmonic' | 'morse'
@@ -194,7 +194,12 @@ def build_mu(
 
     v_arr = _np.asarray(basis.V_array, _np.int64)
     J_arr = _np.asarray(basis.J_array, _np.int64)
-    M_arr = _np.asarray(basis.M_array, _np.int64)
+    
+    # M_arrayがない場合（use_M=False）はM=0で埋める
+    if hasattr(basis, 'M_array'):
+        M_arr = _np.asarray(basis.M_array, _np.int64)
+    else:
+        M_arr = _np.zeros_like(J_arr, dtype=_np.int64)
 
     axis_idx     = "xyz".index(axis)
     vib_is_morse = pot == "morse"
