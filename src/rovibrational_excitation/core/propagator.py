@@ -73,6 +73,9 @@ def _prepare_args(
     dt_half = E.dt if dt is None else dt / 2
 
     Ex, Ey  = E.Efield[:, 0], E.Efield[:, 1]
+    
+    # stepsを計算
+    steps = (len(Ex) - 1) // 2
 
     # スパース行列対応: スパース行列の場合はそのまま使用
     mu_a_raw = _pick_mu(dip, ax0)
@@ -92,7 +95,7 @@ def _prepare_args(
         mu_a = xp.asarray(_cm_to_rad_phz(mu_a_raw))
         mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
 
-    return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2
+    return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
 
 # ---------------------------------------------------------------------
 # RK4 kernels
@@ -109,12 +112,12 @@ def schrodinger_propagation(
     *,
     axes: str = "xy",
     return_traj: bool = True,
-    return_time_psi: bool = True,
+    return_time_psi: bool = False,
     sample_stride: int = 1,
     backend: str = "numpy",
 ) -> Array:
     xp = _backend(backend)
-    H0_, mu_a, mu_b, Ex, Ey, dt = _prepare_args(
+    H0_, mu_a, mu_b, Ex, Ey, dt, steps = _prepare_args(
         H0, Efield, dipole_matrix, axes=axes
     )
     # ---------------------------------------------------------
@@ -135,38 +138,46 @@ def schrodinger_propagation(
             sample_stride=sample_stride,
             backend=backend,
         )
+        
+        # 形状を調整
+        result = traj_split.squeeze()
+        if result.ndim == 1:
+            result = result.reshape(1, -1)
+        
         if return_traj:
             if return_time_psi:
+                # resultがtupleの場合はshapeアクセスできないので修正
+                if isinstance(result, tuple):
+                    # すでにtupleになっている場合はそのまま返す
+                    return result
                 time_psi = xp.arange(0,
-                                     traj_split.shape[0]*dt*sample_stride,
+                                     result.shape[0]*dt*sample_stride,
                                      dt*sample_stride)
-                return time_psi, traj_split.squeeze()
-            return traj_split.squeeze()
-
-        return traj_split[-1:].reshape((1, len(psi0)))
+                return time_psi, result
+            return result
+        else:
+            return result[-1:].reshape((1, len(psi0)))
 
     except ValueError:
         # 偏光が時間依存 → 旧来の RK4 へフォールバック
         pass
     
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt)
+    
     if return_traj:
+        psi_traj = rk4_schrodinger(
+            *rk4_args, return_traj=return_traj, stride=sample_stride
+            )
         if return_time_psi:
             dt_psi = dt * sample_stride
-            psi_traj = rk4_schrodinger(
-                *rk4_args, return_traj=return_traj, stride=sample_stride
-                )
-            len_traj= psi_traj.shape[0]
+            len_traj = psi_traj.shape[0]
             time_psi = xp.arange(0, len_traj*dt_psi, dt_psi)
-            return time_psi, rk4_schrodinger(
-                *rk4_args, return_traj=return_traj, stride=sample_stride
-                )
+            return time_psi, psi_traj
         else:
-            return rk4_schrodinger(
-                *rk4_args, return_traj=return_traj, stride=sample_stride
-                )
+            return psi_traj
     else:
-        return rk4_schrodinger(*rk4_args).reshape((1, len(psi0))) 
+        result = rk4_schrodinger(*rk4_args)
+        return result.reshape((1, len(psi0)))
 
 # ---------------------------------------------------------------------
 def mixed_state_propagation(
@@ -177,25 +188,34 @@ def mixed_state_propagation(
     *,
     axes: str = "xy",
     return_traj: bool = True,
-    return_time_rho: bool = True,
+    return_time_rho: bool = False,
     sample_stride: int = 1,
     backend: str = "numpy",
 ) -> Array:
     xp = _backend(backend)
     dim = psi0_array[0].shape[0]
     steps_out = (len(Efield.tlist) // 2) // sample_stride + 1
-    rho_out = xp.zeros((steps_out, dim, dim)) if return_traj else xp.zeros((dim, dim))
+    rho_out = xp.zeros((steps_out, dim, dim), dtype=xp.complex128) if return_traj else xp.zeros((dim, dim), dtype=xp.complex128)
 
     for psi0 in psi0_array:
-        psi_t = schrodinger_propagation(
+        result = schrodinger_propagation(
             H0, Efield, dipole_matrix, psi0,
             axes=axes, return_traj=return_traj,
+            return_time_psi=False,  # time情報は不要
             sample_stride=sample_stride, backend=backend
         )
+        
+        # resultがtupleの場合の処理
+        if isinstance(result, tuple):
+            psi_t = result[1]
+        else:
+            psi_t = result
+            
         if return_traj:
             rho_out += xp.einsum("ti, tj -> tij", psi_t, psi_t.conj())
         else:
-            rho_out += psi_t @ psi_t.conj().T
+            rho_out += psi_t[0] @ psi_t[0].conj().T
+            
     if return_traj:
         if return_time_rho:
             dt_rho = Efield.dt_state * sample_stride

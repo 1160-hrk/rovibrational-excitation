@@ -398,7 +398,7 @@ def apply_dispersion(tlist, Efield, center_freq, gdd=0.0, tod=0.0):
     Parameters
     ----------
     tlist : np.ndarray
-    Efield : np.ndarray (complex)
+    Efield : np.ndarray (real or complex)
     center_freq : float
     gdd : float
     tod : float
@@ -408,14 +408,52 @@ def apply_dispersion(tlist, Efield, center_freq, gdd=0.0, tod=0.0):
     np.ndarray
         分散適用後の電場（complex）
     """
-    freq = rfftfreq(len(tlist), d=(tlist[1] - tlist[0]))
-    E_freq = rfft(Efield, axis=0)
-    phase = gdd * (2*pi*(freq - center_freq))**2 + tod * (2*pi*(freq - center_freq))**3
-    phase = phase.reshape((len(freq), 1))
-    # phase = np.clip(phase, -1e4, 1e4)  # 位相のクリッピング
-    # phase = (phase+np.pi) % (2 * np.pi) - np.pi  # 位相を-πからπにクリッピング 
-    E_freq_disp = E_freq * np.exp(-1j * phase)
-    return irfft(E_freq_disp, axis=0, n=len(tlist))
+    # 元のEfieldが複素数かどうかをチェック
+    is_complex_input = np.iscomplexobj(Efield)
+    
+    # Efieldを配列に変換
+    Efield = np.asarray(Efield)
+    
+    # 複素数の場合はfft、実数の場合はrfftを使用
+    if is_complex_input or Efield.dtype.kind == 'c':
+        from scipy.fft import fft, ifft, fftfreq
+        freq = fftfreq(len(tlist), d=(tlist[1] - tlist[0]))
+        E_freq = fft(Efield, axis=0)
+        
+        # 位相計算
+        phase = gdd * (2*pi*(freq - center_freq))**2 + tod * (2*pi*(freq - center_freq))**3
+        
+        # Efieldの次元に合わせて位相を調整
+        if Efield.ndim == 1:
+            # 1次元の場合はそのまま
+            pass
+        elif Efield.ndim == 2:
+            # 2次元の場合は位相をreshape
+            phase = phase.reshape((len(freq), 1))
+        else:
+            raise ValueError("Efield must be 1D or 2D array")
+        
+        E_freq_disp = E_freq * np.exp(-1j * phase)
+        return ifft(E_freq_disp, axis=0, n=len(tlist))
+    else:
+        freq = rfftfreq(len(tlist), d=(tlist[1] - tlist[0]))
+        E_freq = rfft(Efield, axis=0)
+        
+        # 位相計算
+        phase = gdd * (2*pi*(freq - center_freq))**2 + tod * (2*pi*(freq - center_freq))**3
+        
+        # Efieldの次元に合わせて位相を調整
+        if Efield.ndim == 1:
+            # 1次元の場合はそのまま
+            pass
+        elif Efield.ndim == 2:
+            # 2次元の場合は位相をreshape
+            phase = phase.reshape((len(freq), 1))
+        else:
+            raise ValueError("Efield must be 1D or 2D array")
+        
+        E_freq_disp = E_freq * np.exp(-1j * phase)
+        return irfft(E_freq_disp, axis=0, n=len(tlist))
 
 # ===== 包絡線関数群 =====
 

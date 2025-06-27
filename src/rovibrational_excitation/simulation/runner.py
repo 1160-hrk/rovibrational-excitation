@@ -183,15 +183,35 @@ def _json_safe(obj: Any) -> Any:
 # ---------------------------------------------------------------------
 # polarization dict ⇄ complex array
 # ---------------------------------------------------------------------
-def _deserialize_pol(seq: list[dict | float | int | complex]) -> np.ndarray:
+def _deserialize_pol(seq) -> np.ndarray:
     def to_complex(d):
-        if isinstance(d, dict) and d.get("__complex__"):
-            return complex(d["r"], d["i"])
+        if isinstance(d, dict):
+            r = d.get("r", d.get("real", 0))
+            i = d.get("i", d.get("imag", 0))
+            return complex(r, i)
         elif isinstance(d, (float, int, complex)):
             return complex(d)
         else:
             raise TypeError(f"Invalid type in polarization sequence: {type(d)}")
-    return np.asarray([to_complex(d) for d in seq], dtype=complex)
+    
+    # seqが単一の値の場合
+    if isinstance(seq, (int, float, complex, dict)):
+        return np.array([to_complex(seq), 0], dtype=complex)
+    
+    # seqがiterableの場合
+    if hasattr(seq, '__iter__') and not isinstance(seq, (str, bytes)):
+        seq_list = list(seq)
+        if len(seq_list) == 1:
+            # [x] → [x, 0]
+            return np.array([to_complex(seq_list[0]), 0], dtype=complex)
+        elif len(seq_list) == 2:
+            # [x, y] → [x, y]
+            return np.array([to_complex(d) for d in seq_list], dtype=complex)
+        else:
+            raise ValueError(f"Polarization must have 1 or 2 elements, got {len(seq_list)}")
+    
+    # 何も該当しない場合はデフォルト
+    return np.array([1.0, 0.0], dtype=complex)
 
 
 # ---------------------------------------------------------------------
