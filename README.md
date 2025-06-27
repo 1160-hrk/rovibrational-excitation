@@ -1,6 +1,11 @@
 # rovibrational-excitation
 [![PyPI version](https://img.shields.io/pypi/v/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![Python](https://img.shields.io/pypi/pyversions/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
 [![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![Coverage](https://img.shields.io/badge/coverage-50%25-yellow.svg)](tests/README.md#現在のテストカバレッジ)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 Python package for **time-dependent quantum dynamics** of
 linear molecules (rotation × vibration) driven by femtosecond–picosecond
@@ -26,6 +31,27 @@ laser pulses.
 * 100 % pure-Python, **no compiled extension to ship** (Numba compiles at runtime).
 * Currently, only linear molecules are supported; that is, only the rotational quantum numbers J and M are taken into account.
 
+
+---
+
+## Testing & Coverage
+
+The package includes a comprehensive test suite with **50% code coverage** across all modules.
+
+- 🟢 **Basis classes**: 100% coverage (LinMol, TwoLevel, VibLadder)
+- 🟢 **Core physics**: 83-98% coverage (Hamiltonian, States, Propagator)
+- 🟡 **Electric field**: 53% coverage
+- 🔴 **Low-level propagators**: 25-38% coverage (ongoing development)
+
+See [`tests/README.md`](tests/README.md) for detailed coverage reports and test instructions.
+
+```bash
+# Run tests
+cd tests/ && python -m pytest -v
+
+# Generate coverage report
+coverage run -m pytest && coverage report
+```
 
 ---
 

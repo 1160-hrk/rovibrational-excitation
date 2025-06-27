@@ -2,6 +2,85 @@
 
 このディレクトリには、rovibrational-excitation パッケージの包括的なテストスイートが含まれています。
 
+## 現在のテストカバレッジ
+
+**全体カバレッジ: 50%** (1447行中728行がテスト済み)
+
+### モジュール別カバレッジ詳細
+
+#### 🟢 高カバレッジ (80%以上)
+| モジュール | カバレッジ | ステータス |
+|-----------|-----------|-----------|
+| LinMolBasis | 100% | ✅ 完全テスト済み |
+| TwoLevelBasis | 100% | ✅ 完全テスト済み |
+| VibLadderBasis | 100% | ✅ 完全テスト済み |
+| Hamiltonian | 100% | ✅ 完全テスト済み |
+| States | 98% | ✅ ほぼ完全 |
+| __init__.py | 87% | ✅ 良好 |
+| Propagator | 83% | ✅ 良好 |
+
+#### 🟡 中程度カバレッジ (50-79%)
+| モジュール | カバレッジ | 主な未テスト領域 |
+|-----------|-----------|-----------------|
+| BasisBase | 72% | 抽象メソッドの一部 |
+| Cache | 56% | HDF5保存・読み込み、高度な機能 |
+| ElectricField | 53% | 分散補正、複雑変調機能 |
+| LinMolBuilder | 50% | CuPyバックエンド、スパース行列 |
+
+#### 🔴 低カバレッジ (50%未満)
+| モジュール | カバレッジ | 優先度 |
+|-----------|-----------|-------|
+| JM Rotation Dipole | 29% | 🔴 高 |
+| Harmonic Vibration | 29% | 🟡 中 |
+| Morse Vibration | 35% | 🟡 中 |
+| Split-Op Schrödinger | 38% | 🔴 高 |
+| RK4 Schrödinger | 34% | 🔴 高 |
+| RK4 LVNE | 25% | 🔴 高 |
+| J Rotation Dipole | 45% | 🟡 中 |
+| Simulation Runner | 22% | 🔴 最高 |
+
+### テストカバレッジの改善目標
+
+#### フェーズ3A: Simulation Runner (22% → 60%+)
+- 最高優先度 - エンドツーエンドワークフロー
+- シミュレーション設定、実行、結果解析
+
+#### フェーズ3B: Low-Level Propagators (25-38% → 60%+)
+- RK4 LVNE、RK4 Schrödinger、Split-Operator
+- Numba/CuPy バックエンドテスト
+
+#### フェーズ3C: Electric Field Advanced Features (53% → 70%+)
+- 分散補正 (GDD/TOD)
+- 複雑な変調機能
+- 時間依存偏光
+
+#### フェーズ3D: Dipole System Extensions (29-45% → 70%+)
+- 回転双極子の高度な機能
+- 振動双極子の物理的妥当性
+- 選択則とコヒーレンス
+
+### カバレッジ測定方法
+
+```bash
+# カバレッジ付きテスト実行
+cd tests/
+coverage run -m pytest
+coverage report --show-missing
+
+# HTML レポート生成
+coverage html
+# htmlcov/index.html をブラウザで開く
+
+# 特定モジュールのカバレッジ
+coverage report --include="*/propagator.py"
+```
+
+### 注意事項
+
+- **Numba JITコンパイル**: `@njit` 装飾された関数は測定困難
+- **CuPy GPU コード**: GPU実行部分は環境依存でカバレッジ測定制限あり
+- **スパース行列**: scipy.sparse対応部分は条件付きテスト
+
 ## テストファイル一覧
 
 ### 基底クラステスト
