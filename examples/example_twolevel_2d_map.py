@@ -37,7 +37,7 @@ XLABEL = 'Pulse Duration [fs]'
 YLABEL = 'Electric Field Amplitude [a.u.]'
 
 # 条件線設定
-CONDITION_LINE_N_MAX = 20  # 条件線の最大n値 (n=0 から n_max まで描画)
+CONDITION_LINE_N_MAX = 10  # 条件線の最大n値 (n=0 から n_max まで描画)
 CONDITION_LINE_COLORS = (
     'tab:red', 'tab:orange', 'tab:green', 'tab:blue', 'tab:purple',
     'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan',
@@ -45,16 +45,16 @@ CONDITION_LINE_COLORS = (
 
 # 2次元スイープ範囲設定
 DURATION_MIN = 0.0        # パルス時間幅の最小値 [fs]
-DURATION_MAX = 500.0      # パルス時間幅の最大値 [fs]
-DURATION_POINTS = 1000     # パルス時間幅の点数
+DURATION_MAX = 20.0      # パルス時間幅の最大値 [fs]
+DURATION_POINTS = 100     # パルス時間幅の点数
 
 AMPLITUDE_MIN = 0         # 電場振幅の最小値 [a.u.]
-AMPLITUDE_MAX = 4e11    # 電場振幅の最大値 [a.u.]
-AMPLITUDE_POINTS = 1000    # 電場振幅の点数
+AMPLITUDE_MAX = 0.75e12    # 電場振幅の最大値 [a.u.]
+AMPLITUDE_POINTS = 100    # 電場振幅の点数
 
 # 並列計算設定
 MAX_WORKERS = mp.cpu_count()  # 使用するCPUコア数（自動検出）
-CHUNK_SIZE = 100  # 一度に処理するタスク数
+CHUNK_SIZE = 1000  # 一度に処理するタスク数
 
 # ======================================================================
 
@@ -63,15 +63,15 @@ CHUNK_SIZE = 100  # 一度に処理するタスク数
 class SimulationConfig:
     """シミュレーション設定を管理するクラス"""
     # システムパラメータ
-    energy_gap: float = 2.0
+    energy_gap: float = 0.5
     mu0: float = 1.0e-30
     planck_constant: float = 6.62607015e-34 * 1e15  # [J・fs]
     
     # 時間グリッド設定
     time_start: float = 0.0
     time_end: float = DURATION_MAX * 5  # 4: E=1/e^2
-    dt_efield: float = 0.1
-    sample_stride: int = 50
+    dt_efield: float = 0.01
+    sample_stride: int = 100
     
     # デフォルトケース設定
     default_detuning: float = 0.0
@@ -217,7 +217,7 @@ def run_twolevel_simulation(detuning: Optional[float] = None, amplitude: float =
         carrier_freq=carrier_freq,
         amplitude=amplitude,
         polarization=polarization,
-        const_polarisation=True,
+        const_polarisation=False,
     )
     
     # 時間発展計算
@@ -403,7 +403,7 @@ def main() -> None:
     amplitudes, durations, final_pops = amplitude_duration_2d_sweep()
     
     # 各種プロット作成
-    fig_imshow = plot_imshow_map(amplitudes, durations, final_pops)
+    # fig_imshow = plot_imshow_map(amplitudes, durations, final_pops)
     fig_pcolormesh = plot_pcolormesh_map(amplitudes, durations, final_pops)
     fig_contour = plot_contour_map(amplitudes, durations, final_pops)
     
