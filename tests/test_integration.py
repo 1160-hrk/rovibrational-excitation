@@ -275,9 +275,8 @@ def test_energy_conservation():
     for energy in energies:
         # 相対誤差による評価（1%以内）
         relative_error = abs(energy - initial_energy) / abs(initial_energy)
-        assert (
-            relative_error < 0.01
-        ), f"Energy not conserved: {energy} vs {initial_energy}"
+        energy_msg = f"Energy not conserved: {energy} vs {initial_energy}"
+        assert relative_error < 0.01, energy_msg
 
 
 def test_population_dynamics():

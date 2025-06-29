@@ -280,16 +280,14 @@ def test_numerical_stability_large_system():
 
     # 現実的な許容範囲：大規模システムでは1%程度の変動は許容
     # 量子系では完全なエネルギー保存よりも数値安定性が重要
-    assert (
-        energy_variation < 0.02
-    ), f"エネルギー変動が許容範囲を超過: {energy_variation:.4f} > 0.02"
+    energy_msg = f"エネルギー変動が許容範囲を超過: {energy_variation:.4f} > 0.02"
+    assert energy_variation < 0.02, energy_msg
 
     # ノルム保存も確認（こちらはより厳格）
     norms = [np.linalg.norm(psi) for psi in result]
     norm_variation = np.std(norms) / np.mean(norms)
-    assert (
-        norm_variation < 0.01
-    ), f"ノルム変動が許容範囲を超過: {norm_variation:.4f} > 0.01"
+    norm_msg = f"ノルム変動が許容範囲を超過: {norm_variation:.4f} > 0.01"
+    assert norm_variation < 0.01, norm_msg
 
 
 def test_basis_generation_performance():
