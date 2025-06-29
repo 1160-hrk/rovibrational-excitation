@@ -7,7 +7,7 @@ name = "rovibrational_excitation"
 version = "0.1.4"        # bump!
 description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com"}]
 license = {text = "MIT"} 
 

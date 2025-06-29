@@ -12,7 +12,7 @@ but allows two execution back‑ends:
 Only *real* electric‑field envelopes are considered, and Hermiticity of the
 interaction Hamiltonian is enforced via
 :math:`A = (M + M^\\dagger)/2` with
-:math:`M = p_x\,\mu_x + p_y\,\mu_y`.
+:math:`M = p_x\\,\\mu_x + p_y\\,\\mu_y`.
 
 The returned trajectory has exactly the same shape as the one produced by
 ``rk4_schrodinger_traj`` so the two integrators can be swapped freely in user

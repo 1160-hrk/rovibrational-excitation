@@ -59,7 +59,7 @@ CHUNK_SIZE = 1000  # 一度に処理するタスク数
 # ======================================================================
 
 
-@dataclass
+@dataclass(slots=True)
 class SimulationConfig:
     """シミュレーション設定を管理するクラス"""
     # システムパラメータ
@@ -90,7 +90,7 @@ class SimulationConfig:
         return self.planck_constant / (2 * np.pi)
 
 
-@dataclass
+@dataclass(slots=True)
 class PlotConfig:
     """プロット設定を管理するクラス"""
     figsize: Tuple[int, int] = (10, 8)
