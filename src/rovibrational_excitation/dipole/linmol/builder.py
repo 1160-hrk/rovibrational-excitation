@@ -188,11 +188,10 @@ def build_mu(
     backend : 'numpy' | 'cupy'
     dense  : True → ndarray, False → CSR
     """
-    # 型チェックのために早期に文字列を確認
-    if axis not in ("x", "y", "z"):
-        raise ValueError("axis must be x, y or z")
-
+    # 大文字小文字を区別しないように正規化してからチェック
     axis_normalized = axis.lower()
+    if axis_normalized not in ("x", "y", "z"):
+        raise ValueError("axis must be x, y or z")
     pot = potential_type.lower()
     if pot not in ("harmonic", "morse"):
         raise ValueError("potential_type must be harmonic or morse")

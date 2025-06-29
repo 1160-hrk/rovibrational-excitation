@@ -84,16 +84,17 @@ class LinMolDipoleMatrix:
         axis   : 'x' | 'y' | 'z'
         dense  : override class-level dense flag
         """
-        # 型チェックのために早期に文字列を確認
-        if axis not in ("x", "y", "z"):
+        # 大文字小文字を区別しないように正規化してからチェック
+        axis_normalized = axis.lower()
+        if axis_normalized not in ("x", "y", "z"):
             raise ValueError("axis must be x, y or z")
 
         # 型アサーションでmypyを満足させる
-        axis_literal: Literal["x", "y", "z"] = axis  # type: ignore[assignment]
+        axis_literal: Literal["x", "y", "z"] = axis_normalized  # type: ignore[assignment]
 
         if dense is None:
             dense = self.dense
-        key = (axis, dense)
+        key = (axis_normalized, dense)
         if key not in self._cache:
             self._cache[key] = build_mu(
                 self.basis,
