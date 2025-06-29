@@ -8,7 +8,7 @@ rovibrational_excitation/core/propagator.py
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Literal
 
 import numpy as np
 
@@ -80,7 +80,7 @@ def _prepare_args(
     if len(axes) != 2 or any(a not in "xyz" for a in axes):
         raise ValueError("axes must be like 'xy', 'zx', ...")
 
-    ax0, ax1 = axes
+    ax0, ax1 = axes[0], axes[1]
     xp = _cp if _cp is not None else np
 
     dt_half = E.dt if dt is None else dt / 2
@@ -133,6 +133,12 @@ def schrodinger_propagation(
     sample_stride: int = 1,
     backend: str = "numpy",
 ) -> Array:
+    # backend引数の型チェック
+    if backend not in ("numpy", "cupy"):
+        raise ValueError("backend must be 'numpy' or 'cupy'")
+    
+    backend_typed: Literal["numpy", "cupy"] = backend  # type: ignore[assignment]
+    
     xp = _backend(backend)
     H0_, mu_a, mu_b, Ex, Ey, dt, steps = _prepare_args(
         H0, Efield, dipole_matrix, axes=axes
@@ -155,7 +161,7 @@ def schrodinger_propagation(
             dt,
             steps=(len(Escalar) - 1) // 2,
             sample_stride=sample_stride,
-            backend=backend,
+            backend=backend_typed,
         )
 
         # 形状を調整
@@ -213,7 +219,11 @@ def mixed_state_propagation(
     backend: str = "numpy",
 ) -> Array:
     xp = _backend(backend)
-    dim = psi0_array[0].shape[0]
+    
+    # Iterableをリストに変換してインデックスアクセス可能にする
+    psi0_list = list(psi0_array)
+    dim = psi0_list[0].shape[0]
+    
     steps_out = (len(Efield.tlist) // 2) // sample_stride + 1
     rho_out = (
         xp.zeros((steps_out, dim, dim), dtype=xp.complex128)
@@ -221,7 +231,7 @@ def mixed_state_propagation(
         else xp.zeros((dim, dim), dtype=xp.complex128)
     )
 
-    for psi0 in psi0_array:
+    for psi0 in psi0_list:
         result = schrodinger_propagation(
             H0,
             Efield,
@@ -274,6 +284,10 @@ def liouville_propagation(
         H0, Efield, dipole_matrix, axes=axes
     )
 
+    # 引数の数を修正 - rk4_lvne_trajとrk4_lvneで異なる引数を正しく渡す
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(rho0), dt, steps)
-    rk4 = rk4_lvne_traj if return_traj else rk4_lvne
-    return rk4(*rk4_args, sample_stride) if return_traj else rk4(*rk4_args)
+    
+    if return_traj:
+        return rk4_lvne_traj(*rk4_args, sample_stride)
+    else:
+        return rk4_lvne(*rk4_args)

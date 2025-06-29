@@ -553,20 +553,22 @@ def run_all_with_checkpoint(
         if batch_num % 2 == 0 or batch_num == total_batches:
             # 既存の完了ケースも含めて保存
             all_completed = []
-            existing_checkpoint = checkpoint_manager.load_checkpoint()
-            if existing_checkpoint:
-                completed_hashes = set(
-                    existing_checkpoint.get("completed_case_hashes", [])
-                )
-                for case in cases:
-                    case_hash = checkpoint_manager._case_hash(case)
-                    if case_hash in completed_hashes:
-                        all_completed.append(case)
+            if checkpoint_manager is not None:
+                existing_checkpoint = checkpoint_manager.load_checkpoint()
+                if existing_checkpoint:
+                    completed_hashes = set(
+                        existing_checkpoint.get("completed_case_hashes", [])
+                    )
+                    for case in cases:
+                        case_hash = checkpoint_manager._case_hash(case)
+                        if case_hash in completed_hashes:
+                            all_completed.append(case)
             all_completed.extend(completed_cases)
 
-            checkpoint_manager.save_checkpoint(
-                all_completed, failed_cases, len(cases), start_time
-            )
+            if checkpoint_manager is not None:
+                checkpoint_manager.save_checkpoint(
+                    all_completed, failed_cases, len(cases), start_time
+                )
 
     # ---------- 最終結果整理 ---------------------------------------
     print(

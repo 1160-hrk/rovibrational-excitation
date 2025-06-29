@@ -10,7 +10,7 @@ rovibrational_excitation.dipole.linmol/builder.py
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union, Type
 
 import numpy as _np
 import scipy.sparse as _sp
@@ -36,9 +36,10 @@ from rovibrational_excitation.dipole.vib.morse import (
 if TYPE_CHECKING:
     from rovibrational_excitation.core.basis import LinMolBasis
 
-    Array = Union[_np.ndarray, "_cp.ndarray"] if _cp is not None else _np.ndarray
+if _cp is not None:
+    Array: Type = Union[_np.ndarray, _cp.ndarray]  # type: ignore
 else:
-    Array = _np.ndarray
+    Array: Type = _np.ndarray  # type: ignore
 
 
 # ----------------------------------------------------------------------
@@ -167,14 +168,14 @@ def _dense_gpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
 # --- 5. Public API ----------------------------------------------------
 # ----------------------------------------------------------------------
 def build_mu(
-    basis: LinMolBasis,
+    basis,  # type: LinMolBasis
     axis: Literal["x", "y", "z"],
     mu0: float,
     *,
     potential_type: Literal["harmonic", "morse"] = "harmonic",
     backend: Literal["numpy", "cupy"] = "numpy",
     dense: bool = True,
-) -> Array:
+):
     """
     Generate transition-dipole matrix μ_axis.
 
@@ -187,10 +188,12 @@ def build_mu(
     backend : 'numpy' | 'cupy'
     dense  : True → ndarray, False → CSR
     """
-    axis = axis.lower()
-    pot = potential_type.lower()
-    if axis not in "xyz":
+    # 型チェックのために早期に文字列を確認
+    if axis not in ("x", "y", "z"):
         raise ValueError("axis must be x, y or z")
+    
+    axis_normalized = axis.lower()
+    pot = potential_type.lower()
     if pot not in ("harmonic", "morse"):
         raise ValueError("potential_type must be harmonic or morse")
 
@@ -203,7 +206,7 @@ def build_mu(
     else:
         M_arr = _np.zeros_like(J_arr, dtype=_np.int64)
 
-    axis_idx = "xyz".index(axis)
+    axis_idx = "xyz".index(axis_normalized)
     vib_is_morse = pot == "morse"
     vib_func = tdm_vib_morse if vib_is_morse else tdm_vib_harm
     if vib_is_morse:

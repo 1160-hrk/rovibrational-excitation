@@ -21,7 +21,7 @@ Typical usage
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union, Type
 
 import numpy as np
 
@@ -36,13 +36,11 @@ except ImportError:
 if TYPE_CHECKING:
     from rovibrational_excitation.core.basis import LinMolBasis
 
-    # runtime-independent Array alias
-    if cp is not None:
-        Array = Union[np.ndarray, "cp.ndarray"]
-    else:
-        Array = np.ndarray
+# Runtime用の型エイリアス
+if cp is not None:
+    Array: Type = Union[np.ndarray, cp.ndarray]  # type: ignore
 else:
-    Array = np.ndarray  # runtime alias (for annotations)
+    Array: Type = np.ndarray  # type: ignore
 
 from rovibrational_excitation.dipole.linmol.builder import build_mu
 
@@ -74,7 +72,7 @@ class LinMolDipoleMatrix:
     # ------------------------------------------------------------------
     def mu(
         self,
-        axis: Literal["x", "y", "z"] = "x",
+        axis: str = "x",
         *,
         dense: bool | None = None,
     ) -> Array:
@@ -86,13 +84,20 @@ class LinMolDipoleMatrix:
         axis   : 'x' | 'y' | 'z'
         dense  : override class-level dense flag
         """
+        # 型チェックのために早期に文字列を確認
+        if axis not in ("x", "y", "z"):
+            raise ValueError("axis must be x, y or z")
+        
+        # 型アサーションでmypyを満足させる
+        axis_literal: Literal["x", "y", "z"] = axis  # type: ignore[assignment]
+        
         if dense is None:
             dense = self.dense
         key = (axis, dense)
         if key not in self._cache:
             self._cache[key] = build_mu(
                 self.basis,
-                axis,
+                axis_literal,
                 self.mu0,
                 potential_type=self.potential_type,
                 backend=self.backend,
@@ -141,12 +146,19 @@ class LinMolDipoleMatrix:
                 if dn:  # dense ndarray / cupy
                     g.create_dataset("data", data=np.asarray(mat))
                 else:  # CSR sparse
-                    mat_coo = mat.tocoo() if sp.issparse(mat) else mat.tocoo()
-                    g.create_dataset("row", data=_xp(self.backend).asnumpy(mat_coo.row))
-                    g.create_dataset("col", data=_xp(self.backend).asnumpy(mat_coo.col))
-                    g.create_dataset(
-                        "data", data=_xp(self.backend).asnumpy(mat_coo.data)
-                    )
+                    if sp.issparse(mat):
+                        mat_coo = mat.tocoo()
+                    else:
+                        mat_coo = mat.tocoo()  # type: ignore[union-attr]
+                    
+                    if hasattr(_xp(self.backend), 'asnumpy'):
+                        g.create_dataset("row", data=_xp(self.backend).asnumpy(mat_coo.row))  # type: ignore[attr-defined]
+                        g.create_dataset("col", data=_xp(self.backend).asnumpy(mat_coo.col))  # type: ignore[attr-defined]
+                        g.create_dataset("data", data=_xp(self.backend).asnumpy(mat_coo.data))  # type: ignore[attr-defined]
+                    else:
+                        g.create_dataset("row", data=np.asarray(mat_coo.row))
+                        g.create_dataset("col", data=np.asarray(mat_coo.col))
+                        g.create_dataset("data", data=np.asarray(mat_coo.data))
                     g.attrs["shape"] = mat_coo.shape
 
     @classmethod

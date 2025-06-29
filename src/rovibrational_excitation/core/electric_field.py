@@ -34,14 +34,14 @@ class ElectricField:
         self._constant_pol: np.ndarray | None | bool = None
         self._scalar_field: np.ndarray | None = None
 
-    def init_Efield(self):
+    def init_Efield(self) -> "ElectricField":
         """
         電場をゼロに初期化
         """
         self.Efield = np.zeros((len(self.tlist), 2))
         return self
 
-    def get_Efield(self):
+    def get_Efield(self) -> np.ndarray:
         """
         電場を取得
         Returns
