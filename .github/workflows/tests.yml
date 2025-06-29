@@ -34,21 +34,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt || true
         pip install coverage pytest h5py
-        pip install -e .[dev]
+        pip install -e .
     
-    - name: Run tests with coverage
+    - name: Run tests
       run: |
         cd tests
-        coverage run -m pytest -v -x
-        coverage report --show-missing
+        python -m pytest -v --tb=short
         
-    - name: Generate coverage report
+    - name: Run tests with coverage
       if: matrix.python-version == '3.11'
       run: |
         cd tests
-        COVERAGE_PERCENT=$(coverage report --format=total)
+        coverage run --source=../src -m pytest -v --tb=short
+        coverage report --show-missing | tee coverage_output.txt
+        
+    - name: Extract coverage percentage
+      if: matrix.python-version == '3.11'
+      run: |
+        cd tests
+        COVERAGE_PERCENT=$(coverage report | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
         echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
         echo "Coverage: $COVERAGE_PERCENT%"
+        
+    - name: Coverage comment
+      if: matrix.python-version == '3.11'
+      run: |
+        echo "✅ テスト完了: カバレッジ ${COVERAGE_PERCENT}%"
         
     - name: Update coverage badge
       if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main'

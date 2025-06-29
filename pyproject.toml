@@ -4,21 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rovibrational_excitation"
-version = "0.1.4"        # bump!
+version = "0.1.4"
 description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"
-requires-python = ">=3.10"
 authors = [{name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com"}]
 license = {text = "MIT"} 
+requires-python = ">=3.10"
 
 dependencies = [
     "numpy>=1.22",
-    "scipy>=1.10",
+    "scipy>=1.10", 
     "numba>=0.59",
     "cupy; extra == \"gpu\"",
     "pandas",
     "tqdm",
 ]
+
+[project.optional-dependencies]
+gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
+dev = ["pytest", "build", "twine"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -27,10 +31,6 @@ package-dir = {"" = "src"}
 where = ["src"]
 include = ["rovibrational_excitation*", "linmol_dipole*", "rot_tdms*", "vib_tdms*"]
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
-
-[project.optional-dependencies]
-gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
-dev = ["pytest", "build", "twine"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -47,3 +47,30 @@ filterwarnings = [
     "ignore::RuntimeWarning:numpy.*",
     "ignore::UserWarning:numba.*",
 ]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
+show_missing = true
+skip_covered = false
