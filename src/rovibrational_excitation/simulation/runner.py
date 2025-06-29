@@ -14,7 +14,6 @@ from __future__ import annotations
 import importlib.util
 import itertools
 import json
-import os
 import shutil
 import time
 import types
@@ -599,7 +598,7 @@ def resume_run(
         raise FileNotFoundError(f"パラメータファイルが見つかりません: {params_file}")
     
     base_dict = _load_params_file(str(params_file))
-    description = base_dict.get("description", "resumed_run")
+    base_dict.get("description", "resumed_run")
     
     # 全ケースを再構築
     all_cases: List[Dict[str, Any]] = []

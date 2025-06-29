@@ -11,7 +11,7 @@ from rovibrational_excitation.dipole.linmol.builder import build_mu
 
 # CuPyが利用可能か判定
 try:
-    import cupy as cp
+    import cupy
     HAS_CUPY = True
 except ImportError:
     HAS_CUPY = False
@@ -35,7 +35,7 @@ class TestLinMolDipoleMatrix:
         assert dipole.mu0 == 1.0
         assert dipole.potential_type == "harmonic"
         assert dipole.backend == "numpy"
-        assert dipole.dense == True
+        assert dipole.dense
         assert len(dipole._cache) == 0
     
     def test_initialization_custom(self):
@@ -52,7 +52,7 @@ class TestLinMolDipoleMatrix:
         assert dipole.mu0 == 0.5
         assert dipole.potential_type == "morse"
         assert dipole.backend == "numpy"
-        assert dipole.dense == False
+        assert not dipole.dense
     
     def test_mu_x_property(self):
         """mu_xプロパティのテスト"""
@@ -114,7 +114,7 @@ class TestLinMolDipoleMatrix:
         dipole = LinMolDipoleMatrix(basis, dense=True)
         
         # まず通常のdense版を取得してキャッシュに登録
-        mu_dense = dipole.mu("x", dense=True)
+        dipole.mu("x", dense=True)
         
         # 次にsparse指定で取得
         mu_sparse = dipole.mu("x", dense=False)
@@ -286,7 +286,7 @@ class TestLinMolDipoleMatrix:
             # 属性の確認
             assert dipole_loaded.mu0 == 0.5
             assert dipole_loaded.potential_type == "harmonic"
-            assert dipole_loaded.dense == True
+            assert dipole_loaded.dense
             
             # 行列の確認
             np.testing.assert_array_equal(dipole_loaded.mu_x, mu_x_orig)

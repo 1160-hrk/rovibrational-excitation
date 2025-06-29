@@ -274,12 +274,12 @@ def main():
     
     # Harmonic oscillator simulation
     time4Efield_h, Efield_h, time4psi_h, psi_t_h, basis_h = run_vibrational_excitation_simulation("harmonic")
-    fig_h = plot_results(time4Efield_h, Efield_h, time4psi_h, psi_t_h, basis_h, "harmonic")
+    plot_results(time4Efield_h, Efield_h, time4psi_h, psi_t_h, basis_h, "harmonic")
     final_pop_h = analyze_final_populations(psi_t_h, basis_h, "harmonic")
     
     # Morse oscillator simulation
     time4Efield_m, Efield_m, time4psi_m, psi_t_m, basis_m = run_vibrational_excitation_simulation("morse")
-    fig_m = plot_results(time4Efield_m, Efield_m, time4psi_m, psi_t_m, basis_m, "morse")
+    plot_results(time4Efield_m, Efield_m, time4psi_m, psi_t_m, basis_m, "morse")
     final_pop_m = analyze_final_populations(psi_t_m, basis_m, "morse")
     
     # Comparison plot

@@ -11,7 +11,9 @@
 #   $ python check_core__splitop_schrodinger.py
 # ---------------------------------------------------------------
 
-import sys, os, time
+import sys
+import os
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 

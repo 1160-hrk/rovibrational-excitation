@@ -340,7 +340,7 @@ class TestRK4EdgeCases:
         
         # 第1励起状態のエネルギー固有値による位相発展確認
         time_evolution = dt * ((len(E_zero) - 1) // 2)  # 総時間
-        expected_phase = np.exp(-1j * 1.0 * time_evolution)  # E1 = 1.0
+        np.exp(-1j * 1.0 * time_evolution)  # E1 = 1.0
         phase_ratio = result[-1][1] / result[0][1]
         np.testing.assert_allclose(np.abs(phase_ratio), 1.0, atol=1e-12)
     

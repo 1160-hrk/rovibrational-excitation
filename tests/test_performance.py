@@ -185,13 +185,13 @@ def test_stride_performance():
     start_time = time.time()
     result_stride1 = schrodinger_propagation(H0, efield, dipole, psi0, 
                                            return_traj=True, sample_stride=1)
-    time_stride1 = time.time() - start_time
+    time.time() - start_time
     
     # stride=10
     start_time = time.time()
     result_stride10 = schrodinger_propagation(H0, efield, dipole, psi0, 
                                             return_traj=True, sample_stride=10)
-    time_stride10 = time.time() - start_time
+    time.time() - start_time
     
     # ストライドが大きいほうが高速（出力が少ないため）
     assert result_stride1.shape[0] > result_stride10.shape[0]

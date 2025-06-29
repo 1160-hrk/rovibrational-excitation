@@ -24,7 +24,7 @@ def test_schrodinger_propagation():
     tlist = np.linspace(0, 1, 3)
     ef = ElectricField(tlist)
     ef.Efield[:,0] = 1.0
-    basis = LinMolBasis(V_max=0, J_max=1, use_M=False)
+    LinMolBasis(V_max=0, J_max=1, use_M=False)
     H0 = np.diag([0.0, 1.0])
     dip = DummyDipole()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
@@ -35,7 +35,7 @@ def test_mixed_state_propagation():
     tlist = np.linspace(0, 1, 3)
     ef = ElectricField(tlist)
     ef.Efield[:,0] = 1.0
-    basis = LinMolBasis(V_max=0, J_max=1, use_M=False)
+    LinMolBasis(V_max=0, J_max=1, use_M=False)
     H0 = np.diag([0.0, 1.0])
     dip = DummyDipole()
     psi0s = [np.array([1.0, 0.0], dtype=np.complex128), np.array([0.0, 1.0], dtype=np.complex128)]
@@ -46,7 +46,7 @@ def test_liouville_propagation():
     tlist = np.linspace(0, 1, 3)
     ef = ElectricField(tlist)
     ef.Efield[:,0] = 1.0
-    basis = LinMolBasis(V_max=0, J_max=1, use_M=False)
+    LinMolBasis(V_max=0, J_max=1, use_M=False)
     H0 = np.diag([0.0, 1.0])
     dip = DummyDipole()
     rho0 = np.eye(2, dtype=np.complex128)

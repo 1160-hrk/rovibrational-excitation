@@ -195,7 +195,6 @@ def test_envelope_functions():
 def test_apply_dispersion():
     """分散適用関数のテスト"""
     tlist = np.linspace(-5, 5, 101)
-    dt = tlist[1] - tlist[0]
     
     # 複素電場を作成
     Efield = np.exp(1j * 2 * np.pi * 1.0 * tlist).reshape(-1, 1)

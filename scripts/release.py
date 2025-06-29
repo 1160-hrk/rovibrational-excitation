@@ -182,7 +182,7 @@ def main():
         # タグ作成とプッシュ
         if create_git_tag(args.version, release_message):
             print(f"\n🎉 リリース {args.version} が完了しました！")
-            print(f"   GitHub Actions により自動的にリリースとPyPI公開が行われます")
+            print("   GitHub Actions により自動的にリリースとPyPI公開が行われます")
         else:
             print("❌ タグ作成に失敗しました")
             sys.exit(1)

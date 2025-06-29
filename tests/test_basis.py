@@ -48,7 +48,7 @@ def test_linmol_initialization_parameters():
     
     assert basis.V_max == 2
     assert basis.J_max == 2
-    assert basis.use_M == True
+    assert basis.use_M
     assert basis.omega_rad_phz == 2.0
     assert basis.delta_omega_rad_phz == 0.1
 

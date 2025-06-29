@@ -14,7 +14,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 import numpy as np
-import pytest
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.dipole.twolevel.builder import TwoLevelDipoleMatrix
 
@@ -139,7 +138,7 @@ class TestTwoLevelDipoleMatrix:
         
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y
-        mu_z = dipole.mu_z
+        dipole.mu_z
         
         # [μx, μy] = 2i μz (ただしμz=0なので結果も特殊)
         comm_xy = mu_x @ mu_y - mu_y @ mu_x

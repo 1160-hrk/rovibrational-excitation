@@ -126,7 +126,8 @@ def _sparse_cpu(v_arr, J_arr, M_arr,
             if vfac == 0.0:
                 continue
             data.append(mu0 * r * vfac)
-            row.append(i); col.append(j)
+            row.append(i)
+            col.append(j)
 
     # 空の場合はshapeを明示的に指定
     shape = (len(v_arr), len(v_arr))

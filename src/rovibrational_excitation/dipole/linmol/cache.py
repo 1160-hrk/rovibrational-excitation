@@ -120,7 +120,8 @@ class LinMolDipoleMatrix:
     # ------------------------------------------------------------------
     def to_hdf5(self, path: str) -> None:
         """Save cached matrices to HDF5 (requires h5py)."""
-        import h5py, scipy.sparse as sp
+        import h5py
+        import scipy.sparse as sp
 
         with h5py.File(path, "w") as h5:
             h5.attrs.update(
@@ -145,7 +146,8 @@ class LinMolDipoleMatrix:
     @classmethod
     def from_hdf5(cls, path: str, basis: "LinMolBasis") -> "LinMolDipoleMatrix":
         """Load object saved by :meth:`to_hdf5`."""
-        import h5py, scipy.sparse as sp
+        import h5py
+        import scipy.sparse as sp
 
         with h5py.File(path, "r") as h5:
             obj = cls(
