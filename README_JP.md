@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
 [![Coverage](https://codecov.io/gh/1160-hrk/rovibrational-excitation/branch/main/graph/badge.svg)](https://codecov.io/gh/1160-hrk/rovibrational-excitation)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Ruff](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml)
+[![Ruff](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml)
 
 **線形分子の振動回転励起シミュレーションのためのPythonパッケージ**
 

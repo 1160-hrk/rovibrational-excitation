@@ -36,7 +36,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
-dev = ["pytest", "build", "twine"]
+dev = ["pytest", "build", "twine", "ruff", "black", "mypy", "coverage"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -1,4 +1,36 @@
+# Development dependencies
+# これらはpyproject.tomlの[project.optional-dependencies.dev]と一致する必要があります
+
+# Testing
+pytest>=7.0
+coverage>=7.0
+
+# Code quality & formatting
+ruff>=0.1.0
+black>=23.0
+mypy>=1.0
+
+# Build & release
+build>=0.10.0
+twine>=4.0
+
+# Additional development tools
 ipykernel
-pytest
-pylint
-# （必要に応じて black, isort, mypy など）
+pre-commit
+tox
+
+# Documentation (optional)
+sphinx
+sphinx-rtd-theme
+
+# Type checking support
+types-requests
+types-setuptools
+
+# Development utilities
+ipython
+jupyter
+
+# Linting alternatives (if needed)
+flake8
+isort
