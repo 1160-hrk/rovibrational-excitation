@@ -101,7 +101,7 @@ class LinMolBasis(BasisBase):
 
     def get_border_indices_j(self):
         if self.use_M:
-            inds = np.matlib.repmat(np.arange(self.J_max+1)**2, self.V_max+1, 1) + np.arange(self.V_max+1).reshape((self.V_max+1, 1))*(self.J_max+1)**2
+            inds = np.tile(np.arange(self.J_max+1)**2, (self.V_max+1, 1)) + np.arange(self.V_max+1).reshape((self.V_max+1, 1))*(self.J_max+1)**2
             return inds.flatten()
         else:
             raise ValueError('M is not defined, so each index is the border of J number.')
