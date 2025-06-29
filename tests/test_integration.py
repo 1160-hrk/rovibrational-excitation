@@ -257,11 +257,11 @@ def test_population_dynamics():
     dipole = MockDipole(basis)
     
     # 共鳴パルス
-    tlist = np.linspace(-5, 5, 201)
+    tlist = np.linspace(-5, 5, 401)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
         gaussian, duration=2.0, t_center=0.0,
-        carrier_freq=1.0, amplitude=0.5,  # π/2パルス相当
+        carrier_freq=1.0, amplitude=0.3,  # π/2パルス相当
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
     
