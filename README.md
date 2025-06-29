@@ -22,26 +22,52 @@ laser pulses.
 
 ## Key features
 
+### 🔧 High-Performance Time Evolution Engine
 * **Runge–Kutta 4 (RK-4)** propagators for the Schrödinger and Liouville–von Neumann equations (`complex128`, cache-friendly).
+* **Split-operator method** with CPU/GPU backends for efficient propagation.
+
+### ⚡ High-Speed Dipole Matrix Construction
 * **Lazy, high-speed construction** of transition-dipole matrices (`rovibrational_excitation.dipole.*`)  
   * rigid-rotor + harmonic / Morse vibration  
   * Numba (CPU) or CuPy (GPU) backend
-* **Vector electric-field objects** with Gaussian envelopes, chirp, optional sinusoidal and binned modulation.
-* **Batch runner** for pump–probe / parameter sweeps with automatic directory creation, progress-bar and compressed output (`.npz`).
-* 100 % pure-Python, **no compiled extension to ship** (Numba compiles at runtime).
-* Currently, only linear molecules are supported; that is, only the rotational quantum numbers J and M are taken into account.
+* **Lazy evaluation & caching** for fast computation
 
+### 🌊 Flexible Electric Field Control
+* **Vector electric-field objects** with Gaussian envelopes, chirp, optional sinusoidal and binned modulation.
+* Gaussian envelope, chirp functionality
+* Sinusoidal and binned modulation options
+* Vector field support
+
+### 📊 Batch Processing & Analysis
+* **Batch runner** for pump–probe / parameter sweeps with automatic directory creation, progress-bar and compressed output (`.npz`).
+* Pump-probe experiment simulation
+* Parameter sweep capabilities
+* Automatic directory creation
+* Progress bar display
+* Compressed output (`.npz`)
+
+### 🔬 Supported Molecules
+* Currently, only **linear molecules** are supported; that is, only the rotational quantum numbers J and M are taken into account.
+* Future extension to non-linear molecules is planned.
+
+### 🏗️ Pure Python Implementation
+* 100 % pure-Python, **no compiled extension to ship** (Numba compiles at runtime).
 
 ---
 
 ## Testing & Coverage
 
-The package includes a comprehensive test suite with **75% code coverage** across all modules.
+The package includes a comprehensive test suite with **63% code coverage** across all modules.
 
 - 🟢 **Basis classes**: 100% coverage (LinMol, TwoLevel, VibLadder)
-- 🟢 **Core physics**: 83-98% coverage (Hamiltonian, States, Propagator)
+- 🟡 **Core physics**: 55% overall coverage
+  - States: 98% coverage  
+  - Propagator: 83% coverage
+  - Hamiltonian: 67% coverage
 - 🟡 **Electric field**: 53% coverage
+- 🟡 **Dipole matrices**: 52-96% coverage (varies by subsystem)
 - 🔴 **Low-level propagators**: 25-38% coverage (ongoing development)
+- 🟡 **Simulation runner**: 62% coverage
 
 See [`tests/README.md`](tests/README.md) for detailed coverage reports and test instructions.
 
@@ -57,19 +83,39 @@ coverage run -m pytest && coverage report
 
 ## Installation
 
+### Stable Release (PyPI)
 ```bash
 # From PyPI  (stable)
 pip install rovibrational-excitation          # installs sub-packages as well
+```
 
+### Development Version (GitHub)
+```bash
 # Or from GitHub (main branch, bleeding-edge)
 pip install git+https://github.com/1160-hrk/rovibrational-excitation.git
-````
+```
 
+### GPU Acceleration (Optional)
 > **CuPy (optional)** – for GPU acceleration
 >
 > ```bash
 > pip install cupy-cuda12x     # pick the wheel that matches your CUDA
 > ```
+
+---
+
+## Requirements
+
+### Python Environment
+- **Python**: 3.8+
+- **NumPy**: Array operations & numerical computing
+- **SciPy**: Scientific computing library
+- **Numba**: JIT compilation (CPU acceleration)
+
+### Optional Dependencies
+- **CuPy**: GPU computing (requires CUDA)
+- **Matplotlib**: Graph plotting
+- **tqdm**: Progress bars
 
 ---
 
@@ -206,22 +252,82 @@ python -m rovibrational_excitation.simulation.runner \
 
 ---
 
-## Directory layout (after refactor)
+## Applications
+
+### CO2 Antisymmetric Stretch Vibration Excitation
+- **Molecule**: CO2 (linear triatomic molecule)
+- **Excitation mode**: Antisymmetric stretch vibration (ν₃ ≈ 2349 cm⁻¹)
+- **Laser**: Femtosecond pulse
+- **Analysis**: Population transfer between vibrational levels
+
+### Pump-Probe Experiments
+- **Pump pulse**: Molecular excitation
+- **Probe pulse**: State exploration after time delay
+- **Measurements**: Time-resolved spectra, population dynamics
+
+---
+
+## Directory layout
 
 ```
 rovibrational_excitation/
-  __init__.py                # public re-export
-  core/                      # low-level numerics
-    basis.py, propagator.py, ...
-  dipole/
-    linmol/                  # high-level dipole API
-      builder.py, cache.py
-    rot/                     # rotational TDM formulae
-      jm.py, j.py
-    vib/
-      harmonic.py, morse.py
-  plots/                     # helper scripts (matplotlib)
-  simulation/                # batch manager, CLI
+├── src/rovibrational_excitation/
+│   ├── __init__.py          # public re-export
+│   ├── core/                # low-level numerics
+│   │   ├── basis/           # quantum basis classes
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py      # abstract base class
+│   │   │   ├── linmol.py    # linear molecule basis
+│   │   │   ├── twolevel.py  # two-level system
+│   │   │   └── viblad.py    # vibrational ladder
+│   │   ├── propagator.py    # time evolution
+│   │   ├── electric_field.py
+│   │   ├── hamiltonian.py   # DEPRECATED
+│   │   ├── states.py        # quantum state vectors
+│   │   ├── _rk4_schrodinger.py
+│   │   ├── _rk4_lvne.py
+│   │   └── _splitop_schrodinger.py
+│   ├── dipole/              # transition dipole matrices
+│   │   ├── linmol/          # linear molecules
+│   │   │   ├── builder.py   # matrix construction
+│   │   │   └── cache.py     # caching system
+│   │   ├── twolevel/        # two-level systems
+│   │   ├── viblad/          # vibrational ladder
+│   │   ├── rot/             # rotational elements
+│   │   │   ├── j.py         # J quantum number
+│   │   │   └── jm.py        # J,M quantum numbers
+│   │   └── vib/             # vibrational elements
+│   │       ├── harmonic.py  # harmonic oscillator
+│   │       └── morse.py     # Morse oscillator
+│   ├── plots/               # visualization helpers
+│   │   ├── plot_electric_field.py
+│   │   ├── plot_electric_field_vector.py
+│   │   └── plot_population.py
+│   └── simulation/          # batch runner & CLI
+│       ├── runner.py        # main execution engine
+│       ├── manager.py       # execution management
+│       └── config.py        # configuration handling
+├── tests/                   # unit tests (pytest)
+├── validation/              # physics validation scripts
+│   ├── core/                # core physics validation
+│   ├── dipole/              # dipole matrix validation
+│   └── simulation/          # integration validation
+├── examples/                # usage examples
+└── docs/                    # documentation
+```
+
+### Validation vs Testing
+
+- **`tests/`**: Unit tests for code correctness (fast, comprehensive)
+- **`validation/`**: Physics validation for scientific accuracy (slower, focused on physical laws)
+
+```bash
+# Run unit tests
+pytest tests/ -v
+
+# Run physics validation
+python validation/core/check_core_basis.py
+find validation/ -name "check_*.py" -exec python {} \;
 ```
 
 ---
@@ -236,7 +342,35 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
+### Development Tools
+- **Black**: Code formatter
+- **Ruff**: High-speed linter  
+- **MyPy**: Static type checking
+- **pytest**: Testing framework
+
 Black + Ruff + MyPy configs are in *pyproject.toml*.
+
+---
+
+## Contributing
+
+1. **Issue Reports**: Bug reports & feature requests
+2. **Pull Requests**: Code improvements & new features
+3. **Documentation**: Usage examples & tutorials
+
+### Development Guidelines
+- PEP8-compliant code style
+- Type hints required
+- Maintain test coverage
+- Detailed docstrings
+
+---
+
+## References
+
+1. **Quantum Mechanics**: Griffiths, "Introduction to Quantum Mechanics"
+2. **Molecular Spectroscopy**: Herzberg, "Molecular Spectra and Molecular Structure"
+3. **Numerical Methods**: Press et al., "Numerical Recipes"
 
 ---
 
@@ -245,3 +379,14 @@ Black + Ruff + MyPy configs are in *pyproject.toml*.
 [MIT](LICENSE)
 
 © 2025 Hiroki Tsusaka. All rights reserved.
+
+---
+
+## Contact
+
+- **GitHub Issues**: [Repository](https://github.com/1160-hrk/rovibrational-excitation)
+- **Email**: Please check the project page
+
+---
+
+*Last updated: January 2025*

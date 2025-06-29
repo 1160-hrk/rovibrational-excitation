@@ -1,12 +1,23 @@
-# Rovibrational Excitation シミュレーションパッケージ
+# rovibrational-excitation
 
 [![PyPI version](https://img.shields.io/pypi/v/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![Python](https://img.shields.io/pypi/pyversions/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
 [![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![Coverage](https://codecov.io/gh/1160-hrk/rovibrational-excitation/branch/main/graph/badge.svg)](https://codecov.io/gh/1160-hrk/rovibrational-excitation)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **線形分子の振動回転励起シミュレーションのためのPythonパッケージ**
 
 フェムト秒〜ピコ秒レーザーパルスによって駆動される線形分子（回転×振動）の時間依存量子動力学計算を行うためのツールです。
+
+<div align="center">
+
+| CPU / GPU (CuPy) | Numba-JIT RK4 propagator | Lazy, cached dipole matrices |
+|------------------|--------------------------|------------------------------|
+
+</div>
 
 ---
 
@@ -17,6 +28,7 @@
   - シュレーディンガー方程式
   - リウヴィル・フォン・ノイマン方程式
   - `complex128`精度、キャッシュ効率最適化
+- **スプリット演算子法** CPU/GPUバックエンド対応
 
 ### ⚡ 高速双極子行列構築
 - **遅延評価・キャッシュ機能**による高速計算
@@ -41,6 +53,35 @@
 - 回転量子数 J, M を考慮
 - 将来的に非線形分子への拡張予定
 
+### 🏗️ Pure Python実装
+- 100 % pure-Python、**コンパイル済み拡張なし** (Numbaが実行時にコンパイル)
+
+---
+
+## テスト・カバレッジ
+
+パッケージには包括的なテストスイートが含まれており、全モジュールで **63%のコードカバレッジ** を達成しています。
+
+- 🟢 **Basis classes**: 100% カバレッジ (LinMol, TwoLevel, VibLadder)
+- 🟡 **Core physics**: 55% 全体カバレッジ
+  - States: 98% カバレッジ
+  - Propagator: 83% カバレッジ
+  - Hamiltonian: 67% カバレッジ
+- 🟡 **Electric field**: 53% カバレッジ
+- 🟡 **Dipole matrices**: 52-96% カバレッジ (サブシステムにより異なる)
+- 🔴 **Low-level propagators**: 25-38% カバレッジ (開発継続中)
+- 🟡 **Simulation runner**: 62% カバレッジ
+
+詳細なカバレッジレポートとテスト手順については [`tests/README.md`](tests/README.md) を参照してください。
+
+```bash
+# テスト実行
+cd tests/ && python -m pytest -v
+
+# カバレッジレポート生成
+coverage run -m pytest && coverage report
+```
+
 ---
 
 ## 📦 インストール
@@ -63,38 +104,38 @@ pip install cupy-cuda12x  # CUDA版に合わせて選択
 
 ---
 
-## 🏗️ プロジェクト構造
+## 📋 必要要件
 
-```
-rovibrational_excitation/
-├── core/                           # 核となる計算エンジン
-│   ├── basis.py                    # 基底関数定義
-│   ├── states.py                   # 量子状態管理
-│   ├── hamiltonian.py              # ハミルトニアン構築
-│   ├── electric_field.py           # 電場オブジェクト
-│   ├── propagator.py               # 時間発展演算子
-│   ├── _rk4_schrodinger.py        # RK4-シュレーディンガー法
-│   ├── _splitop_schrodinger.py     # スプリット演算子法
-│   └── _rk4_lvne.py               # RK4-LVNE法
-├── dipole/                         # 双極子モーメント計算
-│   ├── linmol/                     # 線形分子双極子
-│   │   ├── builder.py              # 双極子行列構築
-│   │   └── cache.py                # キャッシュ管理
-│   ├── rot/                        # 回転双極子
-│   │   ├── j.py                    # J量子数関連
-│   │   └── jm.py                   # J,M量子数関連
-│   └── vib/                        # 振動双極子
-│       ├── harmonic.py             # 調和振動子
-│       └── morse.py                # モース振動子
-├── simulation/                     # シミュレーション管理
-│   ├── runner.py                   # バッチ実行エンジン
-│   ├── manager.py                  # 実行管理
-│   └── config.py                   # 設定管理
-└── plots/                          # 可視化ツール
-    ├── plot_electric_field.py      # 電場プロット
-    ├── plot_electric_field_vector.py # 電場ベクトル
-    └── plot_population.py          # 個体数プロット
-```
+### Python環境
+- **Python**: 3.8以上
+- **NumPy**: 配列操作・数値計算
+- **SciPy**: 科学計算ライブラリ
+- **Numba**: JITコンパイル（CPU高速化）
+
+### オプション
+- **CuPy**: GPU計算（CUDA必須）
+- **Matplotlib**: グラフ作成
+- **tqdm**: プログレスバー
+
+---
+
+## 📚 ドキュメント
+
+詳細な使用方法とパラメータリファレンス:
+
+| ドキュメント | 説明 | 対象 |
+|----------|-------------|----------|
+| **[docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)** | **完全なパラメータリファレンス** | 全ユーザー |
+| [docs/SWEEP_SPECIFICATION.md](docs/SWEEP_SPECIFICATION.md) | パラメータスイープ仕様 | 中級者 |
+| [docs/README.md](docs/README.md) | ドキュメント索引・クイックガイド | 全ユーザー |
+| [examples/params_template.py](examples/params_template.py) | パラメータファイルテンプレート | 初心者 |
+
+### 🚀 はじめに
+
+1. **パラメータリファレンスを読む**: [docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)
+2. **テンプレートをコピー**: `cp examples/params_template.py my_params.py`
+3. **システムに応じてパラメータを編集**
+4. **シミュレーション実行**: `python -m rovibrational_excitation.simulation.runner my_params.py`
 
 ---
 
@@ -244,6 +285,71 @@ results/
 
 ---
 
+## 🏗️ プロジェクト構造
+
+```
+rovibrational_excitation/
+├── src/rovibrational_excitation/
+│   ├── __init__.py          # public re-export
+│   ├── core/                # 核となる計算エンジン
+│   │   ├── basis/           # 基底関数クラス
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py      # 抽象基底クラス
+│   │   │   ├── linmol.py    # 線形分子基底
+│   │   │   ├── twolevel.py  # 二準位系
+│   │   │   └── viblad.py    # 振動はしご
+│   │   ├── propagator.py    # 時間発展演算子
+│   │   ├── electric_field.py # 電場オブジェクト
+│   │   ├── hamiltonian.py   # ハミルトニアン構築 (DEPRECATED)
+│   │   ├── states.py        # 量子状態管理
+│   │   ├── _rk4_schrodinger.py # RK4-シュレーディンガー法
+│   │   ├── _rk4_lvne.py     # RK4-LVNE法
+│   │   └── _splitop_schrodinger.py # スプリット演算子法
+│   ├── dipole/              # 双極子モーメント計算
+│   │   ├── linmol/          # 線形分子双極子
+│   │   │   ├── builder.py   # 双極子行列構築
+│   │   │   └── cache.py     # キャッシュ管理
+│   │   ├── twolevel/        # 二準位系
+│   │   ├── viblad/          # 振動はしご
+│   │   ├── rot/             # 回転双極子
+│   │   │   ├── j.py         # J量子数関連
+│   │   │   └── jm.py        # J,M量子数関連
+│   │   └── vib/             # 振動双極子
+│   │       ├── harmonic.py  # 調和振動子
+│   │       └── morse.py     # モース振動子
+│   ├── plots/               # 可視化ツール
+│   │   ├── plot_electric_field.py      # 電場プロット
+│   │   ├── plot_electric_field_vector.py # 電場ベクトル
+│   │   └── plot_population.py          # 個体数プロット
+│   └── simulation/          # シミュレーション管理
+│       ├── runner.py        # バッチ実行エンジン
+│       ├── manager.py       # 実行管理
+│       └── config.py        # 設定管理
+├── tests/                   # 単体テスト (pytest)
+├── validation/              # 物理検証スクリプト
+│   ├── core/                # コア物理検証
+│   ├── dipole/              # 双極子行列検証
+│   └── simulation/          # 統合検証
+├── examples/                # 使用例
+└── docs/                    # ドキュメント
+```
+
+### 検証 vs テスト
+
+- **`tests/`**: コードの正確性を確認する単体テスト（高速、包括的）
+- **`validation/`**: 科学的精度を確認する物理検証（低速、物理法則に焦点）
+
+```bash
+# 単体テスト実行
+pytest tests/ -v
+
+# 物理検証実行
+python validation/core/check_core_basis.py
+find validation/ -name "check_*.py" -exec python {} \;
+```
+
+---
+
 ## 🛠️ 開発環境セットアップ
 
 ```bash
@@ -262,35 +368,15 @@ pip install -r requirements-dev.txt
 
 # テスト実行
 pytest -v
-
-# コード品質チェック
-black .                    # フォーマット
-ruff check .              # リンター
-mypy .                    # 型チェック
 ```
 
-### 開発用ツール設定
+### 開発用ツール
 - **Black**: コードフォーマッター
 - **Ruff**: 高速リンター  
 - **MyPy**: 静的型チェック
 - **pytest**: テストフレームワーク
 
 設定は `pyproject.toml` に記述されています。
-
----
-
-## 📋 必要要件
-
-### Python環境
-- **Python**: 3.8以上
-- **NumPy**: 配列操作・数値計算
-- **SciPy**: 科学計算ライブラリ
-- **Numba**: JITコンパイル（CPU高速化）
-
-### オプション
-- **CuPy**: GPU計算（CUDA必須）
-- **Matplotlib**: グラフ作成
-- **tqdm**: プログレスバー
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## 現在のテストカバレッジ
 
-**全体カバレッジ: 50%** (1447行中728行がテスト済み)
+**全体カバレッジ: 63%** (1504行中944行がテスト済み)
 
 ### モジュール別カバレッジ詳細
 
@@ -14,30 +14,32 @@
 | LinMolBasis | 100% | ✅ 完全テスト済み |
 | TwoLevelBasis | 100% | ✅ 完全テスト済み |
 | VibLadderBasis | 100% | ✅ 完全テスト済み |
-| Hamiltonian | 100% | ✅ 完全テスト済み |
+| Harmonic Vibration | 100% | ✅ 完全テスト済み |
+| Morse Vibration | 100% | ✅ 完全テスト済み |
 | States | 98% | ✅ ほぼ完全 |
+| VibLadder Dipole | 96% | ✅ 良好 |
 | __init__.py | 87% | ✅ 良好 |
+| TwoLevel Dipole | 86% | ✅ 良好 |
 | Propagator | 83% | ✅ 良好 |
 
 #### 🟡 中程度カバレッジ (50-79%)
 | モジュール | カバレッジ | 主な未テスト領域 |
 |-----------|-----------|-----------------|
-| BasisBase | 72% | 抽象メソッドの一部 |
-| Cache | 56% | HDF5保存・読み込み、高度な機能 |
+| Hamiltonian | 67% | 非推奨機能 |
+| Simulation Runner | 62% | 高度なバッチ機能 |
+| Cache | 54% | HDF5保存・読み込み、高度な機能 |
 | ElectricField | 53% | 分散補正、複雑変調機能 |
-| LinMolBuilder | 50% | CuPyバックエンド、スパース行列 |
+| LinMol Dipole | 52% | CuPyバックエンド、スパース行列 |
+| LinMol Builder | 50% | GPU機能、エラーハンドリング |
 
 #### 🔴 低カバレッジ (50%未満)
 | モジュール | カバレッジ | 優先度 |
 |-----------|-----------|-------|
-| JM Rotation Dipole | 29% | 🔴 高 |
-| Harmonic Vibration | 29% | 🟡 中 |
-| Morse Vibration | 35% | 🟡 中 |
+| J Rotation Dipole | 45% | 🟡 中 |
 | Split-Op Schrödinger | 38% | 🔴 高 |
 | RK4 Schrödinger | 34% | 🔴 高 |
+| JM Rotation Dipole | 29% | 🟡 中 |
 | RK4 LVNE | 25% | 🔴 高 |
-| J Rotation Dipole | 45% | 🟡 中 |
-| Simulation Runner | 22% | 🔴 最高 |
 
 ### テストカバレッジの改善目標
 
