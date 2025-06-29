@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,6 +19,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -62,7 +69,7 @@ jobs:
         echo "✅ テスト完了: カバレッジ ${COVERAGE_PERCENT}%"
         
     - name: Update coverage badge
-      if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main'
+      if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         # カバレッジ率に応じて色を決定
         if [ $COVERAGE_PERCENT -ge 90 ]; then
@@ -81,17 +88,22 @@ jobs:
         
         echo "Setting coverage badge to $COVERAGE_PERCENT% with color $COLOR"
         
-        # README.mdのバッジを更新
-        sed -i "s/coverage-[0-9]*%25-[a-z]*/coverage-${COVERAGE_PERCENT}%25-${COLOR}/g" README.md
-        
-        # 変更をコミット
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add README.md
-        
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
+        # README.mdが存在するかチェック
+        if [ -f README.md ]; then
+          # README.mdのバッジを更新
+          sed -i "s/coverage-[0-9]*%25-[a-z]*/coverage-${COVERAGE_PERCENT}%25-${COLOR}/g" README.md
+          
+          # 変更をコミット
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add README.md
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🔄 カバレッジバッジを${COVERAGE_PERCENT}%に自動更新"
+            git push
+          fi
         else
-          git commit -m "🔄 カバレッジバッジを${COVERAGE_PERCENT}%に自動更新"
-          git push
+          echo "README.md not found, skipping badge update"
         fi 
