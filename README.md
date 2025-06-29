@@ -73,6 +73,26 @@ pip install git+https://github.com/1160-hrk/rovibrational-excitation.git
 
 ---
 
+## 📚 Documentation
+
+For detailed usage instructions and parameter reference:
+
+| Document | Description | Audience |
+|----------|-------------|----------|
+| **[docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)** | **Complete parameter reference** | All users |
+| [docs/SWEEP_SPECIFICATION.md](docs/SWEEP_SPECIFICATION.md) | Parameter sweep specification | Intermediate |
+| [docs/README.md](docs/README.md) | Documentation index & quick guides | All users |
+| [examples/params_template.py](examples/params_template.py) | Parameter file template | Beginners |
+
+### 🚀 Getting Started
+
+1. **Read the parameter reference**: [docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)
+2. **Copy the template**: `cp examples/params_template.py my_params.py`
+3. **Edit parameters** according to your system
+4. **Run simulation**: `python -m rovibrational_excitation.simulation.runner my_params.py`
+
+---
+
 ## Quick start : library API
 
 ```python

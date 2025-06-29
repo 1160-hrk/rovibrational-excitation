@@ -31,7 +31,7 @@ dt        =  0.01                   # サンプリング数
 # 電場パラメータ
 # ------------------------------------------------------------------
 duration  = [100]      # fs (envelope σ)
-polarization = [
+polarization_sweep = [
     [1, 0],                                   # x 軸偏光
     [1/np.sqrt(2), 1j/np.sqrt(2)],            # RHC
     # [1/np.sqrt(2), (1+1j)/2],                 # arbitrary

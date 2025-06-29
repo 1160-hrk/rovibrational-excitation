@@ -229,32 +229,85 @@ def _load_params_file(path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------
 # sweep する / しない変数を分離してデータ点展開
 # ---------------------------------------------------------------------
+
+# 常に固定値として扱うキー（偏光ベクトルなど）
+FIXED_VALUE_KEYS = {
+    "polarization",
+    "initial_states",
+    "envelope_func",
+}
+
 def _expand_cases(base: Dict[str, Any]):
+    """
+    パラメータ辞書をケース展開する。
+    
+    スイープ判定ルール:
+    1. `_sweep` 接尾辞があるキー → 明示的にスイープ対象
+    2. FIXED_VALUE_KEYS に含まれるキー → 常に固定値
+    3. その他のiterableで長さ>1 → スイープ対象
+    """
     sweep_keys: list[str] = []
     static: Dict[str, Any] = {}
+    # _sweep接尾辞のキーマッピング (base_key -> original_key)
+    sweep_keys_mapping: Dict[str, str] = {}
 
     for k, v in base.items():
+        # 文字列やバイト列は常に固定値
         if isinstance(v, (str, bytes)):
             static[k] = v
             continue
+        
+        # `_sweep` 接尾辞がある場合は明示的にスイープ対象
+        if k.endswith("_sweep"):
+            if hasattr(v, "__iter__"):
+                try:
+                    if len(v) > 0:  # 空でなければスイープ対象
+                        # 接尾辞を取り除いた名前をスイープキーとして使用
+                        base_key = k[:-6]  # "_sweep"を除去
+                        sweep_keys.append(base_key)
+                        sweep_keys_mapping[base_key] = k
+                        continue
+                except TypeError:
+                    pass
+            # `_sweep` 接尾辞だがiterableでない場合はエラー
+            raise ValueError(f"Parameter '{k}' has '_sweep' suffix but is not iterable")
+        
+        # 特別なキーは常に固定値として扱う
+        if k in FIXED_VALUE_KEYS:
+            static[k] = v
+            continue
+        
+        # その他のiterableは従来通り長さで判定
         if hasattr(v, "__iter__"):
             try:
-                if len(v) > 1:              # ★ ここが「>1」で判定
+                if len(v) > 1:
                     sweep_keys.append(k)
                     continue
-            except TypeError:               # len() 不可 (ジェネレータ等)
+            except TypeError:  # len() 不可 (ジェネレータ等)
                 pass
-        static[k] = v                       # 固定値に回す
+        
+        # 上記に該当しない場合は固定値
+        static[k] = v
 
-    if not sweep_keys:                      # sweep 無し → 1 ケースのみ
+    if not sweep_keys:  # sweep 無し → 1 ケースのみ
         yield static, []
         return
 
-    iterables = (base[k] for k in sweep_keys)
+    # 各スイープキーに対応する値のiterableを取得
+    iterables = []
+    for key in sweep_keys:
+        if key in sweep_keys_mapping:
+            # _sweep接尾辞キーの場合は元のキーから値を取得
+            original_key = sweep_keys_mapping[key]
+            iterables.append(base[original_key])
+        else:
+            # 通常のキーの場合
+            iterables.append(base[key])
+    
     for combo in itertools.product(*iterables):
         d = static.copy()
         d.update(dict(zip(sweep_keys, combo)))
-        yield d, sweep_keys                 # sweep_keys を返す
+        yield d, sweep_keys
 
 
 # --- ラベル整形 -------------------------------------------

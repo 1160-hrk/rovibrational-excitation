@@ -281,6 +281,62 @@ class TestExpandCases:
         for case, sweep_keys in cases:
             assert case["V_max"] == [5]  # リストのまま保持
             assert sweep_keys == ["amplitude"]
+    
+    def test_fixed_value_keys(self):
+        """FIXED_VALUE_KEYSは常に固定値として扱われるテスト"""
+        base = {
+            "V_max": [3, 5],  # スイープ対象
+            "polarization": [1.0, 0.0],  # 固定値（FIXED_VALUE_KEYS）
+            "amplitude": [0.1, 0.2],  # スイープ対象
+        }
+        
+        cases = list(_expand_cases(base))
+        
+        # V_max (2) × amplitude (2) = 4ケース
+        # polarizationは固定値なので影響しない
+        assert len(cases) == 4
+        
+        for case, sweep_keys in cases:
+            assert case["polarization"] == [1.0, 0.0]  # 常に同じ値
+            assert "polarization" not in sweep_keys
+            assert "V_max" in sweep_keys
+            assert "amplitude" in sweep_keys
+    
+    def test_sweep_suffix(self):
+        """_sweep接尾辞キーは明示的にスイープ対象テスト"""
+        base = {
+            "V_max": 5,  # 固定値
+            "polarization_sweep": [[1, 0], [0, 1]],  # スイープ対象
+            "amplitude": 0.1,  # 固定値
+        }
+        
+        cases = list(_expand_cases(base))
+        
+        assert len(cases) == 2  # polarization_sweepのみ
+        
+        pol_values = []
+        for case, sweep_keys in cases:
+            assert case["V_max"] == 5
+            assert case["amplitude"] == 0.1
+            # スイープキーは接尾辞が取り除かれた名前
+            assert sweep_keys == ["polarization"]
+            # ケースには接尾辞が取り除かれたキーで値が保存される
+            assert "polarization" in case
+            assert "polarization_sweep" not in case
+            pol_values.append(case["polarization"])
+        
+        assert [1, 0] in pol_values
+        assert [0, 1] in pol_values
+    
+    def test_sweep_suffix_error(self):
+        """_sweep接尾辞だがiterableでない場合のエラーテスト"""
+        base = {
+            "V_max": 5,
+            "amplitude_sweep": 0.1,  # 非iterable
+        }
+        
+        with pytest.raises(ValueError, match="'amplitude_sweep' has '_sweep' suffix but is not iterable"):
+            list(_expand_cases(base))
 
 
 class TestLoadParamsFile:
@@ -459,7 +515,7 @@ t_center = 0.0
 carrier_freq = 1.0
 mu0_Cm = 1e-30
 omega_rad_phz = 1.0
-polarization = [1.0, 0.0]
+polarization = [[1.0, 0.0]]
 description = "integration_test"
 ''')
             f.flush()
@@ -473,7 +529,8 @@ description = "integration_test"
                         results = run_all(f.name, save=True)
                 
                 # 結果検証
-                assert len(results) == 2  # V_max = [3, 5] の2ケース
+                # V_max = [3, 5] (2ケース) × polarization = [[1.0, 0.0]] (1ケース) = 2ケース
+                assert len(results) == 2
                 assert mock_run_one.call_count == 2
                 
             finally:
