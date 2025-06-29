@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 .env
 
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
 # pandas、numpy などの大きなデータ
 *.h5
 *.csv

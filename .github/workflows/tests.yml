@@ -54,6 +54,7 @@ jobs:
         cd tests
         coverage run --source=../src -m pytest -v --tb=short
         coverage report --show-missing | tee coverage_output.txt
+        coverage xml -o ../coverage.xml
         
     - name: Extract coverage percentage
       if: matrix.python-version == '3.11'
@@ -67,6 +68,15 @@ jobs:
       if: matrix.python-version == '3.11'
       run: |
         echo "✅ テスト完了: カバレッジ ${COVERAGE_PERCENT}%"
+        
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
         
     - name: Update coverage badge
       if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main' && github.event_name == 'push'
