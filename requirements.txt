@@ -1,12 +1,13 @@
-numpy
+numpy>=1.22
+scipy>=1.10
+numba>=0.59
 pandas
-matplotlib
-scipy
 tqdm
+h5py
+matplotlib
 requests
 python-dateutil
 pytz
 tzdata
 sympy
 ipykernel
-numba

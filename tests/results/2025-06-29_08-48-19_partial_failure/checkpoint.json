@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-06-29T08:48:22.346973",
+  "start_time": 159711.347930865,
+  "total_cases": 2,
+  "completed_cases": 1,
+  "failed_cases": 1,
+  "completed_case_hashes": [
+    "8debd80d22925b7f592d2cfa9454ccc7"
+  ],
+  "failed_case_data": [
+    {
+      "J_max": 2,
+      "amplitude": 0.1,
+      "description": "partial_failure",
+      "V_max": 5,
+      "save": true,
+      "outdir": "results/2025-06-29_08-48-19_partial_failure/V_max_5",
+      "error": "Attempt 3/3 failed: \nTraceback:\nTraceback (most recent call last):\n  File \"/workspace/src/rovibrational_excitation/simulation/runner.py\", line 121, in _run_one_safe\n    result = _run_one(params)\n             ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/mock.py\", line 1139, in __call__\n    return self._mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/mock.py\", line 1143, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/mock.py\", line 1200, in _execute_mock_call\n    result = next(effect)\n             ^^^^^^^^^^^^\nStopIteration\n"
+    }
+  ]
+}

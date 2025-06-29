@@ -334,7 +334,6 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     heavy import は関数内 (fork 後キャッシュされる) に移動
     """
     from rovibrational_excitation.core.basis import LinMolBasis
-    from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
     from rovibrational_excitation.core.states import StateVector
     from rovibrational_excitation.core.electric_field import (
         ElectricField,
@@ -387,8 +386,7 @@ def _run_one(params: Dict[str, Any]) -> np.ndarray:
     if potential_type == 'morse':
         omega01_domega_to_N(params["omega_rad_phz"], delta_omega_rad_phz)
     
-    H0 = generate_H0_LinMol(
-        basis,
+    H0 = basis.generate_H0(
         omega_rad_phz=params["omega_rad_phz"],
         delta_omega_rad_phz=delta_omega_rad_phz,
         B_rad_phz=params.get("B_rad_phz", 0.0),

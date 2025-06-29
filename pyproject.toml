@@ -40,8 +40,10 @@ python_functions = ["test_*"]
 markers = [
     "slow: マークされたテストは実行時間が長い (deselect with '-m \"not slow\"')",
 ]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --strict-markers"
 filterwarnings = [
     "ignore::DeprecationWarning:rovibrational_excitation.*",
     "ignore::PendingDeprecationWarning:numpy.*matlib",
+    "ignore::RuntimeWarning:numpy.*",
+    "ignore::UserWarning:numba.*",
 ]

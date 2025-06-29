@@ -63,7 +63,7 @@ polarization = [1.0, 0.0]  # 固定値
 |-----------|---|------|------|------|-----|
 | `duration` | `float` | ✅ | fs | パルス幅（FWHM） | `20.0` |
 | `t_center` | `float` | ✅ | fs | パルス中心時刻 | `0.0` |
-| `carrier_freq` | `float` | ✅ | rad/fs | キャリア周波数 | `0.14847` |
+| `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
 | `polarization` | `list` | ✅ | - | 偏光ベクトル [x, y] | `[1.0, 0.0]` |
 

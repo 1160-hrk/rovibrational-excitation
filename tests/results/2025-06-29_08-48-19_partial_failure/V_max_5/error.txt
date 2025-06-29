@@ -1,0 +1,26 @@
+Attempt 3/3 failed: 
+Traceback:
+Traceback (most recent call last):
+  File "/workspace/src/rovibrational_excitation/simulation/runner.py", line 121, in _run_one_safe
+    result = _run_one(params)
+             ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/unittest/mock.py", line 1200, in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+StopIteration
+
+Parameters:
+{
+  "J_max": 2,
+  "amplitude": 0.1,
+  "description": "partial_failure",
+  "V_max": 5,
+  "save": true,
+  "outdir": "results/2025-06-29_08-48-19_partial_failure/V_max_5"
+}

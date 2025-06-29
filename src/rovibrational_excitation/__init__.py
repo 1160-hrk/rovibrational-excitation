@@ -13,7 +13,7 @@ simulation      … バッチ実行・結果管理
 >>> import rovibrational_excitation as rve
 >>> basis = rve.LinMolBasis(V_max=2, J_max=4)
 >>> dip   = rve.LinMolDipoleMatrix(basis)
->>> H0    = rve.generate_H0_LinMol(basis, omega_rad_phz=1000.0)
+>>> H0    = basis.generate_H0(omega_rad_phz=1000.0)  # New API (recommended)
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ __all__: list[str] = [
 # core
 from .core.basis        import LinMolBasis                       # noqa: E402, F401
 from .core.electric_field import ElectricField                   # noqa: E402, F401
-from .core.hamiltonian   import generate_H0_LinMol               # noqa: E402, F401
+from .core.hamiltonian   import generate_H0_LinMol               # noqa: E402, F401  # DEPRECATED: use basis.generate_H0() instead
 from .core.propagator    import (                                # noqa: E402, F401
     schrodinger_propagation,
     liouville_propagation,
