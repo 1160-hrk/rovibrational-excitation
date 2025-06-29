@@ -348,12 +348,14 @@ class TestLoadParamsFile:
     def test_load_valid_file(self):
         """有効なパラメータファイル読み込みテスト"""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 V_max = 5
 J_max = 3
 amplitude = [0.1, 0.2, 0.3]
 description = "Test parameters"
-""")
+"""
+            )
             f.flush()
 
             try:
@@ -510,7 +512,8 @@ class TestIntegration:
 
         # パラメータファイル作成
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 V_max = [3, 5]
 J_max = 2
 amplitude = 0.1
@@ -524,7 +527,8 @@ mu0_Cm = 1e-30
 omega_rad_phz = 1.0
 polarization = [[1.0, 0.0]]
 description = "integration_test"
-""")
+"""
+            )
             f.flush()
 
             try:

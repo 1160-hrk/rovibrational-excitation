@@ -116,10 +116,9 @@ def _sparse_cpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
 
     for i, (v1, J1, M1) in enumerate(zip(v_arr, J_arr, M_arr)):
         # J=0状態もスキップしない（dense版と同じ）
-        mask = (
-            (abs(J1 - J_arr) <= 1)  # 回転選択則: ΔJ = 0, ±1
-            & (abs(M1 - M_arr) <= 1)  # 磁気選択則: ΔM = 0, ±1
-        )
+        mask = (abs(J1 - J_arr) <= 1) & (  # 回転選択則: ΔJ = 0, ±1
+            abs(M1 - M_arr) <= 1
+        )  # 磁気選択則: ΔM = 0, ±1
         for j in _np.nonzero(mask)[0]:
             r = rot_func(J1, M1, J_arr[j], M_arr[j])
             if r == 0.0:

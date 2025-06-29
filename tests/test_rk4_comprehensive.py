@@ -334,9 +334,9 @@ class TestRK4LVNEComprehensive:
         for i in range(result.shape[0]):
             rho = result[i]
             hermitian_error = np.max(np.abs(rho - rho.conj().T))
-            assert hermitian_error < 1e-12, (
-                f"非エルミート at step {i}: {hermitian_error}"
-            )
+            assert (
+                hermitian_error < 1e-12
+            ), f"非エルミート at step {i}: {hermitian_error}"
 
             # トレース保存
             trace = np.trace(rho)

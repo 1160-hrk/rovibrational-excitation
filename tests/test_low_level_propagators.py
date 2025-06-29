@@ -261,9 +261,9 @@ class TestRK4LiouvilleVonNeumannDetailed:
 
         for i, rho in enumerate(traj):
             hermiticity_error = np.max(np.abs(rho - rho.conj().T))
-            assert hermiticity_error < 1e-12, (
-                f"Step {i}: エルミート性誤差 = {hermiticity_error}"
-            )
+            assert (
+                hermiticity_error < 1e-12
+            ), f"Step {i}: エルミート性誤差 = {hermiticity_error}"
 
     def test_trajectory_vs_final_consistency(self):
         """軌跡版と最終結果版の一貫性"""
