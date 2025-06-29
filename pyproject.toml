@@ -9,7 +9,7 @@ description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com"}]
-license = {text = "MIT"}   # 例
+license = {text = "MIT"} 
 
 dependencies = [
     "numpy>=1.22",
@@ -31,3 +31,17 @@ exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 [project.optional-dependencies]
 gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
 dev = ["pytest", "build", "twine"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: マークされたテストは実行時間が長い (deselect with '-m \"not slow\"')",
+]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:rovibrational_excitation.*",
+    "ignore::PendingDeprecationWarning:numpy.*matlib",
+]
