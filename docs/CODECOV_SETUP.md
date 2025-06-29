@@ -79,8 +79,37 @@ coverage xml
 ### カバレッジが0%と表示される
 
 - `coverage.xml` のパスを確認
-- `--source` パラメータが正しいか確認
+- `--source` パラメータが正しいか確認（`src/rovibrational_excitation`）
 - テストファイルが実際に実行されているか確認
+- 作業ディレクトリを統一する（ルートディレクトリから実行）
+
+### "Unusable report" エラー
+
+よくある原因と解決方法：
+
+1. **ソースパスの不一致**:
+   ```yaml
+   # ❌ 間違い
+   coverage run --source=../src -m pytest
+   
+   # ✅ 正しい  
+   coverage run --source=src/rovibrational_excitation -m pytest tests/
+   ```
+
+2. **ファイルパスの問題**:
+   ```yaml
+   # Codecov v5では明示的にファイルを指定
+   uses: codecov/codecov-action@v5
+   with:
+     file: ./coverage.xml  # 必須
+     verbose: true         # デバッグ用
+   ```
+
+3. **codecov.yml での修正設定**:
+   ```yaml
+   fixes:
+     - "src/rovibrational_excitation/::"
+   ```
 
 ### プライベートリポジトリの場合
 

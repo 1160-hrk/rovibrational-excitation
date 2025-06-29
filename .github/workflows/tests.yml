@@ -51,15 +51,13 @@ jobs:
     - name: Run tests with coverage
       if: matrix.python-version == '3.11'
       run: |
-        cd tests
-        coverage run --source=../src -m pytest -v --tb=short
-        coverage report --show-missing | tee coverage_output.txt
-        coverage xml -o ../coverage.xml
+        coverage run --source=src/rovibrational_excitation -m pytest tests/ -v --tb=short
+        coverage report --show-missing
+        coverage xml
         
     - name: Extract coverage percentage
       if: matrix.python-version == '3.11'
       run: |
-        cd tests
         COVERAGE_PERCENT=$(coverage report | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
         echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
         echo "Coverage: $COVERAGE_PERCENT%"
@@ -69,16 +67,26 @@ jobs:
       run: |
         echo "✅ テスト完了: カバレッジ ${COVERAGE_PERCENT}%"
         
+    - name: Debug coverage file
+      if: matrix.python-version == '3.11'
+      run: |
+        echo "📊 Coverage file check:"
+        ls -la coverage.xml || echo "coverage.xml not found"
+        echo "📂 Working directory:"
+        pwd
+        echo "📁 Directory contents:"
+        ls -la
+        
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        slug: 1160-hrk/rovibrational-excitation
-        # file: ./coverage.xml
-        # flags: unittests
-        # name: codecov-umbrella
-        # fail_ci_if_error: false
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
         
     # - name: Update coverage badge
     #   if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main' && github.event_name == 'push'

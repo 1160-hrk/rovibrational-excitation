@@ -30,4 +30,8 @@ ignore:
   - "examples/*"
   - "docs/*"
   - "scripts/*"
-  - "setup.py" 
+  - "setup.py"
+  - "src/rovibrational_excitation.egg-info/*"
+
+fixes:
+  - "src/rovibrational_excitation/::" 
