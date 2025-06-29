@@ -10,7 +10,7 @@ rovibrational_excitation.dipole.linmol/builder.py
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Union, Type
+from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as _np
 import scipy.sparse as _sp
@@ -37,9 +37,9 @@ if TYPE_CHECKING:
     from rovibrational_excitation.core.basis import LinMolBasis
 
 if _cp is not None:
-    Array: Type = Union[_np.ndarray, _cp.ndarray]  # type: ignore
+    Array: type = Union[_np.ndarray, _cp.ndarray]  # type: ignore
 else:
-    Array: Type = _np.ndarray  # type: ignore
+    Array: type = _np.ndarray  # type: ignore
 
 
 # ----------------------------------------------------------------------
@@ -168,7 +168,7 @@ def _dense_gpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
 # --- 5. Public API ----------------------------------------------------
 # ----------------------------------------------------------------------
 def build_mu(
-    basis,  # type: LinMolBasis
+    basis: LinMolBasis,
     axis: Literal["x", "y", "z"],
     mu0: float,
     *,

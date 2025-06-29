@@ -8,7 +8,7 @@ rovibrational_excitation/core/propagator.py
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Union, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 

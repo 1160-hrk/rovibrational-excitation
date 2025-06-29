@@ -2,7 +2,7 @@
 Vibrational ladder system dipole matrix builder.
 """
 
-from typing import Dict, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class VibLadderDipoleMatrix:
             omega01_domega_to_N(basis.omega_rad_phz, basis.delta_omega_rad_phz)
 
         # Cache for computed matrices
-        self._cache: Dict[str, np.ndarray] = {}
+        self._cache: dict[str, np.ndarray] = {}
 
     def mu(self, axis: Literal["x", "y", "z"] = "z") -> np.ndarray:
         """

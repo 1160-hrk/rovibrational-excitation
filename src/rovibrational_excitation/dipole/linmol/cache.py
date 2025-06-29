@@ -21,7 +21,7 @@ Typical usage
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Union, Type
+from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 
@@ -38,9 +38,9 @@ if TYPE_CHECKING:
 
 # Runtime用の型エイリアス
 if cp is not None:
-    Array: Type = Union[np.ndarray, cp.ndarray]  # type: ignore
+    Array: type = Union[np.ndarray, cp.ndarray]  # type: ignore[assignment]
 else:
-    Array: Type = np.ndarray  # type: ignore
+    Array: type = np.ndarray  # type: ignore[assignment,no-redef]
 
 from rovibrational_excitation.dipole.linmol.builder import build_mu
 
@@ -63,7 +63,7 @@ class LinMolDipoleMatrix:
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
 
-    _cache: dict[tuple[str, bool], Array] = field(
+    _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[valid-type]
         init=False, default_factory=dict, repr=False
     )
 
@@ -75,7 +75,7 @@ class LinMolDipoleMatrix:
         axis: str = "x",
         *,
         dense: bool | None = None,
-    ) -> Array:
+    ) -> Array:  # type: ignore[valid-type]
         """
         Return μ_axis; build and cache on first request.
 
@@ -119,7 +119,7 @@ class LinMolDipoleMatrix:
         return self.mu("z")
 
     # ------------------------------------------------------------------
-    def stacked(self, order: str = "xyz", *, dense: bool | None = None) -> Array:
+    def stacked(self, order: str = "xyz", *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
         """Return stack with shape (len(order), dim, dim)."""
         mats = [self.mu(ax, dense=dense) for ax in order]
         return _xp(self.backend).stack(mats)
@@ -149,7 +149,7 @@ class LinMolDipoleMatrix:
                     if sp.issparse(mat):
                         mat_coo = mat.tocoo()
                     else:
-                        mat_coo = mat.tocoo()  # type: ignore[union-attr]
+                        mat_coo = mat.tocoo()  # type: ignore[attr-defined]
 
                     if hasattr(_xp(self.backend), "asnumpy"):
                         g.create_dataset(

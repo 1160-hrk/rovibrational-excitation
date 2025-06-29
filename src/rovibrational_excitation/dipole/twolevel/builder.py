@@ -2,7 +2,7 @@
 Two-level system dipole matrix builder.
 """
 
-from typing import Dict, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class TwoLevelDipoleMatrix:
         self.mu0 = mu0
 
         # Cache for computed matrices
-        self._cache: Dict[str, np.ndarray] = {}
+        self._cache: dict[str, np.ndarray] = {}
 
     def mu(self, axis: Literal["x", "y", "z"] = "x") -> np.ndarray:
         """
