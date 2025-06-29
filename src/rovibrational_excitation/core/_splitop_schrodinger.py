@@ -27,6 +27,10 @@ import numpy as np
 # Optional back‑ends ----------------------------------------------------------
 # ---------------------------------------------------------------------------
 try:
+    import scipy.sparse as sp
+except ImportError:
+    sp = None
+try:
     import cupy as cp  # type: ignore
 except ImportError:  # CuPy が無い環境でも読み込めるように動作
     cp = None  # noqa: N816
@@ -131,8 +135,7 @@ def splitop_schrodinger(
     H0 = np.asarray(H0, dtype=np.float64)
     
     # スパース行列の場合は適切に処理
-    try:
-        import scipy.sparse as sp
+    if sp is not None:
         if sp.issparse(mu_x):
             pass  # スパース行列の場合はそのまま使用
         else:
@@ -141,7 +144,7 @@ def splitop_schrodinger(
             pass  # スパース行列の場合はそのまま使用
         else:
             mu_y = np.asarray(mu_y, dtype=np.complex128)
-    except ImportError:
+    else:
         mu_x = np.asarray(mu_x, dtype=np.complex128)
         mu_y = np.asarray(mu_y, dtype=np.complex128)
     
@@ -155,31 +158,24 @@ def splitop_schrodinger(
 
     # Hermitian A = (M+M†)/2  with  M = p·μ
     # スパース行列の場合は適切に処理
-    try:
-        import scipy.sparse as sp
-        if sp.issparse(mu_x) or sp.issparse(mu_y):
-            # スパース行列の演算
-            M_raw = pol[0] * mu_x + pol[1] * mu_y
-            if sp.issparse(M_raw):
-                A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
-                # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
-                if A.shape[0] <= 100:
-                    A_dense = A.toarray()
-                    eigvals, U = np.linalg.eigh(A_dense)
-                else:
-                    # 大サイズの場合はdenseでの固有値分解にフォールバック
-                    A_dense = A.toarray()
-                    eigvals, U = np.linalg.eigh(A_dense)
+    if sp is not None and (sp.issparse(mu_x) or sp.issparse(mu_y)):
+        # スパース行列の演算
+        M_raw = pol[0] * mu_x + pol[1] * mu_y
+        if sp.issparse(M_raw):
+            A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
+            # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
+            if A.shape[0] <= 100:
+                A_dense = A.toarray()
+                eigvals, U = np.linalg.eigh(A_dense)
             else:
-                A = 0.5 * (M_raw + M_raw.conj().T)
-                eigvals, U = np.linalg.eigh(A)
+                # 大サイズの場合はdenseでの固有値分解にフォールバック
+                A_dense = A.toarray()
+                eigvals, U = np.linalg.eigh(A_dense)
         else:
-            # Dense行列の場合（従来の処理）
-            M_raw = pol[0] * mu_x + pol[1] * mu_y
             A = 0.5 * (M_raw + M_raw.conj().T)
-            eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
-    except ImportError:
-        # scipy が無い場合は従来の処理
+            eigvals, U = np.linalg.eigh(A)
+    else:
+        # Dense行列の場合（従来の処理）
         M_raw = pol[0] * mu_x + pol[1] * mu_y
         A = 0.5 * (M_raw + M_raw.conj().T)
         eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine

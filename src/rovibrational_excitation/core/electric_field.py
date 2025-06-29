@@ -5,7 +5,7 @@ from numpy import pi
 # from scipy.fft import fft, ifft, fftfreq
 from scipy.fft import rfft, irfft, rfftfreq
 from typing import Union, Optional, Tuple
-from scipy.special import erf as scipy_erf, wofz
+from scipy.special import wofz
 import inspect
 
 ArrayLike = Union[np.ndarray, float]
@@ -361,7 +361,7 @@ def get_mod_spectrum_from_bin_setting(
         if start > len_freq-1:
             continue
         if end > len_freq - 1:
-            end_p = len_freq - 1
+            end = len_freq - 1
         val = mod_values[i]
         spec[start:end] = val
     return spec

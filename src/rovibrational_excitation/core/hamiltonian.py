@@ -4,7 +4,6 @@ Hamiltonian generation functions.
 DEPRECATED: Use basis.generate_H0() method instead.
 """
 import warnings
-import numpy as np
 from .basis import LinMolBasis
 
 

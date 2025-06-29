@@ -46,7 +46,7 @@ class DensityMatrix:
 
     def set_diagonal(self, populations):
         if len(populations) != self.basis.size():
-            raise ValueError("ポピュレーションの長さが基底サイズと一致しません。");
+            raise ValueError("ポピュレーションの長さが基底サイズと一致しません。")
         self.data[:, :] = 0
         np.fill_diagonal(self.data, populations)
 

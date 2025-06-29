@@ -1,9 +1,9 @@
-name: Release
+name: Release to PyPI
 
 on:
   push:
     tags:
-      - 'v*'  # v0.1.4, v1.0.0 など
+      - 'v*'
 
 permissions:
   contents: write
@@ -11,77 +11,221 @@ permissions:
 
 jobs:
   verify-version:
+    name: Version Consistency Check
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
     - name: Verify version consistency
+      id: version
       run: |
-        # タグからバージョン取得 (v0.1.4 → 0.1.4)
         TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
         echo "Tag version: $TAG_VERSION"
         
-        # pyproject.tomlからバージョン取得
-        PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-        echo "pyproject.toml version: $PYPROJECT_VERSION"
-        
-        # バージョン一致確認
-        if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
-          echo "❌ バージョン不一致: Tag=$TAG_VERSION, pyproject.toml=$PYPROJECT_VERSION"
+        if [ ! -f pyproject.toml ]; then
+          echo "❌ pyproject.toml が見つかりません"
           exit 1
         fi
-        echo "✅ バージョン一致確認"
+        
+        PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])" 2>/dev/null || echo "ERROR")
+        
+        if [ "$PYPROJECT_VERSION" = "ERROR" ]; then
+          echo "❌ pyproject.toml からバージョンを読み取れません"
+          exit 1
+        fi
+        
+        echo "pyproject.toml version: $PYPROJECT_VERSION"
+        
+        if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+          echo "❌ バージョン不一致: Tag=$TAG_VERSION, pyproject.toml=$PYPROJECT_VERSION"
+          echo "🔧 修正方法:"
+          echo "  1. pyproject.toml のバージョンを $TAG_VERSION に更新"
+          echo "  2. または、正しいバージョンでタグを作り直し"
+          exit 1
+        fi
+        echo "✅ バージョン一致確認完了: $TAG_VERSION"
 
-  build-and-release:
-    needs: verify-version
+  build-and-test:
+    name: Build Package
     runs-on: ubuntu-latest
-    
+    needs: verify-version
+    outputs:
+      dist-exists: ${{ steps.check-dist.outputs.exists }}
+      
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-release-${{ hashFiles('**/pyproject.toml') }}
+
     - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
         pip install build twine
-    
+
     - name: Build package
-      run: python -m build
+      run: |
+        echo "📦 パッケージビルド開始..."
+        python -m build
+        echo "✅ ビルド完了"
+
+    - name: Verify package
+      run: |
+        echo "🔍 パッケージ検証中..."
+        twine check dist/*
+        echo "✅ パッケージ検証完了"
+
+    - name: Check dist files
+      id: check-dist
+      run: |
+        if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "📋 ビルドファイル一覧:"
+          ls -la dist/
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "❌ ビルドファイルが見つかりません"
+          exit 1
+        fi
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+        retention-days: 30
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [verify-version, build-and-test]
+    if: needs.build-and-test.outputs.dist-exists == 'true'
     
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        VERSION="${{ needs.verify-version.outputs.version }}"
+        
+        if [ -f CHANGELOG.md ]; then
+          CHANGELOG_CONTENT=$(awk "/## \[$VERSION\]/,/## \[/{if(/## \[/ && !/## \[$VERSION\]/)exit}1" CHANGELOG.md | head -n -1)
+          if [ -n "$CHANGELOG_CONTENT" ]; then
+            echo "changelog_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "changelog_found=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "changelog_found=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Create GitHub Release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
+        release_name: "Release ${{ github.ref_name }}"
         body: |
-          ## リリース ${{ github.ref_name }}
+          ## 🚀 リリース ${{ github.ref_name }}
           
-          ### 主な変更点
-          - [CHANGELOG.md](CHANGELOG.md) を参照
-          
-          ### インストール
+          ### 📦 インストール
           ```bash
-          pip install rovibrational-excitation==${{ github.ref_name }}
+          pip install rovibrational-excitation==${{ needs.verify-version.outputs.version }}
+          ```
+          
+          ### 📋 主な変更点
+          ${{ steps.release-notes.outputs.changelog_found == 'true' && '詳細は [CHANGELOG.md](CHANGELOG.md) を参照してください。' || '変更点の詳細については、コミット履歴をご確認ください。' }}
+          
+          ### 🔗 リンク
+          - 📚 [ドキュメント](README.md)
+          - 🐛 [Issues](https://github.com/${{ github.repository }}/issues)
+          - 💬 [Discussions](https://github.com/${{ github.repository }}/discussions)
+          
+          ### ⚡ クイックスタート
+          ```python
+          import rovibrational_excitation as rve
           ```
         draft: false
-        prerelease: false
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [verify-version, build-and-test, create-release]
+    if: needs.build-and-test.outputs.dist-exists == 'true'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/rovibrational-excitation/
     
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
     - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
+
+    - name: Verify PyPI upload
       run: |
-        twine upload dist/* 
+        VERSION="${{ needs.verify-version.outputs.version }}"
+        echo "🎉 PyPI公開完了!"
+        echo "📦 パッケージ: https://pypi.org/project/rovibrational-excitation/$VERSION/"
+        echo "📋 インストール確認:"
+        echo "  pip install rovibrational-excitation==$VERSION"
+
+  post-release:
+    name: Post-Release Tasks
+    runs-on: ubuntu-latest
+    needs: [verify-version, publish-pypi]
+    if: always() && needs.publish-pypi.result == 'success'
+    
+    steps:
+    - name: Release summary
+      run: |
+        VERSION="${{ needs.verify-version.outputs.version }}"
+        echo "## 🎉 リリース完了: $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ 完了タスク" >> $GITHUB_STEP_SUMMARY
+        echo "- [x] バージョン整合性チェック" >> $GITHUB_STEP_SUMMARY
+        echo "- [x] パッケージビルド" >> $GITHUB_STEP_SUMMARY
+        echo "- [x] GitHub Release作成" >> $GITHUB_STEP_SUMMARY
+        echo "- [x] PyPI公開" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 リンク" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [PyPI](https://pypi.org/project/rovibrational-excitation/$VERSION/)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏷️ [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)" >> $GITHUB_STEP_SUMMARY 

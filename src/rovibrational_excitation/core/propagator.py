@@ -11,6 +11,12 @@ from typing import Iterable, Tuple, Union, Optional, TYPE_CHECKING
 import numpy as np
 
 # ---------------------------------------------------------------------
+# RK4 kernels
+from ._rk4_lvne        import rk4_lvne_traj, rk4_lvne
+from ._rk4_schrodinger import rk4_schrodinger
+from ._splitop_schrodinger import splitop_schrodinger
+
+# ---------------------------------------------------------------------
 # optional CuPy
 try:
     import cupy as _cp                   # noqa: N811
@@ -96,12 +102,6 @@ def _prepare_args(
         mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
 
     return xp.asarray(H0), mu_a, mu_b, xp.asarray(Ex), xp.asarray(Ey), dt_half * 2, steps
-
-# ---------------------------------------------------------------------
-# RK4 kernels
-from ._rk4_lvne        import rk4_lvne_traj, rk4_lvne
-from ._rk4_schrodinger import rk4_schrodinger
-from ._splitop_schrodinger import splitop_schrodinger
 
 # ---------------------------------------------------------------------
 def schrodinger_propagation(

@@ -31,7 +31,8 @@ import pandas as pd
 try:
     from tqdm import tqdm
 except ImportError:  # 進捗バーが無くても動く
-    tqdm = lambda x, **k: x  # type: ignore
+    def tqdm(x, **k):  # type: ignore
+        return x
 
 
 # ---------------------------------------------------------------------
