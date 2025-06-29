@@ -15,7 +15,7 @@ from rovibrational_excitation.core._splitop_schrodinger import splitop_schroding
 
 # CuPyが利用可能か判定
 try:
-    import cupy as cp
+    import cupy as cp  # noqa: F401
     HAS_CUPY = True
 except ImportError:
     HAS_CUPY = False

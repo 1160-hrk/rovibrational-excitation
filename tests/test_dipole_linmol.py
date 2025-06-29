@@ -11,13 +11,13 @@ from rovibrational_excitation.dipole.linmol.builder import build_mu
 
 # CuPyが利用可能か判定
 try:
-    import cupy
+    import cupy  # noqa: F401
     HAS_CUPY = True
 except ImportError:
     HAS_CUPY = False
 
 try:
-    import h5py
+    import h5py  # noqa: F401
     HAS_HDF5 = True
 except ImportError:
     HAS_HDF5 = False

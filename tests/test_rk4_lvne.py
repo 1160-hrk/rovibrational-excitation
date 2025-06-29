@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
-import pytest
 from rovibrational_excitation.core._rk4_lvne import rk4_lvne
 
 def make_simple_case():

@@ -13,10 +13,14 @@ DENSE=false    : CSR sparse で生成し dense に変換して描画
 from __future__ import annotations
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 # GPU optional --------------------------------------------------------
 BACKEND = os.getenv("BACKEND", "numpy").lower()
@@ -28,9 +32,6 @@ except ImportError:
     cp = None
     if BACKEND == "cupy":
         raise RuntimeError("CuPy 未インストールですが BACKEND=cupy が指定されました")
-
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 # util ----------------------------------------------------------------
 def xp():
@@ -65,7 +66,7 @@ def main():
     t0 = time.perf_counter()
     mu_y = dip.mu_y
     mu_x = dip.mu_x
-    mu_z = dip.mu_z
+    _ = dip.mu_z
     t1 = time.perf_counter()
     print(f"  elapsed: {(t1-t0)*1e3:.1f} ms")
 

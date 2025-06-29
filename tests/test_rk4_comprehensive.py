@@ -19,7 +19,7 @@ from rovibrational_excitation.core._rk4_lvne import rk4_lvne, rk4_lvne_traj
 
 # CuPy可用性チェック
 try:
-    import cupy as cp
+    import cupy as cp  # noqa: F401
     HAS_CUPY = True
 except ImportError:
     HAS_CUPY = False

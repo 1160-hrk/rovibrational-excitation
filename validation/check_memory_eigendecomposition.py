@@ -88,7 +88,7 @@ def check_eigendecomposition_memory(V_max, J_max):
     
     # トレースマロックでの詳細情報
     current, peak = tracemalloc.get_traced_memory()
-    print(f"\nTracemalloc:")
+    print("\nTracemalloc:")
     print(f"  現在のメモリ使用量: {current/1024/1024:.1f} MB")
     print(f"  ピークメモリ使用量: {peak/1024/1024:.1f} MB")
     

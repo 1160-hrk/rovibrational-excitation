@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 import numpy as np
 import pytest
-from rovibrational_excitation.core.basis import VibLadderBasis, LinMolBasis
+from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.dipole.viblad.builder import VibLadderDipoleMatrix
 from rovibrational_excitation.dipole.rot.jm import tdm_jm_x, tdm_jm_y, tdm_jm_z
 from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm

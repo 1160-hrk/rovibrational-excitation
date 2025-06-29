@@ -17,12 +17,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 import pytest
 import numpy as np
-import json
 import tempfile
-import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+from unittest.mock import patch
 
 from rovibrational_excitation.simulation.runner import (
     CheckpointManager,
@@ -31,7 +28,6 @@ from rovibrational_excitation.simulation.runner import (
     _expand_cases,
     _load_params_file,
     _run_one_safe,
-    _run_one,
     run_all,
     run_all_with_checkpoint,
     resume_run,

@@ -50,7 +50,7 @@ def compare_eigendecomposition(V_max, J_max):
     # === Dense 行列での処理 ===
     print("\n--- Dense 行列 ---")
     tracemalloc.start()
-    mem_start = get_memory_usage()
+    _ = get_memory_usage()
     
     dipole_dense = LinMolDipoleMatrix(
         basis, mu0=1e-30, potential_type="harmonic",
@@ -81,7 +81,7 @@ def compare_eigendecomposition(V_max, J_max):
     # === Sparse 行列での処理 ===
     print("\n--- Sparse 行列 ---")
     tracemalloc.start()
-    mem_start_sparse = get_memory_usage()
+    _ = get_memory_usage()
     
     dipole_sparse = LinMolDipoleMatrix(
         basis, mu0=1e-30, potential_type="harmonic",
@@ -130,7 +130,7 @@ def compare_eigendecomposition(V_max, J_max):
     print(f"Sparse ピークメモリ: {peak_sparse/1024/1024:.1f} MB")
     
     # 結果の比較
-    print(f"\n--- 比較結果 ---")
+    print("\n--- 比較結果 ---")
     print(f"メモリ節約: {(mem_after_eigen_dense - mem_before_eigen_dense) - (mem_after_eigen_sparse - mem_before_eigen_sparse):.1f} MB")
     
     if len(eigvals_dense) == len(eigvals_sparse):

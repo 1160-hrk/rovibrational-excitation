@@ -12,10 +12,9 @@ from __future__ import annotations
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-import os, sys, shutil, tempfile, time, importlib.util
+import tempfile
+import time
 from rovibrational_excitation.simulation import runner
-
-import numpy as np
 # %%
 # ---------------------------------------------------------------
 # 対象パラメータファイル

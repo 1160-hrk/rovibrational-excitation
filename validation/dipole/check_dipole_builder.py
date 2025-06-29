@@ -96,8 +96,8 @@ def main():
     plt.show()
 
     # --- quick checks ------------------------------------------------
-    nnz_h = mu_h_x.nnz if hasattr(mu_h_x, "nnz") else np.count_nonzero(mu_h_x)
-    nnz_m = mu_m_x.nnz if hasattr(mu_m_x, "nnz") else np.count_nonzero(mu_m_x)
+    _ = mu_h_x.nnz if hasattr(mu_h_x, "nnz") else np.count_nonzero(mu_h_x)
+    _ = mu_m_x.nnz if hasattr(mu_m_x, "nnz") else np.count_nonzero(mu_m_x)
     # assert nnz_h == nnz_m
     # assert not np.allclose(_asnp(mu_h_x), _asnp(mu_m_x))
     print("All checks passed ✔")

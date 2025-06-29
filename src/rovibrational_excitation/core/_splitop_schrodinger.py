@@ -1,4 +1,3 @@
-from __future__ import annotations
 """_splitop_schrodinger.py
 =================================
 Split‑Operator time propagator that mirrors the API of ``rk4_schrodinger.py``
@@ -18,6 +17,7 @@ The returned trajectory has exactly the same shape as the one produced by
 ``rk4_schrodinger_traj`` so the two integrators can be swapped freely in user
 code.
 """
+from __future__ import annotations
 
 from typing import Literal
 
@@ -30,6 +30,7 @@ try:
     import scipy.sparse as sp
 except ImportError:
     sp = None
+
 try:
     import cupy as cp  # type: ignore
 except ImportError:  # CuPy が無い環境でも読み込めるように動作
@@ -37,18 +38,13 @@ except ImportError:  # CuPy が無い環境でも読み込めるように動作
 
 try:
     from numba import njit  # type: ignore
-
     _HAS_NUMBA = True
 except ImportError:  # NumPy fallback（遅くなるが動く）
-
     def njit(**_kwargs):  # type: ignore
         """Dummy decorator when numba is absent."""
-
         def _decorator(func):
             return func
-
         return _decorator
-
     _HAS_NUMBA = False
 
 __all__ = ["splitop_schrodinger"]
