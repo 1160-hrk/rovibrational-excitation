@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rovibrational_excitation"
+name = "rovibrational-excitation"
 version = "0.2.0"
 description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"

@@ -107,7 +107,7 @@ pip install cupy-cuda12x  # CUDA版に合わせて選択
 ## 📋 必要要件
 
 ### Python環境
-- **Python**: 3.8以上
+- **Python**: 3.10以上
 - **NumPy**: 配列操作・数値計算
 - **SciPy**: 科学計算ライブラリ
 - **Numba**: JITコンパイル（CPU高速化）

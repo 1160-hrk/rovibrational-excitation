@@ -107,7 +107,7 @@ pip install git+https://github.com/1160-hrk/rovibrational-excitation.git
 ## Requirements
 
 ### Python Environment
-- **Python**: 3.8+
+- **Python**: 3.10+
 - **NumPy**: Array operations & numerical computing
 - **SciPy**: Scientific computing library
 - **Numba**: JIT compilation (CPU acceleration)
