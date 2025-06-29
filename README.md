@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
 [![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
-[![Coverage](https://img.shields.io/badge/coverage-50%25-yellow.svg)](tests/README.md#現在のテストカバレッジ)
+[![Coverage](https://img.shields.io/badge/coverage-75%25-yellowgreen.svg)](tests/README.md#現在のテストカバレッジ)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -36,7 +36,7 @@ laser pulses.
 
 ## Testing & Coverage
 
-The package includes a comprehensive test suite with **50% code coverage** across all modules.
+The package includes a comprehensive test suite with **75% code coverage** across all modules.
 
 - 🟢 **Basis classes**: 100% coverage (LinMol, TwoLevel, VibLadder)
 - 🟢 **Core physics**: 83-98% coverage (Hamiltonian, States, Propagator)
