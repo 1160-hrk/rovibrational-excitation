@@ -1,24 +1,28 @@
-import sys
 import os
+import sys
 import tempfile
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
 import pytest
+
 from rovibrational_excitation.simulation import runner
+
 
 def test_json_safe_basic():
     # 複素数
-    c = 1+2j
+    c = 1 + 2j
     safe = runner._json_safe(c)
     assert safe["__complex__"] and safe["r"] == 1 and safe["i"] == 2
     # ndarray
-    arr = np.array([1,2,3])
+    arr = np.array([1, 2, 3])
     safe_arr = runner._json_safe(arr)
-    assert safe_arr == [1,2,3]
+    assert safe_arr == [1, 2, 3]
     # dict, list
-    d = {"a": 1+1j, "b": [2+2j, 3]}
+    d = {"a": 1 + 1j, "b": [2 + 2j, 3]}
     safe_d = runner._json_safe(d)
     assert "a" in safe_d and "b" in safe_d
+
 
 def test_expand_cases():
     # sweepなし
@@ -26,14 +30,16 @@ def test_expand_cases():
     cases = list(runner._expand_cases(base))
     assert len(cases) == 1
     # sweepあり
-    base2 = {"a": [1,2], "b": "x"}
+    base2 = {"a": [1, 2], "b": "x"}
     cases2 = list(runner._expand_cases(base2))
     assert len(cases2) == 2
 
+
 def test_run_all_dryrun():
-    params = {"description": "test", "a": [1,2], "b": "x"}
+    params = {"description": "test", "a": [1, 2], "b": "x"}
     # dry_run=Trueで実行（ファイル出力なし）
-    runner.run_all(params, dry_run=True, save=False) 
+    runner.run_all(params, dry_run=True, save=False)
+
 
 # --- ファイル出力まで確認するテスト ---
 def test_run_all_file_output():
@@ -54,7 +60,7 @@ def test_run_all_file_output():
         "mu0_Cm": 1.0,
         "initial_states": [0],
         "outdir": None,  # runner側で自動生成
-        "save": True
+        "save": True,
     }
     # 一時ディレクトリをresultsに見立てる
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -69,4 +75,4 @@ def test_run_all_file_output():
             # 実行時エラーがあってもテストをスキップ
             pytest.skip(f"Runner execution failed: {e}")
         finally:
-            os.chdir(cwd) 
+            os.chdir(cwd)

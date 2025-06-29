@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """
 scripts/check_runner.py
@@ -9,10 +8,12 @@ scripts/check_runner.py
 """
 
 from __future__ import annotations
+
 import os
 import sys
 import tempfile
 import time
+
 from rovibrational_excitation.simulation import runner
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
@@ -35,5 +36,3 @@ results = runner.run_all(PARAM_FILE, save=True)
 dt = time.perf_counter() - t0
 
 print(f"✔  runner.run_all finished in {dt:.2f} s")
-
-

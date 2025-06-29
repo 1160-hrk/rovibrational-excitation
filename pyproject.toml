@@ -88,3 +88,30 @@ exclude_lines = [
 ignore_errors = true
 show_missing = true
 skip_covered = false
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+fix = true
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by formatter
+    "N803",  # argument name should be lowercase (physics conventions)
+    "N806",  # variable name should be lowercase (physics conventions)
+    "N816",  # variable name should not be mixedCase (physics conventions)
+    "UP007", # Use X | Y for type annotations (compatibility with older Python versions)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

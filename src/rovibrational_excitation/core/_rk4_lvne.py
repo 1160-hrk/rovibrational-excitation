@@ -8,6 +8,7 @@ rk4_lvne.py  ―  Liouville-von Neumann RK4 propagator（改良版）
 """
 
 from __future__ import annotations
+
 import numpy as np
 from numba import njit
 
@@ -26,9 +27,9 @@ def _rk4_lvne_core(
     H0: np.ndarray,
     mu_x: np.ndarray,
     mu_y: np.ndarray,
-    Ex: np.ndarray,          # (2*steps+1,)
-    Ey: np.ndarray,          # (2*steps+1,)
-    rho0: np.ndarray,        # (dim, dim)
+    Ex: np.ndarray,  # (2*steps+1,)
+    Ey: np.ndarray,  # (2*steps+1,)
+    rho0: np.ndarray,  # (dim, dim)
     dt: float,
     steps: int,
     stride: int,
@@ -43,7 +44,7 @@ def _rk4_lvne_core(
     rho = rho0.copy()
     traj[0] = rho
 
-    buf = np.empty_like(rho)    # 作業バッファ
+    buf = np.empty_like(rho)  # 作業バッファ
     out_idx = 1
 
     for s in range(steps):
@@ -57,7 +58,7 @@ def _rk4_lvne_core(
         ey4 = Ey[idx + 2]
 
         H1 = H0 + mu_x * ex1 + mu_y * ey1
-        H2 = H0 + mu_x * ex2 + mu_y * ey2      # H3 と同じ
+        H2 = H0 + mu_x * ex2 + mu_y * ey2  # H3 と同じ
         H4 = H0 + mu_x * ex4 + mu_y * ey4
 
         # --- RK4 ---
@@ -72,7 +73,7 @@ def _rk4_lvne_core(
         buf[:, :] = rho + dt * k3
         k4 = -1j * (H4 @ buf - buf @ H4)
 
-        rho += (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
+        rho += (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         # --------------------
 
         if record_traj and ((s + 1) % stride == 0):
@@ -86,8 +87,11 @@ def _rk4_lvne_core(
 # 公開 API
 # ------------------------------------------------------------
 def rk4_lvne_traj(
-    H0, mu_x, mu_y,
-    Efield_x, Efield_y,
+    H0,
+    mu_x,
+    mu_y,
+    Efield_x,
+    Efield_y,
     rho0,
     dt: float,
     steps: int,
@@ -97,22 +101,25 @@ def rk4_lvne_traj(
     軌跡を返す版  ―  shape = (steps//sample_stride+1, dim, dim)
     """
     return _rk4_lvne_core(
-        np.ascontiguousarray(H0,    dtype=np.complex128),
-        np.ascontiguousarray(mu_x,  dtype=np.complex128),
-        np.ascontiguousarray(mu_y,  dtype=np.complex128),
+        np.ascontiguousarray(H0, dtype=np.complex128),
+        np.ascontiguousarray(mu_x, dtype=np.complex128),
+        np.ascontiguousarray(mu_y, dtype=np.complex128),
         np.asarray(Efield_x, dtype=np.float64),
         np.asarray(Efield_y, dtype=np.float64),
-        np.ascontiguousarray(rho0,  dtype=np.complex128),
+        np.ascontiguousarray(rho0, dtype=np.complex128),
         float(dt),
         int(steps),
         int(sample_stride),
-        True,    # record_traj
+        True,  # record_traj
     )
 
 
 def rk4_lvne(
-    H0, mu_x, mu_y,
-    Efield_x, Efield_y,
+    H0,
+    mu_x,
+    mu_y,
+    Efield_x,
+    Efield_y,
     rho0,
     dt: float,
     steps: int,
@@ -121,15 +128,15 @@ def rk4_lvne(
     最終密度行列だけ返す軽量版  ―  shape = (dim, dim)
     """
     traj = _rk4_lvne_core(
-        np.ascontiguousarray(H0,    dtype=np.complex128),
-        np.ascontiguousarray(mu_x,  dtype=np.complex128),
-        np.ascontiguousarray(mu_y,  dtype=np.complex128),
+        np.ascontiguousarray(H0, dtype=np.complex128),
+        np.ascontiguousarray(mu_x, dtype=np.complex128),
+        np.ascontiguousarray(mu_y, dtype=np.complex128),
         np.asarray(Efield_x, dtype=np.float64),
         np.asarray(Efield_y, dtype=np.float64),
-        np.ascontiguousarray(rho0,  dtype=np.complex128),
+        np.ascontiguousarray(rho0, dtype=np.complex128),
         float(dt),
         int(steps),
-        1,        # stride (dummy)
-        False,    # record_traj
+        1,  # stride (dummy)
+        False,  # record_traj
     )
-    return traj[0]              # (1, dim, dim) → (dim, dim)
+    return traj[0]  # (1, dim, dim) → (dim, dim)

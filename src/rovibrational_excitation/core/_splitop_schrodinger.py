@@ -17,6 +17,7 @@ The returned trajectory has exactly the same shape as the one produced by
 ``rk4_schrodinger_traj`` so the two integrators can be swapped freely in user
 code.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -38,13 +39,18 @@ except ImportError:  # CuPy が無い環境でも読み込めるように動作
 
 try:
     from numba import njit  # type: ignore
+
     _HAS_NUMBA = True
 except ImportError:  # NumPy fallback（遅くなるが動く）
+
     def njit(**_kwargs):  # type: ignore
         """Dummy decorator when numba is absent."""
+
         def _decorator(func):
             return func
+
         return _decorator
+
     _HAS_NUMBA = False
 
 __all__ = ["splitop_schrodinger"]
@@ -52,6 +58,7 @@ __all__ = ["splitop_schrodinger"]
 # ---------------------------------------------------------------------------
 # Helper (CPU, Numba) --------------------------------------------------------
 # ---------------------------------------------------------------------------
+
 
 @njit(fastmath=True, cache=True)
 def _propagate_numpy(
@@ -97,6 +104,7 @@ def _propagate_numpy(
 # Public API -----------------------------------------------------------------
 # ---------------------------------------------------------------------------
 
+
 def splitop_schrodinger(
     H0: np.ndarray,
     mu_x: np.ndarray,
@@ -122,14 +130,16 @@ def splitop_schrodinger(
 
     if backend == "cupy":
         if cp is None:
-            raise RuntimeError("backend='cupy' was requested but CuPy is not installed.")
+            raise RuntimeError(
+                "backend='cupy' was requested but CuPy is not installed."
+            )
         return _splitop_cupy(
             H0, mu_x, mu_y, pol, Efield, psi, dt, steps, sample_stride, hbar
         )
 
     # ---------------- CPU / NumPy (+Numba) path ---------------------------
     H0 = np.asarray(H0, dtype=np.float64)
-    
+
     # スパース行列の場合は適切に処理
     if sp is not None:
         if sp.issparse(mu_x):
@@ -143,7 +153,7 @@ def splitop_schrodinger(
     else:
         mu_x = np.asarray(mu_x, dtype=np.complex128)
         mu_y = np.asarray(mu_y, dtype=np.complex128)
-    
+
     pol = np.asarray(pol, dtype=np.complex128)
     Efield = np.asarray(Efield, dtype=np.float64)
     psi = np.asarray(psi, dtype=np.complex128).flatten()  # 1次元に変換
@@ -183,7 +193,9 @@ def splitop_schrodinger(
     # phase_coeff = -1j * 2.0 * dt / hbar
     phase_coeff = -1j * 2.0 * dt / hbar
 
-    traj = _propagate_numpy(U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, sample_stride)
+    traj = _propagate_numpy(
+        U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, sample_stride
+    )
 
     # reshape to (n_samples, dim, 1) to match rk4
     return traj.reshape(traj.shape[0], traj.shape[1], 1)
@@ -192,6 +204,7 @@ def splitop_schrodinger(
 # ---------------------------------------------------------------------------
 # CuPy back‑end --------------------------------------------------------------
 # ---------------------------------------------------------------------------
+
 
 def _splitop_cupy(
     H0: np.ndarray,

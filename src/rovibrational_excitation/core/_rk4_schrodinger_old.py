@@ -3,23 +3,25 @@
 RK4 time-propagator  ―  CPU (Numba) / GPU (CuPy RawKernel)
 ===========================================================
 バックエンド:
-    · backend="numpy"  → Numba @njit 実装  
+    · backend="numpy"  → Numba @njit 実装
     · backend="cupy"   → **CUDA-C RawKernel** 内で for-loop を回す
       （Python 側ループ 0 回・GPU 内で 5 万 step 連続実行）
 
 要点
 ----
 * 行列次元 *dim* とステップ数 *steps* を **テンプレート定数** として
-  CUDA カーネルに埋め込む → ブランチ・境界チェック排除  
-* 行列–ベクトル積は各行を thread が担当し、  
-  `atomicAdd` でリダクション —— dim≲2 k の典型サイズ向け。  
+  CUDA カーネルに埋め込む → ブランチ・境界チェック排除
+* 行列–ベクトル積は各行を thread が担当し、
+  `atomicAdd` でリダクション —— dim≲2 k の典型サイズ向け。
 * 共有メモリ 16 k B (=1024×16 B) 以内なら `psi` & `k` ベクトルを
   `extern __shared__` に置いてレイテンシ低減。
 """
 
 from __future__ import annotations
+
 import numpy as np
 from numba import njit
+
 
 # -------------------------------------------------------------------
 # 0. 共通ヘルパ
@@ -27,8 +29,10 @@ from numba import njit
 def _prepare_field(field: np.ndarray) -> np.ndarray:
     # if field.size % 2 != 1:
     #     raise ValueError(f"field length {field.size} != odd number")
-    return np.column_stack((field[0:-2:2], field[1:-1:2], field[2::2])) \
-            .astype(np.float64, copy=False)
+    return np.column_stack((field[0:-2:2], field[1:-1:2], field[2::2])).astype(
+        np.float64, copy=False
+    )
+
 
 # -------------------------------------------------------------------
 # 1. CPU (Numba) 実装
@@ -37,11 +41,10 @@ def _prepare_field(field: np.ndarray) -> np.ndarray:
     "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
     "f8[:, :], f8[:, :],"
     "c16[:], f8, i8, i8, b1, b1)",
-    fastmath=True, cache=True,
+    fastmath=True,
+    cache=True,
 )
-def _rk4_core_cpu(H0, mux, muy, Ex3, Ey3,
-                  psi0, dt, steps, stride,
-                  record, renorm):
+def _rk4_core_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, record, renorm):
     psi = psi0.copy()
     dim = psi.size
     n_out = steps // stride + 1 if record else 1
@@ -53,24 +56,24 @@ def _rk4_core_cpu(H0, mux, muy, Ex3, Ey3,
     for s in range(steps):
         ex1, ex2, ex4 = Ex3[s]
         ey1, ey2, ey4 = Ey3[s]
-        H1 = H0 + mux*ex1 + muy*ey1
-        H2 = H0 + mux*ex2 + muy*ey2  # =H3
-        H4 = H0 + mux*ex4 + muy*ey4
+        H1 = H0 + mux * ex1 + muy * ey1
+        H2 = H0 + mux * ex2 + muy * ey2  # =H3
+        H4 = H0 + mux * ex4 + muy * ey4
 
         k1 = -1j * (H1 @ psi)
-        buf[:] = psi + 0.5*dt*k1
+        buf[:] = psi + 0.5 * dt * k1
         k2 = -1j * (H2 @ buf)
-        buf[:] = psi + 0.5*dt*k2
+        buf[:] = psi + 0.5 * dt * k2
         k3 = -1j * (H2 @ buf)
-        buf[:] = psi + dt*k3
+        buf[:] = psi + dt * k3
         k4 = -1j * (H4 @ buf)
 
-        psi += (dt/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+        psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
 
         if renorm:
-            psi *= 1/np.sqrt((psi.conj()@psi).real)
+            psi *= 1 / np.sqrt((psi.conj() @ psi).real)
 
-        if record and ((s+1) % stride == 0):
+        if record and ((s + 1) % stride == 0):
             out[idx] = psi
             idx += 1
 
@@ -178,8 +181,8 @@ void rk4_loop(const cuDoubleComplex* __restrict__ H0,
 }
 """
 
-def _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3,
-                      psi0, dt, steps):
+
+def _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3, psi0, dt, steps):
     if cp is None:
         raise RuntimeError("backend='cupy' but CuPy not installed")
 
@@ -187,24 +190,23 @@ def _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3,
     # --- CUDA-C カーネルコンパイル (テンプレート展開) --------------
     mod = cp.RawModule(
         code=_KERNEL_SRC % dict(DIM=dim, STEPS=steps, DT=float(dt)),
-        options=("-std=c++17",), name_expressions=("rk4_loop",))
+        options=("-std=c++17",),
+        name_expressions=("rk4_loop",),
+    )
     kern = mod.get_function("rk4_loop")
 
     # --- データ転送 -------------------------------------------------
-    H0_d  = cp.asarray(H0)
+    H0_d = cp.asarray(H0)
     mux_d = cp.asarray(mux)
     muy_d = cp.asarray(muy)
     Ex3_d = cp.asarray(Ex3)
     Ey3_d = cp.asarray(Ey3)
     psi_d = cp.asarray(psi0)
 
-    shared = (dim * 2) * 16     # psi + buf (complex128 = 16 B)
-    kern((1,), (dim,), (H0_d, mux_d, muy_d,
-                        Ex3_d, Ey3_d,
-                        psi_d),
-         shared_mem=shared)
+    shared = (dim * 2) * 16  # psi + buf (complex128 = 16 B)
+    kern((1,), (dim,), (H0_d, mux_d, muy_d, Ex3_d, Ey3_d, psi_d), shared_mem=shared)
 
-    return psi_d.get()[None, :]     # shape (1, dim) で返す
+    return psi_d.get()[None, :]  # shape (1, dim) で返す
 
 
 # -------------------------------------------------------------------
@@ -212,8 +214,10 @@ def _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3,
 # -------------------------------------------------------------------
 def rk4_schrodinger(
     H0,
-    mux, muy,
-    E_x, E_y,
+    mux,
+    muy,
+    E_x,
+    E_y,
     psi0,
     dt,
     return_traj: bool = False,
@@ -222,22 +226,26 @@ def rk4_schrodinger(
     backend: str = "numpy",
 ):
     """backend='numpy'|'cupy'"""
-    steps = (len(E_x)-1) // 2
+    steps = (len(E_x) - 1) // 2
     Ex3 = _prepare_field(E_x)
     Ey3 = _prepare_field(E_y)
     psi0 = np.asarray(psi0, np.complex128).ravel()
 
     if backend == "cupy":
-        out = _rk4_core_gpu_raw(
-                H0, mux, muy, Ex3, Ey3,
-                psi0, float(dt), steps)
+        out = _rk4_core_gpu_raw(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)
         return out
 
     out = _rk4_core_cpu(
         np.ascontiguousarray(H0, np.complex128),
         np.ascontiguousarray(mux, np.complex128),
         np.ascontiguousarray(muy, np.complex128),
-        Ex3, Ey3, psi0,
-        float(dt), steps, stride,
-        return_traj, renorm)
+        Ex3,
+        Ey3,
+        psi0,
+        float(dt),
+        steps,
+        stride,
+        return_traj,
+        renorm,
+    )
     return out

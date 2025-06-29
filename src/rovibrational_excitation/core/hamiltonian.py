@@ -3,11 +3,19 @@ Hamiltonian generation functions.
 
 DEPRECATED: Use basis.generate_H0() method instead.
 """
+
 import warnings
+
 from .basis import LinMolBasis
 
 
-def generate_H0_LinMol(basis: LinMolBasis, omega_rad_phz=1.0, delta_omega_rad_phz=0.0, B_rad_phz=1.0, alpha_rad_phz=0.0):
+def generate_H0_LinMol(
+    basis: LinMolBasis,
+    omega_rad_phz=1.0,
+    delta_omega_rad_phz=0.0,
+    B_rad_phz=1.0,
+    alpha_rad_phz=0.0,
+):
     """
     分子の自由ハミルトニアン H0 を生成（単位：rad * PHz）
     E(V, J) = ω*(V+1/2) - Δω*(V+1/2)**2 + (B - α*(V+1/2))*J*(J+1)
@@ -28,12 +36,12 @@ def generate_H0_LinMol(basis: LinMolBasis, omega_rad_phz=1.0, delta_omega_rad_ph
     warnings.warn(
         "generate_H0_LinMol is deprecated. Use basis.generate_H0() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
-    
+
     return basis.generate_H0(
         omega_rad_phz=omega_rad_phz,
         delta_omega_rad_phz=delta_omega_rad_phz,
         B_rad_phz=B_rad_phz,
-        alpha_rad_phz=alpha_rad_phz
+        alpha_rad_phz=alpha_rad_phz,
     )

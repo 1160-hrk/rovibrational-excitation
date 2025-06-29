@@ -21,14 +21,14 @@ from __future__ import annotations
 # ------------------------------------------------------------------
 # パッケージメタデータ
 # ------------------------------------------------------------------
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 try:
     __version__: str = version(__name__)
-except PackageNotFoundError:    # ソースから直接実行
+except PackageNotFoundError:  # ソースから直接実行
     __version__ = "0.0.0+dev"
 
-__author__  = "Hiroki Tsusaka"
+__author__ = "Hiroki Tsusaka"
 __all__: list[str] = [
     # re-export される公開 API
     "LinMolBasis",
@@ -43,21 +43,22 @@ __all__: list[str] = [
 # 便利 re-export
 # ------------------------------------------------------------------
 # core
-from .core.basis        import LinMolBasis                       # noqa: E402, F401
-from .core.electric_field import ElectricField                   # noqa: E402, F401
-from .core.hamiltonian   import generate_H0_LinMol               # noqa: E402, F401  # DEPRECATED: use basis.generate_H0() instead
-from .core.propagator    import (                                # noqa: E402, F401
-    schrodinger_propagation,
-    liouville_propagation,
-)
-
-# dipole
-from .dipole.linmol.cache import LinMolDipoleMatrix              # noqa: E402, F401
-
 # ------------------------------------------------------------------
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
-from . import core, dipole, plots, simulation                    # noqa: E402, F401
+from . import core, dipole, plots, simulation  # noqa: E402, F401
+from .core.basis import LinMolBasis  # noqa: E402, F401
+from .core.electric_field import ElectricField  # noqa: E402, F401
+from .core.hamiltonian import (
+    generate_H0_LinMol,  # noqa: E402, F401  # DEPRECATED: use basis.generate_H0() instead
+)
+from .core.propagator import (  # noqa: E402, F401
+    liouville_propagation,
+    schrodinger_propagation,
+)
+
+# dipole
+from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
 
 # ------------------------------------------------------------------
 # 名前空間のクリーンアップ

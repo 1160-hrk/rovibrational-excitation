@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """
 scripts/check_runner.py
@@ -9,19 +8,22 @@ scripts/check_runner.py
 """
 
 from __future__ import annotations
-import sys
+
 import os
+import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import tempfile
 import time
+
 from rovibrational_excitation.simulation import runner
+
 # %%
 # ---------------------------------------------------------------
 # 対象パラメータファイル
 PARAM_FILE = os.path.join(
-    os.path.abspath(os.path.join(os.pardir, "examples")),
-    "params_CO2_AntiSymm.py"
-    )
+    os.path.abspath(os.path.join(os.pardir, "examples")), "params_CO2_AntiSymm.py"
+)
 
 # %%
 # ---------------------------------------------------------------
@@ -37,5 +39,3 @@ results = runner.run_all(PARAM_FILE, save=False)
 dt = time.perf_counter() - t0
 
 print(f"✔  runner.run_all finished in {dt:.2f} s")
-
-

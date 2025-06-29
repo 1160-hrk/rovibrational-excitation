@@ -2,10 +2,12 @@
 # states.py
 import numpy as np
 
+
 class StateVector:
     """
     状態ベクトル（純粋状態）を表すクラス。
     """
+
     def __init__(self, basis):
         self.basis = basis
         self.data = np.zeros((basis.size(), 1), dtype=np.complex128)
@@ -39,6 +41,7 @@ class DensityMatrix:
     """
     密度行列（混合状態）を表すクラス。
     """
+
     def __init__(self, basis):
         self.basis = basis
         size = basis.size()

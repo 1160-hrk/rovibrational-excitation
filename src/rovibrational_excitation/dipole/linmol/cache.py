@@ -19,15 +19,16 @@ Typical usage
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, Literal, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 
 try:
-    import cupy as cp                      # optional GPU backend
+    import cupy as cp  # optional GPU backend
 except ImportError:
-    cp = None                              # noqa: N816  (keep lower-case)
+    cp = None  # noqa: N816  (keep lower-case)
 
 # ----------------------------------------------------------------------
 # Forward-refs for static type checkers only
@@ -41,7 +42,7 @@ if TYPE_CHECKING:
     else:
         Array = np.ndarray
 else:
-    Array = np.ndarray                     # runtime alias (for annotations)
+    Array = np.ndarray  # runtime alias (for annotations)
 
 from rovibrational_excitation.dipole.linmol.builder import build_mu
 
@@ -58,13 +59,13 @@ def _xp(backend: str):
 # ----------------------------------------------------------------------
 @dataclass(slots=True)
 class LinMolDipoleMatrix:
-    basis: "LinMolBasis"
+    basis: LinMolBasis
     mu0: float = 1.0
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
 
-    _cache: Dict[tuple[str, bool], Array] = field(
+    _cache: dict[tuple[str, bool], Array] = field(
         init=False, default_factory=dict, repr=False
     )
 
@@ -101,13 +102,16 @@ class LinMolDipoleMatrix:
 
     # convenience properties
     @property
-    def mu_x(self): return self.mu("x")
+    def mu_x(self):
+        return self.mu("x")
 
     @property
-    def mu_y(self): return self.mu("y")
+    def mu_y(self):
+        return self.mu("y")
 
     @property
-    def mu_z(self): return self.mu("z")
+    def mu_z(self):
+        return self.mu("z")
 
     # ------------------------------------------------------------------
     def stacked(self, order: str = "xyz", *, dense: bool | None = None) -> Array:
@@ -134,17 +138,19 @@ class LinMolDipoleMatrix:
             )
             for (ax, dn), mat in self._cache.items():
                 g = h5.create_group(f"{ax}_{'dense' if dn else 'sparse'}")
-                if dn:                                 # dense ndarray / cupy
+                if dn:  # dense ndarray / cupy
                     g.create_dataset("data", data=np.asarray(mat))
-                else:                                 # CSR sparse
+                else:  # CSR sparse
                     mat_coo = mat.tocoo() if sp.issparse(mat) else mat.tocoo()
                     g.create_dataset("row", data=_xp(self.backend).asnumpy(mat_coo.row))
                     g.create_dataset("col", data=_xp(self.backend).asnumpy(mat_coo.col))
-                    g.create_dataset("data", data=_xp(self.backend).asnumpy(mat_coo.data))
+                    g.create_dataset(
+                        "data", data=_xp(self.backend).asnumpy(mat_coo.data)
+                    )
                     g.attrs["shape"] = mat_coo.shape
 
     @classmethod
-    def from_hdf5(cls, path: str, basis: "LinMolBasis") -> "LinMolDipoleMatrix":
+    def from_hdf5(cls, path: str, basis: LinMolBasis) -> LinMolDipoleMatrix:
         """Load object saved by :meth:`to_hdf5`."""
         import h5py
         import scipy.sparse as sp
@@ -163,7 +169,7 @@ class LinMolDipoleMatrix:
                 if dn:
                     arr = g["data"][...]
                     if obj.backend == "cupy":
-                        arr = cp.asarray(arr)          # type: ignore[attr-defined]
+                        arr = cp.asarray(arr)  # type: ignore[attr-defined]
                     obj._cache[(ax, True)] = arr.astype(np.complex128)
                 else:
                     shape = g.attrs["shape"]
@@ -176,8 +182,9 @@ class LinMolDipoleMatrix:
 
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
-        cached = ", ".join(f"{ax}({'dense' if d else 'sparse'})"
-                           for (ax, d) in self._cache)
+        cached = ", ".join(
+            f"{ax}({'dense' if d else 'sparse'})" for (ax, d) in self._cache
+        )
         return (
             f"<LinMolDipoleMatrix mu0={self.mu0} "
             f"potential='{self.potential_type}' "

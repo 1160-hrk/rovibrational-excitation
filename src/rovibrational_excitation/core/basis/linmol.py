@@ -1,7 +1,9 @@
 """
 Linear molecule basis (vibration + rotation + magnetic quantum numbers).
 """
+
 import numpy as np
+
 from .base import BasisBase
 
 
@@ -9,8 +11,15 @@ class LinMolBasis(BasisBase):
     """
     振動(V), 回転(J), 磁気(M)量子数の直積空間における基底の生成と管理を行うクラス。
     """
-    def __init__(self, V_max: int, J_max: int, use_M: bool = True, 
-                 omega_rad_phz: float = 1.0, delta_omega_rad_phz: float = 0.0):
+
+    def __init__(
+        self,
+        V_max: int,
+        J_max: int,
+        use_M: bool = True,
+        omega_rad_phz: float = 1.0,
+        delta_omega_rad_phz: float = 0.0,
+    ):
         self.V_max = V_max
         self.J_max = J_max
         self.use_M = use_M
@@ -37,14 +46,14 @@ class LinMolBasis(BasisBase):
                     for M in range(-J, J + 1):
                         basis.append([V, J, M])
                 else:
-                    basis.append([V, J])   
+                    basis.append([V, J])
         return np.array(basis)
 
     def get_index(self, state):
         """
         量子数からインデックスを取得
         """
-        if hasattr(state, '__iter__'):
+        if hasattr(state, "__iter__"):
             if not isinstance(state, tuple):
                 state = tuple(state)
         result = self.index_map.get(state, None)
@@ -64,12 +73,18 @@ class LinMolBasis(BasisBase):
         """
         return len(self.basis)
 
-    def generate_H0(self, omega_rad_phz=None, delta_omega_rad_phz=None, 
-                    B_rad_phz=1.0, alpha_rad_phz=0.0, **kwargs):
+    def generate_H0(
+        self,
+        omega_rad_phz=None,
+        delta_omega_rad_phz=None,
+        B_rad_phz=1.0,
+        alpha_rad_phz=0.0,
+        **kwargs,
+    ):
         """
         分子の自由ハミルトニアン H0 を生成（単位：rad * PHz）
         E(V, J) = ω*(V+1/2) - Δω*(V+1/2)**2 + (B - α*(V+1/2))*J*(J+1)
-        
+
         Parameters
         ----------
         omega_rad_phz : float, optional
@@ -80,7 +95,7 @@ class LinMolBasis(BasisBase):
             回転定数（rad/fs）
         alpha_rad_phz : float
             振動-回転相互作用定数（rad/fs）
-            
+
         Returns
         -------
         np.ndarray
@@ -91,7 +106,7 @@ class LinMolBasis(BasisBase):
             omega_rad_phz = self.omega_rad_phz
         if delta_omega_rad_phz is None:
             delta_omega_rad_phz = self.delta_omega_rad_phz
-            
+
         vterm = self.V_array + 0.5
         jterm = self.J_array * (self.J_array + 1)
         energy = omega_rad_phz * vterm - delta_omega_rad_phz * vterm**2
@@ -101,17 +116,23 @@ class LinMolBasis(BasisBase):
 
     def get_border_indices_j(self):
         if self.use_M:
-            inds = np.tile(np.arange(self.J_max+1)**2, (self.V_max+1, 1)) + np.arange(self.V_max+1).reshape((self.V_max+1, 1))*(self.J_max+1)**2
+            inds = (
+                np.tile(np.arange(self.J_max + 1) ** 2, (self.V_max + 1, 1))
+                + np.arange(self.V_max + 1).reshape((self.V_max + 1, 1))
+                * (self.J_max + 1) ** 2
+            )
             return inds.flatten()
         else:
-            raise ValueError('M is not defined, so each index is the border of J number.')
-    
+            raise ValueError(
+                "M is not defined, so each index is the border of J number."
+            )
+
     def get_border_indices_v(self):
         if self.use_M:
-            inds = np.arange(0, self.size(), (self.J_max+1)**2)
+            inds = np.arange(0, self.size(), (self.J_max + 1) ** 2)
         else:
-            inds = np.arange(0, self.size(), self.J_max+1)
+            inds = np.arange(0, self.size(), self.J_max + 1)
         return inds
-        
+
     def __repr__(self):
-        return f"LinMolBasis(V_max={self.V_max}, J_max={self.J_max}, use_M={self.use_M}, size={self.size()})" 
+        return f"LinMolBasis(V_max={self.V_max}, J_max={self.J_max}, use_M={self.use_M}, size={self.size()})"

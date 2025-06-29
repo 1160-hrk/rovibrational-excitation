@@ -22,27 +22,27 @@ description = "CO2_antisymm_stretch"
 # ------------------------------------------------------------------
 # 時間軸
 # ------------------------------------------------------------------
-t_start   = 0                      # fs
-t_end     =  1000.0                # fs
-dt        =  0.01                   # サンプリング数
+t_start = 0  # fs
+t_end = 1000.0  # fs
+dt = 0.01  # サンプリング数
 # runner.py 側では delay ごとに tlist を生成するので make_tlist は不要
 
 # ------------------------------------------------------------------
 # 電場パラメータ
 # ------------------------------------------------------------------
-duration  = [100]      # fs (envelope σ)
+duration = [100]  # fs (envelope σ)
 polarization_sweep = [
-    [1, 0],                                   # x 軸偏光
-    [1/np.sqrt(2), 1j/np.sqrt(2)],            # RHC
+    [1, 0],  # x 軸偏光
+    [1 / np.sqrt(2), 1j / np.sqrt(2)],  # RHC
     # [1/np.sqrt(2), (1+1j)/2],                 # arbitrary
 ]
-carrier_freq = 2349.0 * (3e10*1e-15)  # 2349 cm⁻¹ → /fs
-amplitude    = 1e9                            # V·m⁻¹
-gdd          = 1e3                            # fs²
-tod          = 0.0                            # fs³
-t_center        = [500.0]                       # fs
+carrier_freq = 2349.0 * (3e10 * 1e-15)  # 2349 cm⁻¹ → /fs
+amplitude = 1e9  # V·m⁻¹
+gdd = 1e3  # fs²
+tod = 0.0  # fs³
+t_center = [500.0]  # fs
 
-axes         = "xy"                           # Ex↔μ_x, Ey↔μ_y
+axes = "xy"  # Ex↔μ_x, Ey↔μ_y
 
 # ------------------------------------------------------------------
 # 系パラメータ  (CO₂ 非対称伸縮)
@@ -51,23 +51,23 @@ V_max = 3
 J_max = 20
 
 # Morse / Harmonic 切替え
-potential_type = "harmonic"                   # or "morse"
+potential_type = "harmonic"  # or "morse"
 
-omega_rad_phz = carrier_freq * 2 * np.pi                           # ω₀ (rad/fs)
-delta_omega_rad_phz = 10.0 * (2*np.pi*3e10*1e-15)      # 非調和補正 (rad/fs)
-B_rad_phz  = 0.3902 * (2*np.pi*3e10*1e-15)          # 回転定数 (rad/fs)
-alpha_rad_phz = 0.0                                    # 振動回転相互作用項を無視
+omega_rad_phz = carrier_freq * 2 * np.pi  # ω₀ (rad/fs)
+delta_omega_rad_phz = 10.0 * (2 * np.pi * 3e10 * 1e-15)  # 非調和補正 (rad/fs)
+B_rad_phz = 0.3902 * (2 * np.pi * 3e10 * 1e-15)  # 回転定数 (rad/fs)
+alpha_rad_phz = 0.0  # 振動回転相互作用項を無視
 
 # 双極子スケール
-debye_unit = 3.33564e-30                       # 1 D → C·m
-mu0_Cm = 0.3 * debye_unit                      # 0.3 Debye 相当
+debye_unit = 3.33564e-30  # 1 D → C·m
+mu0_Cm = 0.3 * debye_unit  # 0.3 Debye 相当
 
 # ------------------------------------------------------------------
 # ランタイム設定
 # ------------------------------------------------------------------
-backend       = "numpy"    # "numpy" or "cupy"
-dense         = True       # True→ndarray / False→CSR
-sample_stride = 1          # プロパゲータ出力間引き
+backend = "numpy"  # "numpy" or "cupy"
+dense = True  # True→ndarray / False→CSR
+sample_stride = 1  # プロパゲータ出力間引き
 return_traj = False
 
 # ---- ここまで -----------------------------------------------------
