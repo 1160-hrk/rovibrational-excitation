@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # v0.1.4, v1.0.0 など
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Verify version consistency
+      run: |
+        # タグからバージョン取得 (v0.1.4 → 0.1.4)
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Tag version: $TAG_VERSION"
+        
+        # pyproject.tomlからバージョン取得
+        PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+        echo "pyproject.toml version: $PYPROJECT_VERSION"
+        
+        # バージョン一致確認
+        if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+          echo "❌ バージョン不一致: Tag=$TAG_VERSION, pyproject.toml=$PYPROJECT_VERSION"
+          exit 1
+        fi
+        echo "✅ バージョン一致確認"
+
+  build-and-release:
+    needs: verify-version
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: python -m build
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        body: |
+          ## リリース ${{ github.ref_name }}
+          
+          ### 主な変更点
+          - [CHANGELOG.md](CHANGELOG.md) を参照
+          
+          ### インストール
+          ```bash
+          pip install rovibrational-excitation==${{ github.ref_name }}
+          ```
+        draft: false
+        prerelease: false
+    
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload dist/* 
