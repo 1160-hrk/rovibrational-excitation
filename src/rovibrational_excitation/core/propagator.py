@@ -136,9 +136,9 @@ def schrodinger_propagation(
     # backend引数の型チェック
     if backend not in ("numpy", "cupy"):
         raise ValueError("backend must be 'numpy' or 'cupy'")
-    
+
     backend_typed: Literal["numpy", "cupy"] = backend  # type: ignore[assignment]
-    
+
     xp = _backend(backend)
     H0_, mu_a, mu_b, Ex, Ey, dt, steps = _prepare_args(
         H0, Efield, dipole_matrix, axes=axes
@@ -219,11 +219,11 @@ def mixed_state_propagation(
     backend: str = "numpy",
 ) -> Array:
     xp = _backend(backend)
-    
+
     # Iterableをリストに変換してインデックスアクセス可能にする
     psi0_list = list(psi0_array)
     dim = psi0_list[0].shape[0]
-    
+
     steps_out = (len(Efield.tlist) // 2) // sample_stride + 1
     rho_out = (
         xp.zeros((steps_out, dim, dim), dtype=xp.complex128)
@@ -286,7 +286,7 @@ def liouville_propagation(
 
     # 引数の数を修正 - rk4_lvne_trajとrk4_lvneで異なる引数を正しく渡す
     rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(rho0), dt, steps)
-    
+
     if return_traj:
         return rk4_lvne_traj(*rk4_args, sample_stride)
     else:

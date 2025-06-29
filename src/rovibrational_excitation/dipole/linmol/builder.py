@@ -191,7 +191,7 @@ def build_mu(
     # 型チェックのために早期に文字列を確認
     if axis not in ("x", "y", "z"):
         raise ValueError("axis must be x, y or z")
-    
+
     axis_normalized = axis.lower()
     pot = potential_type.lower()
     if pot not in ("harmonic", "morse"):

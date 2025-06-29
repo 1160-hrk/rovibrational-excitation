@@ -87,10 +87,10 @@ class LinMolDipoleMatrix:
         # 型チェックのために早期に文字列を確認
         if axis not in ("x", "y", "z"):
             raise ValueError("axis must be x, y or z")
-        
+
         # 型アサーションでmypyを満足させる
         axis_literal: Literal["x", "y", "z"] = axis  # type: ignore[assignment]
-        
+
         if dense is None:
             dense = self.dense
         key = (axis, dense)
@@ -150,11 +150,17 @@ class LinMolDipoleMatrix:
                         mat_coo = mat.tocoo()
                     else:
                         mat_coo = mat.tocoo()  # type: ignore[union-attr]
-                    
-                    if hasattr(_xp(self.backend), 'asnumpy'):
-                        g.create_dataset("row", data=_xp(self.backend).asnumpy(mat_coo.row))  # type: ignore[attr-defined]
-                        g.create_dataset("col", data=_xp(self.backend).asnumpy(mat_coo.col))  # type: ignore[attr-defined]
-                        g.create_dataset("data", data=_xp(self.backend).asnumpy(mat_coo.data))  # type: ignore[attr-defined]
+
+                    if hasattr(_xp(self.backend), "asnumpy"):
+                        g.create_dataset(
+                            "row", data=_xp(self.backend).asnumpy(mat_coo.row)
+                        )  # type: ignore[attr-defined]
+                        g.create_dataset(
+                            "col", data=_xp(self.backend).asnumpy(mat_coo.col)
+                        )  # type: ignore[attr-defined]
+                        g.create_dataset(
+                            "data", data=_xp(self.backend).asnumpy(mat_coo.data)
+                        )  # type: ignore[attr-defined]
                     else:
                         g.create_dataset("row", data=np.asarray(mat_coo.row))
                         g.create_dataset("col", data=np.asarray(mat_coo.col))
