@@ -349,7 +349,7 @@ def test_field_strength_scaling():
     tlist = np.linspace(-2, 2, 51)
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
     
-    amplitudes = [0.1, 0.2, 0.5]
+    amplitudes = [0.05, 0.1]  # 弱い電場でラビ振動を避ける
     excited_populations = []
     
     for amp in amplitudes:
@@ -371,9 +371,8 @@ def test_field_strength_scaling():
         excited_pop = np.abs(psi_final[1])**2
         excited_populations.append(excited_pop)
     
-    # 電場強度が強いほど励起ポピュレーションが増加
+    # 電場強度が強いほど励起ポピュレーションが増加（ラビ振動が起こる前の範囲）
     assert excited_populations[1] > excited_populations[0]
-    assert excited_populations[2] > excited_populations[1]
 
 
 def test_basis_state_consistency():

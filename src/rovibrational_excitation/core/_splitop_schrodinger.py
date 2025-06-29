@@ -189,7 +189,7 @@ def splitop_schrodinger(
     E_mid = Efield[1 : 2 * steps + 1 : 2]
 
     # phase_coeff = -1j * 2.0 * dt / hbar
-    phase_coeff = -1j * dt / hbar # 2のファクターは必要ない。cosineを複素電場で表現するときにつく1/2で相殺される。
+    phase_coeff = -1j * 2.0 * dt / hbar
 
     traj = _propagate_numpy(U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, sample_stride)
 
