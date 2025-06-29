@@ -15,7 +15,7 @@ from typing import Dict, Tuple, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from functools import partial
+
 import multiprocessing as mp
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
@@ -391,7 +391,7 @@ def main() -> None:
     print("Two-Level System 2D Parameter Mapping")
     print("=" * 50)
     print(f"Execution time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Configuration:")
+    print("Configuration:")
     print(f"  Duration range: {DURATION_MIN} - {DURATION_MAX} fs ({DURATION_POINTS} points)")
     print(f"  Amplitude range: {AMPLITUDE_MIN:.2e} - {AMPLITUDE_MAX:.2e} a.u. ({AMPLITUDE_POINTS} points)")
     print(f"  Total calculations: {DURATION_POINTS * AMPLITUDE_POINTS}")
@@ -403,9 +403,9 @@ def main() -> None:
     amplitudes, durations, final_pops = amplitude_duration_2d_sweep()
     
     # 各種プロット作成
-    # fig_imshow = plot_imshow_map(amplitudes, durations, final_pops)
-    fig_pcolormesh = plot_pcolormesh_map(amplitudes, durations, final_pops)
-    fig_contour = plot_contour_map(amplitudes, durations, final_pops)
+    # plot_imshow_map(amplitudes, durations, final_pops)
+    plot_pcolormesh_map(amplitudes, durations, final_pops)
+    plot_contour_map(amplitudes, durations, final_pops)
     
     plt.show()
     

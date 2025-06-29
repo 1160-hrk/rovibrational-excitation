@@ -1,12 +1,19 @@
 # rovibrational-excitation
 
+<!-- PyPI & Distribution -->
 [![PyPI version](https://img.shields.io/pypi/v/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
 [![Python](https://img.shields.io/pypi/pyversions/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
-[![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
+[![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
+
+<!-- Testing & Coverage -->
+[![Tests](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml)
 [![Coverage](https://codecov.io/gh/1160-hrk/rovibrational-excitation/branch/main/graph/badge.svg)](https://codecov.io/gh/1160-hrk/rovibrational-excitation)
+
+<!-- Code Quality -->
+[![Code Quality](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Ruff](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **線形分子の振動回転励起シミュレーションのためのPythonパッケージ**
 

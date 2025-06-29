@@ -397,14 +397,14 @@ def main():
     time4Efield, Efield, time4psi, psi_t, basis, detuning, rabi_freq = run_twolevel_simulation(
         detuning=DEFAULT_DETUNING, rabi_freq=DEFAULT_RABI_FREQ, pulse_duration=PULSE_DURATION
     )
-    fig1 = plot_twolevel_results(time4Efield, Efield, time4psi, psi_t, basis, detuning, rabi_freq)
+    plot_twolevel_results(time4Efield, Efield, time4psi, psi_t, basis, detuning, rabi_freq)
     analyze_rabi_oscillation(time4psi, psi_t, detuning, rabi_freq)
     
     # デチューニングのあるケース
     time4Efield2, Efield2, time4psi2, psi_t2, basis2, detuning2, rabi_freq2 = run_twolevel_simulation(
         detuning=DETUNED_CASE_DETUNING, rabi_freq=DEFAULT_RABI_FREQ, pulse_duration=PULSE_DURATION
     )
-    fig2 = plot_twolevel_results(time4Efield2, Efield2, time4psi2, psi_t2, basis2, detuning2, rabi_freq2)
+    plot_twolevel_results(time4Efield2, Efield2, time4psi2, psi_t2, basis2, detuning2, rabi_freq2)
     analyze_rabi_oscillation(time4psi2, psi_t2, detuning2, rabi_freq2)
     
     # パラメータスイープ
@@ -412,8 +412,8 @@ def main():
     detunings, max_exc_det, final_exc_det, time_data_det, psi_data_det = detuning_sweep()
     
     # タイルプロット作成
-    fig_rabi_tile = plot_rabi_sweep_tile(rabi_freqs, time_data_rabi, psi_data_rabi)
-    fig_det_tile = plot_detuning_sweep_tile(detunings, time_data_det, psi_data_det)
+    plot_rabi_sweep_tile(rabi_freqs, time_data_rabi, psi_data_rabi)
+    plot_detuning_sweep_tile(detunings, time_data_det, psi_data_det)
     
     plt.show()
     
