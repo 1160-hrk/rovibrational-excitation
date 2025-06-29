@@ -1,0 +1,86 @@
+name: Tests and Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt || true
+        pip install coverage pytest
+        pip install -e .
+    
+    - name: Run tests with coverage
+      run: |
+        cd tests
+        coverage run -m pytest -v -x
+        coverage report --show-missing
+        
+    - name: Generate coverage report
+      if: matrix.python-version == '3.11'
+      run: |
+        cd tests
+        COVERAGE_PERCENT=$(coverage report --format=total)
+        echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
+        echo "Coverage: $COVERAGE_PERCENT%"
+        
+    - name: Update coverage badge
+      if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main'
+      run: |
+        # カバレッジ率に応じて色を決定
+        if [ $COVERAGE_PERCENT -ge 90 ]; then
+          COLOR="brightgreen"
+        elif [ $COVERAGE_PERCENT -ge 80 ]; then
+          COLOR="green"
+        elif [ $COVERAGE_PERCENT -ge 70 ]; then
+          COLOR="yellowgreen"  
+        elif [ $COVERAGE_PERCENT -ge 60 ]; then
+          COLOR="yellow"
+        elif [ $COVERAGE_PERCENT -ge 50 ]; then
+          COLOR="orange"
+        else
+          COLOR="red"
+        fi
+        
+        echo "Setting coverage badge to $COVERAGE_PERCENT% with color $COLOR"
+        
+        # README.mdのバッジを更新
+        sed -i "s/coverage-[0-9]*%25-[a-z]*/coverage-${COVERAGE_PERCENT}%25-${COLOR}/g" README.md
+        
+        # 変更をコミット
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🔄 カバレッジバッジを${COVERAGE_PERCENT}%に自動更新"
+          git push
+        fi 
