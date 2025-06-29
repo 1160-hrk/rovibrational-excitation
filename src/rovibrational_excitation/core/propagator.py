@@ -6,7 +6,7 @@ rovibrational_excitation/core/propagator.py
 """
 
 from __future__ import annotations
-from typing import Iterable, Tuple, Union, TYPE_CHECKING
+from typing import Iterable, Tuple, Union, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -54,7 +54,7 @@ def _prepare_args(
     dip: "LinMolDipoleMatrix",
     *,
     axes: str = "xy",
-    dt: float | None = None,
+    dt: Optional[float] = None,
 ) -> Tuple[Array, Array, Array, Array, Array, float, int]:
     """
     共通前処理

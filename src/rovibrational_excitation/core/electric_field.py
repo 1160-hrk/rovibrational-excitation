@@ -4,7 +4,7 @@ import numpy as np
 from numpy import pi
 # from scipy.fft import fft, ifft, fftfreq
 from scipy.fft import rfft, irfft, rfftfreq
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 from scipy.special import erf as scipy_erf, wofz
 import inspect
 
@@ -27,8 +27,8 @@ class ElectricField:
         self.steps_state = len(tlist) // 2
         self.Efield = np.zeros((len(tlist), 2))
         self.add_history = []
-        self._constant_pol: np.ndarray | None | bool = None
-        self._scalar_field: np.ndarray | None = None
+        self._constant_pol: Union[np.ndarray, None, bool] = None
+        self._scalar_field: Optional[np.ndarray] = None
     
     def init_Efield(self):
         """
@@ -47,7 +47,7 @@ class ElectricField:
         """
         return self.Efield
     
-    def get_scalar_and_pol(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_scalar_and_pol(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Returns
         -------
@@ -86,7 +86,7 @@ class ElectricField:
         phase_rad: float = 0.0,
         gdd: float = 0.0,
         tod: float = 0.0,
-        const_polarisation: bool | None = None,
+        const_polarisation: Optional[bool] = None,
     ):
         polarization = np.array(polarization, dtype=np.complex128)
         if polarization.shape != (2,):
