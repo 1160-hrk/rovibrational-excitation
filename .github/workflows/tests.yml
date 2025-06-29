@@ -71,49 +71,51 @@ jobs:
         
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: 1160-hrk/rovibrational-excitation
+        # file: ./coverage.xml
+        # flags: unittests
+        # name: codecov-umbrella
+        # fail_ci_if_error: false
         
-    - name: Update coverage badge
-      if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: |
-        # カバレッジ率に応じて色を決定
-        if [ $COVERAGE_PERCENT -ge 90 ]; then
-          COLOR="brightgreen"
-        elif [ $COVERAGE_PERCENT -ge 80 ]; then
-          COLOR="green"
-        elif [ $COVERAGE_PERCENT -ge 70 ]; then
-          COLOR="yellowgreen"  
-        elif [ $COVERAGE_PERCENT -ge 60 ]; then
-          COLOR="yellow"
-        elif [ $COVERAGE_PERCENT -ge 50 ]; then
-          COLOR="orange"
-        else
-          COLOR="red"
-        fi
+    # - name: Update coverage badge
+    #   if: matrix.python-version == '3.11' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    #   run: |
+    #     # カバレッジ率に応じて色を決定
+    #     if [ $COVERAGE_PERCENT -ge 90 ]; then
+    #       COLOR="brightgreen"
+    #     elif [ $COVERAGE_PERCENT -ge 80 ]; then
+    #       COLOR="green"
+    #     elif [ $COVERAGE_PERCENT -ge 70 ]; then
+    #       COLOR="yellowgreen"  
+    #     elif [ $COVERAGE_PERCENT -ge 60 ]; then
+    #       COLOR="yellow"
+    #     elif [ $COVERAGE_PERCENT -ge 50 ]; then
+    #       COLOR="orange"
+    #     else
+    #       COLOR="red"
+    #     fi
         
-        echo "Setting coverage badge to $COVERAGE_PERCENT% with color $COLOR"
+    #     echo "Setting coverage badge to $COVERAGE_PERCENT% with color $COLOR"
         
-        # README.mdが存在するかチェック
-        if [ -f README.md ]; then
-          # README.mdのバッジを更新
-          sed -i "s/coverage-[0-9]*%25-[a-z]*/coverage-${COVERAGE_PERCENT}%25-${COLOR}/g" README.md
+    #     # README.mdが存在するかチェック
+    #     if [ -f README.md ]; then
+    #       # README.mdのバッジを更新
+    #       sed -i "s/coverage-[0-9]*%25-[a-z]*/coverage-${COVERAGE_PERCENT}%25-${COLOR}/g" README.md
           
-          # 変更をコミット
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add README.md
+    #       # 変更をコミット
+    #       git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    #       git config --local user.name "github-actions[bot]"
+    #       git add README.md
           
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "🔄 カバレッジバッジを${COVERAGE_PERCENT}%に自動更新"
-            git push
-          fi
-        else
-          echo "README.md not found, skipping badge update"
-        fi 
+    #       if git diff --staged --quiet; then
+    #         echo "No changes to commit"
+    #       else
+    #         git commit -m "🔄 カバレッジバッジを${COVERAGE_PERCENT}%に自動更新"
+    #         git push
+    #       fi
+    #     else
+    #       echo "README.md not found, skipping badge update"
+    #     fi 
