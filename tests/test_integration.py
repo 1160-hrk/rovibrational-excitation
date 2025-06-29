@@ -5,9 +5,10 @@ import numpy as np
 import pytest
 from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis, VibLadderBasis
 from rovibrational_excitation.core.states import StateVector, DensityMatrix
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation, mixed_state_propagation, liouville_propagation
 
+_DIRAC_HBAR = 6.62607015e-019 / (2*np.pi)  # J fs
 
 class MockDipole:
     """テスト用のモック双極子行列"""
@@ -20,8 +21,8 @@ class MockDipole:
         
         # 対角要素の隣に遷移モーメントを配置
         for i in range(dim - 1):
-            self.mu_x[i, i + 1] = 1.0
-            self.mu_x[i + 1, i] = 1.0
+            self.mu_x[i, i + 1] = 1.0 #* _DIRAC_HBAR
+            self.mu_x[i + 1, i] = 1.0 #* _DIRAC_HBAR
 
 
 def test_full_simulation_workflow():
@@ -39,7 +40,7 @@ def test_full_simulation_workflow():
     tlist = np.linspace(-10, 10, 201)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=2.0, t_center=0.0,
+        gaussian, duration=2.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.1,
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -80,7 +81,7 @@ def test_multi_level_excitation():
     tlist = np.linspace(-5, 5, 101)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=1.0, t_center=0.0,
+        gaussian, duration=1.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.5,  # 強い電場
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -110,7 +111,7 @@ def test_different_basis_types():
     tlist = np.linspace(-2, 2, 51)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=1.0, t_center=0.0,
+        gaussian, duration=1.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.1,
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -156,7 +157,7 @@ def test_mixed_vs_pure_states():
     tlist = np.linspace(-2, 2, 51)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=1.0, t_center=0.0,
+        gaussian, duration=1.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.1,
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -259,7 +260,7 @@ def test_population_dynamics():
     tlist = np.linspace(-5, 5, 201)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=2.0, t_center=0.0,
+        gaussian, duration=2.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.5,  # π/2パルス相当
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -299,7 +300,7 @@ def test_coherent_vs_incoherent():
     tlist = np.linspace(-2, 2, 51)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=1.0, t_center=0.0,
+        gaussian, duration=1.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.2,
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
@@ -346,17 +347,17 @@ def test_field_strength_scaling():
     H0 = basis.generate_H0(energy_gap=1.0)
     dipole = MockDipole(basis)
     
-    tlist = np.linspace(-2, 2, 51)
+    tlist = np.linspace(-2, 2, 1000)
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
     
-    amplitudes = [0.05, 0.1]  # 弱い電場でラビ振動を避ける
+    amplitudes = [0.01, 0.02]  # 弱い電場でラビ振動を避ける
     excited_populations = []
     
     for amp in amplitudes:
         efield = ElectricField(tlist)
         efield.add_dispersed_Efield(
-            gaussian_fwhm, duration=1.0, t_center=0.0,
-            carrier_freq=1.0, amplitude=amp,
+            gaussian, duration=1.0, t_center=0.0,
+            carrier_freq=5.0, amplitude=amp,
             polarization=np.array([1.0, 0.0]), const_polarisation=True
         )
         
@@ -405,7 +406,7 @@ def test_numerical_precision():
     tlist = np.linspace(-10, 10, 501)
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
-        gaussian_fwhm, duration=1.0, t_center=0.0,
+        gaussian, duration=1.0, t_center=0.0,
         carrier_freq=1.0, amplitude=0.01,  # 弱い電場
         polarization=np.array([1.0, 0.0]), const_polarisation=True
     )
