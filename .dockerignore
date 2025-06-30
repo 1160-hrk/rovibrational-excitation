@@ -1,0 +1,56 @@
+# Git関連（.gitディレクトリは除外しない）
+.gitignore
+
+# Python関連
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# IDE関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# プロジェクト固有
+results/
+examples/results/
+tests/results/
+tests/htmlcov/
+*.egg-info/
+
+# ログファイル
+*.log
+
+# 一時ファイル
+tmp/
+temp/
+
+# ドキュメント関連
+docs/_build/
+
+# Jupyter関連
+.jupyter/
+.ipynb_checkpoints/
+
+# Docker関連
+Dockerfile*
+.dockerignore
+docker-compose*.yml 
