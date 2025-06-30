@@ -8,22 +8,45 @@
   "mounts": [
     "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
   ],
+  "forwardPorts": [8888],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter Server",
+      "onAutoForward": "notify"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-azuretools.vscode-docker",
-        "ms-toolsai.jupyter"
+        "ms-python.debugpy",
+        "formulahendry.code-runner",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-keymap",
+        "ms-toolsai.jupyter-renderers"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python3",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
-        "python.formatting.provider": "black"
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.pythonPath": "/usr/local/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "code-runner.runInTerminal": true,
+        "code-runner.executorMap": {
+          "python": "/usr/local/bin/python -u"
+        },
+        "jupyter.defaultKernel": "python3",
+        "jupyter.interactiveWindow.creationMode": "perFile",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.watcherExclude": {
+          "**/node_modules/**": true,
+          "**/.git/objects/**": true,
+          "**/.git/subtree-cache/**": true,
+          "**/results/**": true,
+          "**/htmlcov/**": true
+        }
       }
     }
   },
-  "postCreateCommand": "pip install --no-cache-dir -r requirements-dev.txt",
-  "remoteUser": "root"
+  "remoteUser": "devuser",
+  "postCreateCommand": "echo 'Development environment ready. Python packages are pre-installed.' && python --version && pip list | grep -E '(jupyter|numpy|scipy|matplotlib)'"
 }
