@@ -53,8 +53,8 @@ CONDITION_LINE_COLORS = (
 ) * 4  # 40色まで対応（10色を4回繰り返し）
 
 # 2次元スイープ範囲設定
-DURATION_MIN = 500.0  # パルス時間幅の最小値 [fs]
-DURATION_MAX = 1000.0  # パルス時間幅の最大値 [fs]
+DURATION_MIN = 0.0  # パルス時間幅の最小値 [fs]
+DURATION_MAX = 500.0  # パルス時間幅の最大値 [fs]
 DURATION_POINTS = 100  # パルス時間幅の点数
 
 AMPLITUDE_MIN = 0  # 電場振幅の最小値 [a.u.]
@@ -63,7 +63,7 @@ AMPLITUDE_POINTS = 100  # 電場振幅の点数
 
 # 並列計算設定
 MAX_WORKERS = mp.cpu_count()  # 使用するCPUコア数（自動検出）
-CHUNK_SIZE = 1000  # 一度に処理するタスク数
+CHUNK_SIZE = 100  # 一度に処理するタスク数
 
 # ======================================================================
 
@@ -244,7 +244,7 @@ def run_twolevel_simulation(
         carrier_freq=carrier_freq,
         amplitude=amplitude,
         polarization=polarization,
-        const_polarisation=True,
+        const_polarisation=False,
     )
 
     # 時間発展計算
