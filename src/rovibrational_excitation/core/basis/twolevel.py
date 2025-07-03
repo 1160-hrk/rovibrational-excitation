@@ -71,7 +71,7 @@ class TwoLevelBasis(BasisBase):
             raise ValueError(f"Invalid index {index}. Must be 0 or 1.")
         return self.basis[index]
 
-    def generate_H0(self, units="J", **kwargs) -> Hamiltonian:
+    def generate_H0(self, energy_gap=None, energy_gap_units="energy", return_energy_units=None, units="J", **kwargs) -> Hamiltonian:
         """
         Generate two-level Hamiltonian.
 
@@ -79,8 +79,14 @@ class TwoLevelBasis(BasisBase):
 
         Parameters
         ----------
+        energy_gap : float, optional
+            エネルギーギャップの値（単位はenergy_gap_unitsで指定）
+        energy_gap_units : str, optional
+            'energy'（J）または'frequency'（rad/fs）
+        return_energy_units : bool, optional
+            TrueならJ、Falseならrad/fsで返す
         units : {"J", "rad/fs"}, optional
-            返すハミルトニアンの単位。デフォルトは"J"（エネルギー単位）
+            明示的な単位指定
         **kwargs
             Additional parameters (ignored).
 
@@ -89,20 +95,36 @@ class TwoLevelBasis(BasisBase):
         Hamiltonian
             2x2 diagonal Hamiltonian object with unit information.
         """
-        # Create Hamiltonian in frequency units first
-        H0_matrix = np.diag([0.0, self.omega_rad_pfs])
-        
-        # Create basis info for debugging
+        # デフォルト値
+        gap = self.omega_rad_pfs
+        gap_units = energy_gap_units
+        if energy_gap is not None:
+            gap = energy_gap
+
+        # 単位変換
+        if gap_units == "energy":
+            # J → rad/fs
+            _HBAR = 6.62607015e-034 / (2 * np.pi)
+            gap_rad_pfs = gap / _HBAR * 1e-15
+        elif gap_units == "frequency":
+            gap_rad_pfs = gap
+        else:
+            raise ValueError(f"Unknown energy_gap_units: {gap_units}")
+
+        H0_matrix = np.diag([0.0, gap_rad_pfs])
         basis_info = {
             "basis_type": "TwoLevel",
             "size": 2,
-            "energy_gap_rad_pfs": self.omega_rad_pfs,
+            "energy_gap_rad_pfs": gap_rad_pfs,
         }
-        
-        # Create Hamiltonian object in rad/fs
         hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
-        
-        # Convert to requested units
+
+        # 単位指定の優先順位（テストの期待に合わせる）
+        if return_energy_units is not None:
+            if return_energy_units:
+                return hamiltonian.to_energy_units()
+            else:
+                return hamiltonian
         if units == "J":
             return hamiltonian.to_energy_units()
         else:
