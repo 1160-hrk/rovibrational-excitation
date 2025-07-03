@@ -76,11 +76,11 @@ CONDITION_LINE_COLORS = (
 # 2次元スイープ範囲設定
 DURATION_MIN = 50.0  # パルス時間幅の最小値 [fs]
 DURATION_MAX = 200.0  # パルス時間幅の最大値 [fs]
-DURATION_POINTS = 400  # パルス時間幅の点数（並列処理のため減らしました）
+DURATION_POINTS = 10  # パルス時間幅の点数（並列処理のため減らしました）
 
 AMPLITUDE_MIN = 0  # 電場振幅の最小値 [a.u.]
 AMPLITUDE_MAX = 5e12  # 電場振幅の最大値 [a.u.]
-AMPLITUDE_POINTS = 400  # 電場振幅の点数（並列処理のため減らしました）
+AMPLITUDE_POINTS = 10  # 電場振幅の点数（並列処理のため減らしました）
 
 # 並列計算設定
 MAX_WORKERS = min(12, mp.cpu_count())  # CPUコア数を制限してメモリ使用量を抑制
@@ -234,7 +234,7 @@ def run_twolevel_simulation(
 
     # 基底とハミルトニアンの生成
     basis = TwoLevelBasis()
-    H0 = basis.generate_H0(energy_gap=config.energy_gap)
+    H0 = basis.generate_H0(energy_gap=config.energy_gap, units="rad/fs")
 
     # 双極子行列の生成
     twolevel_dipole = TwoLevelDipoleMatrix(basis, mu0=config.mu0)
@@ -271,7 +271,7 @@ def run_twolevel_simulation(
 
     # 時間発展計算
     time4psi, psi_t = schrodinger_propagation(
-        H0=H0,
+        hamiltonian=H0,
         Efield=Efield,
         dipole_matrix=dipole_matrix,  # type: ignore
         psi0=psi0,
