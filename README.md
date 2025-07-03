@@ -237,7 +237,7 @@ amplitude      = 1.0e9                        # V/m
 
 # --- molecular constants ----------------------------------------
 V_max, J_max   = 2, 4
-omega_rad_phz  = carrier_freq * 2 * np.pi
+omega_rad_phz   = carrier_freq * 2 * np.pi
 mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
 ```
 
