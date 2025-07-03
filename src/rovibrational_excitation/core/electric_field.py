@@ -1,7 +1,7 @@
 # 電場波形生成
 # electric_field.py
 import inspect
-from typing import Union
+from typing import Union, Optional, TYPE_CHECKING
 
 import numpy as np
 from numpy import pi
@@ -10,29 +10,139 @@ from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
 from scipy.special import wofz
 
+if TYPE_CHECKING:
+    from rovibrational_excitation.core.nondimensionalize import NondimensionalizationScales
+
 ArrayLike = Union[np.ndarray, float]
 
 
 class ElectricField:
     """
     電場波形を表現するクラス（偏光、包絡線、GDD/TOD付き）
+    
+    無次元化システムと統合されており、スケールファクターを保持して
+    SI単位系と無次元系の間で適切に変換を行います。
     """
 
-    def __init__(self, tlist):
+    def __init__(
+        self, 
+        tlist: np.ndarray, 
+        time_units: str = "fs",
+        field_units: str = "V/m",
+        scales: Optional["NondimensionalizationScales"] = None,
+        is_dimensionless_interface: bool = False
+    ):
         """
         Parameters
         ----------
         tlist : np.ndarray
-            時間軸（fs）
+            時間軸（指定単位）
+        time_units : str, default "fs"
+            時間の単位 ("fs", "ps", "ns", "s")
+        field_units : str, default "V/m"
+            電場の単位 ("V/m", "MV/cm", "kV/cm", "GV/m", etc.)
+        scales : NondimensionalizationScales, optional
+            無次元化スケールファクター。無次元系インターフェースで使用する場合は必須
+        is_dimensionless_interface : bool, optional
+            インターフェースが無次元系かどうか。デフォルトはFalse
         """
-        self.tlist = tlist
-        self.dt = tlist[1] - tlist[0]
+        # 単位情報を保存
+        self.time_units = time_units
+        self.field_units = field_units
+        
+        # 時間配列を内部単位（fs）に変換
+        self.tlist = self._convert_time_to_fs(np.asarray(tlist), time_units)
+        self.dt = self.tlist[1] - self.tlist[0]  # fs単位
         self.dt_state = self.dt * 2
-        self.steps_state = len(tlist) // 2
-        self.Efield = np.zeros((len(tlist), 2))
+        self.steps_state = len(self.tlist) // 2
+        
+        # 電場配列を初期化（内部はV/m単位で保持）
+        self.Efield = np.zeros((len(self.tlist), 2))  # V/m単位
         self.add_history = []
         self._constant_pol: np.ndarray | None | bool = None
         self._scalar_field: np.ndarray | None = None
+        
+        # 無次元化関連
+        self.scales = scales
+        self.is_dimensionless_interface = is_dimensionless_interface
+        
+        if is_dimensionless_interface and scales is None:
+            raise ValueError("scales must be provided when is_dimensionless_interface=True")
+
+    # ------------------------------------------------------------------
+    # Unit conversion helpers
+    # ------------------------------------------------------------------
+    def _convert_time_to_fs(self, time_array: np.ndarray, from_units: str) -> np.ndarray:
+        """Convert time array to fs units."""
+        conversions = {
+            "fs": 1.0,
+            "ps": 1e3,
+            "ns": 1e6,
+            "s": 1e15,
+        }
+        
+        if from_units not in conversions:
+            raise ValueError(f"Unknown time unit: {from_units}. Supported: {list(conversions.keys())}")
+        
+        return time_array * conversions[from_units]
+    
+    def _convert_time_from_fs(self, time_array_fs: np.ndarray, to_units: str) -> np.ndarray:
+        """Convert time array from fs to specified units."""
+        conversions = {
+            "fs": 1.0,
+            "ps": 1e-3,
+            "ns": 1e-6,
+            "s": 1e-15,
+        }
+        
+        if to_units not in conversions:
+            raise ValueError(f"Unknown time unit: {to_units}. Supported: {list(conversions.keys())}")
+        
+        return time_array_fs * conversions[to_units]
+    
+    def _convert_field_to_SI(self, field_array: np.ndarray, from_units: str) -> np.ndarray:
+        """Convert electric field array to V/m units."""
+        conversions = {
+            "V/m": 1.0,
+            "V/mm": 1e3,
+            "V/cm": 1e2,
+            "kV/m": 1e3,
+            "kV/mm": 1e6,
+            "kV/cm": 1e5,
+            "MV/m": 1e6,
+            "MV/mm": 1e9,
+            "MV/cm": 1e8,
+            "GV/m": 1e9,
+            "GV/cm": 1e11,
+            "TV/m": 1e12,
+        }
+        
+        if from_units not in conversions:
+            raise ValueError(f"Unknown field unit: {from_units}. Supported: {list(conversions.keys())}")
+        
+        return field_array * conversions[from_units]
+    
+    def _convert_field_from_SI(self, field_array_SI: np.ndarray, to_units: str) -> np.ndarray:
+        """Convert electric field array from V/m to specified units."""
+        conversions = {
+            "V/m": 1.0,
+            "V/mm": 1e-3,
+            "V/cm": 1e-2,
+            "kV/m": 1e-3,
+            "kV/mm": 1e-6,
+            "kV/cm": 1e-5,
+            "MV/m": 1e-6,
+            "MV/mm": 1e-9,
+            "MV/cm": 1e-8,
+            "GV/m": 1e-9,
+            "GV/cm": 1e-11,
+            "TV/m": 1e-12,
+        }
+        
+        if to_units not in conversions:
+            raise ValueError(f"Unknown field unit: {to_units}. Supported: {list(conversions.keys())}")
+        
+        return field_array_SI * conversions[to_units]
 
     def init_Efield(self) -> "ElectricField":
         """
@@ -43,13 +153,159 @@ class ElectricField:
 
     def get_Efield(self) -> np.ndarray:
         """
-        電場を取得
+        電場を取得（インターフェースに応じて単位が変わる）
+        Returns
+        -------
+        np.ndarray
+            電場。is_dimensionless_interface=Trueの場合は無次元、Falseの場合はV/m
+        """
+        efield_array = np.asarray(self.Efield)
+        if self.is_dimensionless_interface:
+            if self.scales is not None:
+                # Legacy: 外部スケールファクターを使用
+                return efield_array / self.scales.Efield0
+            else:
+                # New: 自己決定スケールファクターを使用
+                return self.get_Efield_dimensionless()
+        else:
+            # そのまま返す（V/m）
+            return efield_array
+
+    def get_Efield_SI(self) -> np.ndarray:
+        """
+        SI単位系での電場を取得（常にV/m）
         Returns
         -------
         np.ndarray
             電場（V/m）
         """
-        return self.Efield
+        return np.asarray(self.Efield)
+
+    def get_time_SI(self) -> np.ndarray:
+        """
+        SI単位系での時間軸を取得（常にfs）
+        Returns
+        -------
+        np.ndarray
+            時間軸（fs）
+        """
+        return np.asarray(self.tlist)
+    
+    def get_time_in_units(self, target_units: str) -> np.ndarray:
+        """
+        Get time array in specified units.
+        
+        Parameters
+        ----------
+        target_units : str
+            Target time units ("fs", "ps", "ns", "s")
+            
+        Returns
+        -------
+        np.ndarray
+            Time array in target units
+        """
+        return self._convert_time_from_fs(self.tlist, target_units)
+    
+    def get_Efield_in_units(self, target_units: str) -> np.ndarray:
+        """
+        Get electric field in specified units.
+        
+        Parameters
+        ----------
+        target_units : str
+            Target field units ("V/m", "MV/cm", "kV/cm", etc.)
+            
+        Returns
+        -------
+        np.ndarray
+            Electric field array in target units
+        """
+        field_SI = self.get_Efield_SI()  # Get in V/m
+        return self._convert_field_from_SI(field_SI, target_units)
+    
+    def set_Efield_from_units(self, field_array: np.ndarray, from_units: str) -> None:
+        """
+        Set electric field from array with specified units.
+        
+        Parameters
+        ----------
+        field_array : np.ndarray
+            Electric field array in specified units
+        from_units : str
+            Units of the input field array
+        """
+        # Convert to SI units and store internally
+        field_SI = self._convert_field_to_SI(field_array, from_units)
+        self.Efield = field_SI.copy()
+    
+    # ------------------------------------------------------------------
+    # Self-determined scale factor
+    # ------------------------------------------------------------------
+    def get_field_scale_factor(self) -> float:
+        """
+        Get electric field scale factor from the maximum absolute value of the field.
+        
+        Returns
+        -------
+        float
+            Electric field scale factor in V/m (SI units)
+        """
+        efield_array = np.asarray(self.Efield)
+        if np.all(efield_array == 0):
+            # If field is zero, return a default scale
+            return 1e8  # 1 MV/cm as default
+        
+        return float(np.max(np.abs(efield_array)))
+    
+    def get_Efield_dimensionless(self) -> np.ndarray:
+        """
+        Get electric field in dimensionless units using self-determined scale.
+        
+        Returns
+        -------
+        np.ndarray
+            Dimensionless electric field (E / E_max)
+        """
+        scale_factor = self.get_field_scale_factor()
+        efield_array = np.asarray(self.Efield)
+        return efield_array / scale_factor
+    
+    def get_field_scale_info(self) -> dict:
+        """
+        Get comprehensive field scale information.
+        
+        Returns
+        -------
+        dict
+            Dictionary containing scale information
+        """
+        scale_V_per_m = self.get_field_scale_factor()
+        
+        return {
+            "scale_V_per_m": scale_V_per_m,
+            "scale_MV_per_cm": scale_V_per_m / 1e8,
+            "scale_GV_per_m": scale_V_per_m / 1e9,
+            "scale_in_original_units": self._convert_field_from_SI(
+                np.array([scale_V_per_m]), self.field_units
+            )[0],
+            "original_units": self.field_units,
+            "time_scale_fs": None,  # Will be calculated if needed
+        }
+        
+    def get_time_dimensionless(self) -> np.ndarray:
+        """
+        無次元時間軸を取得
+        Returns
+        -------
+        np.ndarray
+            無次元時間
+        """
+        if self.scales is None:
+            raise ValueError("scales is required for dimensionless time")
+        # fs → s → 無次元
+        tlist_s = self.tlist * 1e-15  # fs → s
+        return tlist_s / self.scales.t0
 
     def get_scalar_and_pol(self) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -149,6 +405,178 @@ class ElectricField:
             ef_disp = np.asarray(ef_disp)
             # 1次元に戻す
             self._scalar_field = np.real(ef_disp).flatten()
+
+    def add_dispersed_Efield_dimensionless(
+        self,
+        envelope_func,
+        duration_dimensionless: float,
+        t_center_dimensionless: float,
+        carrier_freq_dimensionless: float,
+        amplitude_dimensionless: float = 1.0,
+        polarization: np.ndarray = np.array([1.0, 0.0]),
+        phase_rad: float = 0.0,
+        gdd_dimensionless: float = 0.0,
+        tod_dimensionless: float = 0.0,
+        const_polarisation: bool | None = None,
+    ):
+        """
+        無次元パラメータから有次元電場を生成して内部電場に追加
+        
+        Parameters
+        ----------
+        envelope_func : callable
+            包絡線関数
+        duration_dimensionless : float
+            パルス幅（無次元時間）
+        t_center_dimensionless : float
+            中心時刻（無次元時間）
+        carrier_freq_dimensionless : float
+            キャリア周波数（無次元周波数）
+        amplitude_dimensionless : float
+            振幅（無次元電場）
+        polarization : np.ndarray
+            偏光ベクトル
+        phase_rad : float
+            位相（rad）
+        gdd_dimensionless : float
+            群遅延分散（無次元単位）
+        tod_dimensionless : float
+            三次分散（無次元単位）
+        const_polarisation : bool, optional
+            偏光が一定かどうか
+        """
+        if not self.is_dimensionless_interface:
+            raise ValueError("This method is only for dimensionless interface ElectricField")
+        
+        if self.scales is None:
+            raise ValueError("scales is required for dimensionless operations")
+        
+        # 無次元パラメータを有次元に変換
+        t0_fs = self.scales.t0 * 1e15  # s → fs
+        duration_fs = duration_dimensionless * t0_fs
+        t_center_fs = t_center_dimensionless * t0_fs
+        
+        # 周波数: 無次元 → rad/fs
+        carrier_freq_rad_fs = carrier_freq_dimensionless / t0_fs
+        
+        # 電場振幅: 無次元 → V/m
+        amplitude_Vm = amplitude_dimensionless * self.scales.Efield0
+        
+        # 分散パラメータ: 無次元 → fs^2, fs^3
+        gdd_fs2 = gdd_dimensionless * (t0_fs ** 2)
+        tod_fs3 = tod_dimensionless * (t0_fs ** 3)
+        
+        # 有次元パラメータで電場生成（内部は常にfs, V/m）
+        self.add_dispersed_Efield(
+            envelope_func, duration_fs, t_center_fs, carrier_freq_rad_fs,
+            amplitude_Vm, polarization, phase_rad, gdd_fs2, tod_fs3, const_polarisation
+        )
+
+    @classmethod
+    def create_dimensionless_interface(
+        cls,
+        tlist_dimensionless: np.ndarray,
+        scales: "NondimensionalizationScales"
+    ) -> "ElectricField":
+        """
+        無次元インターフェースでElectricFieldを作成（内部はfs単位で保持）
+        
+        Parameters
+        ----------
+        tlist_dimensionless : np.ndarray
+            無次元時間配列
+        scales : NondimensionalizationScales
+            無次元化スケールファクター
+            
+        Returns
+        -------
+        ElectricField
+            無次元インターフェースElectricFieldインスタンス
+        """
+        # 無次元時間をfs単位に変換して内部保持
+        t0_fs = scales.t0 * 1e15  # s → fs
+        tlist_fs = tlist_dimensionless * t0_fs
+        return cls(tlist_fs, scales=scales, is_dimensionless_interface=True)
+
+    @classmethod 
+    def create_from_SI(
+        cls,
+        tlist_fs: np.ndarray
+    ) -> "ElectricField":
+        """
+        SI単位系（fs, V/m）でElectricFieldを作成
+        
+        Parameters
+        ----------
+        tlist_fs : np.ndarray
+            時間配列（fs）
+            
+        Returns
+        -------
+        ElectricField
+            SI単位系ElectricFieldインスタンス
+        """
+        return cls(tlist_fs, time_units="fs", field_units="V/m", 
+                  scales=None, is_dimensionless_interface=False)
+    
+    @classmethod
+    def create_with_units(
+        cls,
+        tlist: np.ndarray,
+        time_units: str,
+        field_units: str
+    ) -> "ElectricField":
+        """
+        指定単位でElectricFieldを作成
+        
+        Parameters
+        ----------
+        tlist : np.ndarray
+            時間配列（指定単位）
+        time_units : str
+            時間の単位
+        field_units : str
+            電場の単位
+            
+        Returns
+        -------
+        ElectricField
+            単位指定ElectricFieldインスタンス
+        """
+        return cls(tlist, time_units=time_units, field_units=field_units)
+
+    def convert_to_dimensionless_interface(
+        self, 
+        scales: "NondimensionalizationScales"
+    ) -> "ElectricField":
+        """
+        SI単位系インターフェースを無次元系インターフェースに変換
+        
+        Parameters
+        ----------
+        scales : NondimensionalizationScales
+            無次元化スケールファクター
+            
+        Returns
+        -------
+        ElectricField
+            無次元インターフェースの新しいElectricFieldインスタンス
+        """
+        if self.is_dimensionless_interface:
+            raise ValueError("Already dimensionless interface")
+        
+        # 新しいインスタンスを作成（内部は同じfs, V/m を保持）
+        new_field = ElectricField(
+            self.tlist.copy(), 
+            scales=scales, 
+            is_dimensionless_interface=True
+        )
+        new_field.Efield = np.asarray(self.Efield).copy()
+        new_field._constant_pol = self._constant_pol
+        if self._scalar_field is not None:
+            new_field._scalar_field = np.asarray(self._scalar_field).copy()
+        
+        return new_field
 
     def apply_sinusoidal_mod(
         self,
@@ -262,16 +690,41 @@ class ElectricField:
         self.Efield += Efield
         return self
 
-    def plot(self):
+    def plot(self, use_SI_units: bool = True):
+        """
+        電場波形をプロット
+        
+        Parameters
+        ----------
+        use_SI_units : bool, optional
+            SI単位系でプロットするかどうか。デフォルトはTrue
+        """
         import matplotlib.pyplot as plt
 
+        if use_SI_units:
+            t_plot = self.get_time_SI()
+            E_plot = self.get_Efield_SI()
+            time_label = "Time (fs)"
+            x_label = r"$E_x$ (V/m)"
+            y_label = r"$E_y$ (V/m)"
+        else:
+            t_plot = np.asarray(self.tlist)
+            E_plot = np.asarray(self.Efield)
+            if self.is_dimensionless:
+                time_label = "Time (dimensionless)"
+                x_label = r"$E'_x$ (dimensionless)"
+                y_label = r"$E'_y$ (dimensionless)"
+            else:
+                time_label = "Time (fs)"
+                x_label = r"$E_x$ (V/m)"
+                y_label = r"$E_y$ (V/m)"
+
         fig, ax = plt.subplots(2, 1, sharex=True)
-        ax[0].plot(self.tlist, self.Efield[:, 0])
-        ax[1].plot(self.tlist, self.Efield[:, 1])
-        # ax[0].set_xticklabels([])
-        ax[1].set_xlabel("Time (fs)")
-        ax[0].set_ylabel(r"$E_x$ (V/m)")
-        ax[1].set_ylabel(r"$E_y$ (V/m)")
+        ax[0].plot(t_plot, E_plot[:, 0])
+        ax[1].plot(t_plot, E_plot[:, 1])
+        ax[1].set_xlabel(time_label)
+        ax[0].set_ylabel(x_label)
+        ax[1].set_ylabel(y_label)
         plt.show()
 
     def plot_spectrum(
@@ -529,3 +982,66 @@ def voigt_fwhm(x: ArrayLike, xc: float, fwhm_g: float, fwhm_l: float) -> ArrayLi
     sigma = fwhm_g / (2 * np.sqrt(2 * np.log(2)))
     gamma = fwhm_l / 2
     return voigt(x, xc, sigma, gamma)
+
+"""
+使用例：
+========
+
+1. 無次元系での電場作成（推奨）:
+
+```python
+from rovibrational_excitation.core.nondimensionalize import nondimensionalize_with_SI_base_units
+from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+
+# 1. 無次元化の実行
+H0_prime, mu_x_prime, mu_y_prime, Efield_prime, tlist_prime, dt_prime, scales = \\
+    nondimensionalize_with_SI_base_units(H0, mu_x, mu_y, efield_dummy)
+
+# 2. 無次元系での電場作成
+efield = ElectricField.create_dimensionless(tlist_prime, scales)
+
+# 3. 無次元系でのパルス追加
+efield.add_dispersed_Efield_dimensionless(
+    envelope_func=gaussian_fwhm,
+    duration=10.0,      # 無次元時間
+    t_center=50.0,      # 無次元時間
+    carrier_freq=1.5,   # 無次元周波数
+    amplitude=0.8,      # 無次元電場強度
+    gdd=0.1,           # 無次元GDD
+    tod=0.05           # 無次元TOD
+)
+
+# 4. プロット（自動的にSI単位系に変換）
+efield.plot(use_SI_units=True)   # fs, V/m でプロット
+efield.plot(use_SI_units=False)  # 無次元でプロット
+```
+
+2. 既存コードからの移行:
+
+```python
+# 既存のSI単位系電場
+efield_SI = ElectricField.create_from_SI(tlist_fs)
+efield_SI.add_dispersed_Efield(...)
+
+# 無次元系に変換
+efield_dimensionless = efield_SI.convert_to_dimensionless(scales)
+```
+
+3. データ取得:
+
+```python
+# 無次元データ
+time_dim = efield.tlist          # 無次元時間
+field_dim = efield.get_Efield()  # 無次元電場
+
+# SI単位系データ
+time_fs = efield.get_time_SI()     # fs単位の時間
+field_Vm = efield.get_Efield_SI()  # V/m単位の電場
+```
+
+利点：
+- スケールファクターが自動管理される
+- プロット時に適切な単位で表示される
+- 数値計算が安定する
+- 無次元系と物理単位系の間で透明な変換が可能
+"""

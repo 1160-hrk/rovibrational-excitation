@@ -5,6 +5,7 @@ Two-level system basis.
 import numpy as np
 
 from .base import BasisBase
+from .hamiltonian import Hamiltonian
 
 
 class TwoLevelBasis(BasisBase):
@@ -16,6 +17,7 @@ class TwoLevelBasis(BasisBase):
 
     def __init__(self):
         """Initialize two-level basis."""
+        self.omega_rad_pfs = 1.0
         self.basis = np.array([[0], [1]])  # |0⟩, |1⟩
         self.index_map = {(0,): 0, (1,): 1}
 
@@ -69,7 +71,7 @@ class TwoLevelBasis(BasisBase):
             raise ValueError(f"Invalid index {index}. Must be 0 or 1.")
         return self.basis[index]
 
-    def generate_H0(self, energy_gap=1.0, **kwargs) -> np.ndarray:
+    def generate_H0(self, units="J", **kwargs) -> Hamiltonian:
         """
         Generate two-level Hamiltonian.
 
@@ -77,17 +79,34 @@ class TwoLevelBasis(BasisBase):
 
         Parameters
         ----------
-        energy_gap : float
-            Energy difference between |1⟩ and |0⟩ states.
+        units : {"J", "rad/fs"}, optional
+            返すハミルトニアンの単位。デフォルトは"J"（エネルギー単位）
         **kwargs
             Additional parameters (ignored).
 
         Returns
         -------
-        np.ndarray
-            2x2 diagonal Hamiltonian matrix.
+        Hamiltonian
+            2x2 diagonal Hamiltonian object with unit information.
         """
-        return np.diag([0.0, energy_gap])
+        # Create Hamiltonian in frequency units first
+        H0_matrix = np.diag([0.0, self.omega_rad_pfs])
+        
+        # Create basis info for debugging
+        basis_info = {
+            "basis_type": "TwoLevel",
+            "size": 2,
+            "energy_gap_rad_pfs": self.omega_rad_pfs,
+        }
+        
+        # Create Hamiltonian object in rad/fs
+        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
+        
+        # Convert to requested units
+        if units == "J":
+            return hamiltonian.to_energy_units()
+        else:
+            return hamiltonian
 
     def __repr__(self) -> str:
         """String representation."""

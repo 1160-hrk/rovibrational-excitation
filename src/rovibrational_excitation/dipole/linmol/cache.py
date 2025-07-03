@@ -62,6 +62,7 @@ class LinMolDipoleMatrix:
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
+    units: Literal["C*m", "D", "ea0"] = "C*m"  # Unit information
 
     _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[valid-type]
         init=False, default_factory=dict, repr=False
@@ -118,6 +119,65 @@ class LinMolDipoleMatrix:
     @property
     def mu_z(self):
         return self.mu("z")
+
+    # ------------------------------------------------------------------
+    # Unit management
+    # ------------------------------------------------------------------
+    def get_mu_in_units(self, axis: str, target_units: str, *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
+        """
+        Get dipole matrix in specified units.
+        
+        Parameters
+        ----------
+        axis : str
+            Dipole axis ('x', 'y', 'z')
+        target_units : str
+            Target units ('C*m', 'D', 'ea0')
+        dense : bool, optional
+            Override class-level dense setting
+            
+        Returns
+        -------
+        Array
+            Dipole matrix converted to target units
+        """
+        # Physical constants for unit conversion
+        _DEBYE_TO_CM = 3.33564e-30  # D → C·m
+        _EA0_TO_CM = 1.602176634e-19 * 5.29177210903e-11  # ea0 → C·m
+        
+        # Get matrix in current units
+        matrix = self.mu(axis, dense=dense)
+        
+        if self.units == target_units:
+            return matrix
+        
+        # Convert from current units to C·m
+        if self.units == "D":
+            matrix_cm = matrix * _DEBYE_TO_CM
+        elif self.units == "ea0":
+            matrix_cm = matrix * _EA0_TO_CM
+        else:  # self.units == "C*m"
+            matrix_cm = matrix
+        
+        # Convert from C·m to target units
+        if target_units == "D":
+            return matrix_cm / _DEBYE_TO_CM
+        elif target_units == "ea0":
+            return matrix_cm / _EA0_TO_CM
+        else:  # target_units == "C*m"
+            return matrix_cm
+    
+    def get_mu_x_SI(self, *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
+        """Get μ_x in SI units (C·m)."""
+        return self.get_mu_in_units("x", "C*m", dense=dense)
+    
+    def get_mu_y_SI(self, *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
+        """Get μ_y in SI units (C·m)."""
+        return self.get_mu_in_units("y", "C*m", dense=dense)
+    
+    def get_mu_z_SI(self, *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
+        """Get μ_z in SI units (C·m)."""
+        return self.get_mu_in_units("z", "C*m", dense=dense)
 
     # ------------------------------------------------------------------
     def stacked(self, order: str = "xyz", *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]

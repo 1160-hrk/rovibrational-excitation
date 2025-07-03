@@ -3,9 +3,12 @@ Abstract base class for quantum basis sets.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from .hamiltonian import Hamiltonian
 
 
 class BasisBase(ABC):
@@ -63,9 +66,9 @@ class BasisBase(ABC):
         pass
 
     @abstractmethod
-    def generate_H0(self, **kwargs) -> np.ndarray:
+    def generate_H0(self, **kwargs) -> "Hamiltonian":
         """
-        Generate the free Hamiltonian matrix for this basis.
+        Generate the free Hamiltonian for this basis.
 
         Parameters
         ----------
@@ -74,8 +77,8 @@ class BasisBase(ABC):
 
         Returns
         -------
-        np.ndarray
-            Hamiltonian matrix of shape (size, size).
+        Hamiltonian
+            Hamiltonian object with unit information.
         """
         pass
 

@@ -29,6 +29,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+# Unit conversion utilities
+from rovibrational_excitation.core.parameter_converter import ParameterConverter
+
 try:
     from tqdm import tqdm
 except ImportError:  # 進捗バーが無くても動く
@@ -240,7 +243,24 @@ def _load_params_file(path: str) -> dict[str, Any]:
         raise ImportError(f"Cannot load spec from {path}")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)  # type: ignore[arg-type]
-    return {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
+    params = {k: getattr(mod, k) for k in dir(mod) if not k.startswith("__")}
+    
+    # Apply default units and automatic conversion
+    print(f"📊 Loading parameters from {path}")
+    
+    # First, apply default units for parameters without explicit units
+    # デフォルト単位を適用（後方互換性のため一時的にスキップ）
+    params_with_defaults = params.copy()
+    
+    # Then convert all units to standard internal units
+    converted_params = ParameterConverter.auto_convert_parameters(params_with_defaults)
+    
+    if params != converted_params:
+        print("📋 Unit processing completed.")
+    else:
+        print("📋 No unit processing needed.")
+    
+    return converted_params
 
 
 # ---------------------------------------------------------------------
@@ -361,6 +381,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     from rovibrational_excitation.core.states import StateVector
     from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
     from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
+    from rovibrational_excitation.core.nondimensionalize import analyze_regime
 
     # ---------- Electric field -------------------------------------
     t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
@@ -410,6 +431,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         delta_omega_rad_phz=delta_omega_rad_phz,
         B_rad_phz=params.get("B_rad_phz", 0.0),
         alpha_rad_phz=params.get("alpha_rad_phz", 0.0),
+        return_energy_units=True,  # エネルギー単位（J）で取得
     )
 
     dip = LinMolDipoleMatrix(
@@ -421,6 +443,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     )
 
     # ---------- Propagation ----------------------------------------
+    # 無次元化オプション
+    use_nondimensional = params.get("nondimensional", False)
+    
     psi_t = schrodinger_propagation(
         H0,
         E,
@@ -431,7 +456,26 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         return_time_psi=params.get("return_time_psi", True),
         backend=params.get("backend", "numpy"),
         sample_stride=params.get("sample_stride", 1),
+        nondimensional=use_nondimensional,
     )
+    
+    # 無次元化使用時は物理レジーム情報も保存
+    regime_info = None
+    if use_nondimensional:
+        try:
+            from rovibrational_excitation.core.nondimensionalize import (
+                nondimensionalize_system,
+            )
+            mu_x = dip.mu_x if hasattr(dip, 'mu_x') else getattr(dip, f"mu_{params.get('axes', 'xy')[0]}")
+            mu_y = dip.mu_y if hasattr(dip, 'mu_y') else getattr(dip, f"mu_{params.get('axes', 'xy')[1]}")
+            _, _, _, _, _, _, scales = nondimensionalize_system(
+                H0.matrix, mu_x, mu_y, E,
+                H0_units="energy", time_units="fs"
+            )
+            regime_info = analyze_regime(scales)
+        except Exception as e:
+            print(f"Warning: Could not analyze regime: {e}")
+            regime_info = {"error": str(e)}
     if isinstance(psi_t, list | tuple) and len(psi_t) == 2:
         t_p, psi_t = psi_t
     else:
@@ -442,16 +486,29 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     # ---------- Save (npz 圧縮) ------------------------------------
     if params.get("save", True):
         outdir = Path(params["outdir"])
-        np.savez_compressed(
-            outdir / "result.npz",
-            t_E=t_E,
-            psi=psi_t,
-            pop=pop_t,
-            E=np.array(E.Efield),
-            t_p=t_p,
-        )
+        
+        # 基本データ
+        save_data = {
+            "t_E": t_E,
+            "psi": psi_t,
+            "pop": pop_t,
+            "E": np.array(E.Efield),
+            "t_p": t_p,
+        }
+        
+        # 無次元化情報があれば追加
+        if regime_info is not None:
+            save_data["regime_info"] = regime_info
+            
+        np.savez_compressed(outdir / "result.npz", **save_data)
+        
         with open(outdir / "parameters.json", "w") as f:
             json.dump(_json_safe(params), f, indent=2)
+            
+        # 無次元化情報をJSONでも保存
+        if regime_info is not None:
+            with open(outdir / "regime_analysis.json", "w") as f:
+                json.dump(_json_safe(regime_info), f, indent=2)
 
     return pop_t
 
@@ -475,7 +532,18 @@ def run_all_with_checkpoint(
         description = base_dict.get("description", Path(params).stem)
         param_file_path = Path(params)
     elif isinstance(params, Mapping):
-        base_dict = dict(params)
+        print("📊 Loading parameters from dict")
+        raw_dict = dict(params)
+        
+        # Apply default units and automatic conversion
+        # デフォルト単位を適用（後方互換性のため一時的にスキップ）
+        dict_with_defaults = raw_dict.copy()
+        base_dict = ParameterConverter.auto_convert_parameters(dict_with_defaults)
+        
+        if raw_dict != base_dict:
+            print("📋 Unit processing completed.")
+        else:
+            print("📋 No unit processing needed.")
         description = base_dict.get("description", "run")
         param_file_path = None
     else:

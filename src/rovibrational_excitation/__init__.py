@@ -46,11 +46,16 @@ __author__ = "Hiroki Tsusaka"
 __all__: list[str] = [
     # Core API (波束シミュレーション)
     "LinMolBasis",
+    "Hamiltonian",
     "ElectricField", 
     "LinMolDipoleMatrix",
     "schrodinger_propagation",
     "liouville_propagation",
-    "generate_H0_LinMol",
+    
+    # Unit management
+    "auto_convert_parameters",
+    "create_hamiltonian_from_input_units", 
+    "print_unit_help",
     
     # Spectroscopy API (線形応答分光)
     # Modern API
@@ -87,11 +92,10 @@ __all__: list[str] = [
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
 from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
-from .core.basis import LinMolBasis  # noqa: E402, F401
+from .core.basis import LinMolBasis, Hamiltonian  # noqa: E402, F401
 from .core.electric_field import ElectricField  # noqa: E402, F401
-from .core.hamiltonian import (
-    generate_H0_LinMol,  # noqa: E402, F401  # DEPRECATED: use basis.generate_H0() instead
-)
+
+# Note: generate_H0_LinMol is deprecated - use basis.generate_H0() instead
 from .core.propagator import (  # noqa: E402, F401
     liouville_propagation,
     schrodinger_propagation,
