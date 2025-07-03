@@ -468,10 +468,20 @@ def nondimensionalize_system(
     # 1. エネルギースケールの計算
     if H0_units == "energy":
         # H0は既にエネルギー単位（J）
-        H0_energy = H0.copy()
+        if hasattr(H0, 'matrix'):
+            # Hamiltonianオブジェクトの場合
+            H0_energy = H0.matrix.copy()
+        else:
+            # numpy配列の場合
+            H0_energy = H0.copy()
     elif H0_units == "frequency":
         # H0は周波数単位（rad/fs）なので、Jに変換
-        H0_energy = H0 * hbar / 1e-15  # rad/fs → J
+        if hasattr(H0, 'matrix'):
+            # Hamiltonianオブジェクトの場合
+            H0_energy = H0.matrix * hbar / 1e-15
+        else:
+            # numpy配列の場合
+            H0_energy = H0 * hbar / 1e-15  # rad/fs → J
     else:
         raise ValueError("H0_units must be 'energy' or 'frequency'")
     
