@@ -66,14 +66,11 @@ class BasisBase(ABC):
         pass
 
     @abstractmethod
-    def generate_H0(self, **kwargs) -> "Hamiltonian":
+    def generate_H0(self) -> "Hamiltonian":
         """
         Generate the free Hamiltonian for this basis.
-
-        Parameters
-        ----------
-        **kwargs
-            System-specific parameters for Hamiltonian construction.
+        
+        Uses the physical parameters stored in the basis instance.
 
         Returns
         -------
@@ -81,6 +78,26 @@ class BasisBase(ABC):
             Hamiltonian object with unit information.
         """
         pass
+
+    def generate_H0_with_params(self, **kwargs) -> "Hamiltonian":
+        """
+        Generate Hamiltonian with temporary parameter override.
+        
+        This method allows backward compatibility and temporary parameter changes.
+        
+        Parameters
+        ----------
+        **kwargs
+            Temporary parameters to override instance values.
+            
+        Returns
+        -------
+        Hamiltonian
+            Hamiltonian object with unit information.
+        """
+        # Default implementation: just call generate_H0
+        # Subclasses should override this for actual parameter handling
+        return self.generate_H0()
 
     def __repr__(self) -> str:
         """Default representation."""

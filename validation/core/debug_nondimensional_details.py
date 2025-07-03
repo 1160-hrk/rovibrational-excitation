@@ -12,7 +12,7 @@ from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
 from rovibrational_excitation.core.nondimensionalize import nondimensionalize_system, get_physical_time
 from rovibrational_excitation.core.propagator import schrodinger_propagation, _prepare_args
-from rovibrational_excitation.core.states import StateVector
+from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 

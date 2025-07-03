@@ -6,6 +6,7 @@ import numpy as np
 
 from .base import BasisBase
 from .hamiltonian import Hamiltonian
+from rovibrational_excitation.core.units.converters import converter
 
 
 class TwoLevelBasis(BasisBase):
@@ -13,11 +14,44 @@ class TwoLevelBasis(BasisBase):
     Two-level system basis: |0⟩ and |1⟩.
 
     Simple quantum system with ground state |0⟩ and excited state |1⟩.
+    
+    Parameters
+    ----------
+    energy_gap : float, optional
+        エネルギーギャップ（input_unitsで指定した単位）
+    input_units : str, optional
+        入力パラメータの単位（"rad/fs", "cm^-1", "THz", "eV"など）
+    output_units : str, optional
+        出力ハミルトニアンの単位（"J" または "rad/fs"）
     """
 
-    def __init__(self):
-        """Initialize two-level basis."""
-        self.omega_rad_pfs = 1.0
+    def __init__(
+        self,
+        energy_gap: float | None = None,
+        input_units: str = "rad/fs",
+        output_units: str = "J",
+    ):
+        """Initialize two-level basis with physical parameters."""
+        self.input_units = input_units
+        self.output_units = output_units
+        
+        # エネルギーギャップの単位変換と保存
+        if energy_gap is None:
+            self.gap_rad_pfs = 1.0  # デフォルト値
+        else:
+            if input_units in converter.get_supported_units("frequency"):
+                self.gap_rad_pfs = energy_gap * converter.convert_frequency(1.0, input_units, "rad/fs")
+            elif input_units in converter.get_supported_units("energy"):
+                # エネルギー単位からrad/fsへの変換
+                gap_J = converter.convert_energy(energy_gap, input_units, "J")
+                self.gap_rad_pfs = gap_J / Hamiltonian._HBAR * 1e-15
+            else:
+                raise ValueError(
+                    f"Unsupported input_units '{input_units}'.\n"
+                    f"Supported frequency units: {list(converter.get_supported_units('frequency'))}\n"
+                    f"Supported energy units: {list(converter.get_supported_units('energy'))}"
+                )
+        
         self.basis = np.array([[0], [1]])  # |0⟩, |1⟩
         self.index_map = {(0,): 0, (1,): 1}
 
@@ -71,20 +105,54 @@ class TwoLevelBasis(BasisBase):
             raise ValueError(f"Invalid index {index}. Must be 0 or 1.")
         return self.basis[index]
 
-    def generate_H0(self, energy_gap=None, energy_gap_units="energy", return_energy_units=None, units="J", **kwargs) -> Hamiltonian:
+    def generate_H0(self) -> Hamiltonian:
         """
-        Generate two-level Hamiltonian.
+        保存されたパラメータから二準位ハミルトニアンを生成
 
         H = |0⟩⟨0| × 0 + |1⟩⟨1| × energy_gap
+
+        Returns
+        -------
+        Hamiltonian
+            2x2 diagonal Hamiltonian object with unit information.
+        """
+        H0_matrix = np.diag([0.0, self.gap_rad_pfs])
+        
+        basis_info = {
+            "basis_type": "TwoLevel",
+            "size": 2,
+            "energy_gap_rad_pfs": self.gap_rad_pfs,
+            "input_units": self.input_units,
+            "output_units": self.output_units,
+        }
+        
+        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
+        
+        # Convert to requested units
+        if self.output_units == "J":
+            return hamiltonian.to_energy_units()
+        else:
+            return hamiltonian
+
+    def generate_H0_with_params(
+        self,
+        energy_gap=None,
+        energy_gap_units=None,
+        return_energy_units=None,
+        units=None,
+        **kwargs,
+    ) -> Hamiltonian:
+        """
+        一時的にパラメータを変更してハミルトニアンを生成（後方互換性）
 
         Parameters
         ----------
         energy_gap : float, optional
             エネルギーギャップの値（単位はenergy_gap_unitsで指定）
         energy_gap_units : str, optional
-            'energy'（J）または'frequency'（rad/fs）
+            energy_gapの単位
         return_energy_units : bool, optional
-            TrueならJ、Falseならrad/fsで返す
+            TrueならJ、Falseならrad/fsで返す（非推奨）
         units : {"J", "rad/fs"}, optional
             明示的な単位指定
         **kwargs
@@ -96,26 +164,38 @@ class TwoLevelBasis(BasisBase):
             2x2 diagonal Hamiltonian object with unit information.
         """
         # デフォルト値
-        gap = self.omega_rad_pfs
-        gap_units = energy_gap_units
-        if energy_gap is not None:
-            gap = energy_gap
-
-        # 単位変換
-        if gap_units == "energy":
-            # J → rad/fs
-            _HBAR = 6.62607015e-034 / (2 * np.pi)
-            gap_rad_pfs = gap / _HBAR * 1e-15
-        elif gap_units == "frequency":
-            gap_rad_pfs = gap
+        if energy_gap is None:
+            gap_rad_pfs = self.gap_rad_pfs
         else:
-            raise ValueError(f"Unknown energy_gap_units: {gap_units}")
+            if energy_gap_units is None:
+                energy_gap_units = self.input_units
+            
+            unit_key = energy_gap_units
+
+            # Decide whether provided unit is frequency or energy and convert to rad/fs
+            if unit_key in converter.get_supported_units("frequency"):
+                gap_rad_pfs = energy_gap * converter.convert_frequency(1.0, unit_key, "rad/fs")
+            elif unit_key in converter.get_supported_units("energy"):
+                # Convert to Joule first, then to rad/fs using ℏ
+                gap_J = converter.convert_energy(energy_gap, unit_key, "J")
+                gap_rad_pfs = gap_J / Hamiltonian._HBAR * 1e-15
+            elif unit_key == "energy":  # backward compatibility (J)
+                gap_rad_pfs = energy_gap / Hamiltonian._HBAR * 1e-15
+            elif unit_key == "frequency":  # backward compatibility (rad/fs)
+                gap_rad_pfs = energy_gap
+            else:
+                raise ValueError(
+                    f"Unsupported energy_gap_units '{unit_key}'.\n"
+                    f"Supported frequency units: {list(converter.get_supported_units('frequency'))}\n"
+                    f"Supported energy units: {list(converter.get_supported_units('energy'))}"
+                )
 
         H0_matrix = np.diag([0.0, gap_rad_pfs])
         basis_info = {
             "basis_type": "TwoLevel",
             "size": 2,
             "energy_gap_rad_pfs": gap_rad_pfs,
+            "energy_gap_units": energy_gap_units,
         }
         hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
 
@@ -132,4 +212,4 @@ class TwoLevelBasis(BasisBase):
 
     def __repr__(self) -> str:
         """String representation."""
-        return "TwoLevelBasis(|0⟩, |1⟩)"
+        return f"TwoLevelBasis(gap={self.gap_rad_pfs:.3f} rad/fs, |0⟩, |1⟩)"

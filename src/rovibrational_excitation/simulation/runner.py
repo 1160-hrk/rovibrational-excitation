@@ -370,20 +370,18 @@ def _make_root(desc: str) -> Path:
 def _run_one(params: dict[str, Any]) -> np.ndarray:
     """
     1 パラメータセット実行し population(t) を返す。
-    heavy import は関数内 (fork 後キャッシュされる) に移動
+    系タイプ（basis_type）に応じて汎用的に対応
     """
-    from rovibrational_excitation.core.basis import LinMolBasis
+    # --- 必要なimportは関数内で ---
     from rovibrational_excitation.core.electric_field import (
         ElectricField,
         gaussian_fwhm,
     )
     from rovibrational_excitation.core.propagator import schrodinger_propagation
-    from rovibrational_excitation.core.states import StateVector
-    from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-    from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
+    from rovibrational_excitation.core.basis import StateVector
     from rovibrational_excitation.core.nondimensionalize import analyze_regime
 
-    # ---------- Electric field -------------------------------------
+    # --- Electric field 共通 ---
     t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
     E = ElectricField(tlist=t_E)
     E.add_dispersed_Efield(
@@ -405,47 +403,99 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             type_mod=params.get("type_mod_sin_mod", "phase"),
         )
 
-    # ---------- Basis / initial state ------------------------------
-    basis = LinMolBasis(
-        params["V_max"],
-        params["J_max"],
-        use_M=params.get("use_M", True),
-    )
-    sv = StateVector(basis)
-    for idx in params.get("initial_states", [0]):
-        sv.set_state(basis.get_state(idx), 1)
-    sv.normalize()
+    # --- 系タイプ分岐 ---
+    basis_type = params.get("basis_type", "linmol").lower()
+    if basis_type == "linmol":
+        from rovibrational_excitation.core.basis import LinMolBasis
+        from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+        from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
+        # Basis
+        basis = LinMolBasis(
+            params["V_max"],
+            params["J_max"],
+            use_M=params.get("use_M", True),
+        )
+        # 初期状態
+        sv = StateVector(basis)
+        for idx in params.get("initial_states", [0]):
+            sv.set_state(basis.get_state(idx), 1)
+        sv.normalize()
+        # Hamiltonian
+        delta_omega_rad_phz = params.get("delta_omega_rad_phz", 0.0)
+        potential_type = params.get("potential_type", "harmonic")
+        if delta_omega_rad_phz == 0.0:
+            params.update({"potential_type": "harmonic"})
+        if potential_type == "morse":
+            omega01_domega_to_N(params["omega_rad_phz"], delta_omega_rad_phz)
+        H0 = basis.generate_H0(
+            omega_rad_pfs=params["omega_rad_phz"],
+            delta_omega_rad_pfs=delta_omega_rad_phz,
+            B_rad_pfs=params.get("B_rad_phz", 0.0),
+            alpha_rad_pfs=params.get("alpha_rad_phz", 0.0),
+            units="J",
+        )
+        # Dipole
+        dip = LinMolDipoleMatrix(
+            basis,
+            mu0=params["mu0_Cm"],
+            potential_type=params.get("potential_type", "harmonic"),
+            backend=params.get("backend", "numpy"),
+            dense=params.get("dense", True),
+        )
+    elif basis_type == "twolevel":
+        from rovibrational_excitation.core.basis import TwoLevelBasis
+        from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
+        # Basis
+        basis = TwoLevelBasis()
+        # 初期状態
+        sv = StateVector(basis)
+        for idx in params.get("initial_states", [0]):
+            sv.set_state(basis.get_state(idx), 1)
+        sv.normalize()
+        # Hamiltonian
+        H0 = basis.generate_H0(
+            energy_gap=params.get("energy_gap", 1.0),
+            energy_gap_units=params.get("energy_gap_units", "energy"),
+            units="J",
+        )
+        # Dipole
+        dip = TwoLevelDipoleMatrix(
+            basis,
+            mu0=params.get("mu0_Cm", params.get("mu0", 1.0)),
+            backend=params.get("backend", "numpy"),
+        )
+    elif basis_type == "vibladder":
+        from rovibrational_excitation.core.basis import VibLadderBasis
+        from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
+        # Basis
+        basis = VibLadderBasis(
+            params["V_max"],
+            omega_rad_pfs=params["omega_rad_phz"],
+            delta_omega_rad_pfs=params.get("delta_omega_rad_phz", 0.0),
+        )
+        # 初期状態
+        sv = StateVector(basis)
+        for idx in params.get("initial_states", [0]):
+            sv.set_state(basis.get_state(idx), 1)
+        sv.normalize()
+        # Hamiltonian
+        H0 = basis.generate_H0(
+            omega_rad_pfs=params["omega_rad_phz"],
+            delta_omega_rad_pfs=params.get("delta_omega_rad_phz", 0.0),
+            units="J",
+        )
+        # Dipole
+        dip = VibLadderDipoleMatrix(
+            basis,
+            mu0=params.get("mu0_Cm", params.get("mu0", 1.0)),
+            potential_type=params.get("potential_type", "harmonic"),
+            backend=params.get("backend", "numpy"),
+        )
+    else:
+        raise ValueError(f"Unknown basis_type: {basis_type}")
 
-    # ---------- Hamiltonian & dipole -------------------------------
-    delta_omega_rad_phz = params.get("delta_omega_rad_phz", 0.0)
-    potential_type = params.get("potential_type", "harmonic")
-
-    if delta_omega_rad_phz == 0.0:
-        params.update({"potential_type": "harmonic"})
-
-    if potential_type == "morse":
-        omega01_domega_to_N(params["omega_rad_phz"], delta_omega_rad_phz)
-
-    H0 = basis.generate_H0(
-        omega_rad_phz=params["omega_rad_phz"],
-        delta_omega_rad_phz=delta_omega_rad_phz,
-        B_rad_phz=params.get("B_rad_phz", 0.0),
-        alpha_rad_phz=params.get("alpha_rad_phz", 0.0),
-        return_energy_units=True,  # エネルギー単位（J）で取得
-    )
-
-    dip = LinMolDipoleMatrix(
-        basis,
-        mu0=params["mu0_Cm"],
-        potential_type=params.get("potential_type", "harmonic"),
-        backend=params.get("backend", "numpy"),
-        dense=params.get("dense", True),
-    )
-
-    # ---------- Propagation ----------------------------------------
-    # 無次元化オプション
+    # ---------- Propagation 共通 ----------
     use_nondimensional = params.get("nondimensional", False)
-    
     psi_t = schrodinger_propagation(
         H0,
         E,
@@ -458,7 +508,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         sample_stride=params.get("sample_stride", 1),
         nondimensional=use_nondimensional,
     )
-    
+
     # 無次元化使用時は物理レジーム情報も保存
     regime_info = None
     if use_nondimensional:
@@ -466,8 +516,15 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             from rovibrational_excitation.core.nondimensionalize import (
                 nondimensionalize_system,
             )
-            mu_x = dip.mu_x if hasattr(dip, 'mu_x') else getattr(dip, f"mu_{params.get('axes', 'xy')[0]}")
-            mu_y = dip.mu_y if hasattr(dip, 'mu_y') else getattr(dip, f"mu_{params.get('axes', 'xy')[1]}")
+            # mu_x, mu_y取得はdipの属性で分岐
+            mu_x = getattr(dip, "mu_x", None)
+            mu_y = getattr(dip, "mu_y", None)
+            if mu_x is None or mu_y is None:
+                # VibLadder等zのみの場合はzを使う
+                mu_x = getattr(dip, "mu_x", getattr(dip, "mu_z", None))
+                mu_y = getattr(dip, "mu_y", getattr(dip, "mu_z", None))
+            if mu_x is None or mu_y is None:
+                raise ValueError("Dipole matrix must have mu_x and mu_y or mu_z attributes for nondimensionalization.")
             _, _, _, _, _, _, scales = nondimensionalize_system(
                 H0.matrix, mu_x, mu_y, E,
                 H0_units="energy", time_units="fs"
@@ -476,18 +533,16 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         except Exception as e:
             print(f"Warning: Could not analyze regime: {e}")
             regime_info = {"error": str(e)}
-    if isinstance(psi_t, list | tuple) and len(psi_t) == 2:
+    if isinstance(psi_t, (list, tuple)) and len(psi_t) == 2:
         t_p, psi_t = psi_t
     else:
         t_p = np.array([0.0])  # dummy
 
     pop_t = np.abs(psi_t) ** 2  # (t, dim)
 
-    # ---------- Save (npz 圧縮) ------------------------------------
+    # ---------- Save (npz 圧縮) 共通 ----------
     if params.get("save", True):
         outdir = Path(params["outdir"])
-        
-        # 基本データ
         save_data = {
             "t_E": t_E,
             "psi": psi_t,
@@ -495,17 +550,11 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             "E": np.array(E.Efield),
             "t_p": t_p,
         }
-        
-        # 無次元化情報があれば追加
         if regime_info is not None:
             save_data["regime_info"] = regime_info
-            
         np.savez_compressed(outdir / "result.npz", **save_data)
-        
         with open(outdir / "parameters.json", "w") as f:
             json.dump(_json_safe(params), f, indent=2)
-            
-        # 無次元化情報をJSONでも保存
         if regime_info is not None:
             with open(outdir / "regime_analysis.json", "w") as f:
                 json.dump(_json_safe(regime_info), f, indent=2)

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
+from rovibrational_excitation.core.units.converters import converter
 
 
 class Hamiltonian:
@@ -27,40 +28,6 @@ class Hamiltonian:
     
     # Planck constant for physical unit conversions only
     _HBAR = 6.62607015e-034 / (2 * np.pi)  # J⋅s
-    
-    # Physical constants for input unit conversions
-    _C = 2.99792458e10  # speed of light [cm/s]
-    _H = 6.62607015e-34  # Planck constant [J·s]
-    _E = 1.602176634e-19  # elementary charge [C]
-    
-    # Unit conversion factors for input units
-    _FREQUENCY_CONVERSIONS = {
-        # Target: rad/fs
-        "rad/fs": 1.0,
-        "THz": 2 * np.pi * 1e-3,  # THz → rad/fs
-        "GHz": 2 * np.pi * 1e-6,  # GHz → rad/fs  
-        "cm^-1": 2 * np.pi * _C * 1e-15,  # cm⁻¹ → rad/fs
-        "cm-1": 2 * np.pi * _C * 1e-15,   # alternative notation
-        "wavenumber": 2 * np.pi * _C * 1e-15,  # alias
-        "PHz": 2 * np.pi,  # PHz → rad/fs
-        "Hz": 2 * np.pi * 1e-15,  # Hz → rad/fs
-        "rad/s": 1e-15,  # rad/s → rad/fs
-    }
-    
-    _ENERGY_CONVERSIONS = {
-        # Target: J
-        "J": 1.0,
-        "eV": _E,  # eV → J
-        "meV": _E * 1e-3,  # meV → J
-        "μJ": 1e-6,  # μJ → J
-        "uJ": 1e-6,  # μJ → J (alternative notation)
-        "mJ": 1e-3,  # mJ → J
-        "nJ": 1e-9,  # nJ → J
-        "pJ": 1e-12,  # pJ → J
-        "cm^-1": _H * _C,  # cm⁻¹ → J
-        "cm-1": _H * _C,
-        "wavenumber": _H * _C,
-    }
     
     def __init__(
         self, 
@@ -130,19 +97,27 @@ class Hamiltonian:
         >>> h_matrix = np.diag([0, 1.5])  # 1.5 eV gap
         >>> h = Hamiltonian.from_input_units(h_matrix, "eV", "rad/fs")
         """
-        # Convert input units to standardized internal units
-        if input_units in cls._FREQUENCY_CONVERSIONS:
-            # Frequency units → rad/fs (internal standard)
-            matrix_rad_fs = matrix * cls._FREQUENCY_CONVERSIONS[input_units]
+        # Use shared UnitConverter for all non-physical conversions
+        freq_units = converter.get_supported_units("frequency")
+        energy_units = converter.get_supported_units("energy")
+
+        if input_units in freq_units:
+            # Frequency type → convert to rad/fs
+            matrix_rad_fs = np.asarray(
+                converter.convert_frequency(matrix, input_units, "rad/fs")
+            )
             hamiltonian = cls(matrix_rad_fs, "rad/fs", basis_info)
-        elif input_units in cls._ENERGY_CONVERSIONS:
-            # Energy units → J (internal standard)
-            matrix_J = matrix * cls._ENERGY_CONVERSIONS[input_units]
+        elif input_units in energy_units:
+            # Energy type → convert to J
+            matrix_J = np.asarray(
+                converter.convert_energy(matrix, input_units, "J")
+            )
             hamiltonian = cls(matrix_J, "J", basis_info)
         else:
-            raise ValueError(f"Unsupported Hamiltonian units: {input_units}. "
-                            f"Use frequency units {list(cls._FREQUENCY_CONVERSIONS.keys())} "
-                            f"or energy units {list(cls._ENERGY_CONVERSIONS.keys())}")
+            raise ValueError(
+                f"Unsupported Hamiltonian units: {input_units}. "
+                f"Frequency units = {freq_units}, Energy units = {energy_units}"
+            )
         
         # Convert to target units if needed
         if target_units == "J":

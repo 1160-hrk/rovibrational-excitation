@@ -47,6 +47,8 @@ __all__: list[str] = [
     # Core API (波束シミュレーション)
     "LinMolBasis",
     "Hamiltonian",
+    "StateVector",
+    "DensityMatrix",
     "ElectricField", 
     "LinMolDipoleMatrix",
     "schrodinger_propagation",
@@ -92,7 +94,7 @@ __all__: list[str] = [
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
 from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
-from .core.basis import LinMolBasis, Hamiltonian  # noqa: E402, F401
+from .core.basis import LinMolBasis, Hamiltonian, StateVector, DensityMatrix  # noqa: E402, F401
 from .core.electric_field import ElectricField  # noqa: E402, F401
 
 # Note: generate_H0_LinMol is deprecated - use basis.generate_H0() instead

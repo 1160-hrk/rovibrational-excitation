@@ -20,8 +20,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagator import schrodinger_propagation
-from rovibrational_excitation.core.states import StateVector
+from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.core.units import UnitConverter
 
 # %% パラメータ設定
 # システムパラメータ
@@ -30,10 +31,11 @@ J_MAX = 3  # 最大回転量子数
 USE_M = True  # 磁気量子数を使用
 
 # 分子パラメータ
-OMEGA_01 = 1.0  # 振動周波数 [rad/fs]
-DOMEGA = 0.01  # 非調和性補正 [rad/fs]
-B_CONSTANT = 0.01  # 回転定数 [rad/fs]
-ALPHA_CONSTANT = 0.001  # 振動-回転相互作用定数 [rad/fs]
+OMEGA_01 = 2349.0  # 振動周波数 [cm^-1]
+DOMEGA = 25  # 非調和性補正 [cm^-1]
+B_CONSTANT = 0.39  # 回転定数 [cm^-1]
+ALPHA_CONSTANT = 0.037  # 振動-回転相互作用定数 [cm^-1]
+UNIT_FREQUENCY = "cm^-1"
 MU0 = 1e-30  # 双極子行列要素の大きさ [C·m]
 
 # 時間グリッド設定
@@ -46,36 +48,24 @@ SAMPLE_STRIDE = 10  # サンプリングストライド
 PULSE_DURATION = 100.0  # パルス幅 [fs]
 
 # デフォルトケースの設定
-DEFAULT_DETUNING = 0.0  # デフォルトのデチューニング
-DEFAULT_EFIELD_AMPLITUDE = 3e10  # デフォルトの電場振幅 [V/m]
-DETUNED_CASE_DETUNING = 0.2  # デチューニングのあるケース
+DETUNING = 0.0  # デチューニング
+EFIELD_AMPLITUDE = 3e10  # 電場振幅 [V/m]
 
-# スイープ設定
-EFIELD_AMPLITUDE_MIN = 1e9  # 電場振幅スイープの最小値 [V/m]
-EFIELD_AMPLITUDE_MAX = 3e10  # 電場振幅スイープの最大値 [V/m]
-EFIELD_AMPLITUDE_POINTS = 8  # 電場振幅スイープの点数
-
-DETUNING_MIN = -0.5  # デチューニングスイープの最小値
-DETUNING_MAX = 0.5  # デチューニングスイープの最大値
-DETUNING_POINTS = 12  # デチューニングスイープの点数
-
-TILE_PLOT_ROWS = 3
-TILE_PLOT_COLS = 4
-
-os.makedirs("examples/results", exist_ok=True)
 
 # %% 基底・ハミルトニアン・双極子行列の生成
 print("=== 回転振動励起シミュレーション ===")
 print(f"基底サイズ: V_max={V_MAX}, J_max={J_MAX}, use_M={USE_M}")
 
-basis = LinMolBasis(V_max=V_MAX, J_max=J_MAX, use_M=USE_M)
-H0 = basis.generate_H0(
-    omega_rad_pfs=OMEGA_01,
-    delta_omega_rad_pfs=DOMEGA,
-    B_rad_pfs=B_CONSTANT,
-    alpha_rad_pfs=ALPHA_CONSTANT,
-    units="rad/fs"
+basis = LinMolBasis(
+    V_max=V_MAX, J_max=J_MAX, use_M=USE_M,
+    omega=OMEGA_01,
+    delta_omega=DOMEGA,
+    B=B_CONSTANT,
+    alpha=ALPHA_CONSTANT,
+    input_units=UNIT_FREQUENCY,
+    output_units="rad/fs"
 )
+H0 = basis.generate_H0()
 
 print(f"基底次元: {basis.size()}")
 print(f"エネルギー準位数: {len(H0.get_eigenvalues())}")
@@ -103,21 +93,19 @@ print(f"初期状態: |v=0, J=0, M=0⟩ (インデックス: {basis.get_index((0
 
 # %% 時間グリッド・電場生成
 # 共鳴ケース
-detuning = DEFAULT_DETUNING
-field_amplitude = DEFAULT_EFIELD_AMPLITUDE
+detuning = DETUNING
+field_amplitude = EFIELD_AMPLITUDE
 
 time4Efield = np.arange(TIME_START, TIME_END + 2 * DT_EFIELD, DT_EFIELD)
 tc = (time4Efield[-1] + time4Efield[0]) / 2
-transition_freq = OMEGA_01  # 基本振動遷移周波数
-laser_freq = transition_freq + detuning
-carrier_freq = laser_freq / (2 * np.pi)
 
 Efield = ElectricField(tlist=time4Efield)
 Efield.add_dispersed_Efield(
     envelope_func=gaussian_fwhm,
     duration=PULSE_DURATION,
     t_center=tc,
-    carrier_freq=carrier_freq,
+    carrier_freq=OMEGA_01,
+    carrier_freq_units=UNIT_FREQUENCY,
     amplitude=field_amplitude,
     polarization=np.array([1, 0]),  # x方向偏光
     const_polarisation=False,
@@ -132,7 +120,7 @@ time4psi, psi_t = schrodinger_propagation(
     Efield=Efield,
     dipole_matrix=dipole_matrix,
     psi0=psi0,
-    axes="xy",  # x, y方向の双極子を考慮
+    axes="zx",  # x, y方向の双極子を考慮
     return_traj=True,
     return_time_psi=True,
     sample_stride=SAMPLE_STRIDE,
@@ -157,7 +145,7 @@ prob_t = np.abs(psi_t) ** 2
 total_prob = np.sum(prob_t, axis=1)
 
 # 主要な状態のみをプロット
-main_states = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 1, -1)]
+main_states = [(0, 0, 0), (1, 1, 0), (1, 3, 0), (2, 0, 0), (2, 2, 0)]
 colors = ['b', 'r', 'g', 'orange', 'purple']
 
 for i, (v, J, M) in enumerate(main_states):

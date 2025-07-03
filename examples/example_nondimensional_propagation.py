@@ -16,7 +16,7 @@ from pathlib import Path
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagator import schrodinger_propagation
-from rovibrational_excitation.core.states import StateVector
+from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.core.nondimensionalize import (
     nondimensionalize_system,

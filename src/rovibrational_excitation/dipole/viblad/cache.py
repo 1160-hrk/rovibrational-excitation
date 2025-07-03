@@ -10,6 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Union
 
+from rovibrational_excitation.dipole.base import DipoleMatrixBase, _xp, Array
+from rovibrational_excitation.core.units.converters import converter
+
 import numpy as np
 
 try:
@@ -34,17 +37,10 @@ from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N, tdm_v
 
 
 # ----------------------------------------------------------------------
-# Helper
-# ----------------------------------------------------------------------
-def _xp(backend: str):
-    return cp if (backend == "cupy" and cp is not None) else np
-
-
-# ----------------------------------------------------------------------
 # Main class
 # ----------------------------------------------------------------------
 @dataclass(slots=True)
-class VibLadderDipoleMatrix:
+class VibLadderDipoleMatrix(DipoleMatrixBase):
     """
     Vibrational ladder system dipole matrix with unit management.
 
@@ -58,153 +54,40 @@ class VibLadderDipoleMatrix:
     mu0: float = 1.0
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
-    units: Literal["C*m", "D", "ea0"] = "C*m"  # Unit information
+    units: Literal["C*m", "D", "ea0"] = "C*m"           # internal storage units
+    units_input: Literal["C*m", "D", "ea0"] = "C*m"     # units in which mu0 is provided
 
-    _cache: dict[str, Array] = field(  # type: ignore[valid-type]
+    _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[type-arg]
         init=False, default_factory=dict, repr=False
     )
 
     def __post_init__(self):
-        """Initialize Morse parameters if needed."""
+        # Potential-specific initialisation
         if self.potential_type == "morse":
             omega01_domega_to_N(self.basis.omega_rad_pfs, self.basis.delta_omega_rad_pfs)
 
+        # Convert mu0 if units differ
+        self._convert_mu0_if_needed()
+
     # ------------------------------------------------------------------
-    # Core method
+    # concrete builder required by DipoleMatrixBase
     # ------------------------------------------------------------------
-    def mu(self, axis: str = "z") -> Array:  # type: ignore[valid-type]
-        """
-        Return μ_axis; build and cache on first request.
-
-        Parameters
-        ----------
-        axis : {'x', 'y', 'z'}
-            Dipole axis direction.
-
-        Returns
-        -------
-        Array
-            Dipole matrix of shape (V_max+1, V_max+1) in current units.
-        """
-        axis_normalized = axis.lower()
-        if axis_normalized not in ("x", "y", "z"):
-            raise ValueError("axis must be 'x', 'y', or 'z'")
-
-        if axis_normalized in self._cache:
-            return self._cache[axis_normalized]
-
+    def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
         xp = _xp(self.backend)
         dim = self.basis.size()
         matrix = xp.zeros((dim, dim), dtype=xp.complex128)
 
-        if axis_normalized == "z":
-            # For vibrational transitions, z-component is typically the relevant one
+        if axis == "z":
             vib_func = tdm_vib_morse if self.potential_type == "morse" else tdm_vib_harm
-
             for i in range(dim):
                 v1 = self.basis.V_array[i]
                 for j in range(dim):
                     v2 = self.basis.V_array[j]
-                    vib_element = vib_func(v1, v2)
-                    if vib_element != 0.0:
-                        matrix[i, j] = self.mu0 * vib_element
-
-        # For pure vibrational systems, x and y components are typically zero
-        # (no rotational mixing)
-        
-        self._cache[axis_normalized] = matrix
+                    val = vib_func(v1, v2)
+                    if val != 0.0:
+                        matrix[i, j] = self.mu0 * val
+        # x,y remain zeros
         return matrix
-
-    # convenience properties
-    @property
-    def mu_x(self) -> Array:  # type: ignore[valid-type]
-        """x-component of dipole matrix."""
-        return self.mu("x")
-
-    @property
-    def mu_y(self) -> Array:  # type: ignore[valid-type]
-        """y-component of dipole matrix."""
-        return self.mu("y")
-
-    @property
-    def mu_z(self) -> Array:  # type: ignore[valid-type]
-        """z-component of dipole matrix."""
-        return self.mu("z")
-
-    # ------------------------------------------------------------------
-    # Unit management
-    # ------------------------------------------------------------------
-    def get_mu_in_units(self, axis: str, target_units: str) -> Array:  # type: ignore[valid-type]
-        """
-        Get dipole matrix in specified units.
-        
-        Parameters
-        ----------
-        axis : str
-            Dipole axis ('x', 'y', 'z')
-        target_units : str
-            Target units ('C*m', 'D', 'ea0')
-            
-        Returns
-        -------
-        Array
-            Dipole matrix converted to target units
-        """
-        # Physical constants for unit conversion
-        _DEBYE_TO_CM = 3.33564e-30  # D → C·m
-        _EA0_TO_CM = 1.602176634e-19 * 5.29177210903e-11  # ea0 → C·m
-        
-        # Get matrix in current units
-        matrix = self.mu(axis)
-        
-        if self.units == target_units:
-            return matrix
-        
-        # Convert from current units to C·m
-        if self.units == "D":
-            matrix_cm = matrix * _DEBYE_TO_CM
-        elif self.units == "ea0":
-            matrix_cm = matrix * _EA0_TO_CM
-        else:  # self.units == "C*m"
-            matrix_cm = matrix
-        
-        # Convert from C·m to target units
-        if target_units == "D":
-            return matrix_cm / _DEBYE_TO_CM
-        elif target_units == "ea0":
-            return matrix_cm / _EA0_TO_CM
-        else:  # target_units == "C*m"
-            return matrix_cm
-    
-    def get_mu_x_SI(self) -> Array:  # type: ignore[valid-type]
-        """Get μ_x in SI units (C·m)."""
-        return self.get_mu_in_units("x", "C*m")
-    
-    def get_mu_y_SI(self) -> Array:  # type: ignore[valid-type]
-        """Get μ_y in SI units (C·m)."""
-        return self.get_mu_in_units("y", "C*m")
-    
-    def get_mu_z_SI(self) -> Array:  # type: ignore[valid-type]
-        """Get μ_z in SI units (C·m)."""
-        return self.get_mu_in_units("z", "C*m")
-
-    # ------------------------------------------------------------------
-    def stacked(self, order: str = "xyz") -> Array:  # type: ignore[valid-type]
-        """
-        Return stacked dipole matrices.
-
-        Parameters
-        ----------
-        order : str
-            Order of axes (e.g., 'xyz', 'z').
-
-        Returns
-        -------
-        Array
-            Array of shape (len(order), dim, dim).
-        """
-        mats = [self.mu(ax) for ax in order]
-        return _xp(self.backend).stack(mats)
 
     # ------------------------------------------------------------------
     def __repr__(self) -> str:

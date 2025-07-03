@@ -7,5 +7,6 @@ from .hamiltonian import Hamiltonian
 from .linmol import LinMolBasis
 from .twolevel import TwoLevelBasis
 from .viblad import VibLadderBasis
+from .states import StateVector, DensityMatrix
 
-__all__ = ["BasisBase", "Hamiltonian", "LinMolBasis", "TwoLevelBasis", "VibLadderBasis"]
+__all__ = ["BasisBase", "Hamiltonian", "LinMolBasis", "TwoLevelBasis", "VibLadderBasis", "StateVector", "DensityMatrix"]

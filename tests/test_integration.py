@@ -16,7 +16,7 @@ from rovibrational_excitation.core.propagator import (
     mixed_state_propagation,
     schrodinger_propagation,
 )
-from rovibrational_excitation.core.states import DensityMatrix, StateVector
+from rovibrational_excitation.core.basis import DensityMatrix, StateVector
 
 _DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 

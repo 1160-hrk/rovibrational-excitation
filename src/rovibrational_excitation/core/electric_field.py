@@ -10,6 +10,11 @@ from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
 from scipy.special import wofz
 
+# -----------------------------------------------------------------------------
+# Project-wide unit converter (singleton)
+# -----------------------------------------------------------------------------
+from rovibrational_excitation.core.units.converters import converter
+
 if TYPE_CHECKING:
     from rovibrational_excitation.core.nondimensionalize import NondimensionalizationScales
 
@@ -73,76 +78,24 @@ class ElectricField:
     # Unit conversion helpers
     # ------------------------------------------------------------------
     def _convert_time_to_fs(self, time_array: np.ndarray, from_units: str) -> np.ndarray:
-        """Convert time array to fs units."""
-        conversions = {
-            "fs": 1.0,
-            "ps": 1e3,
-            "ns": 1e6,
-            "s": 1e15,
-        }
-        
-        if from_units not in conversions:
-            raise ValueError(f"Unknown time unit: {from_units}. Supported: {list(conversions.keys())}")
-        
-        return time_array * conversions[from_units]
+        """Convert a time array to femtoseconds via UnitConverter."""
+        # Ensure ndarray return for type-checker
+        return np.asarray(converter.convert_time(time_array, from_units, "fs"))
     
     def _convert_time_from_fs(self, time_array_fs: np.ndarray, to_units: str) -> np.ndarray:
-        """Convert time array from fs to specified units."""
-        conversions = {
-            "fs": 1.0,
-            "ps": 1e-3,
-            "ns": 1e-6,
-            "s": 1e-15,
-        }
-        
-        if to_units not in conversions:
-            raise ValueError(f"Unknown time unit: {to_units}. Supported: {list(conversions.keys())}")
-        
-        return time_array_fs * conversions[to_units]
+        """Convert a time array from femtoseconds to the requested units."""
+        # Ensure ndarray return for type-checker
+        return np.asarray(converter.convert_time(time_array_fs, "fs", to_units))
     
     def _convert_field_to_SI(self, field_array: np.ndarray, from_units: str) -> np.ndarray:
-        """Convert electric field array to V/m units."""
-        conversions = {
-            "V/m": 1.0,
-            "V/mm": 1e3,
-            "V/cm": 1e2,
-            "kV/m": 1e3,
-            "kV/mm": 1e6,
-            "kV/cm": 1e5,
-            "MV/m": 1e6,
-            "MV/mm": 1e9,
-            "MV/cm": 1e8,
-            "GV/m": 1e9,
-            "GV/cm": 1e11,
-            "TV/m": 1e12,
-        }
-        
-        if from_units not in conversions:
-            raise ValueError(f"Unknown field unit: {from_units}. Supported: {list(conversions.keys())}")
-        
-        return field_array * conversions[from_units]
+        """Convert electric-field array to SI (V/m) units via UnitConverter."""
+        # Ensure ndarray return for type-checker
+        return np.asarray(converter.convert_electric_field(field_array, from_units, "V/m"))
     
     def _convert_field_from_SI(self, field_array_SI: np.ndarray, to_units: str) -> np.ndarray:
-        """Convert electric field array from V/m to specified units."""
-        conversions = {
-            "V/m": 1.0,
-            "V/mm": 1e-3,
-            "V/cm": 1e-2,
-            "kV/m": 1e-3,
-            "kV/mm": 1e-6,
-            "kV/cm": 1e-5,
-            "MV/m": 1e-6,
-            "MV/mm": 1e-9,
-            "MV/cm": 1e-8,
-            "GV/m": 1e-9,
-            "GV/cm": 1e-11,
-            "TV/m": 1e-12,
-        }
-        
-        if to_units not in conversions:
-            raise ValueError(f"Unknown field unit: {to_units}. Supported: {list(conversions.keys())}")
-        
-        return field_array_SI * conversions[to_units]
+        """Convert electric-field array from SI (V/m) to requested units via UnitConverter."""
+        # Ensure ndarray return for type-checker
+        return np.asarray(converter.convert_electric_field(field_array_SI, "V/m", to_units))
 
     def init_Efield(self) -> "ElectricField":
         """
@@ -344,13 +297,43 @@ class ElectricField:
         duration: float,
         t_center: float,
         carrier_freq: float,
+        *,
+        duration_units: str = "fs",
+        t_center_units: str = "fs",
+        carrier_freq_units: str = "PHz",
         amplitude: float = 1.0,
         polarization: np.ndarray = np.array([1.0, 0.0]),
         phase_rad: float = 0.0,
         gdd: float = 0.0,
         tod: float = 0.0,
+        gdd_units: str = "fs^2",
+        tod_units: str = "fs^3",
         const_polarisation: bool | None = None,
-    ):
+    ) -> None:
+        """
+        Parameters
+        ----------
+        envelope_func : callable
+            包絡線関数
+        duration : float
+            パルス幅（fs）
+        t_center : float
+            中心時刻（fs）
+        carrier_freq : float
+            キャリア周波数（PHz）
+        amplitude : float
+            振幅（V/m）
+        polarization : np.ndarray
+            偏光ベクトル
+        phase_rad : float
+            位相（rad）
+        gdd : float
+            GDD（fs^2）
+        tod : float
+            TOD（fs^3）
+        const_polarisation : bool, optional
+            偏光が一定かどうか
+        """
         polarization = np.array(polarization, dtype=np.complex128)
         if polarization.shape != (2,):
             raise ValueError("polarization must be a 2-element vector")
@@ -378,14 +361,34 @@ class ElectricField:
             args, _, _, values = inspect.getargvalues(frame)
             self.add_history.append({k: values[k] for k in args if k != "self"})
         # -------- set Efield ---------------------
-        envelope = envelope_func(self.tlist, t_center, duration) * amplitude
+        # ------------------------------------------------------------------
+        # 1) Convert input units to internal fs / cycles-per-fs -------------
+        # ------------------------------------------------------------------
+        duration_fs = float(converter.convert_time(duration, duration_units, "fs"))
+        t_center_fs = float(converter.convert_time(t_center, t_center_units, "fs"))
+
+        # GDD / TOD unit conversion to fs^2, fs^3
+        gdd_fs2 = float(converter.convert_gdd(gdd, gdd_units, "fs^2"))
+        tod_fs3 = float(converter.convert_tod(tod, tod_units, "fs^3"))
+
+        if carrier_freq_units == "PHz":  # cycles per fs
+            cycles_per_fs = carrier_freq
+        else:
+            # Convert to rad/fs then → cycles/fs
+            rad_per_fs = float(converter.convert_frequency(carrier_freq, carrier_freq_units, "rad/fs"))
+            cycles_per_fs = rad_per_fs / (2 * pi)
+
+        # ------------------------------------------------------------------
+        # 2) Build envelope and carrier wave --------------------------------
+        # ------------------------------------------------------------------
+        envelope = envelope_func(self.tlist, t_center_fs, duration_fs) * amplitude
         carrier = np.exp(
-            1j * (2 * pi * carrier_freq * (self.tlist - t_center) + phase_rad)
+            1j * (2 * pi * cycles_per_fs * (self.tlist - t_center_fs) + phase_rad)
         )
         Efield = envelope * carrier
         Efield_vec = np.real(np.outer(Efield, polarization))
         Efield_vec_disp = apply_dispersion(
-            self.tlist, Efield_vec, carrier_freq, gdd, tod
+            self.tlist, Efield_vec, cycles_per_fs, gdd_fs2, tod_fs3
         )
         if isinstance(Efield_vec_disp, tuple):
             Efield_vec_disp = Efield_vec_disp[0]
@@ -399,7 +402,7 @@ class ElectricField:
             ef_real = np.real(np.asarray(Efield))  # 1次元配列
             # apply_dispersionは2次元配列を期待するので、reshapeしてから適用
             ef_real_2d = ef_real.reshape(-1, 1)
-            ef_disp = apply_dispersion(self.tlist, ef_real_2d, carrier_freq, gdd, tod)
+            ef_disp = apply_dispersion(self.tlist, ef_real_2d, cycles_per_fs, gdd_fs2, tod_fs3)
             if isinstance(ef_disp, tuple):
                 ef_disp = ef_disp[0]
             ef_disp = np.asarray(ef_disp)
@@ -468,8 +471,19 @@ class ElectricField:
         
         # 有次元パラメータで電場生成（内部は常にfs, V/m）
         self.add_dispersed_Efield(
-            envelope_func, duration_fs, t_center_fs, carrier_freq_rad_fs,
-            amplitude_Vm, polarization, phase_rad, gdd_fs2, tod_fs3, const_polarisation
+            envelope_func,
+            duration_fs,
+            t_center_fs,
+            carrier_freq_rad_fs / (2 * pi),  # rad/fs → cycles/fs (PHz)
+            duration_units="fs",
+            t_center_units="fs",
+            carrier_freq_units="PHz",
+            amplitude=amplitude_Vm,
+            polarization=polarization,
+            phase_rad=phase_rad,
+            gdd=gdd_fs2,
+            tod=tod_fs3,
+            const_polarisation=const_polarisation,
         )
 
     @classmethod
