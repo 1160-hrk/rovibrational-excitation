@@ -29,7 +29,7 @@ class TestVibLadderDipoleMatrix:
 
     def test_basic_initialization(self):
         """基本初期化テスト"""
-        basis = VibLadderBasis(V_max=3, omega_rad_phz=1.0)
+        basis = VibLadderBasis(V_max=3, omega_rad_pfs=1.0)
         dipole = VibLadderDipoleMatrix(basis, mu0=2.0, potential_type="harmonic")
 
         assert dipole.mu0 == 2.0
@@ -49,7 +49,7 @@ class TestVibLadderDipoleMatrix:
 
     def test_harmonic_z_component(self):
         """調和振動子z成分の詳細テスト"""
-        basis = VibLadderBasis(V_max=3, omega_rad_phz=1.0)
+        basis = VibLadderBasis(V_max=3, omega_rad_pfs=1.0)
         dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_z = dipole.mu_z
@@ -68,7 +68,7 @@ class TestVibLadderDipoleMatrix:
 
     def test_morse_z_component(self):
         """Morse振動子z成分のテスト"""
-        basis = VibLadderBasis(V_max=2, omega_rad_phz=1.0, delta_omega_rad_phz=0.1)
+        basis = VibLadderBasis(V_max=2, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1)
         dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="morse")
 
         mu_z = dipole.mu_z

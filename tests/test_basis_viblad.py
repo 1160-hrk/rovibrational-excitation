@@ -12,7 +12,7 @@ def test_viblad_basic():
     """基本的な機能のテスト"""
     basis = VibLadderBasis(V_max=2)
 
-    # サイズ = V_max + 1
+    # サイズはV_max+1
     assert basis.size() == 3
 
     # 基底状態の形状確認
@@ -22,11 +22,11 @@ def test_viblad_basic():
 
 def test_viblad_initialization():
     """初期化パラメータのテスト"""
-    basis = VibLadderBasis(V_max=3, omega_rad_phz=2.0, delta_omega_rad_phz=0.1)
+    basis = VibLadderBasis(V_max=3, omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1)
 
     assert basis.V_max == 3
-    assert basis.omega_rad_phz == 2.0
-    assert basis.delta_omega_rad_phz == 0.1
+    assert basis.omega_rad_pfs == 2.0
+    assert basis.delta_omega_rad_pfs == 0.1
     assert basis.size() == 4
 
     # V_arrayの確認
@@ -107,20 +107,20 @@ def test_viblad_get_state_errors():
 
 def test_viblad_generate_H0_default():
     """デフォルトパラメータでのハミルトニアン生成テスト"""
-    basis = VibLadderBasis(V_max=2, omega_rad_phz=1.0, delta_omega_rad_phz=0.0)
-    H0 = basis.generate_H0()
+    basis = VibLadderBasis(V_max=2, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.0)
+    H0 = basis.generate_H0(units="rad/fs")
 
     # E = ω*(v+1/2)
     expected_energies = [0.5, 1.5, 2.5]  # v=0,1,2
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_viblad_generate_H0_custom():
     """カスタムパラメータでのハミルトニアン生成テスト"""
     basis = VibLadderBasis(V_max=2)
-    H0 = basis.generate_H0(omega_rad_phz=2.0, delta_omega_rad_phz=0.1)
+    H0 = basis.generate_H0(omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1, units="rad/fs")
 
     # E = ω*(v+1/2) - Δω*(v+1/2)^2
     # v=0: 2.0*0.5 - 0.1*0.25 = 1.0 - 0.025 = 0.975
@@ -129,13 +129,13 @@ def test_viblad_generate_H0_custom():
     expected_energies = [0.975, 2.775, 4.375]
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_viblad_generate_H0_anharmonic():
     """非調和性を含むハミルトニアン生成テスト"""
-    basis = VibLadderBasis(V_max=1, omega_rad_phz=1.0, delta_omega_rad_phz=0.1)
-    H0 = basis.generate_H0()
+    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1)
+    H0 = basis.generate_H0(units="rad/fs")
 
     # E = ω*(v+1/2) - Δω*(v+1/2)^2
     # v=0: 1.0*0.5 - 0.1*0.25 = 0.475
@@ -143,43 +143,46 @@ def test_viblad_generate_H0_anharmonic():
     expected_energies = [0.475, 1.275]
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_viblad_generate_H0_override():
     """パラメータ上書きテスト"""
-    basis = VibLadderBasis(V_max=1, omega_rad_phz=1.0, delta_omega_rad_phz=0.1)
+    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1)
 
     # インスタンスパラメータを使用
-    H0_instance = basis.generate_H0()
+    H0_instance = basis.generate_H0(units="rad/fs")
 
     # パラメータを上書き
-    H0_override = basis.generate_H0(omega_rad_phz=2.0, delta_omega_rad_phz=0.0)
+    H0_override = basis.generate_H0(omega_rad_pfs=2.0, delta_omega_rad_pfs=0.0, units="rad/fs")
 
     # 結果が異なること
-    assert not np.allclose(H0_instance, H0_override)
+    assert not np.allclose(H0_instance.matrix, H0_override.matrix)
 
     # 上書き結果の確認
     expected_override = np.diag([1.0, 3.0])  # 2.0*(v+0.5)
-    np.testing.assert_array_almost_equal(H0_override, expected_override)
+    np.testing.assert_array_almost_equal(H0_override.matrix, expected_override)
 
 
 def test_viblad_hamiltonian_properties():
     """ハミルトニアンの性質のテスト"""
-    basis = VibLadderBasis(V_max=3, omega_rad_phz=2.5, delta_omega_rad_phz=0.05)
+    basis = VibLadderBasis(V_max=3, omega_rad_pfs=2.5, delta_omega_rad_pfs=0.05)
     H0 = basis.generate_H0()
 
+    # Hamiltonianオブジェクトから行列を取得
+    H0_matrix = H0.matrix
+
     # エルミート性
-    np.testing.assert_array_equal(H0, H0.conj().T)
+    np.testing.assert_array_equal(H0_matrix, H0_matrix.conj().T)
 
     # 対角性
-    assert np.allclose(H0 - np.diag(np.diag(H0)), 0)
+    assert np.allclose(H0_matrix - np.diag(np.diag(H0_matrix)), 0)
 
     # 実数性
-    assert np.allclose(H0.imag, 0)
+    assert np.allclose(H0_matrix.imag, 0)
 
     # エネルギー順序（調和項が支配的な場合は単調増加）
-    energies = np.diag(H0)
+    energies = np.diag(H0_matrix)
     assert np.all(energies[1:] > energies[:-1])
 
 
@@ -219,14 +222,43 @@ def test_viblad_edge_cases():
 
 def test_viblad_multiple_instances():
     """複数インスタンスの独立性テスト"""
-    basis1 = VibLadderBasis(V_max=2, omega_rad_phz=1.0)
-    basis2 = VibLadderBasis(V_max=2, omega_rad_phz=2.0)
+    basis1 = VibLadderBasis(V_max=2, omega_rad_pfs=1.0)
+    basis2 = VibLadderBasis(V_max=2, omega_rad_pfs=2.0)
 
-    # 異なるパラメータで異なるハミルトニアン
-    H0_1 = basis1.generate_H0()
-    H0_2 = basis2.generate_H0()
-    assert not np.allclose(H0_1, H0_2)
+    # 異なるパラメータで初期化されていること
+    assert basis1.omega_rad_pfs != basis2.omega_rad_pfs
+
+    # 同じサイズを持つこと
+    assert basis1.size() == basis2.size()
 
     # 独立したオブジェクトであること
     assert basis1 is not basis2
     assert basis1.basis is not basis2.basis
+
+    # 異なるパラメータで異なるハミルトニアンを生成すること（rad/fs単位で比較）
+    H0_1 = basis1.generate_H0(units="rad/fs")
+    H0_2 = basis2.generate_H0(units="rad/fs")
+    assert not np.allclose(H0_1.matrix, H0_2.matrix)
+
+
+def test_viblad_hamiltonian_units():
+    """ハミルトニアンの単位変換テスト"""
+    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1000.0)
+
+    # 周波数単位でのハミルトニアン
+    H0_freq = basis.generate_H0(units="rad/fs")
+    assert H0_freq.units == "rad/fs"
+
+    # エネルギー単位でのハミルトニアン
+    H0_energy = basis.generate_H0(units="J")
+    assert H0_energy.units == "J"
+
+    # 単位変換のテスト - 相対的な比較
+    freq_eigenvals = H0_freq.eigenvalues
+    energy_eigenvals = H0_energy.eigenvalues
+    
+    # エネルギー差の比率が周波数差の比率と一致することを確認
+    freq_ratio = freq_eigenvals[1] / freq_eigenvals[0] if freq_eigenvals[0] != 0 else float('inf')
+    energy_ratio = energy_eigenvals[1] / energy_eigenvals[0] if energy_eigenvals[0] != 0 else float('inf')
+    
+    np.testing.assert_almost_equal(freq_ratio, energy_ratio, decimal=10)

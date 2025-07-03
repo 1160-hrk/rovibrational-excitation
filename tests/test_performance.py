@@ -22,6 +22,19 @@ class MockDipole:
         )
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
+        self.units = "C*m"  # SI単位を使用
+    
+    def get_mu_x_SI(self):
+        """Get μ_x in SI units (C·m)."""
+        return self.mu_x
+    
+    def get_mu_y_SI(self):
+        """Get μ_y in SI units (C·m)."""
+        return self.mu_y
+    
+    def get_mu_z_SI(self):
+        """Get μ_z in SI units (C·m)."""
+        return self.mu_z
 
 
 @pytest.mark.slow
@@ -270,7 +283,8 @@ def test_numerical_stability_large_system():
     # エネルギー期待値の時間発展
     energies = []
     for psi in result:
-        energy = np.real(np.vdot(psi, H0 @ psi))
+        H0_mat = H0.matrix if hasattr(H0, 'matrix') else H0
+        energy = np.real(np.vdot(psi, H0_mat @ psi))
         energies.append(energy)
 
     energies = np.array(energies)
