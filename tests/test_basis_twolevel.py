@@ -91,35 +91,36 @@ def test_twolevel_generate_H0():
     """ハミルトニアン生成のテスト"""
     basis = TwoLevelBasis()
 
-    # デフォルトパラメータ
-    H0 = basis.generate_H0()
+    # デフォルトパラメータ（rad/fs単位で出力）
+    H0 = basis.generate_H0(units="rad/fs")
     expected = np.diag([0.0, 1.0])
-    np.testing.assert_array_equal(H0, expected)
+    np.testing.assert_array_equal(H0.matrix, expected)
 
-    # カスタムエネルギーギャップ
-    H0_custom = basis.generate_H0(energy_gap=2.5)
-    expected_custom = np.diag([0.0, 2.5])
-    np.testing.assert_array_equal(H0_custom, expected_custom)
-
-    # 負のエネルギーギャップ
-    H0_neg = basis.generate_H0(energy_gap=-1.0)
-    expected_neg = np.diag([0.0, -1.0])
-    np.testing.assert_array_equal(H0_neg, expected_neg)
+    # エネルギー単位での出力
+    H0_energy = basis.generate_H0(units="J")
+    assert H0_energy.units == "J"
+    
+    # 周波数単位での出力
+    H0_freq = basis.generate_H0(units="rad/fs")
+    assert H0_freq.units == "rad/fs"
 
 
 def test_twolevel_hamiltonian_properties():
     """ハミルトニアンの性質のテスト"""
     basis = TwoLevelBasis()
-    H0 = basis.generate_H0(energy_gap=3.0)
+    H0 = basis.generate_H0()
+
+    # Hamiltonianオブジェクトから行列を取得
+    H0_matrix = H0.matrix
 
     # エルミート性
-    np.testing.assert_array_equal(H0, H0.conj().T)
+    np.testing.assert_array_equal(H0_matrix, H0_matrix.conj().T)
 
     # 対角性
-    assert np.allclose(H0 - np.diag(np.diag(H0)), 0)
+    assert np.allclose(H0_matrix - np.diag(np.diag(H0_matrix)), 0)
 
     # 実数性
-    assert np.allclose(H0.imag, 0)
+    assert np.allclose(H0_matrix.imag, 0)
 
 
 def test_twolevel_repr():

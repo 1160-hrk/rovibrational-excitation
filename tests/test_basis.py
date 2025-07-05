@@ -51,14 +51,14 @@ def test_basis_border_indices():
 def test_linmol_initialization_parameters():
     """初期化パラメータのテスト"""
     basis = LinMolBasis(
-        V_max=2, J_max=2, use_M=True, omega_rad_phz=2.0, delta_omega_rad_phz=0.1
+        V_max=2, J_max=2, use_M=True, omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1
     )
 
     assert basis.V_max == 2
     assert basis.J_max == 2
     assert basis.use_M
-    assert basis.omega_rad_phz == 2.0
-    assert basis.delta_omega_rad_phz == 0.1
+    assert basis.omega_rad_pfs == 2.0
+    assert basis.delta_omega_rad_pfs == 0.1
 
 
 def test_linmol_no_M_basis():
@@ -92,12 +92,13 @@ def test_linmol_generate_H0():
     """ハミルトニアン生成の詳細テスト"""
     basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
 
-    # デフォルトパラメータでのテスト
+    # デフォルトパラメータでのテスト（周波数単位で出力）
     H0 = basis.generate_H0(
-        omega_rad_phz=1.0, B_rad_phz=0.5, delta_omega_rad_phz=0.0, alpha_rad_phz=0.0
+        omega_rad_pfs=1.0, B_rad_pfs=0.5, delta_omega_rad_pfs=0.0, alpha_rad_pfs=0.0,
+        units="rad/fs"  # 周波数単位で返す
     )
 
-    # 期待されるエネルギー
+    # 期待されるエネルギー（周波数単位）
     # [V=0,J=0]: 1.0*0.5 + 0.5*0 = 0.5
     # [V=0,J=1]: 1.0*0.5 + 0.5*2 = 1.5
     # [V=1,J=0]: 1.0*1.5 + 0.5*0 = 1.5
@@ -105,7 +106,8 @@ def test_linmol_generate_H0():
     expected_energies = [0.5, 1.5, 1.5, 2.5]
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    # Hamiltonianオブジェクトから行列を取得して比較
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_linmol_generate_H0_anharmonic():
@@ -113,7 +115,8 @@ def test_linmol_generate_H0_anharmonic():
     basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
 
     H0 = basis.generate_H0(
-        omega_rad_phz=1.0, delta_omega_rad_phz=0.1, B_rad_phz=0.0, alpha_rad_phz=0.0
+        omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1, B_rad_pfs=0.0, alpha_rad_pfs=0.0,
+        units="rad/fs"  # 周波数単位で返す
     )
 
     # E = ω*(V+1/2) - Δω*(V+1/2)^2
@@ -122,7 +125,8 @@ def test_linmol_generate_H0_anharmonic():
     expected_energies = [0.475, 1.275]
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    # Hamiltonianオブジェクトから行列を取得して比較
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_linmol_generate_H0_vibrot_coupling():
@@ -130,7 +134,8 @@ def test_linmol_generate_H0_vibrot_coupling():
     basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
 
     H0 = basis.generate_H0(
-        omega_rad_phz=1.0, B_rad_phz=0.5, delta_omega_rad_phz=0.0, alpha_rad_phz=0.1
+        omega_rad_pfs=1.0, B_rad_pfs=0.5, delta_omega_rad_pfs=0.0, alpha_rad_pfs=0.1,
+        units="rad/fs"  # 周波数単位で返す
     )
 
     # E = ω*(V+1/2) + (B - α*(V+1/2))*J*(J+1)
@@ -141,7 +146,8 @@ def test_linmol_generate_H0_vibrot_coupling():
     expected_energies = [0.5, 1.4, 1.5, 2.2]
     expected = np.diag(expected_energies)
 
-    np.testing.assert_array_almost_equal(H0, expected)
+    # Hamiltonianオブジェクトから行列を取得して比較
+    np.testing.assert_array_almost_equal(H0.matrix, expected)
 
 
 def test_linmol_hamiltonian_properties():
@@ -149,14 +155,17 @@ def test_linmol_hamiltonian_properties():
     basis = LinMolBasis(V_max=2, J_max=2, use_M=False)
     H0 = basis.generate_H0()
 
+    # Hamiltonianオブジェクトから行列を取得
+    H0_matrix = H0.matrix
+
     # エルミート性
-    np.testing.assert_array_equal(H0, H0.conj().T)
+    np.testing.assert_array_equal(H0_matrix, H0_matrix.conj().T)
 
     # 対角性
-    assert np.allclose(H0 - np.diag(np.diag(H0)), 0)
+    assert np.allclose(H0_matrix - np.diag(np.diag(H0_matrix)), 0)
 
     # 実数性
-    assert np.allclose(H0.imag, 0)
+    assert np.allclose(H0_matrix.imag, 0)
 
 
 def test_linmol_get_index_various_inputs():
@@ -199,9 +208,38 @@ def test_linmol_arrays_consistency():
     assert len(basis.J_array) == basis.size()
     assert len(basis.M_array) == basis.size()
 
-    # 配列値が基底と一致
+    # 各状態について
     for i in range(basis.size()):
         state = basis.get_state(i)
-        assert basis.V_array[i] == state[0]
-        assert basis.J_array[i] == state[1]
-        assert basis.M_array[i] == state[2]
+        assert state[0] == basis.V_array[i]
+        assert state[1] == basis.J_array[i]
+        assert state[2] == basis.M_array[i]
+
+
+def test_linmol_hamiltonian_units():
+    """ハミルトニアンの単位変換テスト"""
+    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+
+    # 周波数単位でのハミルトニアン
+    H0_freq = basis.generate_H0(omega_rad_pfs=1000.0, units="rad/fs")
+    assert H0_freq.units == "rad/fs"
+
+    # エネルギー単位でのハミルトニアン
+    H0_energy = basis.generate_H0(omega_rad_pfs=1000.0, units="J")
+    assert H0_energy.units == "J"
+
+    # 単位変換が正しく行われているかチェック
+    # E = hbar * omega なので、エネルギー値は周波数値にhbarを掛けたものになる
+    # hbar ≈ 1.055e-34 J·s = 1.055e-19 J·fs なので、エネルギー値は非常に小さくなる
+    assert H0_energy.units == "J"
+    assert H0_freq.units == "rad/fs"
+    
+    # 単位変換のテスト - 相対的な比較
+    freq_eigenvals = H0_freq.eigenvalues
+    energy_eigenvals = H0_energy.eigenvalues
+    
+    # エネルギー差の比率が周波数差の比率と一致することを確認
+    freq_ratio = freq_eigenvals[1] / freq_eigenvals[0] if freq_eigenvals[0] != 0 else float('inf')
+    energy_ratio = energy_eigenvals[1] / energy_eigenvals[0] if energy_eigenvals[0] != 0 else float('inf')
+    
+    np.testing.assert_almost_equal(freq_ratio, energy_ratio, decimal=10)

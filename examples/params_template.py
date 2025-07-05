@@ -48,10 +48,13 @@ J_max = 5  # 最大回転量子数 - 通常 2～20
 omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # 振動周波数 [rad/fs]
 mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
 
-# オプション: より詳細な分子パラメータ
+# 回転定数 [rad/fs]
+B_rad_phz = 0.39 * 2 * np.pi * 3e10 / 1e15
+# 非調和性補正項 [rad/fs]
 # delta_omega_rad_phz = 0.001 * omega_rad_phz    # 非調和性
-# B_rad_phz = 0.39 * 2 * np.pi * 3e10 / 1e15     # 回転定数
-# alpha_rad_phz = 0.0001 * B_rad_phz              # 振動-回転相互作用
+delta_omega_rad_phz = 0
+# 振動-回転結合定数 [rad/fs]
+alpha_rad_phz = 0.0
 
 # ============================================================================
 # 5. 必須パラメータ - 電場設定

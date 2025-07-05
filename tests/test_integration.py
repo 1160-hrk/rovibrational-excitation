@@ -16,7 +16,7 @@ from rovibrational_excitation.core.propagator import (
     mixed_state_propagation,
     schrodinger_propagation,
 )
-from rovibrational_excitation.core.states import DensityMatrix, StateVector
+from rovibrational_excitation.core.basis import DensityMatrix, StateVector
 
 _DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
@@ -30,11 +30,24 @@ class MockDipole:
         self.mu_x = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
+        self.units = "C*m"  # SI単位を使用
 
         # 対角要素の隣に遷移モーメントを配置
         for i in range(dim - 1):
             self.mu_x[i, i + 1] = 1.0  # * _DIRAC_HBAR
             self.mu_x[i + 1, i] = 1.0  # * _DIRAC_HBAR
+    
+    def get_mu_x_SI(self):
+        """Get μ_x in SI units (C·m)."""
+        return self.mu_x
+    
+    def get_mu_y_SI(self):
+        """Get μ_y in SI units (C·m)."""
+        return self.mu_y
+    
+    def get_mu_z_SI(self):
+        """Get μ_z in SI units (C·m)."""
+        return self.mu_z
 
 
 def test_full_simulation_workflow():
@@ -43,7 +56,7 @@ def test_full_simulation_workflow():
     basis = LinMolBasis(V_max=2, J_max=1, use_M=False)
 
     # 2. ハミルトニアン生成
-    H0 = basis.generate_H0(omega_rad_phz=1.0, B_rad_phz=0.1)
+    H0 = basis.generate_H0(omega_rad_pfs=1.0, B_rad_pfs=0.1)
 
     # 3. 双極子行列
     dipole = MockDipole(basis)
@@ -90,7 +103,7 @@ def test_multi_level_excitation():
     """多準位励起のテスト"""
     # より大きなシステム
     basis = LinMolBasis(V_max=3, J_max=2, use_M=False)
-    H0 = basis.generate_H0(omega_rad_phz=1.0, B_rad_phz=0.05)
+    H0 = basis.generate_H0(omega_rad_pfs=1.0, B_rad_pfs=0.05)
     dipole = MockDipole(basis)
 
     # 共鳴電場
@@ -156,7 +169,7 @@ def test_different_basis_types():
     assert psi_2level.shape[1] == 2
 
     # VibLadderBasis
-    basis_vib = VibLadderBasis(V_max=2, omega_rad_phz=1.0)
+    basis_vib = VibLadderBasis(V_max=2, omega_rad_pfs=1.0)
     H0_vib = basis_vib.generate_H0()
     dipole_vib = MockDipole(basis_vib)
     psi0_vib = np.zeros(3, dtype=np.complex128)
@@ -265,9 +278,10 @@ def test_energy_conservation():
 
     # エネルギー期待値の計算
     energies = []
+    H0_matrix = H0.matrix  # Hamiltonianオブジェクトから行列を取得
     for i in range(psi_traj.shape[0]):
         psi = psi_traj[i]
-        energy = np.real(psi.conj() @ H0 @ psi)
+        energy = np.real(psi.conj() @ H0_matrix @ psi)
         energies.append(energy)
 
     # エネルギーが保存されている（相対的な変化で評価）

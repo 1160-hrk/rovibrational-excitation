@@ -49,7 +49,7 @@ class VibLadderDipoleMatrix:
 
         # Set up Morse parameters if needed
         if self.potential_type == "morse":
-            omega01_domega_to_N(basis.omega_rad_phz, basis.delta_omega_rad_phz)
+            omega01_domega_to_N(basis.omega_rad_pfs, basis.delta_omega_rad_pfs)
 
         # Cache for computed matrices
         self._cache: dict[str, np.ndarray] = {}

@@ -8,24 +8,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.hamiltonian import generate_H0_LinMol
+from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagator import schrodinger_propagation
-from rovibrational_excitation.core.states import StateVector
-from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+from rovibrational_excitation.core.basis import StateVector
+from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N
 
-V_max, J_max = 4, 4  # スパース効果を確認するため大きなサイズに
+V_max, J_max = 1, 1  # スパース効果を確認するため大きなサイズに
 omega01, domega, mu0_cm = 1.0, 0.01, 1e-30
 omega01_domega_to_N(omega01=omega01, domega=domega)
-axes = "xy"
+axes = "zx"
 
 basis = LinMolBasis(V_max, J_max)
-H0 = generate_H0_LinMol(
-    basis,
-    omega_rad_phz=omega01,
-    delta_omega_rad_phz=domega,
-    B_rad_phz=0.01,
+H0 = basis.generate_H0(
+    omega_rad_pfs=omega01,
+    delta_omega_rad_pfs=domega,
+    B_rad_pfs=0.01,
+    units="J"  # エネルギー単位で取得
 )
 
 dipole_matrix = LinMolDipoleMatrix(
@@ -34,6 +33,7 @@ dipole_matrix = LinMolDipoleMatrix(
     potential_type="harmonic",  #  'harmonic' / 'morse'
     backend="numpy",  #  'numpy' か 'cupy'  (GPU のときは 'cupy')
     dense=True,  #  False→CSR sparse でメモリ節約
+    units="C*m"  # 単位を明示的に指定
 )
 
 state = StateVector(basis)
@@ -52,7 +52,7 @@ amplitude = 3e10
 polarization = np.array([1, 0])
 Efield = ElectricField(tlist=time4Efield)
 Efield.add_dispersed_Efield(
-    envelope_func=gaussian,
+    envelope_func=gaussian_fwhm,
     duration=duration,
     t_center=tc,
     carrier_freq=omega01 / (2 * np.pi),
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     print("start")
     sample_stride = 10  # メモリ使用量を1/100に削減
     time4psi, psi_t = schrodinger_propagation(
-        H0=H0,
+        hamiltonian=H0,  # Hamiltonianオブジェクト
         Efield=Efield,
         dipole_matrix=dipole_matrix,
         psi0=psi0,

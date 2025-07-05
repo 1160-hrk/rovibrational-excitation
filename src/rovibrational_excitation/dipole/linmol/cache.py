@@ -23,6 +23,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Union
 
+from rovibrational_excitation.dipole.base import DipoleMatrixBase, _xp, Array
+from rovibrational_excitation.core.units.converters import converter
+
 import numpy as np
 
 try:
@@ -56,157 +59,36 @@ def _xp(backend: str):
 # Main class
 # ----------------------------------------------------------------------
 @dataclass(slots=True)
-class LinMolDipoleMatrix:
+class LinMolDipoleMatrix(DipoleMatrixBase):
     basis: LinMolBasis
     mu0: float = 1.0
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
+    units: Literal["C*m", "D", "ea0"] = "C*m"           # internal storage units
+    units_input: Literal["C*m", "D", "ea0"] = "C*m"     # units in which mu0 is provided
 
-    _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[valid-type]
+    _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[type-arg]
         init=False, default_factory=dict, repr=False
     )
 
     # ------------------------------------------------------------------
-    # Core method
+    # concrete implementation required by DipoleMatrixBase
     # ------------------------------------------------------------------
-    def mu(
-        self,
-        axis: str = "x",
-        *,
-        dense: bool | None = None,
-    ) -> Array:  # type: ignore[valid-type]
-        """
-        Return μ_axis; build and cache on first request.
-
-        Parameters
-        ----------
-        axis   : 'x' | 'y' | 'z'
-        dense  : override class-level dense flag
-        """
-        # 大文字小文字を区別しないように正規化してからチェック
-        axis_normalized = axis.lower()
-        if axis_normalized not in ("x", "y", "z"):
-            raise ValueError("axis must be x, y or z")
-
-        # 型アサーションでmypyを満足させる
-        axis_literal: Literal["x", "y", "z"] = axis_normalized  # type: ignore[assignment]
-
-        if dense is None:
-            dense = self.dense
-        key = (axis_normalized, dense)
-        if key not in self._cache:
-            self._cache[key] = build_mu(
-                self.basis,
-                axis_literal,
-                self.mu0,
-                potential_type=self.potential_type,
-                backend=self.backend,
-                dense=dense,
-            )
-        return self._cache[key]
-
-    # convenience properties
-    @property
-    def mu_x(self):
-        return self.mu("x")
-
-    @property
-    def mu_y(self):
-        return self.mu("y")
-
-    @property
-    def mu_z(self):
-        return self.mu("z")
-
-    # ------------------------------------------------------------------
-    def stacked(self, order: str = "xyz", *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
-        """Return stack with shape (len(order), dim, dim)."""
-        mats = [self.mu(ax, dense=dense) for ax in order]
-        return _xp(self.backend).stack(mats)
-
-    # ------------------------------------------------------------------
-    # Persistence
-    # ------------------------------------------------------------------
-    def to_hdf5(self, path: str) -> None:
-        """Save cached matrices to HDF5 (requires h5py)."""
-        import h5py
-        import scipy.sparse as sp
-
-        with h5py.File(path, "w") as h5:
-            h5.attrs.update(
-                dict(
-                    mu0=self.mu0,
-                    backend=self.backend,
-                    dense=self.dense,
-                    potential_type=self.potential_type,
-                )
-            )
-            for (ax, dn), mat in self._cache.items():
-                g = h5.create_group(f"{ax}_{'dense' if dn else 'sparse'}")
-                if dn:  # dense ndarray / cupy
-                    g.create_dataset("data", data=np.asarray(mat))
-                else:  # CSR sparse
-                    if sp.issparse(mat):
-                        mat_coo = mat.tocoo()
-                    else:
-                        mat_coo = mat.tocoo()  # type: ignore[attr-defined]
-
-                    if hasattr(_xp(self.backend), "asnumpy"):
-                        g.create_dataset(
-                            "row", data=_xp(self.backend).asnumpy(mat_coo.row)
-                        )  # type: ignore[attr-defined]
-                        g.create_dataset(
-                            "col", data=_xp(self.backend).asnumpy(mat_coo.col)
-                        )  # type: ignore[attr-defined]
-                        g.create_dataset(
-                            "data", data=_xp(self.backend).asnumpy(mat_coo.data)
-                        )  # type: ignore[attr-defined]
-                    else:
-                        g.create_dataset("row", data=np.asarray(mat_coo.row))
-                        g.create_dataset("col", data=np.asarray(mat_coo.col))
-                        g.create_dataset("data", data=np.asarray(mat_coo.data))
-                    g.attrs["shape"] = mat_coo.shape
-
-    @classmethod
-    def from_hdf5(cls, path: str, basis: LinMolBasis) -> LinMolDipoleMatrix:
-        """Load object saved by :meth:`to_hdf5`."""
-        import h5py
-        import scipy.sparse as sp
-
-        with h5py.File(path, "r") as h5:
-            obj = cls(
-                basis=basis,
-                mu0=float(h5.attrs["mu0"]),
-                potential_type=h5.attrs.get("potential_type", "harmonic"),
-                backend=h5.attrs["backend"],
-                dense=bool(h5.attrs["dense"]),
-            )
-            for name, g in h5.items():
-                ax, typ = name.split("_")
-                dn = typ == "dense"
-                if dn:
-                    arr = g["data"][...]
-                    if obj.backend == "cupy":
-                        arr = cp.asarray(arr)  # type: ignore[attr-defined]
-                    obj._cache[(ax, True)] = arr.astype(np.complex128)
-                else:
-                    shape = g.attrs["shape"]
-                    row = g["row"][...]
-                    col = g["col"][...]
-                    dat = g["data"][...]
-                    mat = sp.coo_matrix((dat, (row, col)), shape=shape).tocsr()
-                    obj._cache[(ax, False)] = mat
-        return obj
-
-    # ------------------------------------------------------------------
-    def __repr__(self) -> str:
-        cached = ", ".join(
-            f"{ax}({'dense' if d else 'sparse'})" for (ax, d) in self._cache
+    def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
+        """Build dipole matrix for LinMol system (no caching here)."""
+        return build_mu(
+            self.basis,
+            axis,
+            self.mu0,
+            potential_type=self.potential_type,
+            backend=self.backend,
+            dense=dense,
         )
-        return (
-            f"<LinMolDipoleMatrix mu0={self.mu0} "
-            f"potential='{self.potential_type}' "
-            f"backend='{self.backend}' dense={self.dense} "
-            f"cached=[{cached}]>"
-        )
+
+    # ------------------------------------------------------------------
+    # DipoleMatrixBase already provides unit conversion, stacking, persistence, __repr__
+    # ------------------------------------------------------------------
+    def __post_init__(self):
+        # convert mu0 units using base helper
+        self._convert_mu0_if_needed()

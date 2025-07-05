@@ -209,7 +209,7 @@ def build_mu(
     vib_is_morse = pot == "morse"
     vib_func = tdm_vib_morse if vib_is_morse else tdm_vib_harm
     if vib_is_morse:
-        omega01_domega_to_N(basis.omega_rad_phz, basis.delta_omega_rad_phz)
+        omega01_domega_to_N(basis.omega_rad_pfs, basis.delta_omega_rad_pfs)
     # ---- GPU ---------------------------------------------------------
     if backend == "cupy":
         if _cp is None:

@@ -16,7 +16,7 @@ t_start, t_end, dt = -50.0, 50.0, 0.1  # [fs]
 # === 基本パラメータ（固定） ===
 V_max, J_max = 2, 2  # 量子数上限
 omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # 振動周波数 [rad/fs]
-mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m]
+mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
 t_center = 0.0  # パルス中心時刻 [fs]
 carrier_freq = omega_rad_phz  # キャリア周波数 [rad/fs]
 

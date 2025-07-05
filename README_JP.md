@@ -157,25 +157,24 @@ Omega01_rad_phz = 2349*2*np.pi*c_vacuum    # 振動周波数
 Delta_omega_rad_phz = 25*2*np.pi*c_vacuum  # 非調和項
 B_rad_phz = 0.39e-3*2*np.pi*c_vacuum       # 回転定数
 Mu0_Cm = 0.3 * debye_unit              # 双極子モーメント
+Potential_type = "harmonic"  # または "morse"
+V_max = 2
+J_max = 4
 
-# === 1. 基底関数・双極子行列の設定 ===
 basis = rve.LinMolBasis(
-    V_max=2, J_max=4, use_M=True,
+    V_max=V_max, J_max=J_max, use_M=True,
     omega_rad_phz=Omega01_rad_phz,
     delta_omega_rad_phz=Delta_omega_rad_phz
-)
+)  # |v J M⟩ 直積
 
-# 双極子行列の構築（遅延評価・キャッシュ）
 dip = rve.LinMolDipoleMatrix(
-    basis, mu0=Mu0_Cm, 
-    potential_type="harmonic",  # または "morse"
-    backend="numpy",            # または "cupy"
-    dense=True
-)
+    basis, mu0=Mu0_Cm, potential_type=Potential_type,
+    backend="numpy", dense=True
+)  # CSR on GPU
 
-mu_x = dip.mu_x  # x成分双極子行列
-mu_y = dip.mu_y  # y成分双極子行列  
-mu_z = dip.mu_z  # z成分双極子行列
+mu_x = dip.mu_x  # 遅延構築、以後キャッシュ
+mu_y = dip.mu_y
+mu_z = dip.mu_z
 
 # === 2. ハミルトニアンの構築 ===
 H0 = rve.generate_H0_LinMol(

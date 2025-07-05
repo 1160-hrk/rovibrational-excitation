@@ -164,34 +164,37 @@ def splitop_schrodinger(
 
     # Hermitian A = (M+M†)/2  with  M = p·μ
     # スパース行列の場合は適切に処理
-    if sp is not None and (sp.issparse(mu_x) or sp.issparse(mu_y)):
-        # スパース行列の演算
-        M_raw = pol[0] * mu_x + pol[1] * mu_y
-        if sp.issparse(M_raw):
-            A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
-            # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
-            if A.shape[0] <= 100:
-                A_dense = A.toarray()
-                eigvals, U = np.linalg.eigh(A_dense)
-            else:
-                # 大サイズの場合はdenseでの固有値分解にフォールバック
-                A_dense = A.toarray()
-                eigvals, U = np.linalg.eigh(A_dense)
-        else:
-            A = 0.5 * (M_raw + M_raw.conj().T)
-            eigvals, U = np.linalg.eigh(A)
-    else:
-        # Dense行列の場合（従来の処理）
-        M_raw = pol[0] * mu_x + pol[1] * mu_y
-        A = 0.5 * (M_raw + M_raw.conj().T)
-        eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
+    # if sp is not None and (sp.issparse(mu_x) or sp.issparse(mu_y)):
+    #     # スパース行列の演算
+    #     M_raw = pol[0] * mu_x + pol[1] * mu_y
+    #     if sp.issparse(M_raw):
+    #         A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
+    #         # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
+    #         if A.shape[0] <= 100:
+    #             A_dense = A.toarray()
+    #             eigvals, U = np.linalg.eigh(A_dense)
+    #         else:
+    #             # 大サイズの場合はdenseでの固有値分解にフォールバック
+    #             A_dense = A.toarray()
+    #             eigvals, U = np.linalg.eigh(A_dense)
+    #     else:
+    #         A = 0.5 * (M_raw + M_raw.conj().T)
+    #         eigvals, U = np.linalg.eigh(A)
+    # else:
+    #     # Dense行列の場合（従来の処理）
+    #     M_raw = pol[0] * mu_x + pol[1] * mu_y
+    #     A = 0.5 * (M_raw + M_raw.conj().T)
+    #     eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
+    # U_H = U.conj().T
+    M_raw = np.triu(pol[0] * mu_x + pol[1] * mu_y, k=1)
+    A = (M_raw + M_raw.conj().T)
+    eigvals, U = np.linalg.eigh(A)
     U_H = U.conj().T
-
     # midpoint electric field samples (len = steps)
     E_mid = Efield[1 : 2 * steps + 1 : 2]
 
     # phase_coeff = -1j * 2.0 * dt / hbar
-    phase_coeff = -1j * 2.0 * dt / hbar
+    phase_coeff = -1j * dt / hbar
 
     traj = _propagate_numpy(
         U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, sample_stride
@@ -245,7 +248,7 @@ def _splitop_cupy(
     traj = cp.empty((n_samples, psi_cp.size), dtype=cp.complex128)
     traj[0] = psi_cp
 
-    phase_coeff = -1j * 2.0 * dt / hbar
+    phase_coeff = -1j * dt / hbar
 
     s_idx = 1
     for k in range(steps):

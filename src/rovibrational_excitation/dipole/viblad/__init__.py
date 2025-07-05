@@ -1,5 +1,5 @@
 """Vibrational ladder system dipole matrix."""
 
-from .builder import VibLadderDipoleMatrix
+from .cache import VibLadderDipoleMatrix
 
 __all__ = ["VibLadderDipoleMatrix"]

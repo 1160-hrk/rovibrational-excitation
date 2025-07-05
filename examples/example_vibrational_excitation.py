@@ -21,7 +21,7 @@ import numpy as np
 from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
-from rovibrational_excitation.core.states import StateVector
+from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
 
 # ============================================================================
@@ -143,10 +143,11 @@ def run_vibrational_excitation_simulation(potential_type="harmonic"):
 
     # Generate basis and Hamiltonian
     basis = VibLadderBasis(
-        V_max=V_max, omega_rad_phz=omega01, delta_omega_rad_phz=domega
+        V_max=V_max, omega=omega01, delta_omega=domega,
+        input_units="rad/fs",
     )
     H0 = basis.generate_H0()
-    print(f"Vibrational energy levels: {np.diag(H0)}")
+    print(f"Vibrational energy levels: {np.diag(H0.get_matrix('J'))}")
 
     # Generate dipole matrix
     dipole_matrix = VibLadderDipoleMatrix(
@@ -196,7 +197,7 @@ def run_vibrational_excitation_simulation(potential_type="harmonic"):
     print("Starting time evolution calculation...")
     sample_stride = TIME_PARAMS["sample_stride"]
     time4psi, psi_t = schrodinger_propagation(
-        H0=H0,
+        hamiltonian=H0,
         Efield=Efield,
         dipole_matrix=dipole_matrix,
         psi0=psi0,
