@@ -48,6 +48,10 @@ class UnitConverter:
             "keV": CONSTANTS.EV_TO_J * 1e3,
             "Ry": 13.605693122994 * CONSTANTS.EV_TO_J,  # Rydberg
             "Ha": 27.211386245988 * CONSTANTS.EV_TO_J,  # Hartree
+            "rad/fs": CONSTANTS.HBAR * 1e15,
+            "rad/ps": CONSTANTS.HBAR * 1e12,
+            "PHz": CONSTANTS.H * 1e15,
+            "THz": CONSTANTS.H * 1e12,
             "cm^-1": CONSTANTS.H * CONSTANTS.C * 100,  # h*c with c in m/s
             "cm-1": CONSTANTS.H * CONSTANTS.C * 100,
             "wavenumber": CONSTANTS.H * CONSTANTS.C * 100,

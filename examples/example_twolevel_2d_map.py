@@ -30,25 +30,10 @@ from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
+from rovibrational_excitation.core.units.constants import CONSTANTS
+from rovibrational_excitation.core.units.converters import converter
 
 
-class TwoLevelDipoleAdapter:
-    """TwoLevelDipoleMatrixをschrodinger_propagation用に適合させるアダプター"""
-    
-    def __init__(self, twolevel_dipole: TwoLevelDipoleMatrix):
-        self._dipole = twolevel_dipole
-    
-    @property
-    def mu_x(self) -> np.ndarray:
-        return self._dipole.mu_x
-    
-    @property
-    def mu_y(self) -> np.ndarray:
-        return self._dipole.mu_y
-    
-    @property
-    def mu_z(self) -> np.ndarray:
-        return self._dipole.mu_z
 
 # ======================================================================
 # 主要設定 (Main Configuration) - 編集はここで行う
@@ -75,12 +60,18 @@ CONDITION_LINE_COLORS = (
 
 # 2次元スイープ範囲設定
 DURATION_MIN = 50.0  # パルス時間幅の最小値 [fs]
-DURATION_MAX = 200.0  # パルス時間幅の最大値 [fs]
-DURATION_POINTS = 10  # パルス時間幅の点数（並列処理のため減らしました）
+DURATION_MAX = 100.0  # パルス時間幅の最大値 [fs]
+DURATION_POINTS = 100  # パルス時間幅の点数
 
-AMPLITUDE_MIN = 0  # 電場振幅の最小値 [a.u.]
-AMPLITUDE_MAX = 5e12  # 電場振幅の最大値 [a.u.]
-AMPLITUDE_POINTS = 10  # 電場振幅の点数（並列処理のため減らしました）
+AMPLITUDE_MIN = 0  # 電場振幅の最小値 [V/m]
+AMPLITUDE_MAX = 1e10  # 電場振幅の最大値 [V/m]
+AMPLITUDE_POINTS = 100  # 電場振幅の点数
+
+# 単位設定
+UNIT_TIME = "fs"
+UNIT_ENERGY_GAP = "rad/fs"
+UNIT_MU0 = "C*m"
+UNIT_AMPLITUDE = "V/m"
 
 # 並列計算設定
 MAX_WORKERS = min(12, mp.cpu_count())  # CPUコア数を制限してメモリ使用量を抑制
@@ -94,18 +85,15 @@ class SimulationConfig:
     """シミュレーション設定を管理するクラス"""
 
     # システムパラメータ
-    energy_gap: float = 0.5
+    energy_gap: float = 10
     mu0: float = 1.0e-30
-    planck_constant: float = 6.62607015e-34 * 1e15  # [J・fs]
+    detuning: float = 0.0
 
     # 時間グリッド設定
     time_start: float = 0.0
     time_end: float = DURATION_MAX * 5  # 4: E=1/e^2
     dt_efield: float = 0.01
     sample_stride: int = 100
-
-    # デフォルトケース設定
-    default_detuning: float = 0.0
 
     # 2次元スイープ設定（上部の定数を参照）
     duration_min: float = DURATION_MIN
@@ -114,11 +102,6 @@ class SimulationConfig:
     amplitude_min: float = AMPLITUDE_MIN
     amplitude_max: float = AMPLITUDE_MAX
     amplitude_points: int = AMPLITUDE_POINTS
-
-    @property
-    def dirac_constant(self) -> float:
-        """ディラック定数 [J・fs]"""
-        return self.planck_constant / (2 * np.pi)
 
 
 @dataclass(slots=True)
@@ -162,14 +145,14 @@ def calculate_condition_lines(
         各nに対する (durations, amplitudes) のペア
     """
     condition_lines = {}
-
+    durations_SI = converter.convert_time(durations, UNIT_TIME, "s")
     for n in range(n_max + 1):
         # amplitude = (2n+1)*pi * DIRAC_CONSTANT / (MU0 * duration * sqrt(2*pi))
         amplitudes = (
             (2 * n + 1)
             * np.pi
-            * config.dirac_constant
-            / (config.mu0 * durations * np.sqrt(2 * np.pi))
+            * CONSTANTS.HBAR
+            / (config.mu0 * durations_SI * np.sqrt(2 * np.pi))
         )
         condition_lines[n] = (durations, amplitudes)
 
@@ -224,21 +207,25 @@ def save_plot(filename: str) -> None:
 
 
 def run_twolevel_simulation(
-    detuning: float | None = None,
+    detuning: float = 0.0,
     amplitude: float = 1e-20,
     pulse_duration: float = 40.0,
 ) -> tuple[np.ndarray, Any, np.ndarray, np.ndarray]:
     """二準位系励起シミュレーションを実行"""
-    if detuning is None:
-        detuning = config.default_detuning
 
     # 基底とハミルトニアンの生成
-    basis = TwoLevelBasis()
-    H0 = basis.generate_H0(energy_gap=config.energy_gap, units="rad/fs")
+    basis = TwoLevelBasis(
+        energy_gap=config.energy_gap,
+        input_units=UNIT_ENERGY_GAP,
+    )
+    H0 = basis.generate_H0()
 
     # 双極子行列の生成
-    twolevel_dipole = TwoLevelDipoleMatrix(basis, mu0=config.mu0)
-    dipole_matrix = TwoLevelDipoleAdapter(twolevel_dipole)
+    dipole_matrix = TwoLevelDipoleMatrix(
+        basis,
+        mu0=config.mu0,
+        units_input=UNIT_MU0,
+    )
 
     # 初期状態: 基底状態 |0⟩
     state = StateVector(basis)
@@ -252,13 +239,17 @@ def run_twolevel_simulation(
 
     # レーザーパルスの設定
     tc = (time4Efield[-1] + time4Efield[0]) / 2
-    transition_freq = config.energy_gap
-    laser_freq = transition_freq + detuning
-    carrier_freq = laser_freq / (2 * np.pi)
 
     polarization = np.array([1, 0])
 
-    Efield = ElectricField(tlist=time4Efield)
+    Efield = ElectricField(
+        tlist=time4Efield,
+        field_units=UNIT_AMPLITUDE,
+        time_units=UNIT_TIME,
+    )
+    carrier_freq = float(
+        converter.convert_energy(config.energy_gap, UNIT_ENERGY_GAP, "PHz")
+    )
     Efield.add_dispersed_Efield(
         envelope_func=gaussian,
         duration=pulse_duration,
@@ -279,6 +270,7 @@ def run_twolevel_simulation(
         return_traj=True,
         return_time_psi=True,
         sample_stride=config.sample_stride,
+        validate_units=False,
     )
 
     return time4Efield, Efield, time4psi, psi_t
@@ -329,7 +321,7 @@ def amplitude_duration_2d_sweep_sequential() -> tuple[np.ndarray, np.ndarray, np
         for j, amplitude in enumerate(amplitudes):
             try:
                 _, _, time4psi, psi_t = run_twolevel_simulation(
-                    detuning=config.default_detuning, amplitude=amplitude, pulse_duration=duration
+                    amplitude=amplitude, pulse_duration=duration
                 )
                 prob_1 = np.abs(psi_t[:, 1]) ** 2  # 励起状態の確率
                 final_populations[i, j] = prob_1[-1]  # 最終確率
@@ -380,7 +372,7 @@ def amplitude_duration_2d_sweep() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     params_list = []
     for i, duration in enumerate(durations):
         for j, amplitude in enumerate(amplitudes):
-            params_list.append((amplitude, duration, config.default_detuning))
+            params_list.append((amplitude, duration, config.detuning))
 
     # バッチに分割（CHUNKSIZEを活用）
     batches = [

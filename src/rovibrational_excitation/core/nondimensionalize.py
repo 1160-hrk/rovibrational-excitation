@@ -30,17 +30,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict
 
 import numpy as np
+from rovibrational_excitation.core.units.constants import CONSTANTS
 
 if TYPE_CHECKING:
     from rovibrational_excitation.core.electric_field import ElectricField
 
 # Planck constant in J·s
-_HBAR = 6.62607015e-034 / (2 * np.pi)
+_HBAR = CONSTANTS.HBAR
 
 # Physical constants for SI base unit conversion
-_C = 299792458  # Speed of light [m/s]
-_EV_TO_J = 1.602176634e-19  # eV → J
-_DEBYE_TO_CM = 3.33564e-30  # D → C·m
+_C = CONSTANTS.C  # Speed of light [m/s]
+_EV_TO_J = CONSTANTS.EV_TO_J  # eV → J
+_DEBYE_TO_CM = CONSTANTS.DEBYE_TO_CM  # D → C·m
 
 # Default unit to SI base unit conversion factors
 DEFAULT_TO_SI_CONVERSIONS = {

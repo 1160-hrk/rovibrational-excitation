@@ -22,45 +22,35 @@ from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
+from rovibrational_excitation.core.units.converters import converter
 
 # %% パラメータ設定
 # システムパラメータ
 ENERGY_GAP = 1  # |1⟩ - |0⟩ のエネルギー差 [rad/fs]
+UNIT_ENERGY_GAP = "rad/fs"
 MU0 = 1.0  # 双極子行列要素の大きさ [D]
+UNIT_MU0 = "D"
 
 # 時間グリッド設定
 TIME_START = 0.0  # 開始時間 [fs]
 TIME_END = 400.0  # 終了時間 [fs]
 DT_EFIELD = 0.2  # 電場サンプリング間隔 [fs]
+UNIT_TIME = "fs"
 SAMPLE_STRIDE = 2  # サンプリングストライド
 
 # レーザーパルス設定
 PULSE_DURATION = 40.0  # パルス幅 [fs]
+EFIELD_AMPLITUDE = 1e10  # デフォルトの電場振幅 [V/m]
+UNIT_EFIELD_AMPLITUDE = "V/m"
 
-# デフォルトケースの設定
-DEFAULT_DETUNING = 0.0  # デフォルトのデチューニング
-DEFAULT_EFIELD_AMPLITUDE = 1e10  # デフォルトの電場振幅 [V/m]
-DETUNED_CASE_DETUNING = 0.2  # デチューニングのあるケース
-
-# スイープ設定
-EFIELD_AMPLITUDE_MIN = 1e9  # 電場振幅スイープの最小値 [V/m]
-EFIELD_AMPLITUDE_MAX = 1e10  # 電場振幅スイープの最大値 [V/m]
-EFIELD_AMPLITUDE_POINTS = 10  # 電場振幅スイープの点数
-
-DETUNING_MIN = -0.5  # デチューニングスイープの最小値
-DETUNING_MAX = 0.5  # デチューニングスイープの最大値
-DETUNING_POINTS = 15  # デチューニングスイープの点数
-
-TILE_PLOT_ROWS = 3
-TILE_PLOT_COLS = 4
 
 os.makedirs("examples/results", exist_ok=True)
 
 # %% 基底・ハミルトニアン・双極子行列の生成
-basis = TwoLevelBasis()
-H0 = basis.generate_H0(energy_gap=ENERGY_GAP, units="rad/fs")
+basis = TwoLevelBasis(energy_gap=ENERGY_GAP, input_units=UNIT_ENERGY_GAP)
+H0 = basis.generate_H0()
 print(f"Energy levels: E0={H0.get_eigenvalues()[0]:.3f}, E1={H0.get_eigenvalues()[1]:.3f}")
-dipole_matrix = TwoLevelDipoleMatrix(basis, mu0=MU0, units="D")
+dipole_matrix = TwoLevelDipoleMatrix(basis, mu0=MU0, units_input=UNIT_MU0)
 
 # %% 初期状態の設定
 state = StateVector(basis)
@@ -69,28 +59,30 @@ psi0 = state.data
 
 # %% 時間グリッド・電場生成
 # 共鳴ケース
-detuning = DEFAULT_DETUNING
-field_amplitude = DEFAULT_EFIELD_AMPLITUDE
 
 time4Efield = np.arange(TIME_START, TIME_END + 2 * DT_EFIELD, DT_EFIELD)
 tc = (time4Efield[-1] + time4Efield[0]) / 2
-transition_freq = ENERGY_GAP
-laser_freq = transition_freq + detuning
-carrier_freq = laser_freq / (2 * np.pi)
 
-Efield = ElectricField(tlist=time4Efield)
+transition_freq = converter.convert_energy(ENERGY_GAP, UNIT_ENERGY_GAP, "PHz")
+carrier_freq = transition_freq
+
+Efield = ElectricField(
+    tlist=time4Efield,
+    field_units=UNIT_EFIELD_AMPLITUDE,
+    time_units=UNIT_TIME,
+)
 Efield.add_dispersed_Efield(
     envelope_func=gaussian_fwhm,
     duration=PULSE_DURATION,
     t_center=tc,
     carrier_freq=carrier_freq,
-    amplitude=field_amplitude,
+    amplitude=EFIELD_AMPLITUDE,
     polarization=np.array([1, 0]),
-    const_polarisation=False,
+    const_polarisation=True,
 )
 
 # %% 時間発展計算
-print(f"=== Two-Level System Simulation (δ={detuning:.3f}, E={field_amplitude:.3e} V/m) ===")
+print(f"=== Two-Level System Simulation (E={EFIELD_AMPLITUDE:.3e} V/m) ===")
 print("Starting time evolution calculation...")
 time4psi, psi_t = schrodinger_propagation(
     hamiltonian=H0,
@@ -109,7 +101,7 @@ fig, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
 Efield_data = Efield.get_Efield()
 axes[0].plot(time4Efield, Efield_data[:, 0], "r-", linewidth=1.5, label=r"$E_x(t)$")
 axes[0].set_ylabel("Electric Field [a.u.]")
-axes[0].set_title(f"Two-Level System Excitation (δ={detuning:.3f}, E={field_amplitude:.3e} V/m)")
+axes[0].set_title(f"Two-Level System Excitation (E={EFIELD_AMPLITUDE:.3e} V/m)")
 axes[0].legend()
 axes[0].grid(True, alpha=0.3)
 
@@ -138,20 +130,9 @@ plt.show()
 # %% ラビ振動の解析
 mu0_SI = MU0 * 3.336e-30  # Debye to C·m
 hbar = 1.055e-34  # J·s
-rabi_freq = mu0_SI * field_amplitude / hbar  # rad/s
+rabi_freq = mu0_SI * EFIELD_AMPLITUDE / hbar  # rad/s
 prob_1 = np.abs(psi_t[:, 1]) ** 2
 max_excitation = np.max(prob_1)
 final_excitation = prob_1[-1]
 print(f"Maximum excitation probability: {max_excitation:.4f}")
 print(f"Final excitation probability: {final_excitation:.4f}")
-if abs(detuning) < 0.01:
-    effective_rabi = rabi_freq
-    expected_period = 2 * np.pi / effective_rabi
-    print(f"Rabi frequency: {rabi_freq:.2e} rad/s")
-    print(f"Expected Rabi period: {expected_period:.2f} fs")
-else:
-    effective_rabi = np.sqrt(rabi_freq**2 + detuning**2)
-    expected_period = 2 * np.pi / effective_rabi
-    print(f"Rabi frequency: {rabi_freq:.2e} rad/s")
-    print(f"Effective Rabi frequency: {effective_rabi:.4f}")
-    print(f"Expected oscillation period: {expected_period:.2f} fs")

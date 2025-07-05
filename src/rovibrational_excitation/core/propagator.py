@@ -310,8 +310,11 @@ def schrodinger_propagation(
     return_time_psi: bool = False,
     sample_stride: int = 1,
     backend: str = "numpy",
+    sparse: bool = False,
     nondimensional: bool = False,
     validate_units: bool = True,
+    verbose: bool = False,
+    renorm: bool = False,
 ) -> Array:
     """
     Time-dependent Schrödinger equation propagator with unit-aware physics objects.
@@ -404,13 +407,14 @@ def schrodinger_propagation(
     field_scale_info = Efield.get_field_scale_info()
     
     # Display unit information for transparency
-    print(f"🔧 Using physics objects with internal unit management:")
-    print(f"   Hamiltonian: {hamiltonian.units} → J (automatic conversion)")
-    print(f"   Dipole matrix: {dipole_matrix.units} → C·m (automatic conversion)")
-    print(f"   Electric field: {Efield.field_units} → V/m, time: {Efield.time_units} → fs")
-    print(f"   Field scale (auto-determined): {field_scale_info['scale_V_per_m']:.2e} V/m")
-    print(f"     = {field_scale_info['scale_MV_per_cm']:.2f} MV/cm")
-    print(f"     = {field_scale_info['scale_in_original_units']:.2f} {field_scale_info['original_units']}")
+    if verbose:
+        print(f"🔧 Using physics objects with internal unit management:")
+        print(f"   Hamiltonian: {hamiltonian.units} → J (automatic conversion)")
+        print(f"   Dipole matrix: {dipole_matrix.units} → C·m (automatic conversion)")
+        print(f"   Electric field: {Efield.field_units} → V/m, time: {Efield.time_units} → fs")
+        print(f"   Field scale (auto-determined): {field_scale_info['scale_V_per_m']:.2e} V/m")
+        print(f"     = {field_scale_info['scale_MV_per_cm']:.2f} MV/cm")
+        print(f"     = {field_scale_info['scale_in_original_units']:.2f} {field_scale_info['original_units']}")
     
     # Use SI quantities for all calculations
     H0_converted = H0_SI
@@ -511,7 +515,7 @@ def schrodinger_propagation(
             pass
         
         # RK4実行（フォールバック）
-        rk4_args = (
+        result = rk4_schrodinger(
             xp.asarray(H0_prime),
             mu_x_eff,
             mu_y_eff,
@@ -519,22 +523,22 @@ def schrodinger_propagation(
             xp.asarray(Ey_prime),
             xp.asarray(psi0),
             dt_prime,
+            sample_stride,
+            renorm,
+            sparse,
+            backend=backend_typed,
         )
         
         if return_traj:
-            psi_traj = rk4_schrodinger(
-                *rk4_args, return_traj=return_traj, stride=sample_stride
-            )
             if return_time_psi:
                 time_psi = get_physical_time(
-                    xp.arange(0, psi_traj.shape[0]) * dt_prime * sample_stride, scales
+                    xp.arange(0, result.shape[0]) * dt_prime * sample_stride, scales
                 )
-                return time_psi, psi_traj
+                return time_psi, result
             else:
-                return psi_traj
+                return result
         else:
-            result = rk4_schrodinger(*rk4_args)
-            return result.reshape((1, len(psi0)))
+            return result[-1:].reshape((1, len(psi0)))
     
     # 従来の次元ありシステム
     xp = _backend(backend)
@@ -584,23 +588,18 @@ def schrodinger_propagation(
     except ValueError:
         # 偏光が時間依存 → 旧来の RK4 へフォールバック
         pass
-
-    rk4_args = (H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt)
+    result = rk4_schrodinger(
+        H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt, sample_stride, renorm, sparse, backend=backend_typed)
 
     if return_traj:
-        psi_traj = rk4_schrodinger(
-            *rk4_args, return_traj=return_traj, stride=sample_stride
-        )
         if return_time_psi:
-            dt_psi = dt * sample_stride
-            len_traj = psi_traj.shape[0]
-            time_psi = xp.arange(0, len_traj * dt_psi, dt_psi)
-            return time_psi, psi_traj
+            time_psi = xp.arange(0, result.shape[0] * dt * sample_stride, dt * sample_stride)
+            return time_psi, result
         else:
-            return psi_traj
+            return result
     else:
-        result = rk4_schrodinger(*rk4_args)
-        return result.reshape((1, len(psi0)))
+        return result[-1:].reshape((1, len(psi0)))
+
 
 
 # ---------------------------------------------------------------------

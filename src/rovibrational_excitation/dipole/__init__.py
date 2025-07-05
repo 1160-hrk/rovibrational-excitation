@@ -7,6 +7,7 @@ for different quantum systems:
 - LinMolDipoleMatrix: Linear molecules (vibration + rotation + magnetic quantum numbers)
 - TwoLevelDipoleMatrix: Two-level systems
 - VibLadderDipoleMatrix: Vibrational ladder systems (rotation-free)
+- SymTopDipoleMatrix: Symmetric top molecules
 
 All classes support automatic unit conversion between:
 - C·m (SI units)
@@ -17,9 +18,11 @@ All classes support automatic unit conversion between:
 from .linmol import LinMolDipoleMatrix
 from .twolevel import TwoLevelDipoleMatrix
 from .viblad import VibLadderDipoleMatrix
+from .symtop import SymTopDipoleMatrix
 
 __all__ = [
     "LinMolDipoleMatrix",
     "TwoLevelDipoleMatrix", 
-    "VibLadderDipoleMatrix"
+    "VibLadderDipoleMatrix",
+    "SymTopDipoleMatrix",
 ] 
