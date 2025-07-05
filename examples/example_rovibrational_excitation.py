@@ -28,7 +28,8 @@ from rovibrational_excitation.core.units.constants import CONSTANTS
 
 # %% パラメータ設定
 # システムパラメータ
-SPARSE = True
+SPARSE = False
+DENSE = False
 # SPARSE = False
 V_MAX = 20  # 最大振動量子数
 J_MAX = 20  # 最大回転量子数
@@ -116,7 +117,7 @@ dipole_matrix = LinMolDipoleMatrix(
     mu0=MU0,
     potential_type="harmonic",
     backend="numpy",
-    dense=not SPARSE,
+    dense=DENSE,
     units="C*m",
     units_input=UNIT_DIPOLE,
 )

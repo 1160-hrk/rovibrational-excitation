@@ -10,7 +10,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -91,7 +91,21 @@ def _rk4_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, renorm):
     return out
 
 
-def _rk4_cpu_sparse(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, renorm):
+def _rk4_cpu_sparse(
+    H0: Union[csr_matrix, np.ndarray],
+    mux: Union[csr_matrix, np.ndarray],
+    muy: Union[csr_matrix, np.ndarray],
+    Ex3: np.ndarray,
+    Ey3: np.ndarray,
+    psi0: np.ndarray,
+    dt: float, steps: int, stride: int, renorm: bool):
+    if not isinstance(H0, csr_matrix):
+        H0 = csr_matrix(H0)
+    if not isinstance(mux, csr_matrix):
+        mux = csr_matrix(mux)
+    if not isinstance(muy, csr_matrix):
+        muy = csr_matrix(muy)
+
     psi = psi0.copy()
     dim = psi.size
     n_out = steps // stride + 1
@@ -127,9 +141,9 @@ def _rk4_cpu_sparse(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, renorm):
 
 
 def _rk4_cpu_sparse_pattern(
-    H0: csr_matrix,
-    mux: csr_matrix,
-    muy: csr_matrix,
+    H0: Union[csr_matrix, np.ndarray],
+    mux: Union[csr_matrix, np.ndarray],
+    muy: Union[csr_matrix, np.ndarray],
     Ex3: np.ndarray,
     Ey3: np.ndarray,
     psi0: np.ndarray,
@@ -163,6 +177,13 @@ def _rk4_cpu_sparse_pattern(
     out : (n_out, dim) ndarray
         Time evolution
     """
+    if not isinstance(H0, csr_matrix):
+        H0 = csr_matrix(H0)
+    if not isinstance(mux, csr_matrix):
+        mux = csr_matrix(mux)
+    if not isinstance(muy, csr_matrix):
+        muy = csr_matrix(muy)
+
     psi = psi0.copy()
     dim = psi.size
     n_out = steps // stride + 1
@@ -381,18 +402,19 @@ def rk4_schrodinger(
     if backend == "cupy":
         return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)
 
-    if sparse:
-        if not isinstance(H0, csr_matrix):
-            H0 = csr_matrix(H0)
-        if not isinstance(mux, csr_matrix):
-            mux = csr_matrix(mux)
-        if not isinstance(muy, csr_matrix):
-            muy = csr_matrix(muy)
+    if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
+        
         # return _rk4_cpu_sparse(
         #     H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps, stride, renorm
         # )
         return _rk4_cpu_sparse_pattern(
-            H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps, stride, renorm
+            H0,
+            mux,
+            muy,
+            Ex3,
+            Ey3,
+            psi0,
+            float(dt), steps, stride, renorm
         )
     else:
         return _rk4_cpu(
