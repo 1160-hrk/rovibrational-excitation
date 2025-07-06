@@ -247,7 +247,7 @@ class UnitValidator:
         
         return len(warnings) == 0, warnings
     
-    def validate_propagation_units(self, H0: np.ndarray, dipole_matrix, 
+    def validate_propagation_units(self, hamiltonian, dipole_matrix, 
                                   efield, expected_H0_units: str = "J",
                                   expected_dipole_units: str = "C*m") -> List[str]:
         """
@@ -257,7 +257,7 @@ class UnitValidator:
         function from propagator.py.
         """
         warnings = []
-        
+        H0 = hamiltonian.get_matrix("J")
         try:
             # Energy scale analysis
             if H0.ndim == 2:

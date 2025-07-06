@@ -7,32 +7,108 @@ rovibrational_excitation/core/propagator.py
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Literal, Union
+from collections.abc import Iterable, Sized
+from typing import TYPE_CHECKING, Literal, Union, cast, Any, Protocol, TypeVar, overload
 
 import numpy as np
+import scipy.sparse
 
 # ---------------------------------------------------------------------
 # RK4 kernels
 from ._rk4_lvne import rk4_lvne, rk4_lvne_traj
-from ._rk4_schrodinger import rk4_schrodinger
-from ._splitop_schrodinger import splitop_schrodinger
-from .nondimensionalize import nondimensionalize_system, get_physical_time
+from ._rk4_schrodinger import rk4_schrodinger  # type: ignore
+from ._splitop_schrodinger import splitop_schrodinger  # type: ignore
+from .nondimensionalize import (
+    get_physical_time as _get_physical_time,
+    NondimensionalizationScales as _BaseScales,
+)
+from .nondimensional.scales import NondimensionalizationScales
+
+# ---------------------------------------------------------------------
+# 単位検証と無次元化
+from .units.validators import validator
+from .nondimensional.converter import (
+    auto_nondimensionalize,
+    nondimensionalize_from_objects,
+)
 
 # ---------------------------------------------------------------------
 # optional CuPy
 try:
-    import cupy as _cp  # noqa: N811
+    import cupy as _cp  # type: ignore
+    from cupy.typing import NDArray as CupyArray  # type: ignore
 except ImportError:
-    _cp = None  # type: ignore[assignment]
+    _cp = None  # type: ignore
+    CupyArray = Any  # type: ignore
 
 # ---------------------------------------------------------------------
 # type-hints
 if TYPE_CHECKING:
-    Array = Union[np.ndarray, "_cp.ndarray"]
-    from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+    from numpy.typing import NDArray
+    from typing import TypeVar
+    from scipy import sparse
+    _T = TypeVar("_T")
+    _DType = TypeVar("_DType", bound=np.dtype[Any])
+    _Shape = TypeVar("_Shape")
 
-    from .electric_field import ElectricField
+    class ArrayProtocol(Protocol[_DType]):
+        """Protocol for array-like objects that can be used in numerical computations."""
+        
+        @property
+        def shape(self) -> tuple[int, ...]: ...
+        
+        @property
+        def dtype(self) -> _DType: ...
+        
+        def __len__(self) -> int: ...
+        def __array__(self) -> NDArray[np.dtype[Any]]: ...  # type: ignore
+        
+        # Basic arithmetic operations
+        def __add__(self, other: Union[float, int, "ArrayProtocol[_DType]"]) -> "ArrayProtocol[_DType]": ...
+        def __sub__(self, other: Union[float, int, "ArrayProtocol[_DType]"]) -> "ArrayProtocol[_DType]": ...
+        def __mul__(self, other: Union[float, int, "ArrayProtocol[_DType]"]) -> "ArrayProtocol[_DType]": ...
+        def __truediv__(self, other: Union[float, int, "ArrayProtocol[_DType]"]) -> "ArrayProtocol[_DType]": ...
+        def __floordiv__(self, other: Union[float, int, "ArrayProtocol[_DType]"]) -> "ArrayProtocol[_DType]": ...
+        def __matmul__(self, other: "ArrayProtocol[_DType]") -> "ArrayProtocol[_DType]": ...
+        
+        # Reverse arithmetic operations
+        def __radd__(self, other: Union[float, int]) -> "ArrayProtocol[_DType]": ...
+        def __rsub__(self, other: Union[float, int]) -> "ArrayProtocol[_DType]": ...
+        def __rmul__(self, other: Union[float, int]) -> "ArrayProtocol[_DType]": ...
+        def __rtruediv__(self, other: Union[float, int]) -> "ArrayProtocol[_DType]": ...
+        def __rfloordiv__(self, other: Union[float, int]) -> "ArrayProtocol[_DType]": ...
+        def __rmatmul__(self, other: "ArrayProtocol[_DType]") -> "ArrayProtocol[_DType]": ...
+        
+        # Unary operations
+        def __neg__(self) -> "ArrayProtocol[_DType]": ...
+        def __pos__(self) -> "ArrayProtocol[_DType]": ...
+        
+        # Array interface
+        def __getitem__(self, key: Union[int, slice, tuple[Union[int, slice], ...], NDArray[np.bool_]]) -> Union["ArrayProtocol[_DType]", Any]: ...  # type: ignore
+        def __setitem__(self, key: Union[int, slice, tuple[Union[int, slice], ...], NDArray[np.bool_]], value: Union["ArrayProtocol[_DType]", Any]) -> None: ...  # type: ignore
+        
+        # Complex operations
+        def conj(self) -> "ArrayProtocol[_DType]": ...
+        
+        @property
+        def T(self) -> "ArrayProtocol[_DType]": ...
+        
+        # NumPy array interface
+        def __array_ufunc__(self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any) -> Any: ...
+        def __array_function__(self, func: Any, types: Any, args: Any, kwargs: Any) -> Any: ...
+        def __array_interface__(self) -> dict[str, Any]: ...
+        def __array_struct__(self) -> Any: ...
+        def __array_wrap__(self, array: Any) -> Any: ...
+        def __array_prepare__(self, array: Any, context: Any = None) -> Any: ...
+        def __array_priority__(self) -> float: ...
+        def __array_finalize__(self, obj: Any) -> None: ...
+
+    # Define Array type to include sparse matrices and ensure it implements Sized
+    Array = Union[NDArray[Any], CupyArray, ArrayProtocol[Any], sparse.spmatrix]  # type: ignore
+
+    from rovibrational_excitation.core.electric_field import ElectricField
+    from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
+    from rovibrational_excitation.dipole.base import DipoleMatrixBase
 else:
     Array = np.ndarray  # runtime dummy
 
@@ -76,129 +152,18 @@ def validate_propagation_units(
     ...     for w in warnings:
     ...         print(f"⚠️  {w}")
     """
-    warnings = []
-    
-    try:
-        # Energy scale analysis
-        if H0.ndim == 2:
-            eigenvals = np.diag(H0)
-        else:
-            eigenvals = H0
-        
-        energy_range = np.ptp(eigenvals)  # peak-to-peak range
-        max_energy = np.max(np.abs(eigenvals))
-        
-        # Unit-specific sanity checks
-        if expected_H0_units == "J":
-            # J units: typical molecular range 1e-25 to 1e-15 J
-            if energy_range < 1e-25 or energy_range > 1e-15:
-                warnings.append(
-                    f"エネルギー範囲 {energy_range:.2e} J が分子系として異常です "
-                    f"(期待範囲: 1e-25 - 1e-15 J)"
-                )
-        elif expected_H0_units == "eV":
-            # eV units: typical range 1e-6 to 100 eV
-            if energy_range < 1e-6 or energy_range > 100:
-                warnings.append(
-                    f"エネルギー範囲 {energy_range:.2e} eV が異常です "
-                    f"(期待範囲: 1e-6 - 100 eV)"
-                )
-        elif expected_H0_units == "cm^-1":
-            # cm⁻¹ units: typical range 0.1 to 10000 cm⁻¹
-            if energy_range < 0.1 or energy_range > 10000:
-                warnings.append(
-                    f"エネルギー範囲 {energy_range:.2e} cm⁻¹ が異常です "
-                    f"(期待範囲: 0.1 - 10000 cm⁻¹)"
-                )
-        elif expected_H0_units == "rad/fs":
-            # rad/fs units: converted from typical molecular frequencies
-            if energy_range < 1e-6 or energy_range > 1e3:
-                warnings.append(
-                    f"周波数範囲 {energy_range:.2e} rad/fs が異常です "
-                    f"(期待範囲: 1e-6 - 1e3 rad/fs)"
-                )
-        
-        # Dipole moment analysis
-        mu_x = _pick_mu(dipole_matrix, 'x')
-        mu_y = _pick_mu(dipole_matrix, 'y')
-        max_dipole = max(np.max(np.abs(mu_x)), np.max(np.abs(mu_y)))
-        
-        if expected_dipole_units == "C*m":
-            # C·m units: typical range 1e-35 to 1e-25 C·m
-            if max_dipole < 1e-35 or max_dipole > 1e-25:
-                warnings.append(
-                    f"双極子モーメント {max_dipole:.2e} C·m が異常です "
-                    f"(期待範囲: 1e-35 - 1e-25 C·m)"
-                )
-        elif expected_dipole_units == "D":
-            # Debye units: typical range 0.001 to 100 D
-            if max_dipole < 0.001 or max_dipole > 100:
-                warnings.append(
-                    f"双極子モーメント {max_dipole:.2e} D が異常です "
-                    f"(期待範囲: 0.001 - 100 D)"
-                )
-        elif expected_dipole_units == "ea0":
-            # Atomic units: typical range 0.01 to 10 ea0
-            if max_dipole < 0.01 or max_dipole > 10:
-                warnings.append(
-                    f"双極子モーメント {max_dipole:.2e} ea0 が異常です "
-                    f"(期待範囲: 0.01 - 10 ea0)"
-                )
-        
-        # Time scale analysis (if energy range is reasonable)
-        if energy_range > 0:
-            # Characteristic time: τ = ℏ/ΔE
-            if expected_H0_units == "J":
-                char_time_fs = _DIRAC_HBAR / energy_range * 1e15
-            elif expected_H0_units == "rad/fs":
-                char_time_fs = 1 / energy_range  # already in fs⁻¹
-            else:
-                # For other units, convert to estimate
-                char_time_fs = 1000  # rough estimate
-            
-            if hasattr(efield, 'dt') and efield.dt > char_time_fs / 5:
-                warnings.append(
-                    f"時間ステップ {efield.dt:.3f} fs が特性時間 "
-                    f"{char_time_fs:.3f} fs に対して大きすぎます "
-                    f"(推奨: < {char_time_fs/5:.3f} fs)"
-                )
-        
-        # Electric field magnitude check
-        if hasattr(efield, 'Efield'):
-            max_field = np.max(np.abs(efield.Efield))
-            if max_field > 1e12:  # > 1 TV/m is extreme
-                warnings.append(
-                    f"電場強度 {max_field:.2e} V/m が極端に大きいです"
-                )
-            elif max_field < 1e3:  # < 1 kV/m is very weak
-                warnings.append(
-                    f"電場強度 {max_field:.2e} V/m が非常に弱いです"
-                )
-            
-            # Interaction strength analysis
-            if max_dipole > 0 and energy_range > 0:
-                # Rough interaction strength: μE/ΔE
-                if expected_H0_units == "J" and expected_dipole_units == "C*m":
-                    interaction_strength = max_field * max_dipole / energy_range
-                    if interaction_strength > 0.1:
-                        warnings.append(
-                            f"強電場域です (相互作用強度 = {interaction_strength:.3f}). "
-                            "小さな時間ステップを検討してください"
-                        )
-        
-    except Exception as e:
-        warnings.append(f"単位検証中にエラーが発生しました: {e}")
-    
-    return warnings
+    return validator.validate_propagation_units(
+        H0, dipole_matrix, efield, expected_H0_units, expected_dipole_units
+    )
 
 
 def _cm_to_rad_phz(mu: Array) -> Array:
     """μ (C·m) → rad / (PHz/(V·m⁻¹))."""
-    return mu / (_DIRAC_HBAR)  # divide once; xp 対応は呼び出し側で
+    return mu / (_DIRAC_HBAR)  # type: ignore # divide once; xp 対応は呼び出し側で
 
 def _J_to_rad_phz(H0: Array) -> Array:
     """J → rad / fs."""
-    return H0 / _DIRAC_HBAR
+    return H0 / _DIRAC_HBAR  # type: ignore
 
 def _backend(name: str):
     if name == "cupy":
@@ -208,7 +173,7 @@ def _backend(name: str):
     return np
 
 
-def _pick_mu(dip, axis: str) -> Array:
+def _pick_mu_SI(dip, axis: str) -> Array:
     """
     Get dipole matrix in SI units (C·m) for specified axis.
     
@@ -238,15 +203,17 @@ def _pick_mu(dip, axis: str) -> Array:
 
 # ---------------------------------------------------------------------
 def _prepare_args(
-    H0: Array,
+    hamiltonian: Hamiltonian,
     E: ElectricField,
-    dip,  # Type: LinMolDipoleMatrix | TwoLevelDipoleMatrix | VibLadderDipoleMatrix
+    dip: DipoleMatrixBase,  # Type hint for better clarity
     *,
     axes: str = "xy",
     dt: float | None = None,
     mu_x_override: Array | None = None,
     mu_y_override: Array | None = None,
-) -> tuple[Array, Array, Array, Array, Array, float, int]:
+    nondimensional: bool = False,
+    auto_timestep: bool = False,
+) -> tuple[Array, Array, Array, Array, Array, float]:
     """
     共通前処理
 
@@ -261,41 +228,82 @@ def _prepare_args(
     ax0, ax1 = axes[0], axes[1]
     xp = _cp if _cp is not None else np
 
-    dt_half = E.dt if dt is None else dt / 2
+    if nondimensional:
+        if auto_timestep:
+            # 完全自動無次元化（最適時間ステップ自動選択）
+            (
+                H0_prime,
+                mu_x_prime,
+                mu_y_prime,
+                mu_z_prime,
+                Efield_prime,
+                tlist_prime,
+                dt_prime,
+                scales,
+            ) = auto_nondimensionalize(
+                hamiltonian,
+                dip,
+                E,
+                target_accuracy="standard",
+                verbose=False,
+            )
+        else:
+            # オブジェクトベースの無次元化
+            (
+                H0_prime,
+                mu_x_prime,
+                mu_y_prime,
+                mu_z_prime,
+                Efield_prime,
+                tlist_prime,
+                dt_prime,
+                scales,
+            ) = nondimensionalize_from_objects(
+                hamiltonian,
+                dip,
+                E,
+                verbose=False,
+            )
+        Ex, Ey = _get_field_components(Efield_prime)
+        dt = dt_prime * 2
+        steps = (len(cast(Sized, Ex)) - 1) // 2  # type: ignore
 
-    Ex, Ey = E.Efield[:, 0], E.Efield[:, 1]
 
-    # stepsを計算
-    steps = (len(Ex) - 1) // 2
+    dt = E.dt * 2 if dt is None else dt
+
+    # 電場成分を取得
+    Ex, Ey = _get_field_components(E)
 
     # スパース行列対応: スパース行列の場合はそのまま使用
-    mu_a_raw = _pick_mu(dip, ax0)
-    mu_b_raw = _pick_mu(dip, ax1)
+    H0 = hamiltonian.get_matrix("J")
+    if scipy.sparse.issparse(H0):  # type: ignore
+        H0_dense = H0.toarray()  # type: ignore
+    else:
+        H0_dense = H0
 
-    try:
-        import scipy.sparse as sp
+    # μ_a, μ_b を取得
+    if mu_x_override is not None:
+        mu_a = mu_x_override
+    else:
+        mu_a = _pick_mu_SI(dip, ax0)
 
-        if sp.issparse(mu_a_raw):
-            mu_a = _cm_to_rad_phz(mu_a_raw)  # スパース行列の場合はそのまま
-        else:
-            mu_a = xp.asarray(_cm_to_rad_phz(mu_a_raw))
-        if sp.issparse(mu_b_raw):
-            mu_b = _cm_to_rad_phz(mu_b_raw)  # スパース行列の場合はそのまま
-        else:
-            mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
-    except ImportError:
-        mu_a = xp.asarray(_cm_to_rad_phz(mu_a_raw))
-        mu_b = xp.asarray(_cm_to_rad_phz(mu_b_raw))
+    if mu_y_override is not None:
+        mu_b = mu_y_override
+    else:
+        mu_b = _pick_mu_SI(dip, ax1)
 
-    return (
-        xp.asarray(_J_to_rad_phz(H0)),
-        mu_a,
-        mu_b,
-        xp.asarray(Ex),
-        xp.asarray(Ey),
-        dt_half * 2,
-        steps,
-    )
+    # スパース行列対応
+    if scipy.sparse.issparse(mu_a):  # type: ignore
+        mu_a = mu_a.toarray()  # type: ignore
+    if scipy.sparse.issparse(mu_b):  # type: ignore
+        mu_b = mu_b.toarray()  # type: ignore
+
+    # 無次元化
+    H0_prime = _J_to_rad_phz(H0_dense)
+    mu_a_prime = _cm_to_rad_phz(mu_a)
+    mu_b_prime = _cm_to_rad_phz(mu_b)
+
+    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, dt
 
 
 # ---------------------------------------------------------------------
@@ -315,6 +323,8 @@ def schrodinger_propagation(
     validate_units: bool = True,
     verbose: bool = False,
     renorm: bool = False,
+    auto_timestep: bool = False,
+    target_accuracy: str = "standard",
 ) -> Array:
     """
     Time-dependent Schrödinger equation propagator with unit-aware physics objects.
@@ -346,6 +356,14 @@ def schrodinger_propagation(
         Use nondimensional propagation
     validate_units : bool, default True
         Perform unit validation before propagation
+    verbose : bool, default False
+        Print detailed information
+    renorm : bool, default False
+        Renormalize wavefunction during propagation
+    auto_timestep : bool, default False
+        Automatically select optimal timestep
+    target_accuracy : str, default "standard"
+        Target accuracy for auto timestep ("high", "standard", "fast")
         
     Returns
     -------
@@ -370,236 +388,52 @@ def schrodinger_propagation(
     >>> mu_x_SI = dipole.get_mu_x_SI()  # Automatic D → C·m conversion
     """
     
-    # Extract quantities in SI units from unit-aware objects
-    H0_SI = hamiltonian.get_matrix("J")  # Always get in J (SI energy units)
-    mu_x_SI = dipole_matrix.get_mu_x_SI()  # Always get in C·m (SI dipole units)
-    mu_y_SI = dipole_matrix.get_mu_y_SI()
-    
-    # Get electric field in SI units (V/m) and time in fs
-    efield_SI = Efield.get_Efield_SI()  # Always get in V/m
-    time_fs = Efield.get_time_SI()  # Always get in fs
-    
     # Unit validation using SI quantities
     if validate_units:
-        # Create a temporary dipole matrix-like object for validation
-        class TempDipole:
-            def __init__(self, mu_x, mu_y):
-                self.mu_x = mu_x
-                self.mu_y = mu_y
-        
-        temp_dipole = TempDipole(mu_x_SI, mu_y_SI)
         warnings = validate_propagation_units(
-            H0_SI, temp_dipole, Efield, "J", "C*m"
+            hamiltonian, dipole_matrix, Efield
         )
-        if warnings:
-            print("⚠️  単位検証で以下の警告が検出されました:")
-            for i, warning in enumerate(warnings, 1):
-                print(f"   {i}. {warning}")
-            
-            # For non-interactive environments, don't halt execution
-            # but make warnings prominent
-            if len(warnings) >= 3:
-                print("\n🚨 複数の重大な警告があります。計算結果を慎重にご確認ください。")
-        else:
-            print("✅ 単位検証: すべて正常です")
-    
-    # Get field scale information
-    field_scale_info = Efield.get_field_scale_info()
-    
-    # Display unit information for transparency
-    if verbose:
-        print(f"🔧 Using physics objects with internal unit management:")
-        print(f"   Hamiltonian: {hamiltonian.units} → J (automatic conversion)")
-        print(f"   Dipole matrix: {dipole_matrix.units} → C·m (automatic conversion)")
-        print(f"   Electric field: {Efield.field_units} → V/m, time: {Efield.time_units} → fs")
-        print(f"   Field scale (auto-determined): {field_scale_info['scale_V_per_m']:.2e} V/m")
-        print(f"     = {field_scale_info['scale_MV_per_cm']:.2f} MV/cm")
-        print(f"     = {field_scale_info['scale_in_original_units']:.2f} {field_scale_info['original_units']}")
-    
-    # Use SI quantities for all calculations
-    H0_converted = H0_SI
+        if warnings and verbose:
+            for w in warnings:
+                print(f"⚠️  {w}")
 
-    # backend引数の型チェック
-    if backend not in ("numpy", "cupy"):
-        raise ValueError("backend must be 'numpy' or 'cupy'")
-
-    backend_typed: Literal["numpy", "cupy"] = backend  # type: ignore[assignment]
-
-    # 無次元化処理
-    if nondimensional:
-        # SI単位で双極子行列を取得
-        mu_x_raw = mu_x_SI
-        mu_y_raw = mu_y_SI
-        
-        # dtを_prepare_argsと同じ方法で調整
-        dt_for_nondim = Efield.dt * 2  # _prepare_argsと同じ: dt_half * 2
-        
-        # 無次元化実行
-        (
-            H0_prime,
-            mu_x_prime,
-            mu_y_prime,
-            Efield_prime,
-            tlist_prime,
-            dt_prime,
-            scales,
-        ) = nondimensionalize_system(
-            H0_SI, mu_x_raw, mu_y_raw, Efield,
-            H0_units="energy",  # H0はエネルギー単位（J）
-            time_units="fs",    # 時間はfs単位
-            dt=dt_for_nondim,   # 調整されたdtを使用
-        )
-        
-        # 無次元化されたパラメータで時間発展実行
-        xp = _backend(backend)
-        
-        # 無次元電場を準備
-        Ex_prime = Efield_prime[:, 0]
-        Ey_prime = Efield_prime[:, 1]
-        steps_prime = (len(Ex_prime) - 1) // 2
-        
-        # 無次元化では結合強度λがかかるため調整
-        mu_x_eff = xp.asarray(mu_x_prime * scales.lambda_coupling)
-        mu_y_eff = xp.asarray(mu_y_prime * scales.lambda_coupling)
-        
-        # ---------------------------------------------------------
-        # 無次元化システムでもsplit-operator法を試す
-        # ---------------------------------------------------------
-        try:
-            # 元のElectricFieldから直接偏光情報を取得して無次元化
-            if (isinstance(Efield._constant_pol, np.ndarray) 
-                and hasattr(Efield, '_scalar_field') 
-                and Efield._scalar_field is not None):
-                
-                # 偏光ベクトルはそのまま（無次元）
-                pol = Efield._constant_pol
-                
-                # スカラー場を無次元化
-                Escalar_prime = Efield._scalar_field / scales.Efield0
-            else:
-                # 偏光が時間依存の場合はValueErrorを発生させてRK4にフォールバック
-                raise ValueError("Polarization is time-dependent")
-            
-            traj_split = splitop_schrodinger(
-                xp.asarray(H0_prime),
-                mu_x_eff,
-                mu_y_eff,
-                pol,
-                xp.asarray(Escalar_prime),
-                xp.asarray(psi0),
-                dt_prime,
-                steps=steps_prime,
-                sample_stride=sample_stride,
-                hbar=1.0,  # 無次元系ではhbar=1
-                backend=backend_typed,
-            )
-            
-            # 形状を調整
-            result = traj_split.squeeze()
-            if result.ndim == 1:
-                result = result.reshape(1, -1)
-
-            if return_traj:
-                if return_time_psi:
-                    time_psi = get_physical_time(
-                        xp.arange(0, result.shape[0]) * dt_prime * sample_stride, scales
-                    )
-                    return time_psi, result
-                else:
-                    return result
-            else:
-                return result[-1:].reshape((1, len(psi0)))
-                
-        except (ValueError, AttributeError):
-            # 偏光が時間依存、またはElectricFieldインポートエラー → RK4へフォールバック
-            pass
-        
-        # RK4実行（フォールバック）
-        result = rk4_schrodinger(
-            xp.asarray(H0_prime),
-            mu_x_eff,
-            mu_y_eff,
-            xp.asarray(Ex_prime),
-            xp.asarray(Ey_prime),
-            xp.asarray(psi0),
-            dt_prime,
-            sample_stride,
-            renorm,
-            sparse,
-            backend=backend_typed,
-        )
-        
-        if return_traj:
-            if return_time_psi:
-                time_psi = get_physical_time(
-                    xp.arange(0, result.shape[0]) * dt_prime * sample_stride, scales
-                )
-                return time_psi, result
-            else:
-                return result
-        else:
-            return result[-1:].reshape((1, len(psi0)))
-    
-    # 従来の次元ありシステム
+    # バックエンドを設定
     xp = _backend(backend)
-    H0_, mu_a, mu_b, Ex, Ey, dt, steps = _prepare_args(
-        H0_converted, Efield, dipole_matrix, axes=axes
+
+    # 無次元化
+    H0, mu_x, mu_y, Ex, Ey, dt = _prepare_args(
+        hamiltonian,
+        Efield,
+        dipole_matrix,
+        axes=axes,
+        mu_x_override=None,
+        mu_y_override=None,
+        nondimensional=nondimensional,
     )
-    # ---------------------------------------------------------
-    # 0) まず split-operator が適用できるか試す
-    #    （ElectricField に「一定偏光＋実スカラー場」が
-    #      保持されている場合だけ使用）
-    # ---------------------------------------------------------
-    try:
-        Escalar, pol = Efield.get_scalar_and_pol()  # ← ElectricField で追加した util
 
-        traj_split = splitop_schrodinger(
-            H0_,
-            mu_a,
-            mu_b,  # μ_x, μ_y
-            pol,  # (2,) complex
-            Escalar,  # (N,) real
-            xp.asarray(psi0),
-            dt,
-            steps=(len(Escalar) - 1) // 2,
-            sample_stride=sample_stride,
-            backend=backend_typed,
+    # スパース行列対応
+    if sparse:
+        if not scipy.sparse.issparse(H0):  # type: ignore
+            H0 = scipy.sparse.csr_matrix(H0)  # type: ignore
+        if not scipy.sparse.issparse(mu_x):  # type: ignore
+            mu_x = scipy.sparse.csr_matrix(mu_x)  # type: ignore
+        if not scipy.sparse.issparse(mu_y):  # type: ignore
+            mu_y = scipy.sparse.csr_matrix(mu_y)  # type: ignore
+        
+        # 通常の行列用のプロパゲータを使用
+    result = rk4_schrodinger(  # type: ignore
+            H0, mu_x, mu_y, Ex, Ey, psi0, dt,
+            stride=sample_stride, renorm=renorm, sparse=sparse, backend=backend,
         )
-
-        # 形状を調整
-        result = traj_split.squeeze()
-        if result.ndim == 1:
-            result = result.reshape(1, -1)
-
-        if return_traj:
-            if return_time_psi:
-                # resultがtupleの場合はshapeアクセスできないので修正
-                if isinstance(result, tuple):
-                    # すでにtupleになっている場合はそのまま返す
-                    return result
-                time_psi = xp.arange(
-                    0, result.shape[0] * dt * sample_stride, dt * sample_stride
-                )
-                return time_psi, result
-            return result
-        else:
-            return result[-1:].reshape((1, len(psi0)))
-
-    except ValueError:
-        # 偏光が時間依存 → 旧来の RK4 へフォールバック
-        pass
-    result = rk4_schrodinger(
-        H0_, mu_a, mu_b, Ex, Ey, xp.asarray(psi0), dt, sample_stride, renorm, sparse, backend=backend_typed)
-
     if return_traj:
-        if return_time_psi:
-            time_psi = xp.arange(0, result.shape[0] * dt * sample_stride, dt * sample_stride)
-            return time_psi, result
-        else:
-            return result
+        psi = result
     else:
-        return result[-1:].reshape((1, len(psi0)))
+        psi = result[-1]
 
+    if return_time_psi:
+        t = np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * dt * sample_stride  # type: ignore
+        return t, psi
+    return psi
 
 
 # ---------------------------------------------------------------------
@@ -688,3 +522,16 @@ def liouville_propagation(
         return rk4_lvne_traj(*rk4_args, sample_stride)
     else:
         return rk4_lvne(*rk4_args)
+
+
+def _get_field_components(efield: ElectricField) -> tuple[Array, Array]:
+    """Get x and y components of the electric field."""
+    field = efield.get_Efield()
+    return field[:, 0], field[:, 1]  # type: ignore
+
+
+def get_physical_time(t_prime: Array, scales: NondimensionalizationScales) -> Array:
+    """Convert dimensionless time to physical time."""
+    # 型変換を行って基底クラスに合わせる
+    base_scales = cast(_BaseScales, scales)
+    return _get_physical_time(t_prime, base_scales)  # type: ignore
