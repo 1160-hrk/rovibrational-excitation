@@ -227,9 +227,9 @@ def nondimensionalize_with_SI_base_units(
     H0: np.ndarray,
     mu_x: np.ndarray,
     mu_y: np.ndarray,
-    efield: 'ElectricField',
+    efield: np.ndarray,
+    tlist: np.ndarray,
     *,
-    dt: float | None = None,
     params: Dict[str, Any] | None = None,
     auto_timestep: bool = False,
     timestep_method: str = "adaptive",
@@ -280,19 +280,13 @@ def nondimensionalize_with_SI_base_units(
         converted_params = ParameterConverter.auto_convert_parameters(params)
         print("✓ Parameter conversion completed.")
     
-    # 時間ステップの設定
-    if dt is None:
-        dt = efield.dt
-    assert dt is not None
-    
     # 入力が既にSI単位[J, C·m, V/m]の場合、そのまま使用
     H0_energy_J = H0.copy()
     mu_x_Cm = mu_x.copy()
     mu_y_Cm = mu_y.copy()
     
     # 電場: 既に [V/m]
-    Efield_array = efield.get_Efield()  # (T, 2) [V/m]
-    field_amplitude_V_per_m = np.max(np.abs(Efield_array))
+    field_amplitude_V_per_m = np.max(np.abs(efield))
     
     print(f"📊 Physical quantities in SI base units:")
     if H0_energy_J.ndim == 1:
@@ -335,11 +329,11 @@ def nondimensionalize_with_SI_base_units(
     mu_y_prime = mu_y_Cm / scales.mu0
     
     # 電場の無次元化
-    Efield_prime = Efield_array / scales.Efield0
+    Efield_prime = efield / scales.Efield0
     
     # 時間軸の無次元化
-    tlist_s = efield.tlist * 1e-15  # fs → s
-    dt_s = dt * 1e-15  # fs → s
+    tlist_s = tlist * 1e-15  # fs → s
+    dt_s = (tlist[1] - tlist[0]) * 1e-15  # fs → s
     
     tlist_prime = tlist_s / scales.t0
     dt_prime = dt_s / scales.t0
@@ -420,13 +414,12 @@ def nondimensionalize_from_objects(
     dipole_matrix: "DipoleMatrixBase",
     efield: "ElectricField",
     *,
-    dt: float | None = None,
-    time_units: str = "fs",
     auto_timestep: bool = False,
     timestep_method: str = "adaptive",
     timestep_safety_factor: float = 0.1,
     verbose: bool = True,
 ) -> tuple[
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -479,9 +472,9 @@ def nondimensionalize_from_objects(
             print(f"   Eigenvalues: {eigenvals[0]:.3e} to {eigenvals[-1]:.3e} J")
     
     # 2. DipoleMatrixBaseクラスからSI単位系（C·m）で双極子行列を取得
-    mu_x_Cm = dipole_matrix.get_mu_x_SI()
-    mu_y_Cm = dipole_matrix.get_mu_y_SI()
-    mu_z_Cm = dipole_matrix.get_mu_z_SI()
+    mu_x_Cm = dipole_matrix.get_mu_x_SI(dense=True)
+    mu_y_Cm = dipole_matrix.get_mu_y_SI(dense=True)
+    mu_z_Cm = dipole_matrix.get_mu_z_SI(dense=True)
     
     if verbose:
         print(f"📊 Dipole matrices: {mu_x_Cm.shape} in C·m units")
@@ -497,9 +490,7 @@ def nondimensionalize_from_objects(
         print(f"📊 Electric field amplitude: {field_amplitude_V_per_m:.3e} V/m")
     
     # 4. 時間ステップの設定
-    if dt is None:
-        dt = efield.dt
-    assert dt is not None
+    dt = efield.dt
     
     # 5. SI基本単位に基づいた無次元化スケールの決定
     if verbose:
@@ -540,16 +531,14 @@ def nondimensionalize_from_objects(
     
     # 電場の無次元化
     Efield_prime = Efield_array / scales.Efield0
-    
+    try:
+        Efield_prime_scalar = efield.get_scalar_and_pol()[0] / scales.Efield0
+    except ValueError:
+        Efield_prime_scalar = np.zeros_like(Efield_prime)[:, 0]
+        
     # 8. 時間軸の無次元化
-    if time_units == "fs":
-        tlist_s = efield.tlist * 1e-15  # fs → s
-        dt_s = dt * 1e-15  # fs → s
-    elif time_units == "s":
-        tlist_s = efield.tlist.copy()
-        dt_s = dt
-    else:
-        raise ValueError("time_units must be 'fs' or 's'")
+    tlist_s = efield.tlist * 1e-15  # fs → s
+    dt_s = dt * 1e-15  # fs → s
     
     tlist_prime = tlist_s / scales.t0
     dt_prime = dt_s / scales.t0
@@ -567,6 +556,7 @@ def nondimensionalize_from_objects(
         mu_y_prime,
         mu_z_prime,
         Efield_prime,
+        Efield_prime_scalar,
         tlist_prime,
         dt_prime,
         scales,
@@ -581,6 +571,7 @@ def auto_nondimensionalize(
     target_accuracy: str = "standard",
     verbose: bool = True,
 ) -> tuple[
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -664,7 +655,8 @@ class NondimensionalConverter:
         H0: np.ndarray,
         mu_x: np.ndarray,
         mu_y: np.ndarray,
-        efield: "ElectricField",
+        efield: np.ndarray,
+        tlist: np.ndarray,
         **kwargs: Any,
     ) -> tuple[
         np.ndarray,
@@ -676,7 +668,7 @@ class NondimensionalConverter:
         NondimensionalizationScales,
     ]:
         """SI基本単位での無次元化を実行"""
-        return nondimensionalize_with_SI_base_units(H0, mu_x, mu_y, efield, **kwargs)
+        return nondimensionalize_with_SI_base_units(H0, mu_x, mu_y, efield, tlist, **kwargs)
 
     @staticmethod
     def nondimensionalize_from_objects(
@@ -685,6 +677,7 @@ class NondimensionalConverter:
         efield: "ElectricField",
         **kwargs: Any,
     ) -> tuple[
+        np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
@@ -704,6 +697,7 @@ class NondimensionalConverter:
         efield: "ElectricField",
         **kwargs: Any,
     ) -> tuple[
+        np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,

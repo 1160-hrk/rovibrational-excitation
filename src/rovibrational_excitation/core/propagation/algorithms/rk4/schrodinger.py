@@ -52,11 +52,11 @@ except ImportError:  # numba 不在でも動くダミー
 @njit(
     "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
     "f8[:, :], f8[:, :],"
-    "c16[:], f8, i8, i8, b1)",
+    "c16[:], f8, b1, i8, i8, b1)",
     fastmath=True,
     cache=True,
 )
-def _rk4_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, renorm):
+def _rk4_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, return_traj, steps, stride, renorm):
     psi = psi0.copy()
     dim = psi.size
     n_out = steps // stride + 1
@@ -85,10 +85,13 @@ def _rk4_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, steps, stride, renorm):
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         if renorm:
             psi *= 1 / np.sqrt((psi.conj() @ psi).real)
-        if (s + 1) % stride == 0:
+        if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
-    return out
+    if return_traj:
+        return out
+    else:
+        return psi.reshape((1, dim))
 
 
 def _rk4_cpu_sparse(
@@ -98,7 +101,9 @@ def _rk4_cpu_sparse(
     Ex3: np.ndarray,
     Ey3: np.ndarray,
     psi0: np.ndarray,
-    dt: float, steps: int, stride: int, renorm: bool):
+    dt: float, steps: int,
+    return_traj: bool,
+    stride: int, renorm: bool):
     if not isinstance(H0, csr_matrix):
         H0 = csr_matrix(H0)
     if not isinstance(mux, csr_matrix):
@@ -134,10 +139,13 @@ def _rk4_cpu_sparse(
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         if renorm:
             psi /= np.sqrt((psi.conj() @ psi).real)
-        if (s + 1) % stride == 0:
+        if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
-    return out
+    if return_traj:
+        return out
+    else:
+        return psi.reshape((1, dim))
 
 
 def _rk4_cpu_sparse_pattern(
@@ -148,6 +156,7 @@ def _rk4_cpu_sparse_pattern(
     Ey3: np.ndarray,
     psi0: np.ndarray,
     dt: float,
+    return_traj: bool,
     steps: int,
     stride: int,
     renorm: bool = False,
@@ -251,11 +260,14 @@ def _rk4_cpu_sparse_pattern(
             norm = np.sqrt((psi.conj() @ psi).real)
             psi /= norm
 
-        if (s + 1) % stride == 0:
+        if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
 
-    return out
+    if return_traj:
+        return out
+    else:
+        return psi
 
 
 
@@ -381,6 +393,7 @@ def rk4_schrodinger(
     E_y: np.ndarray,
     psi0: np.ndarray,
     dt: float,
+    return_traj: bool = True,
     stride: int = 1,
     renorm: bool = False,
     sparse: bool = False,
@@ -400,7 +413,10 @@ def rk4_schrodinger(
     psi0 = np.asarray(psi0, np.complex128).ravel()
 
     if backend == "cupy":
-        return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)
+        if return_traj:
+            return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)
+        else:
+            return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)[-1]
 
     if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
         
@@ -414,7 +430,11 @@ def rk4_schrodinger(
             Ex3,
             Ey3,
             psi0,
-            float(dt), steps, stride, renorm
+            float(dt),
+            return_traj,
+            steps,
+            stride,
+            renorm,
         )
     else:
         return _rk4_cpu(
@@ -425,7 +445,8 @@ def rk4_schrodinger(
         Ey3,
         psi0,
         float(dt),
+        return_traj,
         steps,
         stride,
-        renorm,
+        renorm
     )

@@ -29,10 +29,10 @@ from rovibrational_excitation.core.units.constants import CONSTANTS
 # %% パラメータ設定
 # システムパラメータ
 SPARSE = True
-DENSE = False
 # SPARSE = False
-V_MAX = 10  # 最大振動量子数
-J_MAX = 10  # 最大回転量子数
+DENSE = False
+V_MAX = 3  # 最大振動量子数
+J_MAX = 3  # 最大回転量子数
 USE_M = True  # 磁気量子数を使用
 
 # 分子パラメータ
