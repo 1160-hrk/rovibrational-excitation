@@ -33,19 +33,19 @@ class PropagatorBase(ABC):
         self._last_validation_warnings = []
     
     @abstractmethod
-    def propagate(self, H0: np.ndarray, dipole_matrix, efield,
-                 initial_state: np.ndarray, **kwargs) -> np.ndarray:
+    def propagate(self, hamiltonian, efield, dipole_matrix,
+                 initial_state: np.ndarray, **kwargs) -> Any:
         """
         Propagate the quantum state forward in time.
         
         Parameters
         ----------
-        H0 : np.ndarray
-            Free Hamiltonian
-        dipole_matrix : object
-            Dipole moment matrices
+        hamiltonian : object
+            Hamiltonian object
         efield : ElectricField
             Electric field object
+        dipole_matrix : object
+            Dipole moment matrices
         initial_state : np.ndarray
             Initial quantum state
         **kwargs
@@ -53,8 +53,8 @@ class PropagatorBase(ABC):
             
         Returns
         -------
-        np.ndarray
-            Final state or trajectory
+        Any
+            Final state or trajectory (can be array or tuple)
         """
         pass
     

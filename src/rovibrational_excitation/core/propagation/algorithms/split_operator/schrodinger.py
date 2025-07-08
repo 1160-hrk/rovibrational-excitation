@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 # ---------------------------------------------------------------------------
 # Optional back‑ends ----------------------------------------------------------
@@ -60,7 +61,12 @@ __all__ = ["splitop_schrodinger"]
 # ---------------------------------------------------------------------------
 
 
-@njit(fastmath=True, cache=True)
+@njit(
+    "c16[:, :](c16[:, :], c16[:, :], c16[:],"
+    "c16[:], c16[:],"
+    "c16[:], c16, b1, i8)",
+    cache=True,
+)
 def _propagate_numpy(
     U: np.ndarray,  # (dim, dim)  unitary eigenvector matrix
     U_H: np.ndarray,  # U.conj().T  – Hermitian adjoint
@@ -69,6 +75,7 @@ def _propagate_numpy(
     exp_half: np.ndarray,  # (dim,)   element‑wise ½‑step phase from H0
     e_mid: np.ndarray,  # (steps,)   midpoint values of E(t)
     phase_coeff: complex,  # −i·2·dt/hbar   (scalar complex)
+    return_traj: bool,
     stride: int,
 ) -> np.ndarray:
     """Numba‑accelerated inner loop (CPU, NumPy)."""
@@ -93,12 +100,60 @@ def _propagate_numpy(
         # H0 – 後半
         psi *= exp_half
 
-        if (k + 1) % stride == 0:
+        if return_traj and (k + 1) % stride == 0:
             traj[s_idx] = psi
             s_idx += 1
 
-    return traj
+    if return_traj:
+        return traj
+    else:
+        return psi.reshape((1, dim))
 
+
+def _propagate_numpy_sparse(
+    U: np.ndarray,  # (dim, dim)  unitary eigenvector matrix
+    U_H: np.ndarray,  # U.conj().T  – Hermitian adjoint
+    eigvals: np.ndarray,  # (dim,)   eigenvalues of A (real)
+    psi0: np.ndarray,  # (dim,)
+    exp_half: np.ndarray,  # (dim,)   element‑wise ½‑step phase from H0
+    e_mid: np.ndarray,  # (steps,)   midpoint values of E(t)
+    phase_coeff: complex,  # −i·2·dt/hbar   (scalar complex)
+    return_traj: bool,
+    stride: int,
+) -> np.ndarray:
+    """inner loop (CPU, NumPy, sparse)."""
+    if not isinstance(U, csr_matrix):
+        U = csr_matrix(U)
+    if not isinstance(U_H, csr_matrix):
+        U_H = csr_matrix(U_H)
+    dim = psi0.shape[0]
+    steps = e_mid.size
+    n_samples = steps // stride + 1
+    traj = np.empty((n_samples, dim), dtype=np.complex128)
+
+    psi = psi0.copy()
+    traj[0] = psi
+    s_idx = 1
+
+    for k in range(steps):
+        # H0 – 前半
+        psi *= exp_half
+
+        # Interaction part   exp[ phase_coeff * E * eigvals ]
+        phase = np.exp(phase_coeff * e_mid[k] * eigvals)
+        psi = U @ (phase * (U_H @ psi))
+
+        # H0 – 後半
+        psi *= exp_half
+
+        if return_traj and (k + 1) % stride == 0:
+            traj[s_idx] = psi
+            s_idx += 1
+
+    if return_traj:
+        return traj
+    else:
+        return psi.reshape((1, dim))
 
 # ---------------------------------------------------------------------------
 # Public API -----------------------------------------------------------------
@@ -113,11 +168,11 @@ def splitop_schrodinger(
     Efield: np.ndarray,
     psi: np.ndarray,
     dt: float,
-    steps: int,
+    return_traj: bool = True,
     sample_stride: int = 1,
-    hbar: float = 1.0,
     *,
     backend: Literal["numpy", "cupy"] = "numpy",
+    sparse: bool = False,
 ) -> np.ndarray:
     """Split‑Operator propagator with interchangeable back‑ends.
 
@@ -128,13 +183,15 @@ def splitop_schrodinger(
         ``"numpy"`` which uses NumPy/Numba.
     """
 
+    steps = (len(Efield) - 1) // 2
+
     if backend == "cupy":
         if cp is None:
             raise RuntimeError(
                 "backend='cupy' was requested but CuPy is not installed."
             )
         return _splitop_cupy(
-            H0, mu_x, mu_y, pol, Efield, psi, dt, steps, sample_stride, hbar
+            H0, mu_x, mu_y, pol, Efield, psi, dt, return_traj, sample_stride, steps
         )
 
     # ---------------- CPU / NumPy (+Numba) path ---------------------------
@@ -160,32 +217,8 @@ def splitop_schrodinger(
 
     # ½‑step phase from diagonal H0
     diag_H0 = np.diag(H0) if H0.ndim == 2 else H0
-    exp_half = np.exp(-1j * diag_H0 * dt / (2.0 * hbar))
+    exp_half = np.exp(-1j * diag_H0 * dt / (2.0))
 
-    # Hermitian A = (M+M†)/2  with  M = p·μ
-    # スパース行列の場合は適切に処理
-    # if sp is not None and (sp.issparse(mu_x) or sp.issparse(mu_y)):
-    #     # スパース行列の演算
-    #     M_raw = pol[0] * mu_x + pol[1] * mu_y
-    #     if sp.issparse(M_raw):
-    #         A = 0.5 * (M_raw + M_raw.getH())  # getH() は共役転置
-    #         # 小サイズの場合はdenseに変換して固有値分解（メモリ効率が良い）
-    #         if A.shape[0] <= 100:
-    #             A_dense = A.toarray()
-    #             eigvals, U = np.linalg.eigh(A_dense)
-    #         else:
-    #             # 大サイズの場合はdenseでの固有値分解にフォールバック
-    #             A_dense = A.toarray()
-    #             eigvals, U = np.linalg.eigh(A_dense)
-    #     else:
-    #         A = 0.5 * (M_raw + M_raw.conj().T)
-    #         eigvals, U = np.linalg.eigh(A)
-    # else:
-    #     # Dense行列の場合（従来の処理）
-    #     M_raw = pol[0] * mu_x + pol[1] * mu_y
-    #     A = 0.5 * (M_raw + M_raw.conj().T)
-    #     eigvals, U = np.linalg.eigh(A)  # Hermitian, so eigh is fine
-    # U_H = U.conj().T
     M_raw = np.triu(pol[0] * mu_x + pol[1] * mu_y, k=1)
     A = (M_raw + M_raw.conj().T)
     eigvals, U = np.linalg.eigh(A)
@@ -193,15 +226,16 @@ def splitop_schrodinger(
     # midpoint electric field samples (len = steps)
     E_mid = Efield[1 : 2 * steps + 1 : 2]
 
-    # phase_coeff = -1j * 2.0 * dt / hbar
-    phase_coeff = -1j * dt / hbar
+    phase_coeff = -1j * dt
 
-    traj = _propagate_numpy(
-        U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, sample_stride
-    )
-
-    # reshape to (n_samples, dim, 1) to match rk4
-    return traj.reshape(traj.shape[0], traj.shape[1], 1)
+    if sparse:
+        return _propagate_numpy_sparse(
+            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride
+        )
+    else:
+        return _propagate_numpy(
+            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -217,9 +251,9 @@ def _splitop_cupy(
     Efield: np.ndarray,
     psi: np.ndarray,
     dt: float,
-    steps: int,
+    return_traj: bool,
     sample_stride: int,
-    hbar: float,
+    steps: int,
 ):
     """GPU implementation (requires CuPy)."""
 
@@ -233,7 +267,7 @@ def _splitop_cupy(
     E_cp = cp.asarray(Efield)
     psi_cp = cp.asarray(psi)
 
-    exp_half = cp.exp(-1j * H0_cp * dt / (2.0 * hbar))
+    exp_half = cp.exp(-1j * H0_cp * dt / (2.0))
 
     M_raw = pol_cp[0] * mu_x_cp + pol_cp[1] * mu_y_cp
     A_cp = 0.5 * (M_raw + M_raw.conj().T)
@@ -248,7 +282,7 @@ def _splitop_cupy(
     traj = cp.empty((n_samples, psi_cp.size), dtype=cp.complex128)
     traj[0] = psi_cp
 
-    phase_coeff = -1j * dt / hbar
+    phase_coeff = -1j * dt
 
     s_idx = 1
     for k in range(steps):
@@ -256,9 +290,11 @@ def _splitop_cupy(
         phase = cp.exp(phase_coeff * E_mid[k] * eigvals)
         psi_cp = U @ (phase * (U_H @ psi_cp))
         psi_cp *= exp_half
-        if (k + 1) % sample_stride == 0:
+        if return_traj and (k + 1) % sample_stride == 0:
             traj[s_idx] = psi_cp
             s_idx += 1
 
-    traj_np = cp.asnumpy(traj)
-    return traj_np.reshape(traj_np.shape[0], traj_np.shape[1], 1)
+    if return_traj:
+        return cp.asnumpy(traj)
+    else:
+        return cp.asnumpy(psi_cp)

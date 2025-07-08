@@ -1,349 +1,287 @@
 #!/usr/bin/env python
 """
-Vibrational Ladder System Excitation Simulation Example
-======================================================
+振動励起シミュレーション例
+======================
 
-Time evolution simulation for pure vibrational systems (no rotation).
-Tests both harmonic and Morse oscillators.
+純粋な振動系（回転なし）の時間発展シミュレーション。
+調和振動子とモース振動子の両方をテスト。
 
-Usage:
+実行方法:
     python examples/example_vibrational_excitation.py
 """
 
 import os
 import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
+from rovibrational_excitation.core.units.converters import converter
 
-# ============================================================================
-# SIMULATION PARAMETERS - EDIT HERE
-# ============================================================================
-#
-# USAGE:
-# ------
-# Simply modify the parameters below to customize your simulation:
-#
-# 1. SYSTEM_PARAMS: Control the quantum system properties
-#    - V_max: Increase for higher vibrational states (computational cost increases)
-#    - omega01: Fundamental vibrational frequency (affects energy spacing)
-#    - domega_*: Anharmonicity (0 = harmonic, >0 = anharmonic)
-#    - mu0_au: Dipole moment strength (affects transition rates)
-#
-# 2. FIELD_PARAMS: Control the laser pulse properties
-#    - amplitude: Higher values = stronger excitation
-#    - duration: Pulse width (shorter = broader spectrum)
-#    - carrier_freq_*: Laser frequency tuning
-#
-# 3. TIME_PARAMS: Control simulation time and resolution
-#    - tf: Longer times to see more dynamics
-#    - dt: Smaller values for better accuracy (but slower)
-#
-# ============================================================================
+# %% パラメータ設定
+# システムパラメータ
+SPARSE = True
+SPARSE = False
 
-# System parameters
-SYSTEM_PARAMS = {
-    "V_max": 5,  # Maximum vibrational quantum number
-    "omega01": 2349 * 2 * np.pi * 3e10 / 1e15,  # Fundamental frequency (rad/fs)
-    "domega_harmonic": 25
-    * 2
-    * np.pi
-    * 3e10
-    / 1e15,  # Anharmonicity for harmonic oscillator (rad/fs)
-    "domega_morse": 25
-    * 2
-    * np.pi
-    * 3e10
-    / 1e15,  # Anharmonicity for Morse oscillator (rad/fs)
-    "mu0_au": 1e-30,  # Dipole moment magnitude (a.u.)
-}
+V_MAX = 49  # 最大振動量子数
+OMEGA_01 = 2349.1  # 振動周波数 [cm^-1]
+DOMEGA = 25  # 非調和性補正 [cm^-1]
+MU0 = 1e-30  # 双極子行列要素の大きさ [C·m]
+UNIT_FREQUENCY = "cm^-1"
+UNIT_DIPOLE = "C*m"
 
-# Electric field parameters
-FIELD_PARAMS = {
-    "amplitude": 5e9,  # Electric field amplitude (a.u.)
-    "duration": 60.0,  # Pulse duration (fs)
-    "polarization": [1, 0],  # Polarization vector [Ex, Ey]
-    "axes": "zy",  # Coupling axes (Ey with μ_z)
-    "carrier_freq_factor": 1,  # Carrier frequency factor (multiply with omega01/(2π))
-    "use_resonance": True,  # If True, use resonant frequency; if False, use custom frequency
-    "custom_carrier_freq": 0.159,  # Custom carrier frequency (rad/fs) - used when use_resonance=False
-}
+# レーザーパルス設定
+PULSE_DURATION = 50.0  # パルス幅 [fs]
+EFIELD_AMPLITUDE = 5e9  # 電場振幅 [V/m]
+POLARIZATION = np.array([1, 0])  # x方向偏光
+AXES = "zx"  # z, x方向の双極子を考慮
 
-# Time grid parameters
-TIME_PARAMS = {
-    "ti": 0.0,  # Start time (fs)
-    "tf": 1000.0,  # End time (fs)
-    "dt": 0.01,  # Time step for electric field (fs)
-    "sample_stride": 5,  # Sampling stride for time evolution
-}
+# 時間グリッド設定
+TIME_START = 0.0  # 開始時間 [fs]
+TIME_END = PULSE_DURATION * 10   # 終了時間 [fs]
+DT_EFIELD = 0.1  # 電場サンプリング間隔 [fs]
+SAMPLE_STRIDE = 5  # サンプリングストライド
 
-# Plot parameters
-PLOT_PARAMS = {
-    "max_states_plot": 6,  # Maximum number of states to plot
-    "figsize_main": (10, 8),  # Figure size for main plots
-    "figsize_comp": (10, 6),  # Figure size for comparison plot
-    "dpi": 300,  # Resolution for saved plots
-}
+# %% 基底・ハミルトニアン・双極子行列の生成
+print("=== 振動励起シミュレーション ===")
+print(f"基底サイズ: V_max={V_MAX}")
 
-# ============================================================================
+# 調和振動子の場合
+basis_h = VibLadderBasis(
+    V_max=V_MAX,
+    omega=OMEGA_01,
+    delta_omega=DOMEGA,
+    input_units=UNIT_FREQUENCY,
+    output_units="rad/fs"
+)
+H0_h = basis_h.generate_H0()
 
+print(f"基底次元 (調和振動子): {basis_h.size()}")
+print(f"エネルギー準位数: {len(H0_h.get_eigenvalues())}")
 
-def print_simulation_parameters():
-    """Display current simulation parameters"""
-    print("=" * 80)
-    print("CURRENT SIMULATION PARAMETERS")
-    print("=" * 80)
+# モース振動子の場合
+basis_m = VibLadderBasis(
+    V_max=V_MAX,
+    omega=OMEGA_01,
+    delta_omega=DOMEGA,
+    input_units=UNIT_FREQUENCY,
+    output_units="rad/fs"
+)
+H0_m = basis_m.generate_H0()
 
-    print("\n[SYSTEM PARAMETERS]")
-    for key, value in SYSTEM_PARAMS.items():
-        print(f"  {key:<20}: {value}")
+print(f"基底次元 (モース振動子): {basis_m.size()}")
+print(f"エネルギー準位数: {len(H0_m.get_eigenvalues())}")
 
-    print("\n[ELECTRIC FIELD PARAMETERS]")
-    for key, value in FIELD_PARAMS.items():
-        print(f"  {key:<20}: {value}")
+# エネルギー準位の表示
+eigenvalues_h = H0_h.get_eigenvalues()
+eigenvalues_m = H0_m.get_eigenvalues()
+print("\n=== エネルギー準位 ===")
+print("調和振動子:")
+for i, e in enumerate(eigenvalues_h):
+    print(f"v={i}: {e:.6f} rad/fs")
+print("\nモース振動子:")
+for i, e in enumerate(eigenvalues_m):
+    print(f"v={i}: {e:.6f} rad/fs")
 
-    print("\n[TIME PARAMETERS]")
-    for key, value in TIME_PARAMS.items():
-        print(f"  {key:<20}: {value}")
+# 双極子行列の生成
+dipole_matrix_h = VibLadderDipoleMatrix(
+    basis=basis_h,
+    mu0=MU0,
+    potential_type="harmonic",
+    units="C*m",
+    units_input=UNIT_DIPOLE,
+)
 
-    print("\n[PLOT PARAMETERS]")
-    for key, value in PLOT_PARAMS.items():
-        print(f"  {key:<20}: {value}")
+dipole_matrix_m = VibLadderDipoleMatrix(
+    basis=basis_h,
+    mu0=MU0,
+    potential_type="morse",
+    units="C*m",
+    units_input=UNIT_DIPOLE,
+)
 
-    print("=" * 80)
+# %% 初期状態の設定
+# 調和振動子
+state_h = StateVector(basis_h)
+state_h.set_state((0,), 1.0)  # 基底状態 |v=0⟩
+psi0_h = state_h.data
 
+# モース振動子
+state_m = StateVector(basis_m)
+state_m.set_state((0,), 1.0)  # 基底状態 |v=0⟩
+psi0_m = state_m.data
 
-def run_vibrational_excitation_simulation(potential_type="harmonic"):
-    """
-    Run vibrational excitation simulation
+print(f"\n初期状態: |v=0⟩")
 
-    Parameters
-    ----------
-    potential_type : str
-        'harmonic' or 'morse'
-    """
-    print(f"=== Vibrational Excitation Simulation ({potential_type}) ===")
+# %% 時間グリッド・電場生成
+time4Efield = np.arange(TIME_START, TIME_END + 2 * DT_EFIELD, DT_EFIELD)
+tc = (time4Efield[-1] + time4Efield[0]) / 2
 
-    # Get parameters from global settings
-    V_max = SYSTEM_PARAMS["V_max"]
-    omega01 = SYSTEM_PARAMS["omega01"]
-    if potential_type == "morse":
-        domega = SYSTEM_PARAMS["domega_morse"]
-    else:
-        domega = SYSTEM_PARAMS["domega_harmonic"]
-    mu0_au = SYSTEM_PARAMS["mu0_au"]
+# 共鳴周波数の計算
+carrier_freq = float(converter.convert_frequency(OMEGA_01, UNIT_FREQUENCY, "rad/fs"))  # float型に明示的に変換
 
-    # Generate basis and Hamiltonian
-    basis = VibLadderBasis(
-        V_max=V_max, omega=omega01, delta_omega=domega,
-        input_units="rad/fs",
-    )
-    H0 = basis.generate_H0()
-    print(f"Vibrational energy levels: {np.diag(H0.get_matrix('J'))}")
+# 電場の生成
+Efield = ElectricField(tlist=time4Efield)
+Efield.add_dispersed_Efield(
+    envelope_func=gaussian,
+    duration=PULSE_DURATION,
+    t_center=tc,
+    carrier_freq=carrier_freq,
+    carrier_freq_units='rad/fs',
+    amplitude=EFIELD_AMPLITUDE,
+    polarization=POLARIZATION,
+    const_polarisation=False,
+)
 
-    # Generate dipole matrix
-    dipole_matrix = VibLadderDipoleMatrix(
-        basis, mu0=mu0_au, potential_type=potential_type
-    )
+# %% 時間発展計算
+print(f"=== 振動励起シミュレーション (E={EFIELD_AMPLITUDE:.3e} V/m) ===")
 
-    # Initial state: ground vibrational state |v=0⟩
-    state = StateVector(basis)
-    state.set_state((0,), 1.0)
-    psi0 = state.data
+# 調和振動子
+print("\n調和振動子の時間発展計算を開始...")
+start = time.perf_counter()
+time4psi_h, psi_t_h = schrodinger_propagation(
+    hamiltonian=H0_h,
+    Efield=Efield,
+    dipole_matrix=dipole_matrix_h,
+    psi0=psi0_h,
+    axes=AXES,
+    return_traj=True,
+    return_time_psi=True,
+    sample_stride=SAMPLE_STRIDE,
+    sparse=SPARSE,
+)
+end = time.perf_counter()
+print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")
 
-    # Time grid and electric field settings
-    ti = TIME_PARAMS["ti"]
-    tf = TIME_PARAMS["tf"]
-    dt4Efield = TIME_PARAMS["dt"]
-    time4Efield = np.arange(ti, tf + 2 * dt4Efield, dt4Efield)
+# モース振動子
+print("\nモース振動子の時間発展計算を開始...")
+start = time.perf_counter()
+time4psi_m, psi_t_m = schrodinger_propagation(
+    hamiltonian=H0_m,
+    Efield=Efield,
+    dipole_matrix=dipole_matrix_m,
+    psi0=psi0_m,
+    axes=AXES,
+    return_traj=True,
+    return_time_psi=True,
+    sample_stride=SAMPLE_STRIDE,
+    sparse=SPARSE,
+)
+end = time.perf_counter()
+print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")
 
-    # Gaussian pulse electric field settings
-    duration = FIELD_PARAMS["duration"]
-    tc = (time4Efield[-1] + time4Efield[0]) / 2
+# %% 結果プロット
+# メインプロット（調和振動子とモース振動子の比較）
+fig, axes = plt.subplots(3, 1, figsize=(12, 14), sharex=True)
 
-    # Set carrier frequency
-    if FIELD_PARAMS["use_resonance"]:
-        carrier_freq = (
-            omega01 / (2 * np.pi) * FIELD_PARAMS["carrier_freq_factor"]
-        )  # Resonant with vibrational frequency
-    else:
-        carrier_freq = FIELD_PARAMS["custom_carrier_freq"]  # Custom frequency
+# 電場の時間発展
+Efield_data = Efield.get_Efield()
+axes[0].plot(time4Efield, Efield_data[:, 0], "r-", linewidth=1.5, label=r"$E_x(t)$")
+axes[0].plot(time4Efield, Efield_data[:, 1], "b-", linewidth=1.5, label=r"$E_y(t)$")
+axes[0].set_ylabel("Electric Field [V/m]")
+axes[0].set_title(f"Vibrational Excitation, E={EFIELD_AMPLITUDE:.3e} V/m")
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
 
-    amplitude = FIELD_PARAMS["amplitude"]
-    polarization = np.array(
-        FIELD_PARAMS["polarization"]
-    )  # 2-element vector: Ey direction (for vibrational transitions)
+# 調和振動子の占有確率
+prob_t_h = np.abs(psi_t_h) ** 2
+total_prob_h = np.sum(prob_t_h, axis=1)
 
-    Efield = ElectricField(tlist=time4Efield)
-    Efield.add_dispersed_Efield(
-        envelope_func=gaussian,
-        duration=duration,
-        t_center=tc,
-        carrier_freq=carrier_freq,
-        amplitude=amplitude,
-        polarization=polarization,
-        const_polarisation=False,
-    )
+for v in range(V_MAX + 1):
+    axes[1].plot(time4psi_h, prob_t_h[:, v], linewidth=2, label=f"|v={v}⟩")
 
-    # Time evolution calculation
-    print("Starting time evolution calculation...")
-    sample_stride = TIME_PARAMS["sample_stride"]
-    time4psi, psi_t = schrodinger_propagation(
-        hamiltonian=H0,
-        Efield=Efield,
-        dipole_matrix=dipole_matrix,
-        psi0=psi0,
-        axes=FIELD_PARAMS["axes"],  # Couple Ey with μ_z
-        return_traj=True,
-        return_time_psi=True,
-        sample_stride=sample_stride,
-    )
-    print("Time evolution calculation completed.")
+axes[1].plot(time4psi_h, total_prob_h, "k--", alpha=0.7, linewidth=1, label="Total")
+axes[1].set_ylabel("Population (Harmonic)")
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+axes[1].set_ylim(-0.05, 1.05)
 
-    return time4Efield, Efield, time4psi, psi_t, basis
+# モース振動子の占有確率
+prob_t_m = np.abs(psi_t_m) ** 2
+total_prob_m = np.sum(prob_t_m, axis=1)
 
+for v in range(V_MAX + 1):
+    axes[2].plot(time4psi_m, prob_t_m[:, v], linewidth=2, label=f"|v={v}⟩")
 
-def plot_results(time4Efield, Efield, time4psi, psi_t, basis, potential_type):
-    """Plot simulation results"""
-    fig, axes = plt.subplots(2, 1, figsize=PLOT_PARAMS["figsize_main"], sharex=True)
+axes[2].plot(time4psi_m, total_prob_m, "k--", alpha=0.7, linewidth=1, label="Total")
+axes[2].set_xlabel("Time [fs]")
+axes[2].set_ylabel("Population (Morse)")
+axes[2].legend()
+axes[2].grid(True, alpha=0.3)
+axes[2].set_ylim(-0.05, 1.05)
 
-    # Electric field time evolution
-    Efield_data = Efield.get_Efield()
-    axes[0].plot(time4Efield, Efield_data[:, 0], "b-", linewidth=1.5, label=r"$E_y(t)$")
-    axes[0].set_ylabel("Electric Field [a.u.]")
-    axes[0].set_title(
-        f"Vibrational Excitation Simulation ({potential_type.capitalize()})"
-    )
-    axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-    # Population dynamics for each vibrational state
-    max_states = min(PLOT_PARAMS["max_states_plot"], basis.size())
-    colors = plt.cm.viridis(np.linspace(0, 1, max_states))
-    for i in range(max_states):  # Plot first N states only
-        state = basis.get_state(i)
-        v = state[0]
-        prob = np.abs(psi_t[:, i]) ** 2
-        axes[1].plot(time4psi, prob, color=colors[i], linewidth=2, label=f"|v={v}⟩")
+# %% 励起解析
+if False:
+    print("\n=== 励起解析 ===")
+    
+    # 最終状態の分布（調和振動子）
+    final_probs_h = prob_t_h[-1, :]
+    print("\n調和振動子の最終状態分布:")
+    print("状態\t\t確率")
+    print("-" * 30)
+    for v in range(V_MAX + 1):
+        prob = final_probs_h[v]
+        print(f"|v={v}⟩\t\t{prob:.6f}")
 
-    # Check total probability conservation
-    total_prob = np.sum(np.abs(psi_t) ** 2, axis=1)
-    axes[1].plot(time4psi, total_prob, "k--", alpha=0.8, linewidth=1, label="Total")
+    # 最終状態の分布（モース振動子）
+    final_probs_m = prob_t_m[-1, :]
+    print("\nモース振動子の最終状態分布:")
+    print("状態\t\t確率")
+    print("-" * 30)
+    for v in range(V_MAX + 1):
+        prob = final_probs_m[v]
+        print(f"|v={v}⟩\t\t{prob:.6f}")
 
-    axes[1].set_xlabel("Time [fs]")
-    axes[1].set_ylabel("Population")
-    axes[1].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-    axes[1].grid(True, alpha=0.3)
-    axes[1].set_ylim(-0.05, 1.05)
+    # 励起効率の比較
+    print("\n=== 励起効率の比較 ===")
+    excited_prob_h = 1.0 - final_probs_h[0]
+    excited_prob_m = 1.0 - final_probs_m[0]
+    print(f"調和振動子の励起効率: {excited_prob_h:.4f}")
+    print(f"モース振動子の励起効率: {excited_prob_m:.4f}")
 
-    plt.tight_layout()
+# %% エネルギー解析
+if False:
+    print("\n=== エネルギー解析 ===")
 
-    # Save plot
-    filename = f"examples/results/vibrational_excitation_{potential_type}.png"
-    plt.savefig(filename, dpi=PLOT_PARAMS["dpi"], bbox_inches="tight")
-    print(f"Plot saved to {filename}")
+    # 期待値の計算（調和振動子）
+    energy_expectation_h = np.zeros_like(time4psi_h)
+    H0_matrix_h = H0_h.get_matrix()
+    for i, t in enumerate(time4psi_h):
+        psi_state = psi_t_h[i, :]
+        energy_expectation_h[i] = np.real(np.conj(psi_state) @ H0_matrix_h @ psi_state)
 
-    return fig
+    # 期待値の計算（モース振動子）
+    energy_expectation_m = np.zeros_like(time4psi_m)
+    H0_matrix_m = H0_m.get_matrix()
+    for i, t in enumerate(time4psi_m):
+        psi_state = psi_t_m[i, :]
+        energy_expectation_m[i] = np.real(np.conj(psi_state) @ H0_matrix_m @ psi_state)
 
+    # エネルギー変化
+    energy_change_h = energy_expectation_h - energy_expectation_h[0]
+    energy_change_m = energy_expectation_m - energy_expectation_m[0]
+    print(f"エネルギー変化 (調和振動子): {energy_change_h[-1]:.6f} rad/fs")
+    print(f"エネルギー変化 (モース振動子): {energy_change_m[-1]:.6f} rad/fs")
 
-def analyze_final_populations(psi_t, basis, potential_type):
-    """Analyze final state populations"""
-    print(f"\n=== Final State Analysis ({potential_type}) ===")
-    final_populations = np.abs(psi_t[-1, :]) ** 2
-
-    print("Final vibrational state populations:")
-    max_states = min(PLOT_PARAMS["max_states_plot"], basis.size())
-    for i in range(max_states):
-        state = basis.get_state(i)
-        v = state[0]
-        pop = final_populations[i]
-        print(f"  |v={v}⟩: {pop:.4f}")
-
-    # Calculate excitation efficiency
-    ground_state_pop = final_populations[0]
-    excited_pop = 1.0 - ground_state_pop
-    print(f"\nGround state population: {ground_state_pop:.4f}")
-    print(f"Excited state population: {excited_pop:.4f}")
-
-    return final_populations
-
-
-def main():
-    """Main execution function"""
-    print("Vibrational Ladder System Excitation Simulation")
-    print("=" * 50)
-
-    # Display current parameters
-    print_simulation_parameters()
-
-    # Create results directory
-    os.makedirs("examples/results", exist_ok=True)
-
-    # Harmonic oscillator simulation
-    time4Efield_h, Efield_h, time4psi_h, psi_t_h, basis_h = (
-        run_vibrational_excitation_simulation("harmonic")
-    )
-    plot_results(time4Efield_h, Efield_h, time4psi_h, psi_t_h, basis_h, "harmonic")
-    final_pop_h = analyze_final_populations(psi_t_h, basis_h, "harmonic")
-
-    # Morse oscillator simulation
-    time4Efield_m, Efield_m, time4psi_m, psi_t_m, basis_m = (
-        run_vibrational_excitation_simulation("morse")
-    )
-    plot_results(time4Efield_m, Efield_m, time4psi_m, psi_t_m, basis_m, "morse")
-    final_pop_m = analyze_final_populations(psi_t_m, basis_m, "morse")
-
-    # Comparison plot
-    fig_comp, ax = plt.subplots(figsize=PLOT_PARAMS["figsize_comp"])
-
-    max_states = min(PLOT_PARAMS["max_states_plot"], basis_h.size())
-    v_states = np.arange(max_states)
-    width = 0.35
-
-    ax.bar(
-        v_states - width / 2,
-        final_pop_h[: len(v_states)],
-        width,
-        label="Harmonic",
-        alpha=0.8,
-        color="blue",
-    )
-    ax.bar(
-        v_states + width / 2,
-        final_pop_m[: len(v_states)],
-        width,
-        label="Morse",
-        alpha=0.8,
-        color="red",
-    )
-
-    ax.set_xlabel("Vibrational Quantum Number (v)")
-    ax.set_ylabel("Final Population")
-    ax.set_title("Final Population Comparison: Harmonic vs Morse Oscillator")
-    ax.set_xticks(v_states)
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plt.savefig(
-        "examples/results/vibrational_comparison.png",
-        dpi=PLOT_PARAMS["dpi"],
-        bbox_inches="tight",
-    )
-    print("\nComparison plot saved to examples/results/vibrational_comparison.png")
-
+    # エネルギー変化プロット
+    plt.figure(figsize=(10, 6))
+    plt.plot(time4psi_h, energy_change_h, 'b-', linewidth=2, label='Harmonic')
+    plt.plot(time4psi_m, energy_change_m, 'r-', linewidth=2, label='Morse')
+    plt.xlabel('Time [fs]')
+    plt.ylabel('Energy Change [rad/fs]')
+    plt.title('Energy Expectation Time Evolution')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
     plt.show()
 
-    print("\nAll calculations completed!")
-
-
-if __name__ == "__main__":
-    main()
+print("\nシミュレーション完了")

@@ -260,6 +260,22 @@ class ElectricField:
         tlist_s = self.tlist * 1e-15  # fs → s
         return tlist_s / self.scales.t0
 
+    def get_pol(self) -> np.ndarray:
+        """
+        Get polarization vector.
+        """
+        if self._constant_pol is None:
+            raise ValueError("Polarisation is time-dependent (use RK4 path).")
+        return self._constant_pol
+    
+    def get_scalar_field(self) -> np.ndarray:
+        """
+        Get scalar field.
+        """
+        if self._scalar_field is None:
+            raise ValueError("Scalar field is not set.")
+        return self._scalar_field
+    
     def get_scalar_and_pol(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Returns
