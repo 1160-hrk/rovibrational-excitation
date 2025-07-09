@@ -804,9 +804,9 @@ def nondimensionalize_with_SI_base_units(
     
     # パラメータをデフォルト単位経由でSI単位に変換
     if params is not None:
-        from rovibrational_excitation.core.parameter_converter import ParameterConverter
+        from rovibrational_excitation.core.units.parameter_processor import parameter_processor
         print("🔄 Converting parameters via default units to SI...")
-        converted_params = ParameterConverter.auto_convert_parameters(params)
+        converted_params = parameter_processor.auto_convert_parameters(params)
         print("✓ Parameter conversion completed.")
     
     # 時間ステップの設定

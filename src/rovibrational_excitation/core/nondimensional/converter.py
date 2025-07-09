@@ -249,15 +249,15 @@ def nondimensionalize_with_SI_base_units(
     Parameters
     ----------
     H0 : np.ndarray
-        ハミルトニアン行列（任意の単位、自動変換される）
+        ハミルトニアン行列（J）
     mu_x, mu_y : np.ndarray
-        双極子行列（任意の単位、自動変換される）
-    efield : ElectricField
-        電場オブジェクト（任意の単位、自動変換される）
-    dt : float, optional
-        時間ステップ [fs]。auto_timestep=Trueの場合は無視される
-    params : dict, optional
-        元のパラメータ辞書（参考情報用）
+        双極子行列（C·m）
+    efield : np.ndarray
+        電場（V/m）
+    tlist : np.ndarray
+        時間軸（s）
+    params : dict,  optional
+        パラメータ辞書（参考情報用）
     auto_timestep : bool, optional
         lambda_couplingに基づく自動時間ステップ選択, デフォルト: False
     timestep_method : str, optional
@@ -275,9 +275,9 @@ def nondimensionalize_with_SI_base_units(
     
     # パラメータをデフォルト単位経由でSI単位に変換
     if params is not None:
-        from rovibrational_excitation.core.parameter_converter import ParameterConverter
+        from rovibrational_excitation.core.units.parameter_processor import parameter_processor
         print("🔄 Converting parameters via default units to SI...")
-        converted_params = ParameterConverter.auto_convert_parameters(params)
+        converted_params = parameter_processor.auto_convert_parameters(params)
         print("✓ Parameter conversion completed.")
     
     # 入力が既にSI単位[J, C·m, V/m]の場合、そのまま使用
@@ -302,21 +302,23 @@ def nondimensionalize_with_SI_base_units(
     scales = determine_SI_based_scales(H0_energy_J, mu_x_Cm, field_amplitude_V_per_m)
     
     # 自動時間ステップ選択
+    dt_final = (tlist[1] - tlist[0])  # Default dt in seconds
     if auto_timestep:
         print(f"\n⏱️  Auto-selecting timestep based on λ={scales.lambda_coupling:.3f}...")
         dt_recommended_fs = scales.get_recommended_timestep_fs(
             safety_factor=timestep_safety_factor,
             method=timestep_method
         )
+        dt_recommended_s = dt_recommended_fs * 1e-15
         print(f"   Recommended dt: {dt_recommended_fs:.3f} fs (method: {timestep_method})")
-        print(f"   Original dt: {dt:.3f} fs")
+        print(f"   Original dt: {dt_final * 1e15:.3f} fs")
         
         # 推奨値と元の値の比較
-        if dt_recommended_fs < dt * 0.5:
+        if dt_recommended_s < dt_final * 0.5:
             print(f"   ⚠️  Warning: Recommended dt is much smaller than original")
             print(f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability")
         
-        dt = dt_recommended_fs
+        dt_final = dt_recommended_s
     
     # 無次元化の実行
     print("\n🔢 Performing nondimensionalization...")
@@ -332,11 +334,10 @@ def nondimensionalize_with_SI_base_units(
     Efield_prime = efield / scales.Efield0
     
     # 時間軸の無次元化
-    tlist_s = tlist * 1e-15  # fs → s
-    dt_s = (tlist[1] - tlist[0]) * 1e-15  # fs → s
+    tlist_s = tlist * 1e-15
     
     tlist_prime = tlist_s / scales.t0
-    dt_prime = dt_s / scales.t0
+    dt_prime = dt_final / scales.t0
     
     print("✓ Nondimensionalization completed successfully!")
     
