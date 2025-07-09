@@ -176,6 +176,7 @@ time4psi, psi_t = schrodinger_propagation(
     return_time_psi=True,
     sample_stride=SAMPLE_STRIDE,
     sparse=SPARSE,
+    algorithm="rk4",
 )
 end = time.perf_counter()
 print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")

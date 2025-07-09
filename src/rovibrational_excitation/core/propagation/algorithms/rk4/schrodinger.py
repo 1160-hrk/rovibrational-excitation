@@ -20,19 +20,15 @@ from scipy.sparse import csr_matrix
 # ------------------------------------------------------------------ #
 # 0.  電場ヘルパ：3-tuple 配列 & step 数を返す                       #
 # ------------------------------------------------------------------ #
-def _field_to_triplets(field: np.ndarray) -> tuple[np.ndarray, int]:
+def _field_to_triplets(field: np.ndarray) -> np.ndarray:
     """
     奇数長 → そのまま
     偶数長 → 末尾 1 点をバッサリ捨てる
     """
-    if field.ndim != 1 or field.size < 3:
-        raise ValueError("E-field must be 1-D with length ≥3")
-
-    steps = (field.size - 1) // 2  # 必ず整数
     ex1 = field[0:-2:2]
     ex2 = field[1:-1:2]
     ex4 = field[2::2]
-    return np.column_stack((ex1, ex2, ex4)).astype(np.float64, copy=False), steps
+    return np.column_stack((ex1, ex2, ex4)).astype(np.float64, copy=False)
 
 
 # ================================================================== #
@@ -52,11 +48,17 @@ except ImportError:  # numba 不在でも動くダミー
 @njit(
     "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
     "f8[:, :], f8[:, :],"
-    "c16[:], f8, b1, i8, i8, b1)",
+    "c16[:], f8, b1, i8, b1)",
     fastmath=True,
     cache=True,
 )
-def _rk4_cpu(H0, mux, muy, Ex3, Ey3, psi0, dt, return_traj, steps, stride, renorm):
+def _rk4_cpu(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
+
+    steps = (Ex.size - 1) // 2  # 必ず整数
+    Ex3, Ey3 = np.zeros((steps, 3), dtype=np.float64), np.zeros((steps, 3), dtype=np.float64)
+    Ex3[:, 0], Ey3[:, 0] = Ex[0:-2:2], Ey[0:-2:2]
+    Ex3[:, 1], Ey3[:, 1] = Ex[1:-1:2], Ey[1:-1:2]
+    Ex3[:, 2], Ey3[:, 2] = Ex[2::2], Ey[2::2]
     psi = psi0.copy()
     dim = psi.size
     n_out = steps // stride + 1
@@ -98,66 +100,11 @@ def _rk4_cpu_sparse(
     H0: Union[csr_matrix, np.ndarray],
     mux: Union[csr_matrix, np.ndarray],
     muy: Union[csr_matrix, np.ndarray],
-    Ex3: np.ndarray,
-    Ey3: np.ndarray,
-    psi0: np.ndarray,
-    dt: float, steps: int,
-    return_traj: bool,
-    stride: int, renorm: bool):
-    if not isinstance(H0, csr_matrix):
-        H0 = csr_matrix(H0)
-    if not isinstance(mux, csr_matrix):
-        mux = csr_matrix(mux)
-    if not isinstance(muy, csr_matrix):
-        muy = csr_matrix(muy)
-
-    psi = psi0.copy()
-    dim = psi.size
-    n_out = steps // stride + 1
-    out = np.empty((n_out, dim), np.complex128)
-    out[0] = psi
-    idx = 1
-    buf = np.empty_like(psi)
-    k1 = np.empty_like(psi)
-    k2 = np.empty_like(psi)
-    k3 = np.empty_like(psi)
-    k4 = np.empty_like(psi)
-
-    for s in range(steps):
-        ex1, ex2, ex4 = Ex3[s]
-        ey1, ey2, ey4 = Ey3[s]
-        H1 = H0 + mux * ex1 + muy * ey1
-        H2 = H0 + mux * ex2 + muy * ey2  # =H3
-        H4 = H0 + mux * ex4 + muy * ey4
-        k1[:] = -1j * (H1 @ psi)
-        buf[:] = psi + 0.5 * dt * k1
-        k2[:] = -1j * (H2 @ buf)
-        buf[:] = psi + 0.5 * dt * k2
-        k3[:] = -1j * (H2 @ buf)
-        buf[:] = psi + dt * k3
-        k4[:] = -1j * (H4 @ buf)
-        psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        if renorm:
-            psi /= np.sqrt((psi.conj() @ psi).real)
-        if return_traj and (s + 1) % stride == 0:
-            out[idx] = psi
-            idx += 1
-    if return_traj:
-        return out
-    else:
-        return psi.reshape((1, dim))
-
-
-def _rk4_cpu_sparse_pattern(
-    H0: Union[csr_matrix, np.ndarray],
-    mux: Union[csr_matrix, np.ndarray],
-    muy: Union[csr_matrix, np.ndarray],
-    Ex3: np.ndarray,
-    Ey3: np.ndarray,
+    Ex: np.ndarray,
+    Ey: np.ndarray,
     psi0: np.ndarray,
     dt: float,
     return_traj: bool,
-    steps: int,
     stride: int,
     renorm: bool = False,
 ) -> np.ndarray:
@@ -168,7 +115,7 @@ def _rk4_cpu_sparse_pattern(
     ----------
     H0, mux, muy : csr_matrix
         Hamiltonian and dipole operators (sparse)
-    Ex3, Ey3 : (steps, 3) ndarray
+    Ex, Ey : (2*steps+1) ndarray
         Electric field triplets
     psi0 : (dim,) ndarray
         Initial wavefunction
@@ -186,6 +133,10 @@ def _rk4_cpu_sparse_pattern(
     out : (n_out, dim) ndarray
         Time evolution
     """
+    steps = (Ex.size - 1) // 2  # 必ず整数
+    Ex3 = _field_to_triplets(Ex)
+    Ey3 = _field_to_triplets(Ey)
+    
     if not isinstance(H0, csr_matrix):
         H0 = csr_matrix(H0)
     if not isinstance(mux, csr_matrix):
@@ -360,10 +311,13 @@ void rk4_loop(const cuDoubleComplex* __restrict__ H0,
 """  # noqa: E501 (long CUDA string)
 
 
-def _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, dt: float, steps: int):
+def _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, dt: float):
     if cp is None:
         raise RuntimeError("backend='cupy' but CuPy is not installed")
     dim = H0.shape[0]
+    steps = (Ex.size - 1) // 2  # 必ず整数
+    Ex3 = _field_to_triplets(Ex)
+    Ey3 = _field_to_triplets(Ey)
     src = _KERNEL_SRC_TEMPLATE.format(dim=dim, steps=steps, dt=dt)
     mod = cp.RawModule(
         code=src, options=("-std=c++17",), name_expressions=("rk4_loop",)
@@ -389,8 +343,8 @@ def rk4_schrodinger(
     H0: np.ndarray,
     mux: np.ndarray,
     muy: np.ndarray,
-    E_x: np.ndarray,
-    E_y: np.ndarray,
+    Ex: np.ndarray,
+    Ey: np.ndarray,
     psi0: np.ndarray,
     dt: float,
     return_traj: bool = True,
@@ -408,31 +362,24 @@ def rk4_schrodinger(
     psi_traj : (n_sample, dim) complex128
         return_traj=False → shape (1, dim)
     """
-    Ex3, steps = _field_to_triplets(np.asarray(E_x))
-    Ey3, _ = _field_to_triplets(np.asarray(E_y))
     psi0 = np.asarray(psi0, np.complex128).ravel()
 
     if backend == "cupy":
         if return_traj:
-            return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)
+            return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))
         else:
-            return _rk4_gpu(H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps)[-1]
+            return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))[-1]
 
     if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
-        
-        # return _rk4_cpu_sparse(
-        #     H0, mux, muy, Ex3, Ey3, psi0, float(dt), steps, stride, renorm
-        # )
-        return _rk4_cpu_sparse_pattern(
-            H0,
+        return _rk4_cpu_sparse(
+            H0, 
             mux,
             muy,
-            Ex3,
-            Ey3,
+            Ex,
+            Ey,
             psi0,
             float(dt),
             return_traj,
-            steps,
             stride,
             renorm,
         )
@@ -441,12 +388,11 @@ def rk4_schrodinger(
         np.ascontiguousarray(H0, np.complex128),
         np.ascontiguousarray(mux, np.complex128),
         np.ascontiguousarray(muy, np.complex128),
-        Ex3,
-        Ey3,
+        Ex,
+        Ey,
         psi0,
         float(dt),
         return_traj,
-        steps,
         stride,
         renorm
     )
