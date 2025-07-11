@@ -47,7 +47,7 @@ except ImportError:  # numba 不在でも動くダミー
 
 @njit(
     "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
-    "f8[:, :], f8[:, :],"
+    "f8[:], f8[:],"
     "c16[:], f8, b1, i8, b1)",
     fastmath=True,
     cache=True,
