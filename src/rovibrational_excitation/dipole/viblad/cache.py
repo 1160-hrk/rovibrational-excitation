@@ -86,7 +86,12 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
                     val = vib_func(v1, v2)
                     if val != 0.0:
                         matrix[i, j] = self.mu0 * val
-        # x,y remain zeros
+        elif axis == "x":
+            matrix = np.diag(np.ones(len(self.basis.V_array)-1), 1)
+            matrix += np.diag(np.ones(len(self.basis.V_array)-1), -1)
+            matrix *= self.mu0
+        elif axis == "y":
+            matrix = np.zeros((dim, dim), dtype=np.complex128)
         return matrix
 
     # ------------------------------------------------------------------

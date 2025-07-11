@@ -86,9 +86,13 @@ class VibLadderDipoleMatrix:
                     if vib_element != 0.0:
                         matrix[i, j] = self.mu0 * vib_element
 
-        elif axis in ["x", "y"]:
+        elif axis == "x":
             # For pure vibrational systems, x and y components are typically zero
             # (no rotational mixing)
+            matrix = np.diag(np.ones(len(self.basis.V_array)-1), 1)
+            matrix += np.diag(np.ones(len(self.basis.V_array)-1), -1)
+            # matrix = np.zeros((dim, dim), dtype=np.complex128)
+        elif axis == "y":
             matrix = np.zeros((dim, dim), dtype=np.complex128)
 
         else:
