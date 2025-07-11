@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core._splitop_schrodinger import splitop_schrodinger
+from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import splitop_schrodinger
 
 # CuPyが利用可能か判定
 try:

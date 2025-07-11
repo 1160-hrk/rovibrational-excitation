@@ -7,24 +7,16 @@ to ensure physical quantities are correctly converted to standard units.
 
 import pytest
 import numpy as np
-from rovibrational_excitation.core.units import (
-    convert_frequency,
-    convert_dipole_moment,
-    convert_electric_field,
-    convert_energy,
-    convert_area,
-    convert_time,
-    auto_convert_parameters,
-    set_default_units,
-    get_default_units,
-    apply_default_units,
-    FREQUENCY_CONVERSIONS,
-    DIPOLE_CONVERSIONS,
-    FIELD_CONVERSIONS,
-    INTENSITY_CONVERSIONS,
-    ENERGY_CONVERSIONS,
-    AREA_CONVERSIONS
-)
+from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.core.units.parameter_processor import parameter_processor
+
+# 現在のAPIに合わせてマッピング
+convert_frequency = converter.convert_frequency
+convert_dipole_moment = converter.convert_dipole_moment
+convert_electric_field = converter.convert_electric_field
+convert_energy = converter.convert_energy
+convert_time = converter.convert_time
+auto_convert_parameters = parameter_processor.auto_convert_parameters
 
 # Physical constants for validation
 _c = 2.99792458e10  # speed of light [cm/s]
@@ -178,7 +170,7 @@ class TestElectricFieldConversions:
     
     def test_invalid_unit(self):
         """Test error handling for invalid units."""
-        with pytest.raises(ValueError, match="Unknown electric field unit"):
+        with pytest.raises(ValueError, match="Unknown electric field/intensity unit"):
             convert_electric_field(100, "invalid_unit")
 
 

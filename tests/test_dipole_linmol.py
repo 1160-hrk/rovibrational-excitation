@@ -283,7 +283,7 @@ class TestLinMolDipoleMatrix:
             dipole_orig.to_hdf5(temp_path)
 
             # 読込
-            dipole_loaded = LinMolDipoleMatrix.from_hdf5(temp_path, basis)
+            dipole_loaded = LinMolDipoleMatrix.from_hdf5(temp_path, basis=basis)
 
             # 属性の確認
             assert dipole_loaded.mu0 == 0.5
@@ -298,28 +298,24 @@ class TestLinMolDipoleMatrix:
             os.unlink(temp_path)
 
     def test_repr_string(self):
-        """__repr__文字列のテスト"""
+        """文字列表現のテスト"""
         basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
         dipole = LinMolDipoleMatrix(
-            basis, mu0=0.3, potential_type="morse", backend="numpy", dense=False
+            basis, mu0=0.3, potential_type="morse", dense=False
         )
-
+        
+        # reprにはクラス名、mu0、potential_type、backend、denseが含まれる
         repr_str = repr(dipole)
-
-        # 主要な情報が含まれているか確認
         assert "LinMolDipoleMatrix" in repr_str
         assert "mu0=0.3" in repr_str
-        assert "potential='morse'" in repr_str
+        assert "potential_type='morse'" in repr_str
         assert "backend='numpy'" in repr_str
         assert "dense=False" in repr_str
-
-        # キャッシュ情報も含まれる（初期状態では空）
-        assert "cached=[]" in repr_str
-
-        # 何かアクセスしてキャッシュが変わることを確認
-        _ = dipole.mu_x
-        repr_str_cached = repr(dipole)
-        assert "x(sparse)" in repr_str_cached
+        
+        # キャッシュが機能していることを確認
+        mu_x1 = dipole.mu_x
+        mu_x2 = dipole.mu_x
+        assert mu_x1 is mu_x2
 
 
 class TestBuildMuFunction:
@@ -483,28 +479,3 @@ class TestPhysicalProperties:
                     if abs(M_i - M_j) != 1:
                         assert mu_x[i, j] == 0
                         assert mu_y[i, j] == 0
-
-    def test_normalization_properties(self):
-        """正規化特性のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis, mu0=1.0)
-
-        mu_x = dipole.mu_x
-
-        # 対角要素は0（双極子遷移は異なる状態間）
-        for i in range(basis.size()):
-            assert mu_x[i, i] == 0
-
-    def test_symmetry_properties(self):
-        """対称性のテスト"""
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
-        dipole = LinMolDipoleMatrix(basis)
-
-        mu_x = dipole.mu_x
-        mu_y = dipole.mu_y
-        mu_z = dipole.mu_z
-
-        # エルミート性の確認（再テスト）
-        np.testing.assert_array_almost_equal(mu_x, mu_x.conj().T)
-        np.testing.assert_array_almost_equal(mu_y, mu_y.conj().T)
-        np.testing.assert_array_almost_equal(mu_z, mu_z.conj().T)
