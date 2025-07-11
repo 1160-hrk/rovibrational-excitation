@@ -28,6 +28,7 @@ class MixedStatePropagator(PropagatorBase):
         backend: Literal["numpy", "cupy"] = "numpy",
         sparse: bool = False,
         validate_units: bool = True,
+        renorm: bool = False,
     ):
         """
         Initialize mixed state propagator.
@@ -50,10 +51,9 @@ class MixedStatePropagator(PropagatorBase):
         
         # Create underlying Schrödinger propagator
         self._schrodinger_prop = SchrodingerPropagator(
-            algorithm=algorithm,
             backend=backend,
-            sparse=sparse,
-            validate_units=False,  # We handle validation
+            validate_units=validate_units,
+            renorm=renorm,
         )
     
     def get_algorithm_name(self) -> str:

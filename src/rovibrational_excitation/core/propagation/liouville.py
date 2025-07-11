@@ -5,16 +5,18 @@ This module provides the LiouvillePropagator class for density matrix
 propagation using the Liouville-von Neumann equation.
 """
 
-from typing import Optional, Literal, Union
+from typing import Optional, Literal, Union, cast
 import numpy as np
 
 from .base import PropagatorBase
 from .utils import (
     get_backend,
     prepare_propagation_args,
+    ensure_sparse_matrix,
     HAS_CUPY,
 )
 from ..units.validators import validator
+from .algorithms.rk4.lvne import rk4_lvne
 
 
 class LiouvillePropagator(PropagatorBase):
@@ -104,10 +106,8 @@ class LiouvillePropagator(PropagatorBase):
         verbose = kwargs.get('verbose', False)
         dt = kwargs.get('dt', None)
         
-        # Use initial_state as rho0
         rho0 = initial_state
         
-        # Unit validation
         if self.validate_units:
             warnings = validator.validate_propagation_units(
                 hamiltonian, dipole_matrix, efield
@@ -117,30 +117,29 @@ class LiouvillePropagator(PropagatorBase):
                 if verbose:
                     self.print_validation_warnings()
         
-        # Get backend
-        xp = get_backend(self.backend)
-        
-        # Prepare arguments
-        H0, mu_a, mu_b, Ex, Ey, dt_calc = prepare_propagation_args(
+        # Prepare arguments using the same utility as SchrodingerPropagator
+        H0, mu_x, mu_y, Ex, Ey, _, _, dt = prepare_propagation_args(
             hamiltonian,
             efield,
             dipole_matrix,
             axes=axes,
-            dt=dt,
             nondimensional=False,
             auto_timestep=False,
         )
         
+        backend_typed = cast(Literal["numpy", "cupy"], self.backend)
+        xp = get_backend(backend_typed)
+        
         # Calculate number of steps
         steps = (len(Ex) - 1) // 2
         
-        # Import and run RK4 Liouville propagator
-        from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
-        
         # Prepare arguments for RK4
-        rk4_args = (H0, mu_a, mu_b, Ex, Ey, xp.asarray(rho0), dt_calc, steps)
+        rk4_args = (H0, mu_x, mu_y, Ex, Ey, xp.asarray(rho0), dt, steps)
         
+        # Call the appropriate low-level propagator
         if return_traj:
+            from .algorithms.rk4.lvne import rk4_lvne_traj
             return rk4_lvne_traj(*rk4_args, sample_stride)
         else:
+            from .algorithms.rk4.lvne import rk4_lvne
             return rk4_lvne(*rk4_args) 

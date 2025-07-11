@@ -498,9 +498,9 @@ def nondimensionalize_system(
     
     if len(energy_diffs_nonzero) == 0:
         # すべて縮退している場合、最大エネルギー値をスケールとして使用
-        E0 = np.max(np.abs(eigvals))
-        if E0 == 0:
-            E0 = hbar / 1e-15  # 最終的なフォールバック
+        E0 = np.max(np.abs(eigvals)) if len(eigvals) > 0 else 1.0
+        if E0 < min_energy_diff:
+            E0 = min_energy_diff  # ゼロエネルギーの場合は最小値を設定
     else:
         # 相対的に小さすぎる差を除外（最大差の1e-6以下）
         max_diff = np.max(energy_diffs_nonzero)

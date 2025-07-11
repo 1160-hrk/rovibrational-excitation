@@ -62,9 +62,9 @@ __all__ = ["splitop_schrodinger"]
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:],"
+    "c16[:, :](c16[:, :], c16[:, :], f8[:],"
     "c16[:], c16[:],"
-    "c16[:], c16, b1, i8)",
+    "f8[:], c16, b1, i8)",
     cache=True,
 )
 def _propagate_numpy(
@@ -229,7 +229,7 @@ def splitop_schrodinger(
         mu_x = np.asarray(mu_x, dtype=np.complex128)
         mu_y = np.asarray(mu_y, dtype=np.complex128)
 
-    pol = np.asarray(pol, dtype=np.complex128)
+    pol = np.asarray(pol, dtype=np.float64)
     Efield = np.asarray(Efield, dtype=np.float64)
     psi = np.asarray(psi, dtype=np.complex128).flatten()  # 1次元に変換
 
