@@ -88,7 +88,7 @@ class TestVibLadderDipoleMatrix:
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y
 
-        np.testing.assert_array_equal(mu_x, np.zeros_like(mu_x))
+        np.testing.assert_array_equal(mu_x, np.diag(np.ones(mu_x.shape[0]-1), 1)+np.diag(np.ones(mu_x.shape[0]-1), -1))
         np.testing.assert_array_equal(mu_y, np.zeros_like(mu_y))
 
     def test_caching_mechanism(self):
