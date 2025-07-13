@@ -19,6 +19,7 @@ htmlcov/
 scripts/for_rovibrational_excitation/results/
 examples/results/
 /results/
+tests/results/
 
 
 # VS Code
