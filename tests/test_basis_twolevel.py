@@ -89,19 +89,18 @@ def test_twolevel_get_state_errors():
 
 def test_twolevel_generate_H0():
     """ハミルトニアン生成のテスト"""
+    # デフォルトパラメータ（1.0 rad/fsのギャップ）
     basis = TwoLevelBasis()
-
-    # デフォルトパラメータ（rad/fs単位で出力）
-    H0 = basis.generate_H0(units="rad/fs")
-    expected = np.diag([0.0, 1.0])
-    np.testing.assert_array_equal(H0.matrix, expected)
-
-    # エネルギー単位での出力
-    H0_energy = basis.generate_H0(units="J")
-    assert H0_energy.units == "J"
+    H0 = basis.generate_H0()
     
-    # 周波数単位での出力
-    H0_freq = basis.generate_H0(units="rad/fs")
+    # デフォルトではJ単位で出力
+    assert H0.units == "J"
+    
+    # 周波数単位で出力する場合
+    basis_freq = TwoLevelBasis(energy_gap=1.0, input_units="rad/fs", output_units="rad/fs")
+    H0_freq = basis_freq.generate_H0()
+    expected = np.diag([0.0, 1.0])
+    np.testing.assert_array_equal(H0_freq.matrix, expected)
     assert H0_freq.units == "rad/fs"
 
 

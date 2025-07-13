@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger
+from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
 
 
 def make_simple_case():
@@ -46,6 +46,6 @@ def test_rk4_schrodinger_renorm():
 
 def test_rk4_schrodinger_error():
     H0, mux, muy, Ex, Ey, psi0, dt = make_simple_case()
-    # E_x, E_yの長さが短すぎる場合
+    # 空の電場配列でValueErrorが発生することを確認
     with pytest.raises(ValueError):
-        rk4_schrodinger(H0, mux, muy, np.array([1.0]), np.array([0.0]), psi0, dt)
+        rk4_schrodinger(H0, mux, muy, np.array([]), np.array([]), psi0, dt)

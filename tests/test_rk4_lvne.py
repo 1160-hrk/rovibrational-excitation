@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
 
-from rovibrational_excitation.core._rk4_lvne import rk4_lvne
+from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne
 
 
 def make_simple_case():

@@ -13,30 +13,24 @@ from rovibrational_excitation.core.nondimensionalize import nondimensionalize_sy
 
 def test_hamiltonian_unit_consistency():
     """ハミルトニアンの単位統一のテスト"""
-    basis = LinMolBasis(V_max=2, J_max=3, use_M=False, omega_rad_phz=0.159)
+    basis = LinMolBasis(V_max=2, J_max=3, use_M=False, omega=0.159, B=3.9e-5, input_units="rad/fs")
     
     # 周波数単位で生成
-    H0_freq = basis.generate_H0(
-        omega_rad_phz=0.159, 
-        B_rad_phz=3.9e-5,
-        return_energy_units=False  # 周波数単位
-    )
+    basis_freq = LinMolBasis(V_max=2, J_max=3, use_M=False, omega=0.159, B=3.9e-5, input_units="rad/fs", output_units="rad/fs")
+    H0_freq = basis_freq.generate_H0()
     
     # エネルギー単位で生成
-    H0_energy = basis.generate_H0(
-        omega_rad_phz=0.159, 
-        B_rad_phz=3.9e-5,
-        return_energy_units=True  # エネルギー単位
-    )
+    basis_energy = LinMolBasis(V_max=2, J_max=3, use_M=False, omega=0.159, B=3.9e-5, input_units="rad/fs", output_units="J")
+    H0_energy = basis_energy.generate_H0()
     
     # 単位変換確認
     _HBAR = 6.62607015e-034 / (2 * np.pi)
     _FS_TO_S = 1e-15
-    H0_converted = H0_freq * _HBAR / _FS_TO_S
-    np.testing.assert_array_almost_equal(H0_energy, H0_converted, decimal=10)
+    H0_converted = H0_freq.matrix * _HBAR / _FS_TO_S
+    np.testing.assert_array_almost_equal(H0_energy.matrix, H0_converted, decimal=10)
     
     # エネルギー単位が適切な範囲にあるか
-    energies = np.diag(H0_energy)
+    energies = np.diag(H0_energy.matrix)
     energy_range_J = np.max(energies) - np.min(energies)
     energy_range_eV = energy_range_J / 1.602176634e-19
     
@@ -55,31 +49,27 @@ def test_nondimensionalization_unit_options():
         polarization=np.array([1.0, 0.0])
     )
     
-    basis = LinMolBasis(V_max=2, J_max=2, use_M=False, omega_rad_phz=0.159)
+    basis = LinMolBasis(V_max=2, J_max=2, use_M=False, omega=0.159, input_units="rad/fs")
     
     # エネルギー単位のH0
-    H0_energy = basis.generate_H0(
-        omega_rad_phz=0.159, return_energy_units=True
-    )
+    H0_energy = basis.generate_H0_with_params(omega=0.159, input_units="rad/fs", units="J")
     
     # 周波数単位のH0  
-    H0_freq = basis.generate_H0(
-        omega_rad_phz=0.159, return_energy_units=False
-    )
+    H0_freq = basis.generate_H0_with_params(omega=0.159, input_units="rad/fs", units="rad/fs")
     
     # ダミー双極子
-    mu_x = np.random.random(H0_energy.shape) * 1e-30
+    mu_x = np.random.random(H0_energy.matrix.shape) * 1e-30
     mu_y = np.zeros_like(mu_x)
     
     # エネルギー単位での無次元化
     (_, _, _, _, _, _, scales_energy) = nondimensionalize_system(
-        H0_energy, mu_x, mu_y, efield,
+        H0_energy.matrix, mu_x, mu_y, efield,
         H0_units="energy", time_units="fs"
     )
     
     # 周波数単位での無次元化
     (_, _, _, _, _, _, scales_freq) = nondimensionalize_system(
-        H0_freq, mu_x, mu_y, efield,
+        H0_freq.matrix, mu_x, mu_y, efield,
         H0_units="frequency", time_units="fs"
     )
     
@@ -134,19 +124,19 @@ def test_time_unit_handling():
 def test_backward_compatibility():
     """後方互換性のテスト"""
     # 古い使い方（周波数単位）でも動作するか
-    basis = LinMolBasis(V_max=2, J_max=2, use_M=False, omega_rad_phz=0.159)
+    basis = LinMolBasis(V_max=2, J_max=2, use_M=False)
     
     # デフォルトではエネルギー単位
-    H0_default = basis.generate_H0(omega_rad_phz=0.159)
+    H0_default = basis.generate_H0_with_params(omega_rad_pfs=0.159, units="J")
     
     # 明示的にエネルギー単位
-    H0_explicit = basis.generate_H0(omega_rad_phz=0.159, return_energy_units=True)
+    H0_explicit = basis.generate_H0_with_params(omega_rad_pfs=0.159, units="J")
     
     # 同じ結果になるべき
-    np.testing.assert_array_equal(H0_default, H0_explicit)
+    np.testing.assert_array_equal(H0_default.matrix, H0_explicit.matrix)
     
     # エネルギー単位である事を確認
-    energies = np.diag(H0_default)
+    energies = np.diag(H0_default.matrix)
     # CO2の基底振動エネルギー：約0.2eV ≈ 3.2e-20 J
     expected_order = 1e-20  # J
     assert np.max(energies) > expected_order / 10
@@ -159,8 +149,8 @@ def test_physical_regime_analysis():
     from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
     
     # 現実的なCO2系
-    basis = LinMolBasis(V_max=3, J_max=5, use_M=False, omega_rad_phz=0.159)
-    H0 = basis.generate_H0(omega_rad_phz=0.159, B_rad_phz=3.9e-5, return_energy_units=True)
+    basis = LinMolBasis(V_max=3, J_max=5, use_M=False, omega=0.159, B=3.9e-5, input_units="rad/fs")
+    H0 = basis.generate_H0()
     dip = LinMolDipoleMatrix(basis, mu0=0.3e-29, backend="numpy", dense=True)
     
     # 弱い電場
@@ -182,14 +172,14 @@ def test_physical_regime_analysis():
     
     # 弱結合解析
     _, _, _, _, _, _, scales_weak = nondimensionalize_system(
-        H0, dip.mu_x, dip.mu_y, efield_weak,
+        H0.matrix, dip.mu_x, dip.mu_y, efield_weak,
         H0_units="energy", time_units="fs"
     )
     regime_weak = analyze_regime(scales_weak)
     
     # 強結合解析
     _, _, _, _, _, _, scales_strong = nondimensionalize_system(
-        H0, dip.mu_x, dip.mu_y, efield_strong,
+        H0.matrix, dip.mu_x, dip.mu_y, efield_strong,
         H0_units="energy", time_units="fs"
     )
     regime_strong = analyze_regime(scales_strong)

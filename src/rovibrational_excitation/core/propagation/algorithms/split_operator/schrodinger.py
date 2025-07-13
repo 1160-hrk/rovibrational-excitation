@@ -62,9 +62,9 @@ __all__ = ["splitop_schrodinger"]
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:],"
+    "c16[:, :](c16[:, :], c16[:, :], f8[:],"
     "c16[:], c16[:],"
-    "c16[:], c16, b1, i8)",
+    "f8[:], c16, b1, i8)",
     cache=True,
 )
 def _propagate_numpy(
@@ -126,6 +126,23 @@ def _propagate_numpy_sparse(
         U = csr_matrix(U)
     if not isinstance(U_H, csr_matrix):
         U_H = csr_matrix(U_H)
+    pattern = ((U != 0) + (U_H != 0))
+    pattern = pattern.astype(np.complex128)  # 確実に複素数
+    pattern.data[:] = 1.0 + 0j
+    pattern = pattern.tocsr()
+
+    # 2️⃣ パターンに合わせてデータを展開
+    def expand_to_pattern(matrix: csr_matrix, pattern: csr_matrix) -> np.ndarray:
+        result_data = np.zeros_like(pattern.data, dtype=np.complex128)
+        m_csr = matrix.tocsr()
+        pi, pj = pattern.nonzero()
+        m_dict = {(i, j): v for i, j, v in zip(*m_csr.nonzero(), m_csr.data)}
+        for idx_, (i, j) in enumerate(zip(pi, pj)):
+            result_data[idx_] = m_dict.get((i, j), 0.0 + 0j)
+        return result_data
+
+    U_data = expand_to_pattern(U, pattern)
+    U_H_data = expand_to_pattern(U_H, pattern)
     dim = psi0.shape[0]
     steps = e_mid.size
     n_samples = steps // stride + 1
@@ -141,7 +158,7 @@ def _propagate_numpy_sparse(
 
         # Interaction part   exp[ phase_coeff * E * eigvals ]
         phase = np.exp(phase_coeff * e_mid[k] * eigvals)
-        psi = U @ (phase * (U_H @ psi))
+        psi = U_data @ (phase * (U_H_data @ psi))
 
         # H0 – 後半
         psi *= exp_half
@@ -184,14 +201,15 @@ def splitop_schrodinger(
     """
 
     steps = (len(Efield) - 1) // 2
-
+    E_mid = Efield[1 : 2 * steps + 1 : 2]
+    
     if backend == "cupy":
         if cp is None:
             raise RuntimeError(
                 "backend='cupy' was requested but CuPy is not installed."
             )
         return _splitop_cupy(
-            H0, mu_x, mu_y, pol, Efield, psi, dt, return_traj, sample_stride, steps
+            H0, mu_x, mu_y, pol, E_mid, psi, dt, return_traj, sample_stride
         )
 
     # ---------------- CPU / NumPy (+Numba) path ---------------------------
@@ -211,7 +229,7 @@ def splitop_schrodinger(
         mu_x = np.asarray(mu_x, dtype=np.complex128)
         mu_y = np.asarray(mu_y, dtype=np.complex128)
 
-    pol = np.asarray(pol, dtype=np.complex128)
+    pol = np.asarray(pol, dtype=np.float64)
     Efield = np.asarray(Efield, dtype=np.float64)
     psi = np.asarray(psi, dtype=np.complex128).flatten()  # 1次元に変換
 
@@ -224,7 +242,6 @@ def splitop_schrodinger(
     eigvals, U = np.linalg.eigh(A)
     U_H = U.conj().T
     # midpoint electric field samples (len = steps)
-    E_mid = Efield[1 : 2 * steps + 1 : 2]
 
     phase_coeff = -1j * dt
 
@@ -248,15 +265,13 @@ def _splitop_cupy(
     mu_x: np.ndarray,
     mu_y: np.ndarray,
     pol: np.ndarray,
-    Efield: np.ndarray,
+    E_mid: np.ndarray,
     psi: np.ndarray,
     dt: float,
     return_traj: bool,
     sample_stride: int,
-    steps: int,
 ):
     """GPU implementation (requires CuPy)."""
-
     assert cp is not None, "CuPy backend requested but CuPy is not installed."
 
     # Convert to CuPy arrays once
@@ -264,7 +279,7 @@ def _splitop_cupy(
     mu_x_cp = cp.asarray(mu_x)
     mu_y_cp = cp.asarray(mu_y)
     pol_cp = cp.asarray(pol)
-    E_cp = cp.asarray(Efield)
+    E_mid_cp = cp.asarray(E_mid)
     psi_cp = cp.asarray(psi)
 
     exp_half = cp.exp(-1j * H0_cp * dt / (2.0))
@@ -276,7 +291,7 @@ def _splitop_cupy(
     U_H = U.conj().T
 
     # midpoint field samples on GPU
-    E_mid = E_cp[1 : 2 * steps + 1 : 2]
+    steps = E_mid_cp.size
 
     n_samples = steps // sample_stride + 1
     traj = cp.empty((n_samples, psi_cp.size), dtype=cp.complex128)
@@ -287,7 +302,7 @@ def _splitop_cupy(
     s_idx = 1
     for k in range(steps):
         psi_cp *= exp_half
-        phase = cp.exp(phase_coeff * E_mid[k] * eigvals)
+        phase = cp.exp(phase_coeff * E_mid_cp[k] * eigvals)
         psi_cp = U @ (phase * (U_H @ psi_cp))
         psi_cp *= exp_half
         if return_traj and (k + 1) % sample_stride == 0:

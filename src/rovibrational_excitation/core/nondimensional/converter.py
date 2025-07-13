@@ -38,7 +38,6 @@ def nondimensionalize_system(
     H0_units: str = "energy",
     time_units: str = "fs",
     hbar: float = _HBAR,
-    min_energy_diff: float = 1e-20,
     max_time_scale_fs: float = 1000.0,
 ) -> tuple[
     np.ndarray,
@@ -97,18 +96,12 @@ def nondimensionalize_system(
         raise ValueError("H0_units must be 'energy' or 'frequency'")
     
     E0 = get_energy_scale_from_hamiltonian(
-        H0_energy, min_energy_diff, max_time_scale_fs, hbar
+        H0_energy, max_time_scale_fs, hbar
     )
 
     # 2. 時間スケール
     t0 = hbar / E0  # [s]
     
-    # 時間スケールが大きすぎる場合は上限を適用
-    max_time_scale_s = max_time_scale_fs * 1e-15  # fs → s
-    if t0 > max_time_scale_s:
-        t0 = max_time_scale_s
-        E0 = hbar / t0  # エネルギースケールを再調整
-
     # 3. 電場スケール
     Efield0 = get_electric_field_scale(efield)
 
@@ -249,15 +242,15 @@ def nondimensionalize_with_SI_base_units(
     Parameters
     ----------
     H0 : np.ndarray
-        ハミルトニアン行列（任意の単位、自動変換される）
+        ハミルトニアン行列（J）
     mu_x, mu_y : np.ndarray
-        双極子行列（任意の単位、自動変換される）
-    efield : ElectricField
-        電場オブジェクト（任意の単位、自動変換される）
-    dt : float, optional
-        時間ステップ [fs]。auto_timestep=Trueの場合は無視される
-    params : dict, optional
-        元のパラメータ辞書（参考情報用）
+        双極子行列（C·m）
+    efield : np.ndarray
+        電場（V/m）
+    tlist : np.ndarray
+        時間軸（s）
+    params : dict,  optional
+        パラメータ辞書（参考情報用）
     auto_timestep : bool, optional
         lambda_couplingに基づく自動時間ステップ選択, デフォルト: False
     timestep_method : str, optional
@@ -275,9 +268,9 @@ def nondimensionalize_with_SI_base_units(
     
     # パラメータをデフォルト単位経由でSI単位に変換
     if params is not None:
-        from rovibrational_excitation.core.parameter_converter import ParameterConverter
+        from rovibrational_excitation.core.units.parameter_processor import parameter_processor
         print("🔄 Converting parameters via default units to SI...")
-        converted_params = ParameterConverter.auto_convert_parameters(params)
+        converted_params = parameter_processor.auto_convert_parameters(params)
         print("✓ Parameter conversion completed.")
     
     # 入力が既にSI単位[J, C·m, V/m]の場合、そのまま使用
@@ -302,21 +295,23 @@ def nondimensionalize_with_SI_base_units(
     scales = determine_SI_based_scales(H0_energy_J, mu_x_Cm, field_amplitude_V_per_m)
     
     # 自動時間ステップ選択
+    dt_final = (tlist[1] - tlist[0])  # Default dt in seconds
     if auto_timestep:
         print(f"\n⏱️  Auto-selecting timestep based on λ={scales.lambda_coupling:.3f}...")
         dt_recommended_fs = scales.get_recommended_timestep_fs(
             safety_factor=timestep_safety_factor,
             method=timestep_method
         )
+        dt_recommended_s = dt_recommended_fs * 1e-15
         print(f"   Recommended dt: {dt_recommended_fs:.3f} fs (method: {timestep_method})")
-        print(f"   Original dt: {dt:.3f} fs")
+        print(f"   Original dt: {dt_final * 1e15:.3f} fs")
         
         # 推奨値と元の値の比較
-        if dt_recommended_fs < dt * 0.5:
+        if dt_recommended_s < dt_final * 0.5:
             print(f"   ⚠️  Warning: Recommended dt is much smaller than original")
             print(f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability")
         
-        dt = dt_recommended_fs
+        dt_final = dt_recommended_s
     
     # 無次元化の実行
     print("\n🔢 Performing nondimensionalization...")
@@ -330,13 +325,12 @@ def nondimensionalize_with_SI_base_units(
     
     # 電場の無次元化
     Efield_prime = efield / scales.Efield0
-    
+
     # 時間軸の無次元化
-    tlist_s = tlist * 1e-15  # fs → s
-    dt_s = (tlist[1] - tlist[0]) * 1e-15  # fs → s
+    tlist_s = tlist * 1e-15
     
     tlist_prime = tlist_s / scales.t0
-    dt_prime = dt_s / scales.t0
+    dt_prime = dt_final / scales.t0
     
     print("✓ Nondimensionalization completed successfully!")
     
@@ -478,10 +472,25 @@ def nondimensionalize_from_objects(
     
     if verbose:
         print(f"📊 Dipole matrices: {mu_x_Cm.shape} in C·m units")
-        print(f"   mu_x range: {np.min(np.abs(mu_x_Cm[mu_x_Cm != 0])):.3e} to {np.max(np.abs(mu_x_Cm)):.3e} C·m")
-        print(f"   mu_y range: {np.min(np.abs(mu_y_Cm[mu_y_Cm != 0])):.3e} to {np.max(np.abs(mu_y_Cm)):.3e} C·m")
-        print(f"   mu_z range: {np.min(np.abs(mu_z_Cm[mu_z_Cm != 0])):.3e} to {np.max(np.abs(mu_z_Cm)):.3e} C·m")
-    
+        
+        mu_x_nonzero = np.abs(mu_x_Cm[mu_x_Cm != 0])
+        if mu_x_nonzero.size > 0:
+            print(f"   mu_x range: {np.min(mu_x_nonzero):.3e} to {np.max(mu_x_nonzero):.3e} C·m")
+        else:
+            print("   mu_x range: All elements are zero.")
+            
+        mu_y_nonzero = np.abs(mu_y_Cm[mu_y_Cm != 0])
+        if mu_y_nonzero.size > 0:
+            print(f"   mu_y range: {np.min(mu_y_nonzero):.3e} to {np.max(mu_y_nonzero):.3e} C·m")
+        else:
+            print("   mu_y range: All elements are zero.")
+
+        mu_z_nonzero = np.abs(mu_z_Cm[mu_z_Cm != 0])
+        if mu_z_nonzero.size > 0:
+            print(f"   mu_z range: {np.min(mu_z_nonzero):.3e} to {np.max(mu_z_nonzero):.3e} C·m")
+        else:
+            print("   mu_z range: All elements are zero.")
+
     # 3. 電場はそのまま使用（既にV/mの想定）
     Efield_array = efield.get_Efield()
     field_amplitude_V_per_m = np.max(np.abs(Efield_array))
@@ -490,6 +499,7 @@ def nondimensionalize_from_objects(
         print(f"📊 Electric field amplitude: {field_amplitude_V_per_m:.3e} V/m")
     
     # 4. 時間ステップの設定
+    tlist = efield.tlist
     dt = efield.dt
     
     # 5. SI基本単位に基づいた無次元化スケールの決定
@@ -514,8 +524,10 @@ def nondimensionalize_from_objects(
             if verbose:
                 print(f"   ⚠️  Warning: Recommended dt is much smaller than original")
                 print(f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability")
-        
-        dt = dt_recommended_fs
+        stride_recommended = int(np.ceil(dt_recommended_fs / dt))
+        dt *= stride_recommended
+        Efield_array = Efield_array[::stride_recommended]
+        tlist = tlist[::stride_recommended]
     
     # 7. 無次元化の実行
     if verbose:
@@ -537,7 +549,7 @@ def nondimensionalize_from_objects(
         Efield_prime_scalar = np.zeros_like(Efield_prime)[:, 0]
         
     # 8. 時間軸の無次元化
-    tlist_s = efield.tlist * 1e-15  # fs → s
+    tlist_s = tlist * 1e-15  # fs → s
     dt_s = dt * 1e-15  # fs → s
     
     tlist_prime = tlist_s / scales.t0

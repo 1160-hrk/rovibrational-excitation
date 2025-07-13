@@ -30,7 +30,7 @@ from rovibrational_excitation.core.units.converters import converter
 SPARSE = True
 SPARSE = False
 
-V_MAX = 49  # 最大振動量子数
+V_MAX = 2  # 最大振動量子数
 OMEGA_01 = 2349.1  # 振動周波数 [cm^-1]
 DOMEGA = 25  # 非調和性補正 [cm^-1]
 MU0 = 1e-30  # 双極子行列要素の大きさ [C·m]

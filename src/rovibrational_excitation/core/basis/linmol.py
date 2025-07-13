@@ -67,7 +67,7 @@ class LinMolBasis(BasisBase):
         if input_units in converter.get_supported_units("frequency"):
             conv = converter.convert_frequency(1.0, input_units, "rad/fs")
             self.omega_rad_pfs = omega * conv if omega is not None else 1.0
-            self.B_rad_pfs = B * conv if B is not None else 1.0
+            self.B_rad_pfs = B * conv if B is not None else 0.001
             self.alpha_rad_pfs = alpha * conv
             self.delta_omega_rad_pfs = delta_omega * conv
         elif input_units in converter.get_supported_units("energy"):

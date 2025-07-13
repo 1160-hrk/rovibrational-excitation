@@ -22,7 +22,7 @@ def test_viblad_basic():
 
 def test_viblad_initialization():
     """初期化パラメータのテスト"""
-    basis = VibLadderBasis(V_max=3, omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1)
+    basis = VibLadderBasis(V_max=3, omega=2.0, delta_omega=0.1, input_units="rad/fs")
 
     assert basis.V_max == 3
     assert basis.omega_rad_pfs == 2.0
@@ -107,8 +107,8 @@ def test_viblad_get_state_errors():
 
 def test_viblad_generate_H0_default():
     """デフォルトパラメータでのハミルトニアン生成テスト"""
-    basis = VibLadderBasis(V_max=2, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.0)
-    H0 = basis.generate_H0(units="rad/fs")
+    basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0, input_units="rad/fs", output_units="rad/fs")
+    H0 = basis.generate_H0()
 
     # E = ω*(v+1/2)
     expected_energies = [0.5, 1.5, 2.5]  # v=0,1,2
@@ -120,7 +120,7 @@ def test_viblad_generate_H0_default():
 def test_viblad_generate_H0_custom():
     """カスタムパラメータでのハミルトニアン生成テスト"""
     basis = VibLadderBasis(V_max=2)
-    H0 = basis.generate_H0(omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1, units="rad/fs")
+    H0 = basis.generate_H0_with_params(omega=2.0, delta_omega=0.1, input_units="rad/fs", units="rad/fs")
 
     # E = ω*(v+1/2) - Δω*(v+1/2)^2
     # v=0: 2.0*0.5 - 0.1*0.25 = 1.0 - 0.025 = 0.975
@@ -134,8 +134,8 @@ def test_viblad_generate_H0_custom():
 
 def test_viblad_generate_H0_anharmonic():
     """非調和性を含むハミルトニアン生成テスト"""
-    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1)
-    H0 = basis.generate_H0(units="rad/fs")
+    basis = VibLadderBasis(V_max=1, omega=1.0, delta_omega=0.1, input_units="rad/fs", output_units="rad/fs")
+    H0 = basis.generate_H0()
 
     # E = ω*(v+1/2) - Δω*(v+1/2)^2
     # v=0: 1.0*0.5 - 0.1*0.25 = 0.475
@@ -148,13 +148,13 @@ def test_viblad_generate_H0_anharmonic():
 
 def test_viblad_generate_H0_override():
     """パラメータ上書きテスト"""
-    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1)
+    basis = VibLadderBasis(V_max=1, omega=1.0, delta_omega=0.1, input_units="rad/fs", output_units="rad/fs")
 
     # インスタンスパラメータを使用
-    H0_instance = basis.generate_H0(units="rad/fs")
+    H0_instance = basis.generate_H0()
 
     # パラメータを上書き
-    H0_override = basis.generate_H0(omega_rad_pfs=2.0, delta_omega_rad_pfs=0.0, units="rad/fs")
+    H0_override = basis.generate_H0_with_params(omega=2.0, delta_omega=0.0, input_units="rad/fs", units="rad/fs")
 
     # 結果が異なること
     assert not np.allclose(H0_instance.matrix, H0_override.matrix)
@@ -166,7 +166,7 @@ def test_viblad_generate_H0_override():
 
 def test_viblad_hamiltonian_properties():
     """ハミルトニアンの性質のテスト"""
-    basis = VibLadderBasis(V_max=3, omega_rad_pfs=2.5, delta_omega_rad_pfs=0.05)
+    basis = VibLadderBasis(V_max=3, omega=2.5, delta_omega=0.05, input_units="rad/fs")
     H0 = basis.generate_H0()
 
     # Hamiltonianオブジェクトから行列を取得
@@ -222,8 +222,8 @@ def test_viblad_edge_cases():
 
 def test_viblad_multiple_instances():
     """複数インスタンスの独立性テスト"""
-    basis1 = VibLadderBasis(V_max=2, omega_rad_pfs=1.0)
-    basis2 = VibLadderBasis(V_max=2, omega_rad_pfs=2.0)
+    basis1 = VibLadderBasis(V_max=2, omega=1.0, input_units="rad/fs")
+    basis2 = VibLadderBasis(V_max=2, omega=2.0, input_units="rad/fs")
 
     # 異なるパラメータで初期化されていること
     assert basis1.omega_rad_pfs != basis2.omega_rad_pfs
@@ -236,21 +236,21 @@ def test_viblad_multiple_instances():
     assert basis1.basis is not basis2.basis
 
     # 異なるパラメータで異なるハミルトニアンを生成すること（rad/fs単位で比較）
-    H0_1 = basis1.generate_H0(units="rad/fs")
-    H0_2 = basis2.generate_H0(units="rad/fs")
+    H0_1 = basis1.generate_H0_with_params(units="rad/fs")
+    H0_2 = basis2.generate_H0_with_params(units="rad/fs")
     assert not np.allclose(H0_1.matrix, H0_2.matrix)
 
 
 def test_viblad_hamiltonian_units():
     """ハミルトニアンの単位変換テスト"""
-    basis = VibLadderBasis(V_max=1, omega_rad_pfs=1000.0)
+    basis = VibLadderBasis(V_max=1, omega=1000.0, input_units="rad/fs")
 
     # 周波数単位でのハミルトニアン
-    H0_freq = basis.generate_H0(units="rad/fs")
+    H0_freq = basis.generate_H0_with_params(units="rad/fs")
     assert H0_freq.units == "rad/fs"
 
     # エネルギー単位でのハミルトニアン
-    H0_energy = basis.generate_H0(units="J")
+    H0_energy = basis.generate_H0_with_params(units="J")
     assert H0_energy.units == "J"
 
     # 単位変換のテスト - 相対的な比較

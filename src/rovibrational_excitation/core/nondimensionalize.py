@@ -498,9 +498,9 @@ def nondimensionalize_system(
     
     if len(energy_diffs_nonzero) == 0:
         # すべて縮退している場合、最大エネルギー値をスケールとして使用
-        E0 = np.max(np.abs(eigvals))
-        if E0 == 0:
-            E0 = hbar / 1e-15  # 最終的なフォールバック
+        E0 = np.max(np.abs(eigvals)) if len(eigvals) > 0 else 1.0
+        if E0 < min_energy_diff:
+            E0 = min_energy_diff  # ゼロエネルギーの場合は最小値を設定
     else:
         # 相対的に小さすぎる差を除外（最大差の1e-6以下）
         max_diff = np.max(energy_diffs_nonzero)
@@ -804,9 +804,9 @@ def nondimensionalize_with_SI_base_units(
     
     # パラメータをデフォルト単位経由でSI単位に変換
     if params is not None:
-        from rovibrational_excitation.core.parameter_converter import ParameterConverter
+        from rovibrational_excitation.core.units.parameter_processor import parameter_processor
         print("🔄 Converting parameters via default units to SI...")
-        converted_params = ParameterConverter.auto_convert_parameters(params)
+        converted_params = parameter_processor.auto_convert_parameters(params)
         print("✓ Parameter conversion completed.")
     
     # 時間ステップの設定
