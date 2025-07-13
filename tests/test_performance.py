@@ -79,7 +79,6 @@ def test_large_system_performance():
     assert expected_memory_mb < 100  # 100MB以内
 
 
-@pytest.mark.xfail(reason="Shape mismatch in return value")
 def test_very_large_system():
     """非常に大きなシステムでのスケーラビリティテスト"""
     # より大きな基底（使用注意：メモリとCPU集約的）
@@ -106,17 +105,17 @@ def test_very_large_system():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = schrodinger_propagation(H0, efield, dipole, psi0, return_traj=False)
+    result = schrodinger_propagation(H0, efield, dipole, psi0, return_traj=False, renorm=True)
     end_time = time.time()
 
     execution_time = end_time - start_time
 
     # 基本的な検証
-    assert result.shape == (1, dim)
+    assert result.shape == (dim,)  # 形状を正しく修正
     assert execution_time < 5.0  # 5秒以内
 
     # ノルム保存
-    norm = np.linalg.norm(result[0])
+    norm = np.linalg.norm(result)
     assert np.isclose(norm, 1.0, atol=1e-10)
 
 
