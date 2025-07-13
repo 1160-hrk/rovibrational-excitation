@@ -257,6 +257,8 @@ def liouville_propagation(
     return_traj: bool = True,
     sample_stride: int = 1,
     backend: str = "numpy",
+    nondimensional: bool = False,
+    auto_timestep: bool = False,
 ) -> Array:
     """
     Liouville-von Neumann equation propagation (legacy wrapper).
@@ -284,4 +286,6 @@ def liouville_propagation(
         axes=axes,
         return_traj=return_traj,
         sample_stride=sample_stride,
+        nondimensional=nondimensional,
+        auto_timestep=auto_timestep,
     )
