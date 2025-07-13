@@ -120,7 +120,7 @@ class LiouvillePropagator(PropagatorBase):
                     self.print_validation_warnings()
         
         # Prepare arguments using the same utility as SchrodingerPropagator
-        H0, mu_x, mu_y, Ex, Ey, _, _, dt = prepare_propagation_args(
+        H0, mu_x, mu_y, Ex, Ey, _, _, dt, _ = prepare_propagation_args(
             hamiltonian,
             efield,
             dipole_matrix,

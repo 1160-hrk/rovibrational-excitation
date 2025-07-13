@@ -86,7 +86,12 @@ def _rk4_cpu(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
         k4[:] = -1j * (H4 @ buf)
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         if renorm:
-            psi *= 1 / np.sqrt((psi.conj() @ psi).real)
+            # より高精度な正規化
+            norm = np.sqrt((psi.conj() @ psi).real)
+            if norm > 1e-12:  # 数値的にゼロでない場合のみ正規化
+                psi *= 1.0 / norm
+            else:
+                continue
         if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
@@ -203,14 +208,16 @@ def _rk4_cpu_sparse(
         # H4
         H.data[:] = H0_data + mux_data * ex4 + muy_data * ey4
         k4[:] = -1j * H.dot(buf)
-
-        # update
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-
+        
         if renorm:
+            # より高精度な正規化
             norm = np.sqrt((psi.conj() @ psi).real)
-            psi /= norm
-
+            if norm > 1e-12:  # 数値的にゼロでない場合のみ正規化
+                psi *= 1.0 / norm
+            else:
+                continue
+        
         if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1

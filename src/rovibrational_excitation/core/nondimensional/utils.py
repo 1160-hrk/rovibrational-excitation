@@ -86,7 +86,6 @@ def convert_default_units_to_SI_base(
 
 def get_energy_scale_from_hamiltonian(
     H0: np.ndarray,
-    min_energy_diff: float = 1e-20,
     max_time_scale_fs: float = 1000.0,
     hbar: float = _HBAR,
 ) -> float:
@@ -96,9 +95,7 @@ def get_energy_scale_from_hamiltonian(
     Parameters
     ----------
     H0 : np.ndarray
-        ハミルトニアン行列（エネルギー単位）
-    min_energy_diff : float, optional
-        最小エネルギー差の閾値
+        ハミルトニアン行列（J）
     max_time_scale_fs : float, optional
         時間スケール上限 [fs]
     hbar : float, optional
@@ -125,15 +122,7 @@ def get_energy_scale_from_hamiltonian(
         if E0 == 0:
             E0 = hbar / 1e-15  # 最終的なフォールバック
     else:
-        # 相対的に小さすぎる差を除外（最大差の1e-6以下）
-        max_diff = np.max(energy_diffs_nonzero)
-        significant_diffs = energy_diffs_nonzero[energy_diffs_nonzero > max_diff * 1e-6]
-        
-        if len(significant_diffs) == 0:
-            # 相対閾値でも除外される場合、最大差を使用
-            E0 = max_diff
-        else:
-            E0 = np.max(significant_diffs)
+        E0 = np.max(energy_diffs_nonzero)
     
     # 時間スケールが大きすぎる場合は上限を適用
     t0 = hbar / E0
@@ -201,7 +190,8 @@ def get_electric_field_scale(
         電場スケール [V/m]
     """
     Efield_array = efield.get_Efield()  # (T, 2) [V/m]
-    Efield0 = np.max(np.abs(Efield_array))
+    field_magnitudes = np.sqrt(Efield_array[:, 0]**2 + Efield_array[:, 1]**2)
+    Efield0 = np.max(field_magnitudes)
     
     if Efield0 == 0:
         Efield0 = default_scale

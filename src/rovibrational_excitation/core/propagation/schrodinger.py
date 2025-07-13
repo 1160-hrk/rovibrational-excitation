@@ -158,7 +158,7 @@ class SchrodingerPropagator(PropagatorBase):
                     self.print_validation_warnings()
         
         # Prepare arguments
-        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc = prepare_propagation_args(
+        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, t0_calc = prepare_propagation_args(
             hamiltonian,
             efield,
             dipole_matrix,
@@ -203,7 +203,9 @@ class SchrodingerPropagator(PropagatorBase):
             psi = result[-1] if hasattr(result, '__len__') else result
         
         if return_time_psi:
-            t = np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * dt_calc * sample_stride
+            t = np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * dt_calc * sample_stride * t0_calc
+            if nondimensional:
+                t *= 1e15
             return t, psi
         
         return psi

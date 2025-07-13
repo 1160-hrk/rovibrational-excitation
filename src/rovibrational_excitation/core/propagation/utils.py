@@ -218,7 +218,7 @@ def prepare_propagation_args(
     mu_y_override: Optional[Array] = None,
     nondimensional: bool = False,
     auto_timestep: bool = False,
-) -> Tuple[Array, Array, Array, Array, Array, Array, Array, float]:
+) -> Tuple[Array, Array, Array, Array, Array, Array, Array, float, float]:
     """
     Prepare arguments for propagation algorithms.
     
@@ -305,8 +305,9 @@ def prepare_propagation_args(
         dipole_map = {'x': mu_x_prime, 'y': mu_y_prime, 'z': mu_z_prime}
         mu_a = dipole_map[ax0]
         mu_b = dipole_map[ax1]
-        
-        return H0_prime, mu_a, mu_b, Ex, Ey, pol, E_scalar, dt
+        mu_a *= scales.lambda_coupling
+        mu_b *= scales.lambda_coupling
+        return H0_prime, mu_a, mu_b, Ex, Ey, pol, E_scalar, dt, scales.t0
     
     # Standard dimensional calculation
     dt = efield.dt * 2
@@ -341,7 +342,7 @@ def prepare_propagation_args(
     mu_a_prime = cm_to_rad_phz(mu_a)
     mu_b_prime = cm_to_rad_phz(mu_b)
     
-    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt
+    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt, 1.0
 
 
 def is_sparse_matrix(dipole_matrix, threshold: float = 0.1) -> bool:

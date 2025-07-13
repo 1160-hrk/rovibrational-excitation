@@ -38,7 +38,6 @@ def nondimensionalize_system(
     H0_units: str = "energy",
     time_units: str = "fs",
     hbar: float = _HBAR,
-    min_energy_diff: float = 1e-20,
     max_time_scale_fs: float = 1000.0,
 ) -> tuple[
     np.ndarray,
@@ -97,18 +96,12 @@ def nondimensionalize_system(
         raise ValueError("H0_units must be 'energy' or 'frequency'")
     
     E0 = get_energy_scale_from_hamiltonian(
-        H0_energy, min_energy_diff, max_time_scale_fs, hbar
+        H0_energy, max_time_scale_fs, hbar
     )
 
     # 2. 時間スケール
     t0 = hbar / E0  # [s]
     
-    # 時間スケールが大きすぎる場合は上限を適用
-    max_time_scale_s = max_time_scale_fs * 1e-15  # fs → s
-    if t0 > max_time_scale_s:
-        t0 = max_time_scale_s
-        E0 = hbar / t0  # エネルギースケールを再調整
-
     # 3. 電場スケール
     Efield0 = get_electric_field_scale(efield)
 
@@ -506,6 +499,7 @@ def nondimensionalize_from_objects(
         print(f"📊 Electric field amplitude: {field_amplitude_V_per_m:.3e} V/m")
     
     # 4. 時間ステップの設定
+    tlist = efield.tlist
     dt = efield.dt
     
     # 5. SI基本単位に基づいた無次元化スケールの決定
@@ -530,8 +524,10 @@ def nondimensionalize_from_objects(
             if verbose:
                 print(f"   ⚠️  Warning: Recommended dt is much smaller than original")
                 print(f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability")
-        
-        dt = dt_recommended_fs
+        stride_recommended = int(np.ceil(dt_recommended_fs / dt))
+        dt *= stride_recommended
+        Efield_array = Efield_array[::stride_recommended]
+        tlist = tlist[::stride_recommended]
     
     # 7. 無次元化の実行
     if verbose:
@@ -553,7 +549,7 @@ def nondimensionalize_from_objects(
         Efield_prime_scalar = np.zeros_like(Efield_prime)[:, 0]
         
     # 8. 時間軸の無次元化
-    tlist_s = efield.tlist * 1e-15  # fs → s
+    tlist_s = tlist * 1e-15  # fs → s
     dt_s = dt * 1e-15  # fs → s
     
     tlist_prime = tlist_s / scales.t0

@@ -158,15 +158,16 @@ class MixedStatePropagator(PropagatorBase):
                 psi0,
                 axes=axes,
                 return_traj=return_traj,
-                return_time_psi=False,
+                return_time_psi=return_time_rho,
                 sample_stride=sample_stride,
                 verbose=False,
                 algorithm=self.algorithm,
             )
             
             # Handle result format
-            if isinstance(result, tuple):
+            if isinstance(result, tuple) or return_time_rho:
                 psi_t = result[1]
+                time_psi = result[0]
             else:
                 psi_t = result
             
@@ -178,9 +179,6 @@ class MixedStatePropagator(PropagatorBase):
         
         # Return with time if requested
         if return_traj and return_time_rho:
-            dt_rho = efield.dt_state * sample_stride
-            steps = efield.steps_state
-            time_psi = xp.arange(0, (steps + 1) * dt_rho, dt_rho)
             return time_psi, rho_out
         
         return rho_out 
