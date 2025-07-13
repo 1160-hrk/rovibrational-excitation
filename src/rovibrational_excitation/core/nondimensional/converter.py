@@ -332,7 +332,7 @@ def nondimensionalize_with_SI_base_units(
     
     # 電場の無次元化
     Efield_prime = efield / scales.Efield0
-    
+
     # 時間軸の無次元化
     tlist_s = tlist * 1e-15
     
@@ -479,10 +479,25 @@ def nondimensionalize_from_objects(
     
     if verbose:
         print(f"📊 Dipole matrices: {mu_x_Cm.shape} in C·m units")
-        print(f"   mu_x range: {np.min(np.abs(mu_x_Cm[mu_x_Cm != 0])):.3e} to {np.max(np.abs(mu_x_Cm)):.3e} C·m")
-        print(f"   mu_y range: {np.min(np.abs(mu_y_Cm[mu_y_Cm != 0])):.3e} to {np.max(np.abs(mu_y_Cm)):.3e} C·m")
-        print(f"   mu_z range: {np.min(np.abs(mu_z_Cm[mu_z_Cm != 0])):.3e} to {np.max(np.abs(mu_z_Cm)):.3e} C·m")
-    
+        
+        mu_x_nonzero = np.abs(mu_x_Cm[mu_x_Cm != 0])
+        if mu_x_nonzero.size > 0:
+            print(f"   mu_x range: {np.min(mu_x_nonzero):.3e} to {np.max(mu_x_nonzero):.3e} C·m")
+        else:
+            print("   mu_x range: All elements are zero.")
+            
+        mu_y_nonzero = np.abs(mu_y_Cm[mu_y_Cm != 0])
+        if mu_y_nonzero.size > 0:
+            print(f"   mu_y range: {np.min(mu_y_nonzero):.3e} to {np.max(mu_y_nonzero):.3e} C·m")
+        else:
+            print("   mu_y range: All elements are zero.")
+
+        mu_z_nonzero = np.abs(mu_z_Cm[mu_z_Cm != 0])
+        if mu_z_nonzero.size > 0:
+            print(f"   mu_z range: {np.min(mu_z_nonzero):.3e} to {np.max(mu_z_nonzero):.3e} C·m")
+        else:
+            print("   mu_z range: All elements are zero.")
+
     # 3. 電場はそのまま使用（既にV/mの想定）
     Efield_array = efield.get_Efield()
     field_amplitude_V_per_m = np.max(np.abs(Efield_array))

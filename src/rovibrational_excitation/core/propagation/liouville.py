@@ -105,6 +105,8 @@ class LiouvillePropagator(PropagatorBase):
         sample_stride = kwargs.get('sample_stride', 1)
         verbose = kwargs.get('verbose', False)
         dt = kwargs.get('dt', None)
+        nondimensional = kwargs.get('nondimensional', False)
+        auto_timestep = kwargs.get('auto_timestep', False)
         
         rho0 = initial_state
         
@@ -123,8 +125,8 @@ class LiouvillePropagator(PropagatorBase):
             efield,
             dipole_matrix,
             axes=axes,
-            nondimensional=False,
-            auto_timestep=False,
+            nondimensional=nondimensional,
+            auto_timestep=auto_timestep,
         )
         
         backend_typed = cast(Literal["numpy", "cupy"], self.backend)

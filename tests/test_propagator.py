@@ -90,11 +90,10 @@ def test_mixed_state_propagation():
     assert result.shape[-1] == 2 or result[1].shape[-1] == 2
 
 
-@pytest.mark.xfail(reason="liouville_propagation returns NaN")
 def test_liouville_propagation():
-    """Liouville伝播の基本テスト"""
-    basis = TwoLevelBasis()
-    H0_obj = basis.generate_H0_with_params(energy_gap=1.0, energy_gap_units="rad/fs", units="J")
+    """Liouville方程式の時間発展テスト"""
+    basis = TwoLevelBasis(energy_gap=1.0, input_units="rad/fs")
+    H0 = basis.generate_H0()
     dip = MockDipole(basis)
     ef = MockEfield()
     
@@ -105,7 +104,7 @@ def test_liouville_propagation():
     xp = get_backend(backend)
     steps = (len(ef.tlist_s) - 1) // 2
     dt = ef.tlist_s[1] - ef.tlist_s[0]
-    H0_mat = H0_obj.get_matrix("J")
+    H0_mat = H0.get_matrix("J")
     mu_x = dip.get_mu_in_units("x", "C*m")
     mu_y = dip.get_mu_in_units("y", "C*m")
     Ex, Ey = ef.get_E_components(None, None, None)

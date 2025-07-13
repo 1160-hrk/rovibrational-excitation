@@ -80,6 +80,9 @@ def _rk4_lvne_core(
             traj[out_idx] = rho
             out_idx += 1
 
+    if not record_traj:
+        traj[0] = rho
+
     return traj
 
 
