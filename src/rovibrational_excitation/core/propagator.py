@@ -8,7 +8,7 @@ rovibrational_excitation/core/propagator.py
 from __future__ import annotations
 
 from collections.abc import Iterable, Sized
-from typing import TYPE_CHECKING, Literal, Union, cast, Any, Protocol, TypeVar, overload
+from typing import TYPE_CHECKING, Literal, Union, cast, Any, Protocol, TypeVar, overload, Callable
 
 import numpy as np
 import scipy.sparse
@@ -124,6 +124,7 @@ def schrodinger_propagation(
     auto_timestep: bool = False,
     target_accuracy: str = "standard",
     algorithm: str = "rk4",
+    propagator_func: Union[None, Callable] = None,
 ) -> Array:
     """
     Time-dependent Schrödinger equation propagator with unit-aware physics objects.
@@ -200,6 +201,7 @@ def schrodinger_propagation(
         verbose=verbose,
         sparse=sparse,
         algorithm=algorithm,
+        propagator_func=propagator_func,
     )
 
 
