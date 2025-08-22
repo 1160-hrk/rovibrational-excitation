@@ -151,7 +151,7 @@ class LinMolBasis(BasisBase):
         # 内部のrad/fs単位のパラメータを使用
         vterm = self.V_array + 0.5
         jterm = self.J_array * (self.J_array + 1)
-        energy_freq = self.omega_rad_pfs * vterm - self.delta_omega_rad_pfs * vterm**2
+        energy_freq = (self.omega_rad_pfs + self.delta_omega_rad_pfs) * vterm - self.delta_omega_rad_pfs/2 * vterm**2
         energy_freq += (self.B_rad_pfs - self.alpha_rad_pfs * vterm) * jterm
         
         # Create Hamiltonian in frequency units first
@@ -260,7 +260,7 @@ class LinMolBasis(BasisBase):
 
         vterm = self.V_array + 0.5
         jterm = self.J_array * (self.J_array + 1)
-        energy_freq = omega_rad_pfs * vterm - delta_omega_rad_pfs * vterm**2
+        energy_freq = (omega_rad_pfs+delta_omega_rad_pfs) * vterm - delta_omega_rad_pfs/2 * vterm**2
         energy_freq += (B_rad_pfs - alpha_rad_pfs * vterm) * jterm
         
         # Create Hamiltonian in frequency units first
