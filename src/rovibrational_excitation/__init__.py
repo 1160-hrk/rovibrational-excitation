@@ -54,36 +54,11 @@ __all__: list[str] = [
     "schrodinger_propagation",
     "liouville_propagation",
     
-    # Unit management
-    "auto_convert_parameters",
-    "create_hamiltonian_from_input_units", 
-    "print_unit_help",
     
-    # Spectroscopy API (線形応答分光)
-    # Modern API
-    "LinearResponseCalculator",
-    "SpectroscopyParameters", 
-    "MolecularParameters",
-    "calculate_absorption_spectrum",
-    "calculate_pfid_spectrum",
-    "calculate_emission_spectrum",
-    "calculate_absorption_from_hamiltonian",
-    
-    # Legacy API (後方互換性)
-    "prepare_variables",
-    "absorbance_spectrum_for_loop",
-    "absorbance_spectrum_w_doppler_broadening",
-    "PFID_spectrum_for_loop",
-    "radiation_spectrum_for_loop",
-    "absorbance_spectrum_from_rho_and_mu",
-    
-    # Broadening functions
-    "doppler",
-    "sinc",
-    "sinc_square",
-    "convolution_w_doppler",
-    "convolution_w_sinc",
-    "convolution_w_sinc_square",
+    # Spectroscopy public API (最小限)
+    "compute_absorbance_spectrum",
+    "convolve_absorbance_spectrum",
+    "compute_absorbance_spectrum_broadened",
 ]
 
 # ------------------------------------------------------------------
@@ -107,35 +82,15 @@ from .core.propagator import (  # noqa: E402, F401
 from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
 
 # spectroscopy - Modern API (推奨)
-from .spectroscopy import (  # noqa: E402, F401
-    LinearResponseCalculator,
-    SpectroscopyParameters,
-    MolecularParameters,
-    calculate_absorption_spectrum,
-    calculate_pfid_spectrum,
-    calculate_emission_spectrum,
-    calculate_absorption_from_hamiltonian,
+from .spectroscopy import (
+    compute_absorbance_spectrum,
+    convolve_absorbance_spectrum,
+    compute_absorbance_spectrum_broadened,
 )
 
-# spectroscopy - Legacy API (後方互換性)
-from .spectroscopy import (  # noqa: E402, F401
-    prepare_variables,
-    absorbance_spectrum_for_loop,
-    absorbance_spectrum_w_doppler_broadening,
-    PFID_spectrum_for_loop,
-    radiation_spectrum_for_loop,
-    absorbance_spectrum_from_rho_and_mu,
-)
 
-# spectroscopy - Broadening functions
-from .spectroscopy import (  # noqa: E402, F401
-    doppler,
-    sinc,
-    sinc_square,
-    convolution_w_doppler,
-    convolution_w_sinc,
-    convolution_w_sinc_square,
-)
+# spectroscopy - Broadening functions (low-level)
+from .spectroscopy import doppler, sinc, sinc_square, convolution_w_doppler, convolution_w_sinc, convolution_w_sinc_square  # noqa: E402, F401
 
 # ------------------------------------------------------------------
 # 名前空間のクリーンアップ
