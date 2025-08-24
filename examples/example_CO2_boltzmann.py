@@ -30,12 +30,22 @@ from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.analysis.absorbance import compute_absorbance_spectrum
 
 # %% パラメータ設定
+
+# 並列設定（インタラクティブに調整可能）
+USE_PARALLEL = True
+# USE_PARALLEL = False
+# PARALLEL_BACKEND = "thread"  # "thread" or "process"
+PARALLEL_BACKEND = "process"  # "thread" or "process"
+CHUNK_SIZE = 8
+MAX_WORKERS = min(os.cpu_count() or 1, 14)
+PROGRESS_EVERY = 1  # 進捗ログ出力のバッチ間隔
+
 # システムパラメータ
 SPARSE = True
 # SPARSE = False
 DENSE = False
-V_MAX = 10  # 最大振動量子数
-J_MAX = 16  # 最大回転量子数
+V_MAX = 2  # 最大振動量子数
+J_MAX = 2  # 最大回転量子数
 USE_M = True  # 磁気量子数を使用
 
 # 分子パラメータ
@@ -59,6 +69,14 @@ DETUNING = 0.0  # デチューニング
 POLARIZATION = np.array([1, 0])  # x方向偏光
 AXES = "xy"  # x, y方向の双極子を考慮
 
+# キャリア周波数を設定するための状態ペア（下位, 上位）
+CARRIER_STATE_LOWER = (0, 0, 0)
+CARRIER_STATE_UPPER = (1, 1, 1)
+
+# 基底の USE_M 設定に応じて状態表現を調整
+def _state_for_basis(state_tuple: tuple[int, int, int]) -> tuple[int, int] | tuple[int, int, int]:
+    return state_tuple if USE_M else (state_tuple[0], state_tuple[1])
+
 # フルエンスから電場振幅を算出（g(t)=exp(-(t-tc)^2/(2σ^2)) を使用）
 # F = ∫ I(t) dt,  I(t) ≈ (ε0 c/2) |E0|^2 g(t)^2,  ∫ g(t)^2 dt = σ√π
 FLUENCE_MJ_CM2 = 100.0  # [mJ/cm^2]
@@ -81,6 +99,20 @@ TIME_END = PULSE_DURATION*10  # 終了時間 [fs]
 DT_EFIELD = 0.1  # 電場サンプリング間隔 [fs]
 SAMPLE_STRIDE = 1  # サンプリングストライド
 
+# 吸収スペクトル設定（トップに集約）
+DETECTION_POL = np.array([1.0, 0.0])  # 検出偏光ベクトル (μ · e*)
+# DETECTION_POL = np.array([np.sqrt(1/3), np.sqrt(2/3)])  # マジックアングル 54.7°
+WN_MIN, WN_MAX, WN_STEP = 2100.0, 2400.0, 0.01  # [cm^-1]
+T2_PS = 667.0  # 緩和 [ps]
+PATH_LENGTH_M = 1.0e-3  # [m]
+PRESSURE_PA = 6.0e-1  # [Pa]
+
+# 吸収スペクトル計算の実装オプション
+LOCAL_FIELD = False
+USE_SPARSE_TRANSITIONS = True
+MU_NZ_THRESHOLD = 0.0
+OMEGA_CHUNK_SIZE = 5000
+
 
 # plot setting
 def plot_states():
@@ -98,26 +130,6 @@ def plot_states():
                 else:
                     raise ValueError(f"Invalid axes: {AXES}")
     return states
-
-
-# 並列設定（インタラクティブに調整可能）
-USE_PARALLEL = True
-# USE_PARALLEL = False
-# PARALLEL_BACKEND = "thread"  # "thread" or "process"
-PARALLEL_BACKEND = "process"  # "thread" or "process"
-CHUNK_SIZE = 8
-MAX_WORKERS = min(os.cpu_count() or 1, 14)
-PROGRESS_EVERY = 1  # 進捗ログ出力のバッチ間隔
-
-
-# 吸収スペクトル設定
-# DETECTION_POL = np.array([1.0, 0.0])  # 検出偏光ベクトル (μ · e*)
-DETECTION_POL = np.array([np.sqrt(1/3), np.sqrt(2/3)])  # マジックアングル 54.7°
-WN_MIN, WN_MAX, WN_STEP = 2000.0, 2400.0, 0.01  # [cm^-1]
-T2_PS = 667.0  # 緩和 [ps]
-PATH_LENGTH_M = 1.0e-3  # [m]
-PRESSURE_PA = 6.0e-2  # [Pa]
-
 
 # 並列化用ユーティリティ
 def chunked_indices(indices: list[int], chunk_size: int) -> list[list[int]]:
@@ -266,7 +278,8 @@ time4Efield = np.arange(TIME_START, TIME_END + 2 * DT_EFIELD, DT_EFIELD)
 tc = (time4Efield[-1] + time4Efield[0]) / 2
 
 carrier_freq = converter.convert_frequency(
-    H0.eigenvalues[basis.get_index((4, 1, 1))] - H0.eigenvalues[basis.get_index((3, 0, 0))],
+    H0.eigenvalues[basis.get_index(_state_for_basis(CARRIER_STATE_UPPER))]
+    - H0.eigenvalues[basis.get_index(_state_for_basis(CARRIER_STATE_LOWER))],
     "rad/fs", UNIT_FREQUENCY
     )
 Efield = ElectricField(tlist=time4Efield)
@@ -480,8 +493,13 @@ number_density = PRESSURE_PA / (KB_SI * TEMPERATURE_K)
 print("Computing absorbance spectrum...")
 # 初期密度行列（ボルツマン分布の対角行列）
 rho_init = np.diag(boltz_weights.astype(np.complex128))
+# rho_for_spec = rho_final
 rho_for_spec = rho_final - rho_init
-rho_for_spec = rho_init
+# rho_for_spec = rho_init
+# |ΔV|>1 成分を零化
+v = basis.basis[:, 0]
+dv_mask = (np.abs(v[:, None] - v[None, :]) <= 1)
+rho_for_spec = rho_for_spec * dv_mask
 res_spec = compute_absorbance_spectrum(
     rho=rho_for_spec,
     mu_int=mu_int,
@@ -491,13 +509,13 @@ res_spec = compute_absorbance_spectrum(
     T2=T2_PS * 1e-12,  # ps -> s
     number_density=number_density,
     path_length=PATH_LENGTH_M,
-    local_field=True,
+    local_field=LOCAL_FIELD,
     return_resp=False,
-    use_sparse_transitions=True,
-    mu_nz_threshold=0.0,
-    omega_chunk_size=5000,
+    use_sparse_transitions=USE_SPARSE_TRANSITIONS,
+    mu_nz_threshold=MU_NZ_THRESHOLD,
+    omega_chunk_size=OMEGA_CHUNK_SIZE,
 )
-
+# %%
 # プロット
 fig2, ax2 = plt.subplots(1, 1, figsize=(10, 4))
 ax2.plot(res_spec["nu_tilde_cm"], res_spec["A_mOD"], "k-")
@@ -505,7 +523,9 @@ ax2.set_xlabel("Wavenumber [cm$^{-1}$]")
 ax2.set_ylabel("Absorbance [mOD]")
 ax2.set_title("Absorbance spectrum (T2 = %.1f ps)" % T2_PS)
 ax2.grid(True, alpha=0.3)
-# ax2.set_xlim(2300, 2400)
+# ax2.set_xlim(2150, 2370)
+# ax2.set_xlim(2280, 2320)
+ax2.set_xlim(2200, 2370)
 plt.tight_layout()
 
 # 保存
@@ -517,4 +537,3 @@ np.savez_compressed(
     A_mOD=res_spec["A_mOD"],
 )
 print(f"Saved absorbance spectrum to: {absorb_path}")
-# %%
