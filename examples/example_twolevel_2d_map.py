@@ -75,7 +75,7 @@ UNIT_AMPLITUDE = "V/m"
 
 # 並列計算設定
 MAX_WORKERS = min(12, mp.cpu_count())  # CPUコア数を制限してメモリ使用量を抑制
-CHUNK_SIZE = 1000
+CHUNK_SIZE = 10
 
 # ======================================================================
 
@@ -114,7 +114,13 @@ class PlotConfig:
     condition_line_width: int = 2
     condition_line_style: str = "--"
     contour_levels: int = 100
-    results_dir: str = "examples/results"
+    results_dir: str = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..", "results",
+            f"example_twolevel_2d_map_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
+        )
 
 
 # グローバル設定インスタンス

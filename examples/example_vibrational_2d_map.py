@@ -116,7 +116,12 @@ class PlotConfig:
     condition_line_width: int = 2
     condition_line_style: str = "--"
     contour_levels: int = 100
-    results_dir: str = "examples/figures"
+    results_dir: str = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..", "results", f"example_vibrational_2d_map_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
+        )
 
 
 # グローバル設定インスタンス

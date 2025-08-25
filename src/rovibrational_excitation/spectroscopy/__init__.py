@@ -1,48 +1,114 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Spectroscopy module for rovibrational excitation calculations.
+Spectroscopy Module
+===================
 
-This module provides linear response theory calculations for rovibrational
-spectroscopy, including absorption, PFID, and radiation spectra calculations.
+This module provides tools for calculating spectroscopic properties
+from quantum mechanical simulations of rovibrational excitation.
 
-The module offers both modern class-based API and legacy function-based API
-for backward compatibility.
+Classes
+-------
+AbsorbanceCalculator
+    Main class for calculating absorbance spectra from density matrices
+ExperimentalConditions
+    Dataclass for experimental conditions (temperature, pressure, etc.)
+
+Functions
+---------
+create_calculator_from_params
+    Helper function to create AbsorbanceCalculator from parameters
+
+Examples
+--------
+Basic usage:
+
+>>> from rovibrational_excitation.spectroscopy import AbsorbanceCalculator, ExperimentalConditions
+>>> from rovibrational_excitation.core.basis import LinMolBasis
+>>> 
+>>> # Create basis and other components
+>>> basis = LinMolBasis(V_max=5, J_max=10, use_M=True)
+>>> H0 = basis.generate_H0()
+>>> dipole_matrix = LinMolDipoleMatrix(basis=basis, mu0=1e-30)
+>>> 
+>>> # Set up experimental conditions
+>>> conditions = ExperimentalConditions(
+...     temperature=300,  # K
+...     pressure=1e5,     # Pa
+...     optical_length=1e-3,  # m
+...     T2=500            # ps
+... )
+>>> 
+>>> # Create calculator
+>>> calculator = AbsorbanceCalculator(
+...     basis=basis,
+...     hamiltonian=H0,
+...     dipole_matrix=dipole_matrix,
+...     conditions=conditions,
+...     axes='xy'
+... )
+>>> 
+>>> # Calculate spectrum
+>>> wavenumber = np.arange(2000, 2500, 0.1)
+>>> absorbance = calculator.calculate(rho, wavenumber)
+
+Advanced usage with 3D dipole components:
+
+>>> # Using all three dipole components
+>>> calculator = AbsorbanceCalculator(
+...     basis=basis,
+...     hamiltonian=H0,
+...     dipole_matrix=dipole_matrix,
+...     conditions=conditions,
+...     axes='xyz',
+...     pol_int=np.array([1, 0, 0]),    # x-polarized interaction
+...     pol_det=np.array([0, 1, 0])     # y-polarized detection
+... )
+
+Memory-efficient calculation for large systems:
+
+>>> # Automatic optimization for large basis sets
+>>> absorbance = calculator.calculate(
+...     rho, wavenumber, 
+...     method='optimized',  # Automatically selects best method
+...     chunk_size=1000      # Controls memory usage
+... )
 """
 
-# Internal constants are not re-exported; use core.units.constants in external code
-
-from .broadening import (
-    doppler,
-    sinc,
-    sinc_square,
-    convolution_w_doppler,
-    convolution_w_sinc,
-    convolution_w_sinc_square
+from .absorbance_calculator import (
+    AbsorbanceCalculator,
+    ExperimentalConditions,
+    create_calculator_from_params
 )
 
-__all__ = [
-    # Broadening functions
-    'doppler',
-    'sinc',
-    'sinc_square',
-    'convolution_w_doppler',
-    'convolution_w_sinc',
-    'convolution_w_sinc_square',
-] 
 
-# ------------------------------------------------------------------
-# Public absorbance and broadening API
-# ------------------------------------------------------------------
-try:
-    from .api import (
-        compute_absorbance_spectrum,
-        convolve_absorbance_spectrum,
-        compute_absorbance_spectrum_broadened,
-    )  # type: ignore
-    __all__.append('compute_absorbance_spectrum')
-    __all__.append('convolve_absorbance_spectrum')
-    __all__.append('compute_absorbance_spectrum_broadened')
-except Exception:
-    # Fallback: do not break imports if api module is unavailable
-    pass
+# Define what gets imported with "from spectroscopy import *"
+__all__ = [
+    'AbsorbanceCalculator',
+    'ExperimentalConditions', 
+    'create_calculator_from_params'
+]
+
+
+# Version information
+__version__ = '1.0.0'
+__author__ = 'Rovibrational Excitation Team'
+__email__ = 'contact@example.com'
+
+# Module-level documentation
+__doc__ += f"""
+
+Available Components
+--------------------
+AbsorbanceCalculator : {AbsorbanceCalculator.__doc__.split('.')[0] if AbsorbanceCalculator.__doc__ else 'Main calculator class'}
+ExperimentalConditions : {ExperimentalConditions.__doc__.split('.')[0] if ExperimentalConditions.__doc__ else 'Experimental parameters dataclass'}
+
+Optional Components
+-------------------
+"""
+
+
+__doc__ += f"""
+
+Module Version: {__version__}
+"""

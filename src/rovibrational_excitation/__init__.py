@@ -56,10 +56,10 @@ __all__: list[str] = [
     
     
     # Spectroscopy public API (最小限)
-    "compute_absorbance_spectrum",
-    "convolve_absorbance_spectrum",
-    "compute_absorbance_spectrum_broadened",
-]
+    "AbsorbanceCalculator",
+    "ExperimentalConditions",
+    "create_calculator_from_params",
+    ]
 
 # ------------------------------------------------------------------
 # 便利 re-export
@@ -83,14 +83,10 @@ from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
 
 # spectroscopy - Modern API (推奨)
 from .spectroscopy import (
-    compute_absorbance_spectrum,
-    convolve_absorbance_spectrum,
-    compute_absorbance_spectrum_broadened,
+    AbsorbanceCalculator,
+    ExperimentalConditions,
+    create_calculator_from_params,
 )
-
-
-# spectroscopy - Broadening functions (low-level)
-from .spectroscopy import doppler, sinc, sinc_square, convolution_w_doppler, convolution_w_sinc, convolution_w_sinc_square  # noqa: E402, F401
 
 # ------------------------------------------------------------------
 # 名前空間のクリーンアップ

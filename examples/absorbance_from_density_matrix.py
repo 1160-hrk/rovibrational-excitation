@@ -7,7 +7,17 @@ Created on Tue Nov 14 17:01:02 2023.
 """
 
 import numpy as np
-import functions_for_TDSE_and_LvNE2 as fun
+import sys
+sys.path.insert(0, "/workspace/src")
+from rovibrational_excitation.core.basis.linmol import LinMolBasis
+from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
+from rovibrational_excitation.spectroscopy.constants import (
+    omega3_CO2_rad_fs as OMEGA_CO2_RAD_FS,
+    B0_CO2_rad_fs as B_CO2_RAD_FS,
+    alpha3_CO2_rad_fs as ALPHA_CO2_RAD_FS,
+    x33_CO2_rad_fs as DELTA_OMEGA_CO2_RAD_FS,
+)
 
 h_dirac = 1.055*10**(-34)  # ディラック定数 [J*s]
 ee = 1.601*10**(-19)  # 素電荷 [C]
@@ -64,68 +74,82 @@ def prepare_variables(Nv, Nj, use_projection_number=True, T2=500,
     global gamma_coh, temperature, opt_len, pressure, dens_num, mass_mole,\
         N_level, omega_vj_vpjp_mat, tdm_x_mat, tdm_y_mat,\
         tdm_mat, tdm_mat_con, ind_tdm_mat, wavenumber, omega,\
-        made_2d, omega_2d, one_over_1j_omega_m_omega_vj_vpjp, rho_dia_pm1hop
+        made_2d, omega_2d, one_over_1j_omega_m_omega_vj_vpjp, rho_dia_pm1hop,\
+        _basis_V_array, _basis_J_array
+
+    # 緩和・実験条件
     gamma_coh = 1/(T2*1e-12)
     opt_len = l
     pressure = p
     temperature = temp
     dens_num = pressure/(kb*temperature)
     mass_mole = m_mol
-    if use_projection_number:
-        N_level = Nv*Nj**2
-        energy_array = fun.Make_Rovibrational_Energy_array(
-            Nv, Nj, use_projection_number=use_projection_number,
-            use_wn_v=use_wn_v)
-        energy_array_vstack = np.tile(energy_array, (N_level, 1))
-        omega_vj_vpjp_mat = ((energy_array_vstack-energy_array_vstack.T)/h_dirac
-                             - 1j * gamma_coh)
-        rho_dia_pm1hop = np.zeros((N_level, N_level))
-        for vi in range(Nv):
-            for vj in range(Nv):
-                if abs(vi-vj) < 2:
-                    rho_dia_pm1hop[
-                        vi*Nj**2:(vi+1)*Nj**2, vj*Nj**2:(vj+1)*Nj**2
-                        ] = (np.ones((Nj**2, Nj**2)))
-        tdm_x_mat = fun.tdm_factor_matrix_VJM(
-            Nv, Nj,
-            use_projection_number=True, axis='x') * fun.tdm0
-        tdm_y_mat = fun.tdm_factor_matrix_VJM(
-            Nv, Nj,
-            use_projection_number=True, axis='y') * fun.tdm0
-        tdm_mat = tdm_x_mat * pol[0] + tdm_y_mat * pol[1]
-        tdm_mat_con = (
-            tdm_x_mat * np.conjugate(pol_rad[0])
-            + tdm_y_mat * np.conjugate(pol_rad[1])
-            )
-    else:
-        N_level = Nv*Nj
-        energy_array = fun.Make_Rovibrational_Energy_array(
-            Nv, Nj, use_projection_number=use_projection_number,
-            use_wn_v=use_wn_v)
-        energy_array_vstack = np.tile(energy_array, (N_level, 1))
-        omega_vj_vpjp_mat = ((energy_array_vstack-energy_array_vstack.T)/h_dirac
-                             - 1j * gamma_coh)
-        rho_dia_pm1hop = np.zeros((N_level, N_level))
-        for vi in range(Nv):
-            for vj in range(Nv):
-                if abs(vi-vj) < 2:
-                    rho_dia_pm1hop[
-                        vi*Nj:(vi+1)*Nj, vj*Nj:(vj+1)*Nj
-                        ] = (np.ones((Nj, Nj)))
-        tdm_mat = fun.tdm_factor_matrix_VJM(
-            Nv, Nj,
-            use_projection_number=False, axis='x') * fun.tdm0
-        tdm_mat_con = tdm_mat
+
+    # 物理モデル（CO2近似定数）と基底・行列の生成
+    V_max = int(Nv) - 1
+    J_max = int(Nj) - 1
+    USE_M = bool(use_projection_number)
+
+    basis = LinMolBasis(
+        V_max=V_max,
+        J_max=J_max,
+        use_M=USE_M,
+        omega=OMEGA_CO2_RAD_FS,
+        B=B_CO2_RAD_FS,
+        alpha=ALPHA_CO2_RAD_FS,
+        delta_omega=DELTA_OMEGA_CO2_RAD_FS,
+        input_units="rad/fs",
+        output_units="J",
+    )
+    H0 = basis.generate_H0()  # Hamiltonian in J
+    energy_array = np.diag(H0.matrix)
+
+    # 基底サイズと量子数配列
+    N_level = basis.size()
+    # 保存（後段のマスク作成用）
+    # LinMolBasisは生成時にV/J配列を属性として持つ
+    # 直接アクセスできない場合はbasis.basisから抽出
+    try:
+        _basis_V_array = basis.V_array
+        _basis_J_array = basis.J_array
+    except Exception:
+        states = basis.basis
+        _basis_V_array = states[:, 0]
+        _basis_J_array = states[:, 1]
+
+    # 複素ボーア周波数行列（rad/s）
+    energy_array_vstack = np.tile(energy_array, (N_level, 1))
+    omega_vj_vpjp_mat = ((energy_array_vstack - energy_array_vstack.T)/h_dirac - 1j * gamma_coh)
+
+    # v差が1以内の要素のみを許可するマスク（元コードのブロック構造に相当）
+    v_i = _basis_V_array.reshape(-1, 1)
+    v_j = _basis_V_array.reshape(1, -1)
+    rho_dia_pm1hop = (np.abs(v_i - v_j) < 2).astype(float)
+
+    # 遷移双極子行列（SI単位）
+    dip = LinMolDipoleMatrix(basis=basis, mu0=1.0e-30, potential_type="harmonic", backend="numpy", dense=True)
+    tdm_x_mat = dip.get_mu_x_SI()
+    tdm_y_mat = dip.get_mu_y_SI()
+
+    # 偏光の組み合わせ
+    if pol_rad_is_same:
+        pol_rad = pol
+    tdm_mat = tdm_x_mat * pol[0] + tdm_y_mat * pol[1]
+    tdm_mat_con = (tdm_x_mat * np.conjugate(pol_rad[0]) + tdm_y_mat * np.conjugate(pol_rad[1]))
+
+    # 非ゼロ遷移のインデックス
     ind_tdm_mat = np.array(np.where(tdm_mat != 0))
+
+    # 波数・角周波数グリッド
     wavenumber = Wavenumber
     omega = 2*np.pi*c*1e2*wavenumber
+
+    # 2D化の準備
     made_2d = False
     if make_2d is True:
         omega = np.reshape(omega, (len(omega), 1))
         omega_2d = omega @ np.ones((1, ind_tdm_mat.shape[1]))
-        one_over_1j_omega_m_omega_vj_vpjp = 1/(
-            1j*(omega_2d + omega_vj_vpjp_mat[tuple(ind_tdm_mat)])
-            )
+        one_over_1j_omega_m_omega_vj_vpjp = 1/(1j*(omega_2d + omega_vj_vpjp_mat[tuple(ind_tdm_mat)]))
         made_2d = True
     return None
 
@@ -148,12 +172,12 @@ def absorbance_spectrum(rho):
         rho = rho * rho_dia_pm1hop
         rho_after_pr_int = (tdm_mat@rho-rho@tdm_mat)
         intensity_resp_lin_per_mole = (
-            1j/h_dirac
-            * tdm_mat_con[tuple(np.flip(ind_tdm_mat, axis=0))]
-            * rho_after_pr_int[tuple(ind_tdm_mat)]
+            -1j/h_dirac
+            * tdm_mat_con[tuple(ind_tdm_mat)]
+            * rho_after_pr_int[tuple(np.flip(ind_tdm_mat, axis=0))]
             )
         resp_lin_per_mole_2d = (
-            -one_over_1j_omega_m_omega_vj_vpjp * intensity_resp_lin_per_mole
+            one_over_1j_omega_m_omega_vj_vpjp * intensity_resp_lin_per_mole
             )
         print(resp_lin_per_mole_2d.shape)
         print(intensity_resp_lin_per_mole.shape)
@@ -185,7 +209,7 @@ def absorbance_spectrum_for_loop(rho):
     """
     rho = rho * rho_dia_pm1hop
     resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
-    rho_after_pr_int = (tdm_mat@rho-rho@tdm_mat_con)
+    rho_after_pr_int = (tdm_mat@rho-rho@tdm_mat)
     # for ind_vj_vpjp in tqdm(ind_tdm_mat.T):
     for ind_vj_vpjp in ind_tdm_mat.T:
         resp_lin_per_mole += -1j/h_dirac*(
