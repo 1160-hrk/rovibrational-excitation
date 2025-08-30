@@ -27,6 +27,8 @@ from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.core.units.constants import CONSTANTS
 
 # %% パラメータ設定
+# Quick mode (fast run) via env
+QUICK = os.environ.get("EXAMPLES_QUICK", "0") == "1"
 # システムパラメータ
 SPARSE = True
 # SPARSE = False
@@ -69,6 +71,15 @@ TIME_START = 0.0  # 開始時間 [fs]
 TIME_END = PULSE_DURATION*10  # 終了時間 [fs]
 DT_EFIELD = 0.1  # 電場サンプリング間隔 [fs]
 SAMPLE_STRIDE = 1  # サンプリングストライド
+
+# %% Quick mode overrides
+if QUICK:
+    V_MAX = 1
+    J_MAX = 1
+    PULSE_DURATION = 30.0
+    TIME_END = PULSE_DURATION * 3
+    DT_EFIELD = 0.2
+    SAMPLE_STRIDE = 5
 
 
 # plot setting
@@ -151,16 +162,16 @@ Efield.add_dispersed_Efield(
     polarization=POLARIZATION_1st,  # x方向偏光
     const_polarisation=False,
 )
-Efield.add_dispersed_Efield(
-    envelope_func=gaussian,
-    duration=PULSE_DURATION,
-    t_center=tc+DELAY,
-    carrier_freq=carrier_freq,
-    carrier_freq_units=UNIT_FREQUENCY,
-    amplitude=EFIELD_AMPLITUDE,
-    polarization=POLARIZATION_2nd,  # x方向偏光
-    const_polarisation=False,
-)
+# Efield.add_dispersed_Efield(
+#     envelope_func=gaussian,
+#     duration=PULSE_DURATION,
+#     t_center=tc+DELAY,
+#     carrier_freq=carrier_freq,
+#     carrier_freq_units=UNIT_FREQUENCY,
+#     amplitude=EFIELD_AMPLITUDE,
+#     polarization=POLARIZATION_2nd,  # x方向偏光
+#     const_polarisation=False,
+# )
 
 # %% 時間発展計算
 print(f"=== 回転振動励起シミュレーション (δ={DETUNING:.3f}, E={EFIELD_AMPLITUDE:.3e} V/m) ===")
@@ -183,7 +194,15 @@ print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")
 
 
 # %% 結果プロット
-fig, axes = plt.subplots(4, 1, figsize=(12, 14), sharex=True)
+fig, axes = plt.subplots(
+    4, 1,
+    figsize=(12, 14),
+    sharex=True,
+    gridspec_kw={
+        "height_ratios": [1, 1, 1, 1],
+        "hspace": 0.1,
+    },
+)
 
 # 電場の時間発展
 Efield_data = Efield.get_Efield()
