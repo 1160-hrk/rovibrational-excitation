@@ -197,12 +197,8 @@ class Hamiltonian:
         """
         if units is None or units == self._units:
             return self.matrix
-        elif units == "J":
-            return self.to_energy_units().matrix
-        elif units == "rad/fs":
-            return self.to_frequency_units().matrix
         else:
-            raise ValueError(f"Unknown units: {units}")
+            return converter.convert_hamiltonian(self.matrix, self._units, units)
     
     def get_eigenvalues(self, units: Literal["J", "rad/fs"] | None = None) -> np.ndarray:
         """

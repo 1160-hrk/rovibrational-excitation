@@ -69,6 +69,8 @@ class UnitConverter:
             "ea0": CONSTANTS.E * CONSTANTS.A0,
             "e*a0": CONSTANTS.E * CONSTANTS.A0,
             "atomic": CONSTANTS.E * CONSTANTS.A0,
+            "rad/fs/(V/m)": 1.0 * CONSTANTS.HBAR * 1e15,
+            "rad*PHz/(V/m)": 1.0 * CONSTANTS.HBAR * 1e15,
         }
         
         # Electric field conversions (target: V/m)
@@ -150,6 +152,20 @@ class UnitConverter:
             return value_J / self._energy_to_J[to_unit]
         else:
             raise ValueError(f"Unknown target energy unit: {to_unit}")
+    
+    def convert_hamiltonian(self, value: Union[float, np.ndarray], 
+                            from_unit: str, to_unit: str = "J") -> Union[float, np.ndarray]:
+        """Convert Hamiltonian between units."""
+        if from_unit in self._energy_to_J and to_unit in self._energy_to_J:
+                return self.convert_energy(value, from_unit, to_unit)
+        elif from_unit in self._frequency_to_rad_fs and to_unit in self._frequency_to_rad_fs:
+                return self.convert_frequency(value, from_unit, to_unit)
+        elif from_unit in self._energy_to_J and to_unit in self._frequency_to_rad_fs:
+            return self.energy_to_frequency(value, from_unit, to_unit)
+        elif from_unit in self._frequency_to_rad_fs and to_unit in self._energy_to_J:
+            return self.frequency_to_energy(value, from_unit, to_unit)
+        else:
+            raise ValueError(f"Unknown target Hamiltonian unit: {to_unit}")
     
     def convert_dipole_moment(self, value: Union[float, np.ndarray], 
                              from_unit: str, to_unit: str = "C*m") -> Union[float, np.ndarray]:

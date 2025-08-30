@@ -319,28 +319,27 @@ def prepare_propagation_args(
     except ValueError:
         E_scalar = np.zeros_like(Ex)
         
-    # Get Hamiltonian matrix
-    H0 = ensure_dense_matrix(hamiltonian.get_matrix("J"))
-    
     # Get dipole components
     if mu_x_override is not None:
         mu_a = mu_x_override
     else:
-        mu_a = get_dipole_component_SI(dipole_matrix, ax0)
+        # mu_a = get_dipole_component_SI(dipole_matrix, ax0)
+        mu_a_prime = dipole_matrix.get_mu_in_units(ax0, "rad/fs/(V/m)")
     
     if mu_y_override is not None:
         mu_b = mu_y_override
     else:
-        mu_b = get_dipole_component_SI(dipole_matrix, ax1)
+        # mu_b = get_dipole_component_SI(dipole_matrix, ax1)
+        mu_b_prime = dipole_matrix.get_mu_in_units(ax1, "rad/fs/(V/m)")
     
     # Ensure dense matrices
-    mu_a = ensure_dense_matrix(mu_a)
-    mu_b = ensure_dense_matrix(mu_b)
+    mu_a_prime = ensure_dense_matrix(mu_a_prime)
+    mu_b_prime = ensure_dense_matrix(mu_b_prime)
     
     # Convert to appropriate units
-    H0_prime = J_to_rad_phz(H0)
-    mu_a_prime = cm_to_rad_phz(mu_a)
-    mu_b_prime = cm_to_rad_phz(mu_b)
+    H0_prime = ensure_dense_matrix(hamiltonian.get_matrix("rad/fs"))
+    # mu_a_prime = cm_to_rad_phz(mu_a)
+    # mu_b_prime = cm_to_rad_phz(mu_b)
     
     return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt, 1.0
 
