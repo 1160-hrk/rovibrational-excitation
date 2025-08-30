@@ -38,7 +38,7 @@ from rovibrational_excitation.spectroscopy import (
 # ===== 並列処理設定 =====
 USE_PARALLEL = True
 PARALLEL_BACKEND = "process"  # "thread" or "process"
-CHUNK_SIZE = 12
+CHUNK_SIZE = 20
 MAX_WORKERS = min(os.cpu_count() or 1, 14)
 PROGRESS_EVERY = 1  # 進捗ログ出力のバッチ間隔
 
@@ -46,7 +46,7 @@ PROGRESS_EVERY = 1  # 進捗ログ出力のバッチ間隔
 SPARSE = True
 DENSE = False
 V_MAX = 11  # 最大振動量子数
-J_MAX = 2  # 最大回転量子数
+J_MAX = 4  # 最大回転量子数
 USE_M = True  # 磁気量子数を使用
 
 # ===== 分子パラメータ (CO2) =====
@@ -66,13 +66,13 @@ BOLTZMANN_WEIGHT_THRESHOLD = 1e-4  # この重み以上の準位のみ計算
 PULSE_DURATION_FWHM = 100.0  # パルス幅 [fs]
 PULSE_DURATION = PULSE_DURATION_FWHM / (2.0 * np.sqrt(np.log(2.0)))  # パルス幅 [fs]
 DETUNING = 0.0  # デチューニング
-GDD = -2000.0  # [fs^2]
+GDD = -20000.0  # [fs^2]
 POLARIZATION = np.array([1, 0])  # x方向偏光
 AXES = "xy"  # x, y方向の双極子を考慮
 
 # キャリア周波数を設定するための状態ペア（下位, 上位）
-CARRIER_STATE_LOWER = (4, 0, 0)
-CARRIER_STATE_UPPER = (5, 1, 1)
+CARRIER_STATE_LOWER = (3, 0, 0)
+CARRIER_STATE_UPPER = (4, 1, 1)
 
 # ===== フルエンス設定 =====
 FLUENCE_MJ_CM2 = 100.0  # [mJ/cm^2]
@@ -80,16 +80,17 @@ F_SI = FLUENCE_MJ_CM2 * 10.0  # [J/m^2]
 
 # ===== 時間グリッド設定 =====
 TIME_START = 0.0  # 開始時間 [fs]
-TIME_END = PULSE_DURATION * 10  # 終了時間 [fs]
+TIME_END = PULSE_DURATION * np.sqrt(1 + 4*GDD**2/PULSE_DURATION**4) * 10  # 終了時間 [fs]
 DT_EFIELD = 0.05  # 電場サンプリング間隔 [fs]
 SAMPLE_STRIDE = 1  # サンプリングストライド
 
 # ===== 吸収スペクトル設定 =====
 # 実験条件
 TEMPERATURE_SPEC = TEMPERATURE_K  # スペクトル計算時の温度 [K]
-PRESSURE_PA = 6.0e-1  # 圧力 [Pa]
+PRESSURE_PA = 1.2  # 圧力 [Pa]
 PATH_LENGTH_M = 1.0e-3  # 光路長 [m]
 T2_PS = 667.0  # コヒーレンス緩和時間 [ps]
+# T2_PS = 100.0  # コヒーレンス緩和時間 [ps]
 
 # 偏光設定
 # INTERACTION_POL = np.array([1.0, 0.0])  # 相互作用光の偏光
@@ -719,7 +720,9 @@ np.save(fig4_absorbance_path, fig4_absorbance_data)
 print(f"Saved Figure 4 absorbance data: {fig4_absorbance_path}")
 
 if len(power_plot) > 0 and np.max(power_plot) > 0:
-    fig4_power_data = np.column_stack((wavenumbers_power_plot, power_plot_normalized))
+    fig4_power_data = np.column_stack(
+        (wavenumbers_power_plot, power_plot_normalized)
+        )
     fig4_power_path = os.path.join(results_dir, f"fig4_power_data_{timestamp}.npy")
     np.save(fig4_power_path, fig4_power_data)
     print(f"Saved Figure 4 power spectrum data: {fig4_power_path}")
