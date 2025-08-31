@@ -58,7 +58,7 @@ INITIAL_STATE = (0, 0, 0)
 TARGET_STATE = (3, 1, 0)
 
 # Time grid
-TIME_TOTAL = 1000000.0  # [fs]
+TIME_TOTAL = 2000000.0  # [fs]
 DT_EFIELD = 0.1      # [fs]
 SAMPLE_STRIDE = 1
 
@@ -90,7 +90,7 @@ EVALUATION_MODE = "weights"  # "target" or "weights"
 # 追加: 逆順もサポート → "by_v_reverse", "by_v_power_reverse"
 WEIGHT_MODE = "by_v_power"         
 WEIGHT_V_POWER = 0.25          # by_v_power 用の指数（例: 2 で v^2）
-WEIGHT_TARGET_FACTOR = 1.1
+WEIGHT_TARGET_FACTOR = 1.5
 NORMALIZE_WEIGHTS = True
 # 逆順を強制するフラグ（WEIGHT_MODE が *_reverse の場合も有効）
 WEIGHT_REVERSE = False
@@ -106,7 +106,7 @@ DRIVE_ABS_MIN = 1e-18
 
 # Segmenting (either steps or duration). If both set, STEPS has priority.
 SEGMENT_SIZE_STEPS: Optional[int] = None
-SEGMENT_SIZE_FS: Optional[float] = 4
+SEGMENT_SIZE_FS: Optional[float] = 2
 
 TIMESTAMP = time.strftime("%Y%m%d_%H%M%S")
 FIGURES_DIR = pathlib.Path(__file__).resolve().parent / "results" / f"{TIMESTAMP}_local_optimization_rovibrational"
