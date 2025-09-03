@@ -12,7 +12,7 @@ from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagator import schrodinger_propagation
 from rovibrational_excitation.core.basis import StateVector
-from rovibrational_excitation.dipole.twolevel.builder import TwoLevelDipoleMatrix
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 
 # %%
 def evaluate_consistency(time_dimensional, time_nondimensional, psi_dimensional, psi_nondimensional):

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.dipole.twolevel.builder import TwoLevelDipoleMatrix
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 
 
 class TestTwoLevelDipoleMatrix:
