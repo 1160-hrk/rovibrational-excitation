@@ -14,13 +14,12 @@ import sys
 import tempfile
 import time
 
-from rovibrational_excitation.simulation import runner
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+from rovibrational_excitation.simulation import runner
 # %%
 # ---------------------------------------------------------------
-# 対象パラメータファイル
-PARAM_FILE = "params_CO2_AntiSymm.py"
+# 対象パラメータファイル（絶対パスに解決）
+PARAM_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "params_CO2_AntiSymm.py"))
 
 # %%
 # ---------------------------------------------------------------

@@ -48,7 +48,7 @@ axes = "xy"  # Ex↔μ_x, Ey↔μ_y
 # 系パラメータ  (CO₂ 非対称伸縮)
 # ------------------------------------------------------------------
 V_max = 3
-J_max = 20
+J_max = 2
 
 # Morse / Harmonic 切替え
 potential_type = "harmonic"  # or "morse"

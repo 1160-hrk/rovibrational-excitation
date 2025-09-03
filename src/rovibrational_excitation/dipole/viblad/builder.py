@@ -91,7 +91,7 @@ class VibLadderDipoleMatrix:
             # (no rotational mixing)
             matrix = np.diag(np.ones(len(self.basis.V_array)-1), 1)
             matrix += np.diag(np.ones(len(self.basis.V_array)-1), -1)
-            # matrix = np.zeros((dim, dim), dtype=np.complex128)
+            matrix = np.zeros((dim, dim), dtype=np.complex128)
         elif axis == "y":
             matrix = np.zeros((dim, dim), dtype=np.complex128)
 

@@ -145,7 +145,7 @@ class VibLadderBasis(BasisBase):
             Diagonal Hamiltonian object with unit information.
         """
         vterm = self.V_array + 0.5
-        energy_freq = self.omega_rad_pfs * vterm - self.delta_omega_rad_pfs * vterm**2
+        energy_freq = (self.omega_rad_pfs + self.delta_omega_rad_pfs) * vterm - self.delta_omega_rad_pfs / 2 * vterm**2
         
         # Create Hamiltonian in frequency units first
         H0_matrix = np.diag(energy_freq)

@@ -15,22 +15,20 @@ from pathlib import Path
 # ライブラリインポート
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.core.nondimensionalize import (
-    nondimensionalize_system,
-    analyze_regime,
-    get_physical_time,
-)
+from rovibrational_excitation.core.nondimensional.converter import nondimensionalize_system
+from rovibrational_excitation.core.nondimensional.analysis import analyze_regime
+from rovibrational_excitation.core.nondimensional.utils import get_physical_time
 
 # パラメータ設定
 SYSTEM_PARAMS = {
     "V_max": 3,  # 最大振動量子数
     "J_max": 5,  # 最大回転量子数
     "use_M": True,
-    "omega_rad_phz": 0.159,  # CO2分子のω1振動（rad/fs）
-    "B_rad_phz": 3.9e-5,  # 回転定数（rad/fs）
+    "omega_rad_pfs": 0.159,  # CO2分子のω1振動（rad/fs）
+    "B_rad_pfs": 3.9e-5,  # 回転定数（rad/fs）
     "mu0": 1e-30,  # 双極子モーメント（C·m）
 }
 
@@ -71,7 +69,7 @@ def setup_system():
         V_max=SYSTEM_PARAMS["V_max"],
         J_max=SYSTEM_PARAMS["J_max"],
         use_M=False,
-        omega_rad_phz=SYSTEM_PARAMS["omega_rad_phz"],
+        omega_rad_pfs=SYSTEM_PARAMS["omega_rad_pfs"],
     )
     
     sv = StateVector(basis)
@@ -80,8 +78,8 @@ def setup_system():
     
     # ハミルトニアン（エネルギー単位）
     H0 = basis.generate_H0(
-        omega_rad_phz=SYSTEM_PARAMS["omega_rad_phz"],
-        B_rad_phz=SYSTEM_PARAMS["B_rad_phz"],
+        omega_rad_pfs=SYSTEM_PARAMS["omega_rad_pfs"],
+        B_rad_pfs=SYSTEM_PARAMS["B_rad_pfs"],
         return_energy_units=True,  # エネルギー単位（J）で取得
     )
     
@@ -109,7 +107,7 @@ def run_comparison():
     # 無次元化分析
     print("\n🔬 物理レジーム分析:")
     _, _, _, _, _, _, scales = nondimensionalize_system(
-        H0, dip.mu_x, dip.mu_y, E,
+        H0.get_matrix(units="J"), dip.mu_x, dip.mu_y, E,
         H0_units="energy", time_units="fs"
     )
     regime_info = analyze_regime(scales)
@@ -122,11 +120,10 @@ def run_comparison():
     
     # 1. 従来の次元ありシステム
     print("\n🎯 従来の次元ありシステムで計算中...")
-    t_dim, psi_dim = schrodinger_propagation(
-        H0, E, dip, sv.data,
-        axes="xy",
-        return_traj=True,
-        return_time_psi=True,
+    prop = SchrodingerPropagator()
+    t_dim, psi_dim = prop.propagate(
+        hamiltonian=H0, efield=E, dipole_matrix=dip, initial_state=sv.data,
+        axes="xy", return_traj=True, return_time_psi=True,
         sample_stride=TIME_PARAMS["sample_stride"],
         nondimensional=False,
     )
@@ -134,11 +131,9 @@ def run_comparison():
     
     # 2. 無次元化システム
     print("🔬 無次元化システムで計算中...")
-    t_nondim, psi_nondim = schrodinger_propagation(
-        H0, E, dip, sv.data,
-        axes="xy",
-        return_traj=True,
-        return_time_psi=True,
+    t_nondim, psi_nondim = prop.propagate(
+        hamiltonian=H0, efield=E, dipole_matrix=dip, initial_state=sv.data,
+        axes="xy", return_traj=True, return_time_psi=True,
         sample_stride=TIME_PARAMS["sample_stride"],
         nondimensional=True,
     )
@@ -171,8 +166,8 @@ def create_plots(t_dim, pop_dim, t_nondim, pop_nondim, E, basis, regime_info):
     """結果のプロット作成"""
     
     # 出力ディレクトリ
-    output_dir = Path("nondimensional_demo_results")
-    output_dir.mkdir(exist_ok=True)
+    # output_dir = Path("nondimensional_demo_results")
+    # output_dir.mkdir(exist_ok=True)
     
     # 状態数の制限（表示用）
     max_states = min(6, pop_dim.shape[1])
@@ -223,7 +218,7 @@ def create_plots(t_dim, pop_dim, t_nondim, pop_nondim, E, basis, regime_info):
     
     plt.suptitle(f"無次元化伝播デモ (λ={regime_info['lambda']:.3f}, {regime_info['regime']})")
     plt.tight_layout()
-    plt.savefig(output_dir / "comparison.png", dpi=300)
+    # plt.savefig(output_dir / "comparison.png", dpi=300)
     plt.show()
     
     # 図2: レジーム情報
@@ -251,10 +246,10 @@ def create_plots(t_dim, pop_dim, t_nondim, pop_nondim, E, basis, regime_info):
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(output_dir / "regime_analysis.png", dpi=300)
+    # plt.savefig(output_dir / "regime_analysis.png", dpi=300)
     plt.show()
     
-    print(f"\n📁 結果が {output_dir} に保存されました")
+    # print(f"\n📁 結果が {output_dir} に保存されました")
 
 
 def benchmark_performance():
@@ -267,10 +262,10 @@ def benchmark_performance():
     
     # 次元ありシステム
     start_time = time.time()
-    schrodinger_propagation(
-        H0, E, dip, sv.data,
-        axes="xy",
-        return_traj=True,
+    prop = SchrodingerPropagator()
+    prop.propagate(
+        hamiltonian=H0, efield=E, dipole_matrix=dip, initial_state=sv.data,
+        axes="xy", return_traj=True,
         sample_stride=TIME_PARAMS["sample_stride"],
         nondimensional=False,
     )
@@ -278,7 +273,7 @@ def benchmark_performance():
     
     # 無次元化システム
     start_time = time.time()
-    schrodinger_propagation(
+    prop.propagate(
         H0, E, dip, sv.data,
         axes="xy",
         return_traj=True,

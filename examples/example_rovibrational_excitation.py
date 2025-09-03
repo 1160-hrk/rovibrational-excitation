@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter
@@ -177,11 +177,12 @@ Efield.add_dispersed_Efield(
 print(f"=== 回転振動励起シミュレーション (δ={DETUNING:.3f}, E={EFIELD_AMPLITUDE:.3e} V/m) ===")
 print("時間発展計算を開始...")
 start = time.perf_counter()
-time4psi, psi_t = schrodinger_propagation(
+prop = SchrodingerPropagator()
+time4psi, psi_t = prop.propagate(
     hamiltonian=H0,
-    Efield=Efield,
+    efield=Efield,
     dipole_matrix=dipole_matrix,
-    psi0=psi0,
+    initial_state=psi0,
     axes=AXES,  # x, y方向の双極子を考慮
     return_traj=True,
     return_time_psi=True,

@@ -237,7 +237,7 @@ def splitop_schrodinger(
     diag_H0 = np.diag(H0) if H0.ndim == 2 else H0
     exp_half = np.exp(-1j * diag_H0 * dt / (2.0))
 
-    M_raw = np.triu(pol[0] * mu_x + pol[1] * mu_y, k=1)
+    M_raw = np.triu(-pol[0] * mu_x - pol[1] * mu_y, k=1)
     A = (M_raw + M_raw.conj().T)
     eigvals, U = np.linalg.eigh(A)
     U_H = U.conj().T
@@ -284,7 +284,7 @@ def _splitop_cupy(
 
     exp_half = cp.exp(-1j * H0_cp * dt / (2.0))
 
-    M_raw = pol_cp[0] * mu_x_cp + pol_cp[1] * mu_y_cp
+    M_raw = -pol_cp[0] * mu_x_cp - pol_cp[1] * mu_y_cp
     A_cp = 0.5 * (M_raw + M_raw.conj().T)
 
     eigvals, U = cp.linalg.eigh(A_cp)

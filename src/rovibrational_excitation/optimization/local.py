@@ -8,6 +8,32 @@ from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
 
+DEFAULT_PARAMS = {
+    "control_axes": "xy",
+    "gain": 1.0,
+    "field_max": 1e12,
+    "use_sin2_shape": False,
+    "segment_size_steps": None,
+    "segment_size_fs": 1,
+    "seed_amplitude": 1e3,
+    "seed_max_segments": 5,
+    "c_abs_min": 1e-1,
+    "shape_floor": 1e-2,
+    "lookahead_enable": False,
+    "lookahead_fraction": 0.5,
+
+    "eval_mode": "weights",
+    "weight_mode": "by_v",
+    "weight_v_power": 2.0,
+    "weight_target_factor": 1.0,
+    "normalize_weights": True,
+    "weight_reverse": False,
+    "use_one_hot_target_in_weights": False,
+    "drive_abs_min": 1e-18,
+
+    "custom_weights": None,
+    "custom_weights_dict": None,
+}
 
 class RunResult(TypedDict, total=False):
     efield: ElectricField
@@ -84,8 +110,8 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     dt = float(time_cfg["dt_fs"])
     sample_stride = int(time_cfg.get("sample_stride", 1))
 
-    seg_steps = params.get("segment_size_steps")
-    seg_fs = params.get("segment_size_fs")
+    seg_steps = params.get("segment_size_steps", DEFAULT_PARAMS["segment_size_steps"])
+    seg_fs = params.get("segment_size_fs", DEFAULT_PARAMS["segment_size_fs"])
     segments, tlist = _build_segments_and_tlist(time_total, dt, seg_steps, seg_fs)
     n_steps = len(tlist)
 
@@ -103,33 +129,33 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     if hasattr(mu_z_si, 'toarray'): mu_z_si = mu_z_si.toarray()
     mu_x_p = cm_to_rad_phz(mu_x_si); mu_y_p = cm_to_rad_phz(mu_y_si); mu_z_p = cm_to_rad_phz(mu_z_si)
 
-    control_axes = str(params.get("control_axes", "xy")).lower()
+    control_axes = str(params.get("control_axes", DEFAULT_PARAMS["control_axes"])).lower()
     if len(control_axes) != 2 or any(c not in 'xyz' for c in control_axes):
         control_axes = 'xy'
     mu_map = {'x': mu_x_p, 'y': mu_y_p, 'z': mu_z_p}
     mu_eff_x = mu_map[control_axes[0]]
     mu_eff_y = mu_map[control_axes[1]]
 
-    gain = float(params.get("gain", 1.0))
-    field_max = float(params.get("field_max", 1e12))
-    use_sin2_shape = bool(params.get("use_sin2_shape", False))
-    seed_amplitude = float(params.get("seed_amplitude", 1e3))
-    seed_max_segments = int(params.get("seed_max_segments", 0))
-    c_abs_min = float(params.get("c_abs_min", 1e-1))
-    shape_floor = float(params.get("shape_floor", 1e-2))
-    lookahead_enable = bool(params.get("lookahead_enable", False))
-    lookahead_fraction = float(params.get("lookahead_fraction", 0.7))
+    gain = float(params.get("gain", DEFAULT_PARAMS["gain"]))
+    field_max = float(params.get("field_max", DEFAULT_PARAMS["field_max"]))
+    use_sin2_shape = bool(params.get("use_sin2_shape", DEFAULT_PARAMS["use_sin2_shape"]))
+    seed_amplitude = float(params.get("seed_amplitude", DEFAULT_PARAMS["seed_amplitude"]))
+    seed_max_segments = int(params.get("seed_max_segments", DEFAULT_PARAMS["seed_max_segments"]))
+    c_abs_min = float(params.get("c_abs_min", DEFAULT_PARAMS["c_abs_min"]))
+    shape_floor = float(params.get("shape_floor", DEFAULT_PARAMS["shape_floor"]))
+    lookahead_enable = bool(params.get("lookahead_enable", DEFAULT_PARAMS["lookahead_enable"]))
+    lookahead_fraction = float(params.get("lookahead_fraction", DEFAULT_PARAMS["lookahead_fraction"]))
 
-    eval_mode = str(params.get("eval_mode", "target")).lower()
-    weight_mode = str(params.get("weight_mode", "by_v")).lower()
-    weight_v_power = float(params.get("weight_v_power", 2.0))
-    weight_target_factor = float(params.get("weight_target_factor", 1.0))
-    normalize_weights = bool(params.get("normalize_weights", True))
-    weight_reverse = bool(params.get("weight_reverse", False))
-    custom_weights = params.get("custom_weights")
-    custom_weights_dict = params.get("custom_weights_dict")
-    use_one_hot_target_in_weights = bool(params.get("use_one_hot_target_in_weights", False))
-    drive_abs_min = float(params.get("drive_abs_min", 1e-18))
+    eval_mode = str(params.get("eval_mode", DEFAULT_PARAMS["eval_mode"])).lower()
+    weight_mode = str(params.get("weight_mode", DEFAULT_PARAMS["weight_mode"])).lower()
+    weight_v_power = float(params.get("weight_v_power", DEFAULT_PARAMS["weight_v_power"]))
+    weight_target_factor = float(params.get("weight_target_factor", DEFAULT_PARAMS["weight_target_factor"]))
+    normalize_weights = bool(params.get("normalize_weights", DEFAULT_PARAMS["normalize_weights"]))
+    weight_reverse = bool(params.get("weight_reverse", DEFAULT_PARAMS["weight_reverse"]))
+    custom_weights = params.get("custom_weights", DEFAULT_PARAMS["custom_weights"])
+    custom_weights_dict = params.get("custom_weights_dict", DEFAULT_PARAMS["custom_weights_dict"])
+    use_one_hot_target_in_weights = bool(params.get("use_one_hot_target_in_weights", DEFAULT_PARAMS["use_one_hot_target_in_weights"]))
+    drive_abs_min = float(params.get("drive_abs_min", DEFAULT_PARAMS["drive_abs_min"]))
 
     segments_arr = segments
     full_field = np.zeros((n_steps, 2), dtype=float)
@@ -184,8 +210,8 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
                 psi_ref = psi_curr * phase
 
         if eval_mode == "weights" and A_diag is not None:
-            mu_x_psi = mu_eff_x @ psi_ref
-            mu_y_psi = mu_eff_y @ psi_ref
+            mu_x_psi = -mu_eff_x @ psi_ref
+            mu_y_psi = -mu_eff_y @ psi_ref
             A_mu_x_psi = A_diag * mu_x_psi
             A_mu_y_psi = A_diag * mu_y_psi
             term_x = complex(np.vdot(psi_ref, A_mu_x_psi))
@@ -200,8 +226,8 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
                 seed_left -= 1
         else:
             c = complex(np.vdot(psi_target, psi_ref)) if target_idx is not None else 0.0
-            d_x = complex(np.vdot(psi_target, (mu_eff_x @ psi_ref))) if target_idx is not None else 0.0
-            d_y = complex(np.vdot(psi_target, (mu_eff_y @ psi_ref))) if target_idx is not None else 0.0
+            d_x = complex(np.vdot(psi_target, (-mu_eff_x @ psi_ref))) if target_idx is not None else 0.0
+            d_y = complex(np.vdot(psi_target, (-mu_eff_y @ psi_ref))) if target_idx is not None else 0.0
             val_x = float(np.imag(np.conj(c) * d_x))
             val_y = float(np.imag(np.conj(c) * d_y))
             ex = float(gain * S * val_x)

@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter
@@ -30,24 +30,26 @@ from rovibrational_excitation.core.units.converters import converter
 SPARSE = True
 SPARSE = False
 
-V_MAX = 2  # 最大振動量子数
+V_MAX = 3  # 最大振動量子数
 OMEGA_01 = 2349.1  # 振動周波数 [cm^-1]
-DOMEGA = 25  # 非調和性補正 [cm^-1]
+DOMEGA = 50  # 非調和性補正 [cm^-1]
 MU0 = 1e-30  # 双極子行列要素の大きさ [C·m]
 UNIT_FREQUENCY = "cm^-1"
 UNIT_DIPOLE = "C*m"
 
 # レーザーパルス設定
-PULSE_DURATION = 50.0  # パルス幅 [fs]
-EFIELD_AMPLITUDE = 5e9  # 電場振幅 [V/m]
+PULSE_DURATION = 100.0  # パルス幅 [fs]
+EFIELD_AMPLITUDE = 5e10  # 電場振幅 [V/m]
 POLARIZATION = np.array([1, 0])  # x方向偏光
+GDD = 1e5
 AXES = "zx"  # z, x方向の双極子を考慮
 
 # 時間グリッド設定
 TIME_START = 0.0  # 開始時間 [fs]
-TIME_END = PULSE_DURATION * 10   # 終了時間 [fs]
-DT_EFIELD = 0.1  # 電場サンプリング間隔 [fs]
-SAMPLE_STRIDE = 5  # サンプリングストライド
+# TIME_END = PULSE_DURATION * 10   # 終了時間 [fs]
+TIME_END = 20000   # 終了時間 [fs]
+DT_EFIELD = 0.02  # 電場サンプリング間隔 [fs]
+SAMPLE_STRIDE = 10  # サンプリングストライド
 
 # %% 基底・ハミルトニアン・双極子行列の生成
 print("=== 振動励起シミュレーション ===")
@@ -138,6 +140,7 @@ Efield.add_dispersed_Efield(
     amplitude=EFIELD_AMPLITUDE,
     polarization=POLARIZATION,
     const_polarisation=False,
+    gdd=GDD,
 )
 
 # %% 時間発展計算
@@ -146,16 +149,18 @@ print(f"=== 振動励起シミュレーション (E={EFIELD_AMPLITUDE:.3e} V/m) 
 # 調和振動子
 print("\n調和振動子の時間発展計算を開始...")
 start = time.perf_counter()
-time4psi_h, psi_t_h = schrodinger_propagation(
+prop = SchrodingerPropagator()
+time4psi_h, psi_t_h = prop.propagate(
     hamiltonian=H0_h,
-    Efield=Efield,
+    efield=Efield,
     dipole_matrix=dipole_matrix_h,
-    psi0=psi0_h,
+    initial_state=psi0_h,
     axes=AXES,
     return_traj=True,
     return_time_psi=True,
     sample_stride=SAMPLE_STRIDE,
     sparse=SPARSE,
+    renorm = True,
 )
 end = time.perf_counter()
 print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")
@@ -163,11 +168,11 @@ print(f"時間発展計算完了. 計算時間: {end - start:.3f} s")
 # モース振動子
 print("\nモース振動子の時間発展計算を開始...")
 start = time.perf_counter()
-time4psi_m, psi_t_m = schrodinger_propagation(
+time4psi_m, psi_t_m = prop.propagate(
     hamiltonian=H0_m,
-    Efield=Efield,
+    efield=Efield,
     dipole_matrix=dipole_matrix_m,
-    psi0=psi0_m,
+    initial_state=psi0_m,
     axes=AXES,
     return_traj=True,
     return_time_psi=True,

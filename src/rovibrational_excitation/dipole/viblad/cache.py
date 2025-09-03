@@ -87,9 +87,10 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
                     if val != 0.0:
                         matrix[i, j] = self.mu0 * val
         elif axis == "x":
-            matrix = xp.diag(xp.ones(len(self.basis.V_array)-1), 1)
-            matrix += xp.diag(xp.ones(len(self.basis.V_array)-1), -1)
-            matrix *= self.mu0
+            # matrix = xp.diag(xp.ones(len(self.basis.V_array)-1), 1)
+            # matrix += xp.diag(xp.ones(len(self.basis.V_array)-1), -1)
+            # matrix *= self.mu0
+            matrix = xp.zeros((dim, dim), dtype=xp.complex128)
         elif axis == "y":
             matrix = xp.zeros((dim, dim), dtype=xp.complex128)
         return matrix

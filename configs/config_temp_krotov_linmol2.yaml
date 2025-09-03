@@ -1,0 +1,37 @@
+system:
+  type: linmol
+  params:
+    V_max: 1
+    J_max: 2
+    use_M: False
+    omega_cm: 2349.1
+    delta_omega_cm: 25.0
+    B_cm: 0.39
+    alpha_cm: 0.0037
+    input_units: "cm^-1"
+    output_units: "rad/fs"
+states:
+  initial: [0, 1]
+  target:  [1, 2]
+time:
+  total_fs: 1000.0
+  dt_fs: 0.1
+  sample_stride: 1
+algorithm:
+  selected: krotov
+algorithms:
+  krotov:
+    max_iter: 1000
+    convergence_tol: 1.0e-18
+    lambda_a: 5.0e-21
+    target_fidelity: 1.0
+    control_axes: "zx"
+    pol_initial: [1.0, 0.0]
+plot:
+  save_fig: true
+  spectrum: true
+  spectrogram: true
+output:
+  dir: "examples/figures"
+
+
