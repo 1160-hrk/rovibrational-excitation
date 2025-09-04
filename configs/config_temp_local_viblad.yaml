@@ -1,0 +1,48 @@
+system:
+  type: viblad
+  params:
+    V_max: 2
+    omega_cm: 2349.1
+    delta_omega_cm: 25.0
+    input_units: "cm^-1"
+    output_units: "rad/fs"
+states:
+  initial: [0]
+  target:  [2]
+time:
+  total_fs: 6000.0
+  dt_fs: 0.1
+  sample_stride: 1
+algorithm:
+  selected: local
+algorithms:
+  local:
+    gain: 1e21
+    field_max: 1.0e12
+    use_sin2_shape: false
+    control_axes: "zx"
+    seed_amplitude: 1.0e3
+    seed_max_segments: 5
+    c_abs_min: 1.0e-1
+    shape_floor: 1.0e-2
+    lookahead_enable: false
+    lookahead_fraction: 0.7
+    eval_mode: "weights"
+    weight_mode: "by_v_power"
+    weight_v_power: 0.125
+    weight_target_factor: 1
+    normalize_weights: true
+    weight_reverse: false
+    custom_weights: null
+    custom_weights_dict: null
+    use_one_hot_target_in_weights: false
+    drive_abs_min: 1.0e-18
+    segment_size_steps: null
+    segment_size_fs: 0.5
+plot:
+  save_fig: true
+  spectrum: true
+  spectrogram: true
+output:
+  dir: "examples/figures"
+

@@ -27,7 +27,7 @@ from matplotlib.figure import Figure
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
 from rovibrational_excitation.core.units.constants import CONSTANTS
@@ -117,8 +117,9 @@ class PlotConfig:
     results_dir: str = os.path.abspath(
         os.path.join(
             os.path.dirname(__file__),
-            "..", "results",
-            f"example_twolevel_2d_map_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            # "..",
+            "results",
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_twolevel_2d_map"
             )
         )
 
@@ -267,11 +268,12 @@ def run_twolevel_simulation(
     )
 
     # 時間発展計算
-    time4psi, psi_t = schrodinger_propagation(
+    prop = SchrodingerPropagator()
+    time4psi, psi_t = prop.propagate(
         hamiltonian=H0,
-        Efield=Efield,
+        efield=Efield,
         dipole_matrix=dipole_matrix,  # type: ignore
-        psi0=psi0,
+        initial_state=psi0,
         axes="xy",
         return_traj=True,
         return_time_psi=True,

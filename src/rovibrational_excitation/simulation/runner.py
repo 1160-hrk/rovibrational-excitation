@@ -30,13 +30,16 @@ import numpy as np
 import pandas as pd
 
 # Unit conversion utilities
-from rovibrational_excitation.core.parameter_converter import ParameterConverter
+from rovibrational_excitation.core.units.parameter_processor import parameter_processor
 
 try:
-    from tqdm import tqdm
+    from tqdm import tqdm as _tqdm_impl
+
+    def _tqdm(x, **k):  # type: ignore
+        return _tqdm_impl(x, **k)
 except ImportError:  # 進捗バーが無くても動く
 
-    def tqdm(x, **k):  # type: ignore
+    def _tqdm(x, **k):  # type: ignore
         return x
 
 
@@ -253,7 +256,7 @@ def _load_params_file(path: str) -> dict[str, Any]:
     params_with_defaults = params.copy()
     
     # Then convert all units to standard internal units
-    converted_params = ParameterConverter.auto_convert_parameters(params_with_defaults)
+    converted_params = parameter_processor.auto_convert_parameters(params_with_defaults)
     
     if params != converted_params:
         print("📋 Unit processing completed.")
@@ -315,10 +318,10 @@ def _expand_cases(base: dict[str, Any]):
             static[k] = v
             continue
 
-        # その他のiterableは従来通り長さで判定
+        # その他のiterableは sweep として扱う（長さ1でもスカラー化のため展開対象）
         if hasattr(v, "__iter__"):
             try:
-                if len(v) > 1:
+                if len(v) >= 1:
                     sweep_keys.append(k)
                     continue
             except TypeError:  # len() 不可 (ジェネレータ等)
@@ -359,7 +362,7 @@ def _label(v: Any) -> str:
 # 結果ルート作成
 # ---------------------------------------------------------------------
 def _make_root(desc: str) -> Path:
-    root = Path("results") / f"{datetime.now():%Y-%m-%d_%H-%M-%S}_{desc}"
+    root = Path("results") / f"{datetime.now():%Y%m%d_%H%M%S}_{desc}"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -377,17 +380,17 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         ElectricField,
         gaussian_fwhm,
     )
-    from rovibrational_excitation.core.propagator import schrodinger_propagation
+    from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
     from rovibrational_excitation.core.basis import StateVector
-    from rovibrational_excitation.core.nondimensionalize import analyze_regime
+    from rovibrational_excitation.core.nondimensional.analysis import analyze_regime
 
     # --- Electric field 共通 ---
     t_E = np.arange(params["t_start"], params["t_end"] + params["dt"], params["dt"])
     E = ElectricField(tlist=t_E)
     E.add_dispersed_Efield(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
-        duration=params["duration"],
-        t_center=params["t_center"],
+        duration=params.get("duration", params.get("pulse_duration", params['t_end']/2)),
+        t_center=params.get("t_center", 0.0),
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],
         polarization=_deserialize_pol(params["polarization"]),
@@ -414,6 +417,12 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             params["V_max"],
             params["J_max"],
             use_M=params.get("use_M", True),
+            omega=params["omega_rad_phz"],
+            delta_omega=params.get("delta_omega_rad_phz", 0.0),
+            B=params.get("B_rad_phz", 0.0),
+            alpha=params.get("alpha_rad_phz", 0.0),
+            output_units="J",
+            input_units="rad/fs",
         )
         # 初期状態
         sv = StateVector(basis)
@@ -427,13 +436,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             params.update({"potential_type": "harmonic"})
         if potential_type == "morse":
             omega01_domega_to_N(params["omega_rad_phz"], delta_omega_rad_phz)
-        H0 = basis.generate_H0(
-            omega_rad_pfs=params["omega_rad_phz"],
-            delta_omega_rad_pfs=delta_omega_rad_phz,
-            B_rad_pfs=params.get("B_rad_phz", 0.0),
-            alpha_rad_pfs=params.get("alpha_rad_phz", 0.0),
-            units="J",
-        )
+        H0 = basis.generate_H0()
+            
+        
         # Dipole
         dip = LinMolDipoleMatrix(
             basis,
@@ -445,19 +450,19 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     elif basis_type == "twolevel":
         from rovibrational_excitation.core.basis import TwoLevelBasis
         from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
-        # Basis
-        basis = TwoLevelBasis()
+        # Basis（energy_gap と単位は初期化で指定）
+        basis = TwoLevelBasis(
+            energy_gap=params.get("energy_gap", 1.0),
+            input_units=params.get("energy_gap_units", "rad/fs"),
+            output_units="J",
+        )
         # 初期状態
         sv = StateVector(basis)
         for idx in params.get("initial_states", [0]):
             sv.set_state(basis.get_state(idx), 1)
         sv.normalize()
-        # Hamiltonian
-        H0 = basis.generate_H0(
-            energy_gap=params.get("energy_gap", 1.0),
-            energy_gap_units=params.get("energy_gap_units", "energy"),
-            units="J",
-        )
+        # Hamiltonian（基底に設定済みのパラメータから生成）
+        H0 = basis.generate_H0()
         # Dipole
         dip = TwoLevelDipoleMatrix(
             basis,
@@ -470,8 +475,8 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         # Basis
         basis = VibLadderBasis(
             params["V_max"],
-            omega_rad_pfs=params["omega_rad_phz"],
-            delta_omega_rad_pfs=params.get("delta_omega_rad_phz", 0.0),
+            omega=params["omega_rad_phz"],
+            delta_omega=params.get("delta_omega_rad_phz", 0.0),
         )
         # 初期状態
         sv = StateVector(basis)
@@ -479,11 +484,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             sv.set_state(basis.get_state(idx), 1)
         sv.normalize()
         # Hamiltonian
-        H0 = basis.generate_H0(
-            omega_rad_pfs=params["omega_rad_phz"],
-            delta_omega_rad_pfs=params.get("delta_omega_rad_phz", 0.0),
-            units="J",
-        )
+        H0 = basis.generate_H0()
         # Dipole
         dip = VibLadderDipoleMatrix(
             basis,
@@ -496,11 +497,12 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
 
     # ---------- Propagation 共通 ----------
     use_nondimensional = params.get("nondimensional", False)
-    psi_t = schrodinger_propagation(
-        H0,
-        E,
-        dip,
-        sv.data,
+    prop = SchrodingerPropagator()
+    psi_t = prop.propagate(
+        hamiltonian=H0,
+        efield=E,
+        dipole_matrix=dip,
+        initial_state=sv.data,
         axes=params.get("axes", "xy"),
         return_traj=params.get("return_traj", True),
         return_time_psi=params.get("return_time_psi", True),
@@ -513,9 +515,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     regime_info = None
     if use_nondimensional:
         try:
-            from rovibrational_excitation.core.nondimensionalize import (
-                nondimensionalize_system,
-            )
+            from rovibrational_excitation.core.nondimensional.converter import nondimensionalize_system
             # mu_x, mu_y取得はdipの属性で分岐
             mu_x = getattr(dip, "mu_x", None)
             mu_y = getattr(dip, "mu_y", None)
@@ -526,7 +526,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             if mu_x is None or mu_y is None:
                 raise ValueError("Dipole matrix must have mu_x and mu_y or mu_z attributes for nondimensionalization.")
             _, _, _, _, _, _, scales = nondimensionalize_system(
-                H0.matrix, mu_x, mu_y, E,
+                H0.get_matrix(units="J"), mu_x, mu_y, E,
                 H0_units="energy", time_units="fs"
             )
             regime_info = analyze_regime(scales)
@@ -538,7 +538,13 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     else:
         t_p = np.array([0.0])  # dummy
 
-    pop_t = np.abs(psi_t) ** 2  # (t, dim)
+    pop_t = np.abs(psi_t) ** 2  # ideally (t, dim)
+    # Ensure shape is always (t, dim)
+    if isinstance(pop_t, np.ndarray):
+        if pop_t.ndim == 0:
+            pop_t = np.array([[float(pop_t)]], dtype=float)
+        elif pop_t.ndim == 1:
+            pop_t = pop_t.reshape(-1, 1)
 
     # ---------- Save (npz 圧縮) 共通 ----------
     if params.get("save", True):
@@ -587,7 +593,7 @@ def run_all_with_checkpoint(
         # Apply default units and automatic conversion
         # デフォルト単位を適用（後方互換性のため一時的にスキップ）
         dict_with_defaults = raw_dict.copy()
-        base_dict = ParameterConverter.auto_convert_parameters(dict_with_defaults)
+        base_dict = parameter_processor.auto_convert_parameters(dict_with_defaults)
         
         if raw_dict != base_dict:
             print("📋 Unit processing completed.")
@@ -645,7 +651,7 @@ def run_all_with_checkpoint(
         if nproc > 1:
             with Pool(nproc) as pool:
                 batch_results = list(
-                    tqdm(
+                    _tqdm(
                         pool.imap(_run_one_safe, batch),
                         total=len(batch),
                         desc=f"Batch {batch_num}",
@@ -653,7 +659,7 @@ def run_all_with_checkpoint(
                 )
         else:
             batch_results = [
-                _run_one_safe(case) for case in tqdm(batch, desc=f"Batch {batch_num}")
+                _run_one_safe(case) for case in _tqdm(batch, desc=f"Batch {batch_num}")
             ]
 
         # 結果を分類
@@ -706,7 +712,17 @@ def run_all_with_checkpoint(
         for case, result in zip(cases, results):
             row = {k: v for k, v in case.items() if k not in ["outdir", "save"]}
             if result is not None:
-                row.update({f"pop_{i}": float(p) for i, p in enumerate(result[-1])})
+                vals = result
+                if isinstance(vals, np.ndarray):
+                    if vals.ndim == 0:
+                        vals = np.array([float(vals)])
+                    elif vals.ndim == 1:
+                        pass
+                    else:
+                        vals = vals[-1]
+                else:
+                    vals = [vals]
+                row.update({f"pop_{i}": float(p) for i, p in enumerate(vals)})
                 row["status"] = "success"
             else:
                 row["status"] = "failed"
@@ -806,7 +822,7 @@ def resume_run(
         if nproc > 1:
             with Pool(nproc) as pool:
                 batch_results = list(
-                    tqdm(
+                    _tqdm(
                         pool.imap(_run_one_safe, batch),
                         total=len(batch),
                         desc=f"Resume Batch {batch_num}",
@@ -815,7 +831,7 @@ def resume_run(
         else:
             batch_results = [
                 _run_one_safe(case)
-                for case in tqdm(batch, desc=f"Resume Batch {batch_num}")
+                for case in _tqdm(batch, desc=f"Resume Batch {batch_num}")
             ]
 
         # 結果を分類

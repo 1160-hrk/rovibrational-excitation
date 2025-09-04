@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter
@@ -147,17 +147,17 @@ def compute_chunk_for_indices(
         psi0_i = np.zeros(basis_size, dtype=np.complex128)
         psi0_i[idx_init] = 1.0
 
-        t_i_and_psi = schrodinger_propagation(
+        prop = SchrodingerPropagator()
+        t_i_and_psi = prop.propagate(
             hamiltonian=H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=dipole_matrix,
-            psi0=psi0_i,
+            initial_state=psi0_i,
             axes=AXES,
             return_traj=True,
             return_time_psi=True,
             sample_stride=SAMPLE_STRIDE,
             sparse=SPARSE,
-            algorithm="rk4",
         )
         t_i, psi_t_i = cast(Tuple[np.ndarray, np.ndarray], t_i_and_psi)
 
@@ -363,17 +363,17 @@ else:
 warm_idx = nonzero_indices[0]
 psi0_warm = np.zeros(basis.size(), dtype=np.complex128)
 psi0_warm[warm_idx] = 1.0
-t_and_psi_warm = schrodinger_propagation(
+prop = SchrodingerPropagator()
+t_and_psi_warm = prop.propagate(
     hamiltonian=H0,
-    Efield=Efield,
+    efield=Efield,
     dipole_matrix=dipole_matrix,
-    psi0=psi0_warm,
+    initial_state=psi0_warm,
     axes=AXES,
     return_traj=True,
     return_time_psi=True,
     sample_stride=SAMPLE_STRIDE,
     sparse=SPARSE,
-    algorithm="rk4",
 )
 time4psi, psi_t_warm = cast(Tuple[np.ndarray, np.ndarray], t_and_psi_warm)
 
@@ -438,7 +438,7 @@ rho_diff_masked = rho_diff * dv_mask
 abs_diff = calculator.calculate(rho_diff_masked, wavenumber, method='loop')
 
 # %% 結果の保存
-results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "results"))
+results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "results"))
 os.makedirs(results_dir, exist_ok=True)
 timestamp = time.strftime("%Y%m%d_%H%M%S")
 

@@ -149,8 +149,8 @@ class AbsorbanceCalculator:
     def _create_v_mask(self):
         """振動準位差に基づくマスクを作成"""
         # BasisがV配列を持っている場合
-        if hasattr(self.basis, 'V_array'):
-            v_array = self.basis.V_array
+        v_array = getattr(self.basis, 'V_array', None)
+        if v_array is not None:
             v_i = v_array.reshape(-1, 1)
             v_j = v_array.reshape(1, -1)
             # v差が1以内の要素のみを許可
@@ -358,7 +358,7 @@ class AbsorbanceCalculator:
             )
             
             if apply_doppler:
-                omega_trans = np.real(self.omega_vj_vpjp_mat[i, j])
+                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
                 response = self._apply_doppler_broadening(
                     omega, response, omega_trans
                 )
@@ -394,7 +394,7 @@ class AbsorbanceCalculator:
             )
             
             if apply_doppler:
-                omega_trans = np.real(self.omega_vj_vpjp_mat[i, j])
+                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
                 response = self._apply_doppler_broadening(
                     omega, response, omega_trans
                 )
@@ -456,7 +456,7 @@ class AbsorbanceCalculator:
         rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
         
         # 非ゼロ要素のインデックスを特定
-        rho1_dense = rho1_sparse.toarray()
+        rho1_dense = rho1_sparse.toarray()  # type: ignore
         nonzero_mask = np.abs(rho1_dense) > 1e-15
         i_indices, j_indices = np.where(nonzero_mask)
         
@@ -495,38 +495,6 @@ class AbsorbanceCalculator:
             absorbance = self._apply_doppler_broadening_full(wavenumber, absorbance)
         
         return absorbance
-    
-    def _calculate_with_standard_library(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        chunk_size: int = 5000,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """
-        Use the optimized standard library function for large basis sets
-        """
-        from rovibrational_excitation.spectroscopy.absorbance import compute_absorbance_spectrum
-        
-        # 標準ライブラリ関数を使用
-        result = compute_absorbance_spectrum(
-            rho=rho,
-            mu_int=self.mu_int,
-            H0=self.hamiltonian.matrix,  # ハミルトニアン行列を直接使用
-            nu_tilde_cm=wavenumber,
-            T2=self.conditions.T2 * 1e-12,  # ps to s
-            number_density=self.conditions.number_density,
-            path_length=self.conditions.optical_length,
-            mu_det=self.mu_det,
-            omega_chunk_size=chunk_size,
-            use_sparse_transitions=True,
-            mu_nz_threshold=1e-15,
-            apply_dv_mask=True,
-            basis_states=self.basis.basis,
-            dv_max_delta=1
-        )
-        
-        return result["A_mOD"]
     
     def _calculate_smart_optimized(
         self,
@@ -590,7 +558,7 @@ class AbsorbanceCalculator:
         
         # [mu_int, rho] = mu_int * rho - rho * mu_int
         rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
-        rho1_array = rho1_sparse.toarray()
+        rho1_array = rho1_sparse.toarray()  # type: ignore
         
         # 非ゼロ要素のインデックスを取得
         nonzero_mask = np.abs(rho1_array) > 1e-15
@@ -660,9 +628,10 @@ class AbsorbanceCalculator:
         """線形応答を吸光度に変換 [mOD]"""
         dens_num = self.conditions.number_density
         
+        result = np.sqrt(1 + response / EPS * dens_num / 3)
         absorbance = (
             2 * self.conditions.optical_length * omega / C *
-            np.sqrt(1 + response / EPS * dens_num / 3).imag
+            result.imag  # type: ignore
         )
         
         # mODに変換

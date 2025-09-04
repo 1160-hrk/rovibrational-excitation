@@ -8,7 +8,7 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.nondimensionalize import nondimensionalize_system
+from rovibrational_excitation.core.nondimensional import nondimensionalize_system
 
 
 def test_hamiltonian_unit_consistency():
@@ -145,7 +145,7 @@ def test_backward_compatibility():
 
 def test_physical_regime_analysis():
     """物理レジーム分析の妥当性テスト"""
-    from rovibrational_excitation.core.nondimensionalize import analyze_regime
+    from rovibrational_excitation.core.nondimensional import analyze_regime
     from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
     
     # 現実的なCO2系

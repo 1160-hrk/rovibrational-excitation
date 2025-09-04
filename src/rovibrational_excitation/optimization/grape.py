@@ -102,8 +102,8 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
                 break
             psi_i = psi_traj[i]
             # Heuristic gradient to increase population at target via dipole coupling
-            grad_x = float(np.imag(np.vdot(psi_target, (mu_x_prime @ psi_i))))
-            grad_y = float(np.imag(np.vdot(psi_target, (mu_y_prime @ psi_i))))
+            grad_x = float(np.imag(np.vdot(psi_target, (-mu_x_prime @ psi_i))))
+            grad_y = float(np.imag(np.vdot(psi_target, (-mu_y_prime @ psi_i))))
             grad[jf, 0] -= 2.0 * grad_x
             grad[jf, 1] -= 2.0 * grad_y
             if jf + 1 < n_field_steps:

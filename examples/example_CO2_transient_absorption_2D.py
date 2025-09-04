@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter
@@ -161,17 +161,17 @@ def compute_chunk_for_indices(
         psi0_i = np.zeros(basis_size, dtype=np.complex128)
         psi0_i[idx_init] = 1.0
 
-        t_i_and_psi = schrodinger_propagation(
+        prop = SchrodingerPropagator()
+        t_i_and_psi = prop.propagate(
             hamiltonian=H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=dipole_matrix,
-            psi0=psi0_i,
+            initial_state=psi0_i,
             axes=AXES,
             return_traj=True,
             return_time_psi=True,
             sample_stride=SAMPLE_STRIDE,
             sparse=SPARSE,
-            algorithm="rk4",
         )
         t_i, psi_t_i = cast(Tuple[np.ndarray, np.ndarray], t_i_and_psi)
 
@@ -495,7 +495,7 @@ for i, delay_time in enumerate(DELAY_TIMES):
 print("2D map calculation completed!")
 
 # %% 結果の保存
-results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "results"))
+results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "results"))
 os.makedirs(results_dir, exist_ok=True)
 timestamp = time.strftime("%Y%m%d_%H%M%S")
 

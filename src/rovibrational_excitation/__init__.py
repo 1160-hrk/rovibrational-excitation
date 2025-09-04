@@ -51,8 +51,6 @@ __all__: list[str] = [
     "DensityMatrix",
     "ElectricField", 
     "LinMolDipoleMatrix",
-    "schrodinger_propagation",
-    "liouville_propagation",
     
     
     # Spectroscopy public API (最小限)
@@ -72,11 +70,7 @@ from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
 from .core.basis import LinMolBasis, Hamiltonian, StateVector, DensityMatrix  # noqa: E402, F401
 from .core.electric_field import ElectricField  # noqa: E402, F401
 
-# Note: generate_H0_LinMol is deprecated - use basis.generate_H0() instead
-from .core.propagator import (  # noqa: E402, F401
-    liouville_propagation,
-    schrodinger_propagation,
-)
+# Note: procedural propagators have been removed from public API in favor of class-based propagators
 
 # dipole
 from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401

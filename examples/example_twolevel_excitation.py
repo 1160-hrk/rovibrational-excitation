@@ -19,10 +19,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.core.units.constants import CONSTANTS
 
 # %% パラメータ設定
 # システムパラメータ
@@ -34,13 +35,20 @@ UNIT_MU0 = "D"
 # 時間グリッド設定
 TIME_START = 0.0  # 開始時間 [fs]
 TIME_END = 400.0  # 終了時間 [fs]
-DT_EFIELD = 0.2  # 電場サンプリング間隔 [fs]
+DT_EFIELD = 0.1  # 電場サンプリング間隔 [fs]
 UNIT_TIME = "fs"
 SAMPLE_STRIDE = 2  # サンプリングストライド
 
 # レーザーパルス設定
-PULSE_DURATION = 40.0  # パルス幅 [fs]
-EFIELD_AMPLITUDE = 1e10  # デフォルトの電場振幅 [V/m]
+PULSE_DURATION = 100.0  # パルス幅 [fs]
+# EFIELD_AMPLITUDE = 1e10  # デフォルトの電場振幅 [V/m]
+EFIELD_AMPLITUDE = np.pi / float(
+    converter.convert_dipole_moment(MU0, UNIT_MU0, "C*m")
+    * converter.convert_time(PULSE_DURATION, "fs", "s") / (2 * np.sqrt(2*np.log(2)))
+    / CONSTANTS.HBAR
+    * np.sqrt(2 * np.pi)  # gaussianの時間積分値
+    )  # πパルスの場合の電場振幅
+
 UNIT_EFIELD_AMPLITUDE = "V/m"
 
 
@@ -64,7 +72,7 @@ time4Efield = np.arange(TIME_START, TIME_END + 2 * DT_EFIELD, DT_EFIELD)
 tc = (time4Efield[-1] + time4Efield[0]) / 2
 
 transition_freq = converter.convert_energy(ENERGY_GAP, UNIT_ENERGY_GAP, "PHz")
-carrier_freq = transition_freq
+carrier_freq = float(transition_freq)
 
 Efield = ElectricField(
     tlist=time4Efield,
@@ -84,11 +92,12 @@ Efield.add_dispersed_Efield(
 # %% 時間発展計算
 print(f"=== Two-Level System Simulation (E={EFIELD_AMPLITUDE:.3e} V/m) ===")
 print("Starting time evolution calculation...")
-time4psi, psi_t = schrodinger_propagation(
+prop = SchrodingerPropagator()
+time4psi, psi_t = prop.propagate(
     hamiltonian=H0,
-    Efield=Efield,
+    efield=Efield,
     dipole_matrix=dipole_matrix,
-    psi0=psi0,
+    initial_state=psi0,
     axes="xy",
     return_traj=True,
     return_time_psi=True,

@@ -198,7 +198,7 @@ class Hamiltonian:
         if units is None or units == self._units:
             return self.matrix
         else:
-            return converter.convert_hamiltonian(self.matrix, self._units, units)
+            return np.asarray(converter.convert_hamiltonian(self.matrix, self._units, units))
     
     def get_eigenvalues(self, units: Literal["J", "rad/fs"] | None = None) -> np.ndarray:
         """

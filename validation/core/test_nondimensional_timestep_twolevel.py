@@ -12,7 +12,7 @@ from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.nondimensionalize import nondimensionalize_system, get_physical_time
 from rovibrational_excitation.core.basis import StateVector
-from rovibrational_excitation.dipole.twolevel.builder import TwoLevelDipoleMatrix
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.core._rk4_schrodinger import rk4_schrodinger
 
 # %%

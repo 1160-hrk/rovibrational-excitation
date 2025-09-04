@@ -70,13 +70,12 @@ def _rk4_cpu(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
     k2 = np.empty_like(psi)
     k3 = np.empty_like(psi)
     k4 = np.empty_like(psi)
-
     for s in range(steps):
         ex1, ex2, ex4 = Ex3[s]
         ey1, ey2, ey4 = Ey3[s]
-        H1 = H0 + mux * ex1 + muy * ey1
-        H2 = H0 + mux * ex2 + muy * ey2  # =H3
-        H4 = H0 + mux * ex4 + muy * ey4
+        H1 = H0 - mux * ex1 - muy * ey1
+        H2 = H0 - mux * ex2 - muy * ey2  # =H3
+        H4 = H0 - mux * ex4 - muy * ey4
         k1[:] = -1j * (H1 @ psi)
         buf[:] = psi + 0.5 * dt * k1
         k2[:] = -1j * (H2 @ buf)
@@ -191,22 +190,22 @@ def _rk4_cpu_sparse(
         ey1, ey2, ey4 = Ey3[s]
 
         # H1
-        H.data[:] = H0_data + mux_data * ex1 + muy_data * ey1
+        H.data[:] = H0_data -mux_data * ex1 -muy_data * ey1
         k1[:] = -1j * H.dot(psi)
         buf[:] = psi + 0.5 * dt * k1
 
         # H2
-        H.data[:] = H0_data + mux_data * ex2 + muy_data * ey2
+        H.data[:] = H0_data -mux_data * ex2 -muy_data * ey2
         k2[:] = -1j * H.dot(buf)
         buf[:] = psi + 0.5 * dt * k2
 
         # H3
-        H.data[:] = H0_data + mux_data * ex2 + muy_data * ey2
+        H.data[:] = H0_data -mux_data * ex2 -muy_data * ey2
         k3[:] = -1j * H.dot(buf)
         buf[:] = psi + dt * k3
 
         # H4
-        H.data[:] = H0_data + mux_data * ex4 + muy_data * ey4
+        H.data[:] = H0_data -mux_data * ex4 -muy_data * ey4
         k4[:] = -1j * H.dot(buf)
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         
