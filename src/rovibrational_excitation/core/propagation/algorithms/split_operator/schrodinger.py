@@ -20,7 +20,7 @@ code.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -62,9 +62,7 @@ __all__ = ["splitop_schrodinger"]
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], f8[:],"
-    "c16[:], c16[:],"
-    "f8[:], c16, b1, i8)",
+    "c16[:, :](c16[:, :], c16[:, :], f8[:], c16[:], c16[:], f8[:], c16, b1, i8)", # type: ignore
     cache=True,
 )
 def _propagate_numpy(
@@ -111,8 +109,8 @@ def _propagate_numpy(
 
 
 def _propagate_numpy_sparse(
-    U: np.ndarray,  # (dim, dim)  unitary eigenvector matrix
-    U_H: np.ndarray,  # U.conj().T  – Hermitian adjoint
+    U: Union[np.ndarray, csr_matrix],  # (dim, dim)  unitary eigenvector matrix
+    U_H: Union[np.ndarray, csr_matrix],  # U.conj().T  – Hermitian adjoint
     eigvals: np.ndarray,  # (dim,)   eigenvalues of A (real)
     psi0: np.ndarray,  # (dim,)
     exp_half: np.ndarray,  # (dim,)   element‑wise ½‑step phase from H0
@@ -123,9 +121,9 @@ def _propagate_numpy_sparse(
 ) -> np.ndarray:
     """inner loop (CPU, NumPy, sparse)."""
     if not isinstance(U, csr_matrix):
-        U = csr_matrix(U)
+        U = csr_matrix(U)  # type: ignore
     if not isinstance(U_H, csr_matrix):
-        U_H = csr_matrix(U_H)
+        U_H = csr_matrix(U_H)  # type: ignore
     pattern = ((U != 0) + (U_H != 0))
     pattern = pattern.astype(np.complex128)  # 確実に複素数
     pattern.data[:] = 1.0 + 0j
@@ -141,8 +139,8 @@ def _propagate_numpy_sparse(
             result_data[idx_] = m_dict.get((i, j), 0.0 + 0j)
         return result_data
 
-    U_data = expand_to_pattern(U, pattern)
-    U_H_data = expand_to_pattern(U_H, pattern)
+    U_data = expand_to_pattern(U, pattern)  # type: ignore
+    U_H_data = expand_to_pattern(U_H, pattern)  # type: ignore
     dim = psi0.shape[0]
     steps = e_mid.size
     n_samples = steps // stride + 1

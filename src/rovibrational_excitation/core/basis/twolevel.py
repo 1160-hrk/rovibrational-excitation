@@ -197,7 +197,7 @@ class TwoLevelBasis(BasisBase):
             "energy_gap_rad_pfs": gap_rad_pfs,
             "energy_gap_units": energy_gap_units,
         }
-        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)z
+        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
 
         # 単位指定の優先順位（テストの期待に合わせる）
         if return_energy_units is not None:

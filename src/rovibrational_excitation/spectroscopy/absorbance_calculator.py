@@ -628,9 +628,10 @@ class AbsorbanceCalculator:
         """線形応答を吸光度に変換 [mOD]"""
         dens_num = self.conditions.number_density
         
+        result = np.sqrt(1 + response / EPS * dens_num / 3)
         absorbance = (
             2 * self.conditions.optical_length * omega / C *
-            np.sqrt(1 + response / EPS * dens_num / 3).imag  # type: ignore
+            result.imag  # type: ignore
         )
         
         # mODに変換
