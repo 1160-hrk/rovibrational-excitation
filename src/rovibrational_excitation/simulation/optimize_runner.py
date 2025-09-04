@@ -146,6 +146,7 @@ def run_from_config(
     *,
     out_dir: str | None = None,
     do_plot: bool = True,
+    **kwargs
 ) -> dict:
     """
     Execute optimization from a YAML (or dict) config.
@@ -203,6 +204,9 @@ def run_from_config(
 
     # 7) Execute
     t0 = time.time()
+    # kwargsから追加パラメータを取得してparamsにマージ
+    if kwargs:
+        params.update(kwargs)
     result = runner(basis=basis, hamiltonian=H0, dipole=dipole, states=states, time_cfg=time_cfg, params=params)
     elapsed = time.time() - t0
     print(f"{selected} elapsed: {elapsed:.2f} s")
