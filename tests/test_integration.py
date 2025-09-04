@@ -17,12 +17,13 @@ from rovibrational_excitation.dipole import (
     VibLadderDipoleMatrix,
 )
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import (
-    liouville_propagation,
-    mixed_state_propagation,
-    schrodinger_propagation,
+from rovibrational_excitation.core.propagation import (
+    SchrodingerPropagator,
+    LiouvillePropagator,
+    MixedStatePropagator,
 )
 from rovibrational_excitation.core.basis import DensityMatrix
+from rovibrational_excitation.core.units.converters import converter
 
 _DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
@@ -45,6 +46,12 @@ class MockDipole:
         for i in range(dim - 1):
             self.mu_x[i, i + 1] = one_debye_in_Cm
             self.mu_x[i + 1, i] = one_debye_in_Cm
+    
+    def get_mu_in_units(self, axis: str, unit: str):
+        src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
+        if unit in ("C*m", "C·m", "Cm"):
+            return src
+        return converter.convert_dipole_moment(src, "C*m", unit)
     
     def get_mu_x_SI(self, dense: bool = False):
         """Get μ_x in SI units (C·m)."""
@@ -88,7 +95,7 @@ def test_full_simulation_workflow():
     psi0[0] = 1.0  # 基底状態
 
     # 6. 時間発展
-    result = schrodinger_propagation(
+    result = SchrodingerPropagator(renorm=True).propagate(
         H0,
         efield,
         dipole,
@@ -96,7 +103,6 @@ def test_full_simulation_workflow():
         return_traj=True,
         nondimensional=True,
         auto_timestep=True,
-        renorm=True,
     )
 
     # resultがtupleの場合の処理
@@ -129,10 +135,10 @@ def test_multi_level_excitation():
     efield = ElectricField(tlist)
     efield.add_dispersed_Efield(
         gaussian,
-        duration=1.0,
+        duration=5.0,
         t_center=0.0,
         carrier_freq=1.0,
-        amplitude=0.1,  # 弱い電場で安定性を確保
+        amplitude=1e8,  # 弱い電場で安定性を確保
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -140,8 +146,8 @@ def test_multi_level_excitation():
     psi0 = np.zeros(basis.size(), dtype=np.complex128)
     psi0[0] = 1.0
 
-    result = schrodinger_propagation(
-        H0, efield, dipole, psi0, return_traj=True, nondimensional=False, renorm=True
+    result = SchrodingerPropagator(renorm=True).propagate(
+        H0, efield, dipole, psi0, return_traj=True, nondimensional=False
     )
 
     # resultがtupleの場合の処理
@@ -182,7 +188,7 @@ def test_different_basis_types():
     dipole_2level = MockDipole(basis_2level)
     psi0_2level = np.array([1, 0], dtype=complex)
 
-    result_2level = schrodinger_propagation(
+    result_2level = SchrodingerPropagator().propagate(
         H0_2level, efield, dipole_2level, psi0_2level
     )
     if isinstance(result_2level, tuple):
@@ -198,7 +204,7 @@ def test_different_basis_types():
     psi0_vib = np.zeros(basis_vib.size(), dtype=complex)
     psi0_vib[0] = 1.0
 
-    result_vib = schrodinger_propagation(H0_vib, efield, dipole_vib, psi0_vib)
+    result_vib = SchrodingerPropagator().propagate(H0_vib, efield, dipole_vib, psi0_vib)
     if isinstance(result_vib, tuple):
         psi_vib = result_vib[1]
     else:
@@ -231,17 +237,17 @@ def test_mixed_vs_pure_states():
     # 純粋状態での伝播
     psi0 = np.zeros(basis.size(), dtype=np.complex128)
     psi0[0] = 1.0
-    psi_traj = schrodinger_propagation(
+    psi_traj = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi0, return_traj=True, nondimensional=True, auto_timestep=True
     )
 
     # 同じ純粋状態を混合状態として伝播
     psi0s = [psi0]
-    rho_traj = mixed_state_propagation(H0, efield, psi0s, dipole, return_traj=True)
+    rho_traj = MixedStatePropagator().propagate(H0, efield, dipole, psi0s, return_traj=True)
 
     # 結果の一致確認（純粋状態の密度行列と比較）
     # より緩い許容値を使用（数値誤差を考慮）
-    for i in range(psi_traj.shape[0]):
+    for i in range(psi_traj.shape[0]):  # type: ignore
         expected_rho = np.outer(psi_traj[i], psi_traj[i].conj())
         
         # 密度行列の対角要素（存在確率）を比較
@@ -268,11 +274,11 @@ def test_liouville_vs_schrodinger():
 
     tlist = np.linspace(-1, 1, 21)
     efield = ElectricField(tlist)
-    efield.Efield[:, 0] = 0.1  # 定数電場
+    efield.Efield[:, 0] = 1e3  # type: ignore
 
     # Schrodinger方程式（正規化なしで比較）
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
-    result_schrodinger = schrodinger_propagation(
+    result_schrodinger = SchrodingerPropagator(renorm=False).propagate(
         H0,
         efield,
         dipole,
@@ -280,7 +286,6 @@ def test_liouville_vs_schrodinger():
         return_traj=False,
         nondimensional=True,
         auto_timestep=True,
-        renorm=False,  # 正規化を無効にして比較
     )
 
     # resultがtupleの場合の処理
@@ -301,7 +306,7 @@ def test_liouville_vs_schrodinger():
 
     # Liouville方程式（同じ純粋状態から開始、正規化なし）
     rho0 = np.outer(psi0, psi0.conj())
-    rho_final = liouville_propagation(
+    rho_final = LiouvillePropagator().propagate(
         H0, efield, dipole, rho0, return_traj=False, nondimensional=True, auto_timestep=True
     )
 
@@ -341,7 +346,7 @@ def test_energy_conservation():
     psi0[1] = 0.8
     psi0 /= np.linalg.norm(psi0)
 
-    result = schrodinger_propagation(
+    result = SchrodingerPropagator(renorm=True).propagate(
         H0,
         efield,
         dipole,
@@ -349,7 +354,6 @@ def test_energy_conservation():
         return_traj=True,
         nondimensional=True,
         auto_timestep=True,
-        renorm=True,
     )
 
     # resultがtupleの場合の処理
@@ -395,8 +399,8 @@ def test_population_dynamics():
     )
 
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
-    result = schrodinger_propagation(
-        H0, efield, dipole, psi0, return_traj=True, nondimensional=False, renorm=True
+    result = SchrodingerPropagator(renorm=True).propagate(
+        H0, efield, dipole, psi0, return_traj=True, nondimensional=False
     )
 
     # resultがtupleの場合の処理
@@ -445,7 +449,7 @@ def test_coherent_vs_incoherent():
 
     # コヒーレント状態（重ね合わせ）
     psi_coherent = np.array([1.0, 1.0], dtype=np.complex128) / np.sqrt(2)
-    result_coherent = schrodinger_propagation(
+    result_coherent = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi_coherent, nondimensional=True, auto_timestep=True
     )
 
@@ -460,8 +464,8 @@ def test_coherent_vs_incoherent():
         np.array([1.0, 0.0], dtype=np.complex128),
         np.array([0.0, 1.0], dtype=np.complex128),
     ]
-    result_incoherent = mixed_state_propagation(
-        H0, efield, psi0s, dipole, return_traj=False
+    result_incoherent = MixedStatePropagator().propagate(
+        H0, efield, dipole, psi0s, return_traj=False
     )
 
     # resultがtupleの場合の処理
@@ -472,7 +476,7 @@ def test_coherent_vs_incoherent():
 
     # 対角成分（ポピュレーション）は似ているが、非対角成分が異なる
     pop_coherent = np.abs(psi_coherent_final) ** 2
-    pop_incoherent = np.diag(rho_incoherent).real
+    pop_incoherent = np.diag(rho_incoherent).real  # type: ignore
 
     # 両方とも物理的な結果
     assert np.all(pop_coherent >= 0)
@@ -507,8 +511,8 @@ def test_field_strength_scaling():
             const_polarisation=True,
         )
 
-        result = schrodinger_propagation(
-            H0, efield, dipole, psi0, return_traj=False, nondimensional=False, renorm=True
+        result = SchrodingerPropagator(renorm=True).propagate(
+            H0, efield, dipole, psi0, return_traj=False, nondimensional=False
         )
 
         # resultが配列の場合の処理
@@ -566,7 +570,7 @@ def test_numerical_precision():
     psi0 = np.zeros(basis.size(), dtype=np.complex128)
     psi0[0] = 1.0
 
-    result = schrodinger_propagation(
+    result = SchrodingerPropagator(renorm=True).propagate(
         H0,
         efield,
         dipole,
@@ -574,7 +578,6 @@ def test_numerical_precision():
         return_traj=True,
         nondimensional=True,
         auto_timestep=True,
-        renorm=True,
     )
 
     # resultがtupleの場合の処理

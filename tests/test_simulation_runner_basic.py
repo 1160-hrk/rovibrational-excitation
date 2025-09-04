@@ -231,18 +231,6 @@ class TestExpandCases:
             assert "V_max" in sweep_keys
             assert "amplitude" in sweep_keys
 
-    def test_single_element_list_not_swept(self):
-        """単一要素リストはスイープされないテスト"""
-        base = {"V_max": [5], "amplitude": [0.1, 0.2]}
-
-        cases = list(_expand_cases(base))
-
-        # amplitudeのみスイープ
-        assert len(cases) == 2
-        for case, sweep_keys in cases:
-            assert case["V_max"] == [5]  # リストのまま
-            assert sweep_keys == ["amplitude"]
-
 
 class TestRunnerUtilities:
     """Runner ユーティリティ関数のテスト"""

@@ -9,7 +9,8 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis, VibLadderBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 
@@ -25,6 +26,12 @@ class MockDipole:
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
         self.units = "C*m"  # SI単位を使用
+    
+    def get_mu_in_units(self, axis: str, unit: str):
+        src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
+        if unit in ("C*m", "C·m", "Cm"):
+            return src
+        return converter.convert_dipole_moment(src, "C*m", unit)
     
     def get_mu_x_SI(self):
         """Get μ_x in SI units (C·m)."""
@@ -67,7 +74,7 @@ def test_large_system_performance():
 
     # 実行時間測定
     start_time = time.time()
-    result = schrodinger_propagation(H0, efield, dipole, psi0, return_traj=True)
+    result = SchrodingerPropagator().propagate(H0, efield, dipole, psi0, return_traj=True)
     end_time = time.time()
 
     execution_time = end_time - start_time
@@ -111,7 +118,9 @@ def test_very_large_system():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = schrodinger_propagation(H0, efield, dipole, psi0, return_traj=False, renorm=True)
+    result = SchrodingerPropagator(renorm=True).propagate(
+        H0, efield, dipole, psi0, return_traj=False
+    )
     end_time = time.time()
 
     execution_time = end_time - start_time
@@ -150,7 +159,7 @@ def test_long_time_evolution():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = schrodinger_propagation(H0, efield, dipole, psi0, return_traj=True)
+    result = SchrodingerPropagator().propagate(H0, efield, dipole, psi0, return_traj=True)
     end_time = time.time()
 
     execution_time = end_time - start_time
@@ -190,10 +199,10 @@ def test_memory_efficiency():
     psi0[0] = 1.0
 
     # 軌跡ありとなしでのメモリ使用量比較
-    result_no_traj = schrodinger_propagation(
+    result_no_traj = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi0, return_traj=False
     )
-    result_with_traj = schrodinger_propagation(
+    result_with_traj = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi0, return_traj=True
     )
 
@@ -229,14 +238,14 @@ def test_stride_performance():
 
     # stride=1
     start_time = time.time()
-    result_stride1 = schrodinger_propagation(
+    result_stride1 = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi0, return_traj=True, sample_stride=1
     )
     time.time() - start_time
 
     # stride=10
     start_time = time.time()
-    result_stride10 = schrodinger_propagation(
+    result_stride10 = SchrodingerPropagator().propagate(
         H0, efield, dipole, psi0, return_traj=True, sample_stride=10
     )
     time.time() - start_time
@@ -278,7 +287,7 @@ def test_numerical_stability_large_system():
     psi0[0] = 1.0
 
     
-    result = schrodinger_propagation(
+    result = SchrodingerPropagator().propagate(
         H0, Efield, dipole, psi0, return_traj=True, sample_stride=2
     )
     # ノルム保存の確認
@@ -364,7 +373,7 @@ def test_backend_performance_comparison():
 
     # NumPyバックエンド
     start_time = time.time()
-    result_numpy = schrodinger_propagation(H0, efield, dipole, psi0, backend="numpy")
+    result_numpy = SchrodingerPropagator(backend="numpy").propagate(H0, efield, dipole, psi0)
     numpy_time = time.time() - start_time
 
     # 結果の一貫性確認

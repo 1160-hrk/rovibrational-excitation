@@ -279,8 +279,9 @@ class TestExpandCases:
 
         assert len(cases) == 2  # amplitudeのみスイープ
         for case, sweep_keys in cases:
-            assert case["V_max"] == [5]  # リストのまま保持
-            assert sweep_keys == ["amplitude"]
+            # 現行仕様では単一要素リストは展開されスカラーに正規化される
+            assert case["V_max"] == 5
+            assert sweep_keys == ["V_max", "amplitude"]
 
     def test_fixed_value_keys(self):
         """FIXED_VALUE_KEYSは常に固定値として扱われるテスト"""

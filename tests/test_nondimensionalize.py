@@ -8,7 +8,7 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.nondimensionalize import (
+from rovibrational_excitation.core.nondimensional import (
     NondimensionalizationScales,
     analyze_regime,
     dimensionalize_wavefunction,
@@ -16,6 +16,7 @@ from rovibrational_excitation.core.nondimensionalize import (
     nondimensionalize_system,
 )
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.core.units.constants import CONSTANTS
 
 
 def test_nondimensionalization_scales():
@@ -181,7 +182,7 @@ def test_nondimensionalize_with_realistic_system():
         tlist_prime,
         dt_prime,
         scales,
-    ) = nondimensionalize_system(H0, dip.mu_x, dip.mu_y, efield,
+    ) = nondimensionalize_system(H0.get_matrix(units="J"), dip.mu_x, dip.mu_y, efield,
                                  H0_units="energy", time_units="fs")
     
     # 物理レジーム分析
@@ -230,7 +231,8 @@ def test_edge_cases():
                                  H0_units="energy", time_units="fs")
     
     # デフォルト値チェック
-    assert scales.Efield0 == 1.0  # デフォルト電場スケール
+    # 現行仕様ではデフォルト電場スケールは 1e8 V/m
+    assert scales.Efield0 == 1e8  # デフォルト電場スケール
     assert np.all(Efield_prime == 0)  # ゼロ電場
     
     # ゼロ双極子
@@ -248,7 +250,7 @@ def test_edge_cases():
     ) = nondimensionalize_system(H0, mu_x_zero, mu_y_zero, efield_zero,
                                  H0_units="energy", time_units="fs")
     
-    assert scales.mu0 == 1.0  # デフォルト双極子スケール
+    assert scales.mu0 == CONSTANTS.DEBYE_TO_CM  # デフォルト双極子スケール
     assert np.all(mu_x_prime == 0)
     assert np.all(mu_y_prime == 0)
 

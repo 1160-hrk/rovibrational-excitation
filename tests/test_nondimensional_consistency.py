@@ -3,7 +3,7 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
-from rovibrational_excitation.core.propagator import schrodinger_propagation
+from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
@@ -70,27 +70,25 @@ class TestNondimensionalConsistency:
         Efield = self.create_test_field(amplitude=1e7)  # より弱い電場
         
         # 次元ありでの計算
-        psi_final_dimensional = schrodinger_propagation(
+        psi_final_dimensional = SchrodingerPropagator(renorm=True).propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=False,
             nondimensional=False,
-            renorm=True,
         )
         
         # 無次元化での計算  
-        psi_final_nondimensional = schrodinger_propagation(
+        psi_final_nondimensional = SchrodingerPropagator(renorm=True).propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=False,
             nondimensional=True,
-            renorm=True,
         )
         
         # NaN値のチェック
@@ -121,11 +119,11 @@ class TestNondimensionalConsistency:
         sample_stride = 5  # メモリ節約
         
         # 次元ありでの計算
-        time_dimensional, psi_dimensional = schrodinger_propagation(
+        time_dimensional, psi_dimensional = SchrodingerPropagator().propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=True,
             return_time_psi=True,
@@ -134,11 +132,11 @@ class TestNondimensionalConsistency:
         )
         
         # 無次元化での計算
-        time_nondimensional, psi_nondimensional = schrodinger_propagation(
+        time_nondimensional, psi_nondimensional = SchrodingerPropagator().propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=True,
             return_time_psi=True,
@@ -174,22 +172,22 @@ class TestNondimensionalConsistency:
         Efield = self.create_test_field(amplitude=1e7)
         
         # 次元ありでの計算
-        psi_final_dimensional = schrodinger_propagation(
+        psi_final_dimensional = SchrodingerPropagator().propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=False,
             nondimensional=False,
         )
         
         # 無次元化での計算
-        psi_final_nondimensional = schrodinger_propagation(
+        psi_final_nondimensional = SchrodingerPropagator().propagate(
             hamiltonian=self.H0,
-            Efield=Efield,
+            efield=Efield,
             dipole_matrix=self.dipole_matrix,
-            psi0=self.psi0,
+            initial_state=self.psi0,
             axes=self.axes,
             return_traj=False,
             nondimensional=True,

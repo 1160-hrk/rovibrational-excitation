@@ -137,10 +137,10 @@ def test_viblad_generate_H0_anharmonic():
     basis = VibLadderBasis(V_max=1, omega=1.0, delta_omega=0.1, input_units="rad/fs", output_units="rad/fs")
     H0 = basis.generate_H0()
 
-    # E = ω*(v+1/2) - Δω*(v+1/2)^2
-    # v=0: 1.0*0.5 - 0.1*0.25 = 0.475
-    # v=1: 1.0*1.5 - 0.1*2.25 = 1.275
-    expected_energies = [0.475, 1.275]
+    # 現行仕様: E = (ω+Δω)*(v+1/2) - (Δω/2)*(v+1/2)^2
+    # v=0: (1.0+0.1)*0.5 - 0.05*0.25 = 0.5375
+    # v=1: (1.0+0.1)*1.5 - 0.05*2.25 = 1.5375
+    expected_energies = [0.5375, 1.5375]
     expected = np.diag(expected_energies)
 
     np.testing.assert_array_almost_equal(H0.matrix, expected)

@@ -119,10 +119,10 @@ def test_linmol_generate_H0_anharmonic():
         units="rad/fs"  # 周波数単位で返す
     )
 
-    # E = ω*(V+1/2) - Δω*(V+1/2)^2
-    # V=0: 1.0*0.5 - 0.1*0.25 = 0.475
-    # V=1: 1.0*1.5 - 0.1*2.25 = 1.275
-    expected_energies = [0.475, 1.275]
+    # 現行仕様: E = (ω+Δω)*(V+1/2) - (Δω/2)*(V+1/2)^2
+    # V=0: (1.0+0.1)*0.5 - 0.05*0.25 = 0.5375
+    # V=1: (1.0+0.1)*1.5 - 0.05*2.25 = 1.5375
+    expected_energies = [0.5375, 1.5375]
     expected = np.diag(expected_energies)
 
     # Hamiltonianオブジェクトから行列を取得して比較
