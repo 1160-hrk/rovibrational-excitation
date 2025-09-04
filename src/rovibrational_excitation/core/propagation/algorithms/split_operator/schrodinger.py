@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Literal, Union
 
 import numpy as np
+import scipy.sparse
 from scipy.sparse import csr_matrix
 
 # ---------------------------------------------------------------------------
@@ -125,9 +126,13 @@ def _propagate_numpy_sparse(
     if not isinstance(U_H, csr_matrix):
         U_H = csr_matrix(U_H)  # type: ignore
     pattern = ((U != 0) + (U_H != 0))
-    pattern = pattern.astype(np.complex128)  # 確実に複素数
+    # Ensure pattern is a sparse matrix with complex dtype
+    if not scipy.sparse.issparse(pattern):
+        pattern = scipy.sparse.csr_matrix(pattern, dtype=np.complex128)
+    else:
+        pattern = pattern.astype(np.complex128)  # type: ignore
     pattern.data[:] = 1.0 + 0j
-    pattern = pattern.tocsr()
+    pattern = pattern.tocsr()  # type: ignore
 
     # 2️⃣ パターンに合わせてデータを展開
     def expand_to_pattern(matrix: csr_matrix, pattern: csr_matrix) -> np.ndarray:
