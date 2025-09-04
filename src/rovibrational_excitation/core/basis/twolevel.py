@@ -116,7 +116,7 @@ class TwoLevelBasis(BasisBase):
         Hamiltonian
             2x2 diagonal Hamiltonian object with unit information.
         """
-        H0_matrix = np.diag([0.0, self.gap_rad_pfs])
+        H0_matrix = np.diag(np.array([0.0, self.gap_rad_pfs]))
         
         basis_info = {
             "basis_type": "TwoLevel",
@@ -190,14 +190,14 @@ class TwoLevelBasis(BasisBase):
                     f"Supported energy units: {list(converter.get_supported_units('energy'))}"
                 )
 
-        H0_matrix = np.diag([0.0, gap_rad_pfs])
+        H0_matrix = np.diag(np.array([0.0, gap_rad_pfs]))
         basis_info = {
             "basis_type": "TwoLevel",
             "size": 2,
             "energy_gap_rad_pfs": gap_rad_pfs,
             "energy_gap_units": energy_gap_units,
         }
-        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
+        hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)z
 
         # 単位指定の優先順位（テストの期待に合わせる）
         if return_energy_units is not None:

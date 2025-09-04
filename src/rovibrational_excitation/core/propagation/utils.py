@@ -22,7 +22,7 @@ DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
 # Optional CuPy support
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore
     HAS_CUPY = True
 except ImportError:
     cp = None
@@ -160,7 +160,7 @@ def ensure_dense_matrix(matrix: Array) -> Array:
         Dense matrix
     """
     if scipy.sparse.issparse(matrix):
-        return matrix.toarray()
+        return matrix.toarray()  # type: ignore
     return matrix
 
 
@@ -180,7 +180,7 @@ def ensure_sparse_matrix(matrix: Array) -> scipy.sparse.csr_matrix:
     """
     if not scipy.sparse.issparse(matrix):
         return scipy.sparse.csr_matrix(matrix)
-    return matrix.tocsr()
+    return matrix.tocsr()  # type: ignore
 
 
 def validate_axes(axes: str) -> Tuple[str, str]:
@@ -320,14 +320,17 @@ def prepare_propagation_args(
         E_scalar = np.zeros_like(Ex)
         
     # Get dipole components
+    mu_a_prime = None
+    mu_b_prime = None
+    
     if mu_x_override is not None:
-        mu_a = mu_x_override
+        mu_a_prime = mu_x_override
     else:
         # mu_a = get_dipole_component_SI(dipole_matrix, ax0)
         mu_a_prime = dipole_matrix.get_mu_in_units(ax0, "rad/fs/(V/m)")
     
     if mu_y_override is not None:
-        mu_b = mu_y_override
+        mu_b_prime = mu_y_override
     else:
         # mu_b = get_dipole_component_SI(dipole_matrix, ax1)
         mu_b_prime = dipole_matrix.get_mu_in_units(ax1, "rad/fs/(V/m)")
