@@ -33,6 +33,8 @@ DEFAULT_PARAMS = {
 
     "custom_weights": None,
     "custom_weights_dict": None,
+    
+    "propagator_func": None,
 }
 
 class RunResult(TypedDict, total=False):
@@ -156,6 +158,7 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     custom_weights_dict = params.get("custom_weights_dict", DEFAULT_PARAMS["custom_weights_dict"])
     use_one_hot_target_in_weights = bool(params.get("use_one_hot_target_in_weights", DEFAULT_PARAMS["use_one_hot_target_in_weights"]))
     drive_abs_min = float(params.get("drive_abs_min", DEFAULT_PARAMS["drive_abs_min"]))
+    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
     segments_arr = segments
     full_field = np.zeros((n_steps, 2), dtype=float)
@@ -258,6 +261,7 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             sample_stride=sample_stride,
             algorithm="rk4",
             sparse=True,
+            propagator_func=propagator_func,
         )
         psi_traj_seg = result[1]
         psi_curr = psi_traj_seg[-1]
@@ -276,6 +280,7 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
         sample_stride=sample_stride,
         algorithm="rk4",
         sparse=True,
+        propagator_func=propagator_func,
     )
     time_full, psi_traj_full = result_full[0], result_full[1]
 

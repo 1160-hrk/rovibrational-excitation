@@ -24,6 +24,7 @@ DEFAULT_PARAMS = {
     "gdd_initial": 0.0,
     "tod_initial": 0.0,
     "const_polarisation": False,
+    "propagator_func": None,
 }
 
 class RunResult(TypedDict, total=False):
@@ -63,6 +64,7 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
     convergence_tol = float(params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"]))
     lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
     target_fidelity = float(params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"]))
+    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
     # Build time list consistent with RK4 propagator
     tlist = _rk4_consistent_tlist(time_total, dt)
@@ -138,6 +140,7 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
             sample_stride=sample_stride,
             algorithm="rk4",
             sparse=True,
+            propagator_func=propagator_func,
         )
         return result[0], result[1]
 
@@ -159,6 +162,7 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
             sample_stride=sample_stride,
             algorithm="rk4",
             sparse=True,
+            propagator_func=propagator_func,
         )
         time_b = -result[0][::-1]
         chi_traj = result[1][::-1]

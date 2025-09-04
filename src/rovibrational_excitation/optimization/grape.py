@@ -8,6 +8,14 @@ from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
 
+DEFAULT_PARAMS = {
+    "max_iter": 200,
+    "convergence_tol": 1e-18,
+    "learning_rate": 5e18,
+    "lambda_a": 1e-19,
+    "target_fidelity": 1.0,
+    "propagator_func": None,
+}
 
 class RunResult(TypedDict, total=False):
     efield: ElectricField
@@ -38,12 +46,12 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     dt = float(time_cfg["dt_fs"])
     sample_stride = int(time_cfg.get("sample_stride", 1))
 
-    max_iter = int(params.get("max_iter", 200))
-    convergence_tol = float(params.get("convergence_tol", 1e-18))
-    learning_rate = float(params.get("learning_rate", 5e18))
-    lambda_a = float(params.get("lambda_a", 1e-19))
-    target_fidelity = float(params.get("target_fidelity", 1.0))
-
+    max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
+    convergence_tol = float(params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"]))
+    learning_rate = float(params.get("learning_rate", DEFAULT_PARAMS["learning_rate"]))
+    lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
+    target_fidelity = float(params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"]))
+    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
     tlist = _rk4_consistent_tlist(time_total, dt)
     n_field_steps = len(tlist)
 
@@ -76,6 +84,7 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             sample_stride=sample_stride,
             algorithm="rk4",
             sparse=True,
+            propagator_func=propagator_func,
         )
         return result[0], result[1]
 
