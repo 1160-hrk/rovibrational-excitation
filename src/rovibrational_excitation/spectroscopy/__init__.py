@@ -96,6 +96,9 @@ __author__ = 'Rovibrational Excitation Team'
 __email__ = 'contact@example.com'
 
 # Module-level documentation
+if __doc__ is None:
+    __doc__ = ""
+
 __doc__ += f"""
 
 Available Components
