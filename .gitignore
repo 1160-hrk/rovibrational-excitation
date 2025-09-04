@@ -25,11 +25,13 @@ tests/results/
 # VS Code
 .vscode/
 
+# Cursor
+.cursor/
+
 # OS 一般
 .DS_Store
 
-# 実際の設定ファイルはコミットしない
-configs/config.json
+
 
 # build outputs
 /dist/
