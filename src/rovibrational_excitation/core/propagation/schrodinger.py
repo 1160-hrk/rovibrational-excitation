@@ -146,6 +146,7 @@ class SchrodingerPropagator(PropagatorBase):
         algorithm = kwargs.get('algorithm', 'rk4')
         sparse = kwargs.get('sparse', False)
         propagator_func = kwargs.get('propagator_func', None)
+        renorm = kwargs.get('renorm', self.renorm)
         
         # Unit validation
         if self.validate_units:
@@ -186,12 +187,12 @@ class SchrodingerPropagator(PropagatorBase):
             if algorithm == "rk4":
                 result = self._propagate_rk4(
                     H0, mu_x, mu_y, Ex, Ey, initial_state, dt_calc,
-                    return_traj, sample_stride, sparse
+                    return_traj, sample_stride, sparse, renorm
                 )
             elif algorithm == "split_operator":
                 result = self._propagate_split_operator(
                     H0, mu_x, mu_y, pol, E_scalar, initial_state, dt_calc,
-                    return_traj, sample_stride, sparse
+                    return_traj, sample_stride, sparse, renorm
                 )
             else:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
@@ -222,6 +223,7 @@ class SchrodingerPropagator(PropagatorBase):
         return_traj: bool,
         stride: int,
         sparse: bool,
+        renorm: bool,
     ) -> np.ndarray:
         """Run RK4 propagation algorithm."""
         from .algorithms.rk4.schrodinger import rk4_schrodinger
@@ -232,7 +234,7 @@ class SchrodingerPropagator(PropagatorBase):
             H0, mu_x, mu_y, Ex, Ey, initial_state, dt,
             return_traj=return_traj,
             stride=stride,
-            renorm=self.renorm,
+            renorm=renorm,
             sparse=sparse,
             backend=backend_typed,
         )
@@ -249,6 +251,7 @@ class SchrodingerPropagator(PropagatorBase):
         return_traj: bool,
         stride: int,
         sparse: bool,
+        renorm: bool,
     ) -> np.ndarray:
         """Run split-operator propagation algorithm."""
         from .algorithms.split_operator.schrodinger import splitop_schrodinger
@@ -261,4 +264,5 @@ class SchrodingerPropagator(PropagatorBase):
             sample_stride=stride,
             backend=backend_typed,
             sparse=sparse,
+            renorm=renorm,
         ) 

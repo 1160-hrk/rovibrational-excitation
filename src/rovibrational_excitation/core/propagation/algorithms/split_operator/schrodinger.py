@@ -119,6 +119,7 @@ def _propagate_numpy_sparse(
     phase_coeff: complex,  # −i·2·dt/hbar   (scalar complex)
     return_traj: bool,
     stride: int,
+    renorm: bool = False,
 ) -> np.ndarray:
     """inner loop (CPU, NumPy, sparse)."""
     if not isinstance(U, csr_matrix):
@@ -165,7 +166,12 @@ def _propagate_numpy_sparse(
 
         # H0 – 後半
         psi *= exp_half
-
+        if renorm:
+            norm = np.sqrt((psi.conj() @ psi).real)
+            if norm > 1e-12:
+                psi *= 1.0 / norm
+            else:
+                continue
         if return_traj and (k + 1) % stride == 0:
             traj[s_idx] = psi
             s_idx += 1
@@ -193,6 +199,7 @@ def splitop_schrodinger(
     *,
     backend: Literal["numpy", "cupy"] = "numpy",
     sparse: bool = False,
+    renorm: bool = False,
 ) -> np.ndarray:
     """Split‑Operator propagator with interchangeable back‑ends.
 
@@ -250,11 +257,11 @@ def splitop_schrodinger(
 
     if sparse:
         return _propagate_numpy_sparse(
-            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride
+            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride, renorm
         )
     else:
         return _propagate_numpy(
-            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride
+            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride, renorm
         )
 
 
@@ -273,6 +280,7 @@ def _splitop_cupy(
     dt: float,
     return_traj: bool,
     sample_stride: int,
+    renorm: bool = False,
 ):
     """GPU implementation (requires CuPy)."""
     assert cp is not None, "CuPy backend requested but CuPy is not installed."
@@ -308,6 +316,12 @@ def _splitop_cupy(
         phase = cp.exp(phase_coeff * E_mid_cp[k] * eigvals)
         psi_cp = U @ (phase * (U_H @ psi_cp))
         psi_cp *= exp_half
+        if renorm:
+            norm = np.sqrt((psi_cp.conj() @ psi_cp).real)
+            if norm > 1e-12:
+                psi_cp *= 1.0 / norm
+            else:
+                continue
         if return_traj and (k + 1) % sample_stride == 0:
             traj[s_idx] = psi_cp
             s_idx += 1
