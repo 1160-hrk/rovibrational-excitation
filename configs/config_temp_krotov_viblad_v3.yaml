@@ -6,7 +6,6 @@ system:
     delta_omega_cm: 25.0
     input_units: "cm^-1"
     output_units: "rad/fs"
-    pol_initial: [1.0, 0.0]
 states:
   initial: [0]
   target:  [3]
@@ -22,6 +21,7 @@ algorithms:
     convergence_tol: 1.0e-18
     lambda_a: 1.0e-20
     target_fidelity: 1.0
+    pol_initial: [1.0, 0.0]
     control_axes: "zx"
     duration_initial: 200.0
 plot:
