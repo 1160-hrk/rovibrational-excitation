@@ -309,12 +309,12 @@ class ElectricField:
     def apply_arbitrary_mod(self, mod_spectrum: np.ndarray, mod_type: str = "phase"):
         """任意変調を適用"""
         efield_array = np.asarray(self.Efield)
+        E_freq = np.asarray(rfft(efield_array, axis=0))
         if (
-            len(mod_spectrum.shape) != len(efield_array.shape)
-            or mod_spectrum.shape[0] != efield_array.shape[0]
+            len(mod_spectrum.shape) != len(E_freq.shape)
+            or mod_spectrum.shape[0] != E_freq.shape[0]
         ):
             raise ValueError("mod_spectrum shape mismatch")
-        E_freq = rfft(efield_array, axis=0)
         E_freq_mod = None
         if mod_type == "phase":
             mod_spectrum = np.clip(mod_spectrum, -1e4, 1e4)
