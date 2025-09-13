@@ -9,6 +9,7 @@ from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
 from rovibrational_excitation.core.electric_field import gaussian_fwhm
 from rovibrational_excitation.core.units.converters import converter
+from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
 
 DEFAULT_PARAMS = {
     "max_iter": 1000,
@@ -125,6 +126,35 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
 
     # Precompute helpers
     S_t = _shape_function(tlist, tlist[-1])
+    dt_fs = float(tlist[1] - tlist[0])
+    # Frequency grid for potential spectral constraints (PHz = cycles/fs)
+    freq_phz = np.fft.rfftfreq(n_field_steps, d=dt_fs)
+
+    # Spectrum constraints (monotonic kernel per paper)
+    sc_cfg = params.get("spectrum_constraints", None)
+    use_sc = False
+    alpha_mask = None
+    if isinstance(sc_cfg, dict):
+        method = str(sc_cfg.get("method", "")).strip().lower()
+        if method == "monotonic_kernel":
+            bands = sc_cfg.get("bands", [])
+            units = sc_cfg.get("units", "cm^-1")
+            mode = sc_cfg.get("mode", "pass")
+            combine = sc_cfg.get("combine", "max")
+            fwhm = bool(sc_cfg.get("fwhm", True))
+            weights = sc_cfg.get("weights", None)
+            alpha_scale = float(sc_cfg.get("alpha_scale", 1.0))
+            alpha_mask = build_alpha_mask(
+                freq_phz,
+                bands,
+                units=units,
+                mode=mode,
+                combine=combine,
+                fwhm=fwhm,
+                weights=weights,
+                alpha_scale=alpha_scale,
+            )
+            use_sc = True
 
     def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField(tlist=tlist)
@@ -188,8 +218,9 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
         # Backward
         _, chi_traj = backward(field_data, psi_traj)
 
-        # Update (time-local Krotov-style)
+        # Update (paper-compliant via spectral constraints if enabled)
         n_traj = len(psi_traj)
+        delta_field = np.zeros_like(field_data)
         for i in range(n_traj):
             jf = i * 2
             if jf >= n_field_steps:
@@ -201,11 +232,19 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
             S = float(S_t[jf])
             dEx = (S / lambda_a) * grad_x
             dEy = (S / lambda_a) * grad_y
-            field_data[jf, 0] += dEx
-            field_data[jf, 1] += dEy
+            delta_field[jf, 0] += dEx
+            delta_field[jf, 1] += dEy
             if jf + 1 < n_field_steps:
-                field_data[jf + 1, 0] += dEx
-                field_data[jf + 1, 1] += dEy
+                delta_field[jf + 1, 0] += dEx
+                delta_field[jf + 1, 1] += dEy
+
+        if use_sc and alpha_mask is not None:
+            # Solve u = argmin with spectral penalty (monotonic kernel)
+            u_field = solve_update_in_frequency(delta_field, alpha_mask)
+            field_data = field_data + u_field
+        else:
+            # Fallback: plain time-local update
+            field_data = field_data + delta_field
 
     # Final forward for outputs
     ef_total = ElectricField(tlist=tlist)
@@ -222,5 +261,4 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
         field_data=field_data,
         target_idx=target_idx,
     )
-
 
