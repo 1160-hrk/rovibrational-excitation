@@ -41,10 +41,11 @@ print("=== 最適化設定ファイルを使用した振動回転励起最適制
 # CONFIG_NAME = "config_temp_local_linmol.yaml"
 # CONFIG_NAME = "config_temp_local_viblad.yaml"
 # CONFIG_NAME = "config_temp_krotov_viblad_v3.yaml"
+CONFIG_NAME = "config_temp_krotov_viblad_v3_spectral.yaml"
 # CONFIG_NAME = "config_temp_krotov_viblad_v4.yaml"
 # CONFIG_NAME = "config_temp_krotov_viblad_v5.yaml"
 # CONFIG_NAME = "config_temp_krotov_viblad_v10.yaml"
-CONFIG_NAME = "config_temp_krotov_linmol2.yaml"
+# CONFIG_NAME = "config_temp_krotov_linmol2.yaml"
 
 config_path = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "configs", CONFIG_NAME
