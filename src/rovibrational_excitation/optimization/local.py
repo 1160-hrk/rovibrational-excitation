@@ -260,7 +260,7 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             return_time_psi=True,
             sample_stride=sample_stride,
             algorithm="rk4",
-            sparse=True,
+            sparse=False,
             propagator_func=propagator_func,
         )
         psi_traj_seg = result[1]
@@ -279,7 +279,7 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
         return_time_psi=True,
         sample_stride=sample_stride,
         algorithm="rk4",
-        sparse=True,
+        sparse=False,
         propagator_func=propagator_func,
     )
     time_full, psi_traj_full = result_full[0], result_full[1]
