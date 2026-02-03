@@ -88,6 +88,7 @@ class AbsorbanceCalculator:
         axes: str = 'xy',
         pol_int: Optional[np.ndarray] = None,
         pol_det: Optional[np.ndarray] = None,
+        use_v_mask: bool = True,
     ):
         self.basis = basis
         self.hamiltonian = hamiltonian
@@ -101,23 +102,20 @@ class AbsorbanceCalculator:
         # 偏光ベクトルの設定（3次元）
         if pol_int is None:
             # デフォルト: x偏光
-            pol_int = np.array([1.0, 0.0, 0.0])
+            pol_int = np.array([1.0, 0.0])
         else:
             pol_int = np.asarray(pol_int)
-            if pol_int.shape == (2,):
-                # 2次元の場合は3次元に拡張
-                pol_int = np.array([pol_int[0], pol_int[1], 0.0])
         
         self.pol_int = pol_int / np.linalg.norm(pol_int)
         self.pol_det = pol_det if pol_det is not None else self.pol_int.copy()
         
-        if self.pol_det.shape == (2,):
-            self.pol_det = np.array([self.pol_det[0], self.pol_det[1], 0.0])
         self.pol_det = self.pol_det / np.linalg.norm(self.pol_det)
         
+        self.use_v_mask = use_v_mask
         # 計算用の内部変数を初期化
         self._setup_matrices()
         self._prepared_2d = False
+        
     
     def _validate_axes(self):
         """軸指定の検証"""
@@ -141,7 +139,10 @@ class AbsorbanceCalculator:
         )
         
         # 振動準位差マスクを作成
-        self._create_v_mask()
+        if self.use_v_mask:
+            self._create_v_mask()
+        else:
+            self.rho_mask = np.ones((self.N_level, self.N_level))
         
         # 遷移双極子行列を取得
         self._setup_dipole_matrices()
@@ -163,45 +164,27 @@ class AbsorbanceCalculator:
         """双極子行列の設定（3次元対応）"""
         # 各軸の双極子成分を取得
         self.mu_components = {}
-        
-        if 'x' in self.axes:
-            self.mu_components['x'] = self.dipole_matrix.get_mu_x_SI()
-        else:
-            self.mu_components['x'] = np.zeros((self.N_level, self.N_level))
-            
-        if 'y' in self.axes:
-            self.mu_components['y'] = self.dipole_matrix.get_mu_y_SI()
-        else:
-            self.mu_components['y'] = np.zeros((self.N_level, self.N_level))
-            
-        if 'z' in self.axes:
-            # z成分をサポート
-            if hasattr(self.dipole_matrix, 'get_mu_z_SI'):
-                self.mu_components['z'] = self.dipole_matrix.get_mu_z_SI()
-            else:
-                # z成分がない場合は警告してゼロ行列
-                import warnings
-                warnings.warn(
-                    f"Dipole matrix {type(self.dipole_matrix).__name__} "
-                    "does not support z-component. Using zeros.",
-                    UserWarning
-                )
-                self.mu_components['z'] = np.zeros((self.N_level, self.N_level))
-        else:
-            self.mu_components['z'] = np.zeros((self.N_level, self.N_level))
-        
+        mu_dict = {'x':self.dipole_matrix.get_mu_x_SI(), 'y':self.dipole_matrix.get_mu_y_SI(), 'z':self.dipole_matrix.get_mu_z_SI()}
+        self.mu_components[0] = mu_dict[self.axes[0]] if self.axes[0] in mu_dict else np.zeros((self.N_level, self.N_level))
+        self.mu_components[1] = mu_dict[self.axes[1]] if len(self.axes) > 1 and self.axes[1] in mu_dict else np.zeros((self.N_level, self.N_level))
+        # print("mu_components[0]", self.mu_components[0])
+        # print("mu_components[1]", self.mu_components[1])
         # 偏光を考慮した双極子行列
         self.mu_int = (
-            self.mu_components['x'] * self.pol_int[0] +
-            self.mu_components['y'] * self.pol_int[1] +
-            self.mu_components['z'] * self.pol_int[2]
+            self.mu_components[0] * self.pol_int[0] +
+            self.mu_components[1] * self.pol_int[1]
         )
-        
+        if type(self.mu_int) != np.ndarray:
+            self.mu_int = self.mu_int.toarray()
+        # print(f"mu_int sample values: {self.mu_int[np.where(self.mu_int!=0)][:5]}")
+         # 検出偏光を考慮した双極子行列
         self.mu_det = (
-            self.mu_components['x'] * self.pol_det[0] +
-            self.mu_components['y'] * self.pol_det[1] +
-            self.mu_components['z'] * self.pol_det[2]
+            self.mu_components[0] * self.pol_det[0] +
+            self.mu_components[1] * self.pol_det[1]
         )
+        if type(self.mu_det) != np.ndarray:
+            self.mu_det = self.mu_det.toarray()
+        # print(f"mu_det sample values: {self.mu_det[np.where(self.mu_det!=0)][:5]}")
         
         # 非ゼロ遷移のインデックス
         self.ind_nonzero = np.array(np.where(self.mu_int != 0))

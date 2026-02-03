@@ -14,6 +14,7 @@ from typing import Literal, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
+from .sparse import to_csr, H_apply
 
 
 
@@ -52,7 +53,7 @@ except ImportError:  # numba 不在でも動くダミー
     fastmath=True,
     cache=True,
 )
-def _rk4_cpu(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
+def _rk4_cpu_numba(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
 
     steps = (Ex.size - 1) // 2  # 必ず整数
     Ex3, Ey3 = np.zeros((steps, 3), dtype=np.float64), np.zeros((steps, 3), dtype=np.float64)
@@ -94,6 +95,100 @@ def _rk4_cpu(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
         if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
+    if return_traj:
+        return out
+    else:
+        return psi.reshape((1, dim))
+
+
+@njit(
+    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
+    "f8[:], f8[:], c16[:], f8, b1, i8, b1)",
+    fastmath=True, cache=True
+)
+def _rk4_cpu_numba_sparse(
+    H0, mux, muy,
+    Ex, Ey, psi0, dt, return_traj, stride, renorm
+):
+    H0_data, H0_idx, H0_ptr = to_csr(H0)
+    mx_data, mx_idx, mx_ptr = to_csr(mux)
+    my_data, my_idx, my_ptr = to_csr(muy)
+    steps = (Ex.size - 1) // 2
+    Ex3 = np.empty((steps, 3), np.float64)
+    Ey3 = np.empty((steps, 3), np.float64)
+    Ex3[:,0], Ey3[:,0] = Ex[0:-2:2], Ey[0:-2:2]
+    Ex3[:,1], Ey3[:,1] = Ex[1:-1:2], Ey[1:-1:2]
+    Ex3[:,2], Ey3[:,2] = Ex[2::2],  Ey[2::2]
+
+    psi = psi0.copy()
+    dim = psi.size
+    n_out = steps // stride + 1
+    out = np.empty((n_out, dim), np.complex128)
+    out[0] = psi
+    idx = 1
+
+    buf = np.empty_like(psi)
+    k1 = np.empty_like(psi)
+    k2 = np.empty_like(psi)
+    k3 = np.empty_like(psi)
+    k4 = np.empty_like(psi)
+    tmp0 = np.empty_like(psi)
+    tmpx = np.empty_like(psi)
+    tmpy = np.empty_like(psi)
+
+    for s in range(steps):
+        ex1, ex2, ex4 = Ex3[s,0], Ex3[s,1], Ex3[s,2]
+        ey1, ey2, ey4 = Ey3[s,0], Ey3[s,1], Ey3[s,2]
+
+        # k1
+        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
+                ex1,ey1, psi, k1, tmp0,tmpx,tmpy)
+        for i in range(dim):
+            k1[i] = -1j * k1[i]
+            buf[i] = psi[i] + 0.5*dt*k1[i]
+
+        # k2 (=k3と同じ H2)
+        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
+                ex2,ey2, buf, k2, tmp0,tmpx,tmpy)
+        for i in range(dim):
+            k2[i] = -1j * k2[i]
+            buf[i] = psi[i] + 0.5*dt*k2[i]
+
+        # k3
+        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
+                ex2,ey2, buf, k3, tmp0,tmpx,tmpy)
+        for i in range(dim):
+            k3[i] = -1j * k3[i]
+            buf[i] = psi[i] + dt*k3[i]
+
+        # k4
+        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
+                ex4,ey4, buf, k4, tmp0,tmpx,tmpy)
+        for i in range(dim):
+            k4[i] = -1j * k4[i]
+
+        # accumulate
+        for i in range(dim):
+            psi[i] += (dt/6.0)*(k1[i] + 2.0*k2[i] + 2.0*k3[i] + k4[i])
+
+        if renorm:
+            # conj @ psi を避けるなら手ループ
+            ssum = 0.0
+            for i in range(dim):
+                # |psi|^2
+                ssum += (psi[i].real*psi[i].real + psi[i].imag*psi[i].imag)
+            if ssum > 1e-24:
+                inv = 1.0/np.sqrt(ssum)
+                for i in range(dim):
+                    psi[i] *= inv
+            else:
+                # underflow 回避：スキップ
+                continue
+
+        if return_traj and (s + 1) % stride == 0:
+            out[idx] = psi
+            idx += 1
+
     if return_traj:
         return out
     else:
@@ -390,7 +485,7 @@ def rk4_schrodinger(
             renorm,
         )
     else:
-        return _rk4_cpu(
+        return _rk4_cpu_numba_sparse(
         np.ascontiguousarray(H0, np.complex128),
         np.ascontiguousarray(mux, np.complex128),
         np.ascontiguousarray(muy, np.complex128),

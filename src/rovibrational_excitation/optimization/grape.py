@@ -83,7 +83,7 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             return_time_psi=True,
             sample_stride=sample_stride,
             algorithm="rk4",
-            sparse=True,
+            sparse=False,
             propagator_func=propagator_func,
         )
         return result[0], result[1]
