@@ -156,11 +156,15 @@ Acceptance tolerances:
 
 ### P0.4 VibLadder and Morse reference cases
 
-Status: In progress. The harmonic and confirmed `omega01` anharmonic energy
-references are implemented in `tests/physics/test_vib_ladder_reference.py`.
-Stored and override Hamiltonian construction now share the same formula. Morse
-derivation/bounds/isolation, transition rules, scalar polarization, and
-dimensional equivalence remain in this task.
+Status: Complete on 2026-07-31. All 16 collected cases in
+`tests/physics/test_vib_ladder_reference.py` pass. Stored and override
+Hamiltonian construction share the confirmed `omega01` formula; two distinct
+Morse parameter pairs cover derivation, bounds, and instance isolation.
+
+Validation collected 396 tests: 386 passed and 10 GPU tests skipped. The
+`physics` marker selects 26 cases. Energy references use `atol=2e-15`,
+scalar-polarization parity uses `2e-14`, and nondimensional population parity
+uses `2e-12`.
 
 Required tests:
 

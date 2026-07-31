@@ -291,6 +291,33 @@ Required characterization cases:
 - harmonic and Morse transition elements agree in their documented limiting
   regime without forcing exact equality.
 
+### VibLadder Phase 0 reference anchor
+
+`tests/physics/test_vib_ladder_reference.py` fixes these energy parameters:
+
+- `omega01 = 1.2 rad/fs`, `delta_omega = 0.08 rad/fs`, and `V_max = 4`;
+- harmonic and anharmonic energies use independent closed-form references;
+- stored and temporary-override construction must produce the same matrix.
+
+Morse derivation uses two distinct pairs:
+
+- `(omega01, delta_omega) = (1.0, 0.1) rad/fs`, giving `N = 10.5`;
+- `(omega01, delta_omega) = (0.9, 0.2) rad/fs`, giving `N = 5.0`.
+
+The first pair accepts `V_max = 9` and rejects `V_max = 10`. Constructing the
+second instance before evaluating the first protects against shared mutable
+Morse state. Adjacent Morse elements at `N=500` must be closer to their
+harmonic values than at `N=50`; no arbitrary closeness threshold is imposed.
+
+The workflow reference uses `V_max=2`, `omega01=0.37 rad/fs`,
+`delta_omega=0.015 rad/fs`, `mu0=2e-29 C m`, a `5e8 V/m` constant field,
+field spacing `0.001 fs`, propagation spacing `0.002 fs`, and final time
+`0.1 fs`. It covers x, y, diagonal linear, and circular complex polarization.
+
+Energy references use `atol=2e-15`; scalar-polarization trajectories use
+`atol=2e-14`; physical time uses `atol=2e-15`; and dimensional/nondimensional
+population parity uses `atol=2e-12`.
+
 ## 7. Model coupling and polarization
 
 Current simulation model capabilities:
