@@ -256,9 +256,9 @@ def test_viblad_hamiltonian_units():
     # 単位変換のテスト - 相対的な比較
     freq_eigenvals = H0_freq.eigenvalues
     energy_eigenvals = H0_energy.eigenvalues
-    
+
     # エネルギー差の比率が周波数差の比率と一致することを確認
     freq_ratio = freq_eigenvals[1] / freq_eigenvals[0] if freq_eigenvals[0] != 0 else float('inf')
     energy_ratio = energy_eigenvals[1] / energy_eigenvals[0] if energy_eigenvals[0] != 0 else float('inf')
-    
+
     np.testing.assert_almost_equal(freq_ratio, energy_ratio, decimal=10)
