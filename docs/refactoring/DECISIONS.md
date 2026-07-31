@@ -91,6 +91,12 @@ Consequences:
 - Separate backend implementations are acceptable when their input/output
   contract and parity tests are unified.
 
+Implementation status (2026-07-31):
+
+- RK4 pure-state propagation now keeps the same low-level final-only shape,
+  `(1, dimension)`, for NumPy and CuPy paths. A CPU-runnable mocked-CuPy
+  contract test protects the dispatch boundary.
+
 ### D-006: Physically defining parameters should be required
 
 Status: Accepted

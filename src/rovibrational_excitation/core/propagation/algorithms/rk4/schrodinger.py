@@ -540,7 +540,7 @@ def rk4_schrodinger(
         if return_traj:
             return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))
         else:
-            return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))[-1]
+            return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))
 
     if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
         return _rk4_cpu_sparse(

@@ -327,12 +327,19 @@ Additional constraints:
   is an open API decision.
 - A backend name must govern both dipole construction and time propagation for
   a simulation case to avoid cross-backend array mismatches.
+- Low-level pure-state propagation returns shape `(saved_times, dimension)`.
+  This includes final-only output, whose shape is `(1, dimension)`, on both
+  NumPy and CuPy paths. Higher-level final-only APIs may remove that leading
+  saved-time axis exactly once.
 - Existing dipole helper `_xp` can fall back to NumPy when CuPy is unavailable.
   This silent fallback is a known defect and must be replaced by an explicit
   availability error.
 
 A skipped CuPy test does not establish correctness. Keep capability wording
 conditional until tested in a CUDA CI job.
+
+Current anchor: `tests/contracts/test_solver_contracts.py` checks the CuPy
+final-only dispatch shape without requiring a GPU.
 
 ## 10. Input validation principles
 

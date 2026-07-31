@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.propagation import PropagatorFactory
+from rovibrational_excitation.core.propagation.algorithms.rk4 import (
+    schrodinger as rk4_module,
+)
 from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
@@ -88,6 +91,31 @@ def test_solver_rejects_zero_timestep():
 
     with pytest.raises(ValueError, match="non-zero"):
         rk4_schrodinger(h0, mu, mu, np.zeros(3), np.zeros(3), psi0, dt=0.0)
+
+
+def test_cupy_final_only_keeps_low_level_row_shape(monkeypatch):
+    """CPU and GPU low-level final-only results both have shape (1, dim)."""
+    expected = np.array([[0.25 + 0.1j, 0.75 - 0.2j]])
+
+    def fake_gpu(*args):
+        del args
+        return expected.copy()
+
+    monkeypatch.setattr(rk4_module, "_rk4_gpu", fake_gpu)
+    result = rk4_module.rk4_schrodinger(
+        np.diag([0.0, 1.0]),
+        np.zeros((2, 2)),
+        np.zeros((2, 2)),
+        np.zeros(3),
+        np.zeros(3),
+        np.array([1.0, 0.0]),
+        dt=0.1,
+        return_traj=False,
+        backend="cupy",
+    )
+
+    assert result.shape == (1, 2)
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_factory_returns_configured_split_operator():
