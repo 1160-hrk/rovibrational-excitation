@@ -1,0 +1,662 @@
+# Executable refactoring plan
+
+Last updated: 2026-07-31
+Working branch: `refactor/v0.3`
+Starting baseline: `613ce93`
+
+## 1. Execution policy
+
+This plan is intentionally sequential. A later phase may be investigated, but
+source migration does not begin until the preceding phase acceptance criteria
+are satisfied.
+
+Every task follows:
+
+~~~text
+characterize -> change one concern -> focused tests -> full tests
+             -> lint/diff checks -> docs -> commit
+~~~
+
+A phase is not complete because files moved or tests happened to pass once. It
+is complete only when its listed artifacts and gates exist in the repository.
+
+## 2. Baseline snapshot
+
+At the start of this plan:
+
+| Metric | Value |
+|---|---:|
+| Full pytest | 360 passed, 9 skipped |
+| Total measured coverage | 47% |
+| Ruff findings | 1,143 |
+| Ruff auto-fixable | 925 |
+| Ruff format failures | 63 files |
+| Python versions declared | 3.10 through 3.13 |
+| Python versions in current CI | 3.10 through 3.12 |
+| Optimization measured coverage | 0% |
+| Spectroscopy measured coverage | 11% |
+
+Completed preparatory commits:
+
+- `7ce9419 refactor: modularize simulation and harden propagation contracts`
+- `af21fbe fix: align density propagation contracts`
+- `613ce93 fix: enforce physical density matrix evolution`
+
+## 3. Phase 0 — physics characterization baseline
+
+Goal: make structural regressions detectable before package movement.
+
+### P0.1 Inventory public and internal entry points
+
+Tasks:
+
+- Enumerate root exports from `rovibrational_excitation.__init__`.
+- Enumerate subpackage `__all__` exports.
+- Record CLI entry points from `pyproject.toml`.
+- Record runner configuration loading paths.
+- Record all factories and registries.
+- Identify examples importing removed or nonexistent APIs.
+- Classify each entry as target public, temporary, internal, or delete.
+
+Artifact:
+
+- `docs/refactoring/API_INVENTORY.md` with current path, callers, target path,
+  and disposition.
+- Decision O-008 updated with the proposed v0.3 root namespace.
+
+Acceptance:
+
+- Every current root export and console script has a disposition.
+- Internal source no longer relies on root convenience imports in newly edited
+  modules.
+
+### P0.2 Create physics test layout
+
+Create:
+
+~~~text
+tests/
+├── unit/
+├── contracts/
+├── physics/
+│   ├── test_two_level_reference.py
+│   ├── test_vib_ladder_reference.py
+│   ├── test_linear_molecule_reference.py
+│   ├── test_dipole_selection_rules.py
+│   ├── test_solver_invariants.py
+│   └── test_dimensional_equivalence.py
+├── integration/
+└── performance/
+~~~
+
+Do not move all existing tests immediately. Add the new structure and migrate
+tests incrementally so collection remains stable.
+
+Add marker definitions:
+
+- `physics`: trusted scientific reference/invariant;
+- `gpu`: requires actual CuPy/CUDA execution;
+- `performance`: benchmark, excluded from ordinary CI;
+- `slow`: long deterministic correctness test.
+
+Acceptance:
+
+- `pytest --collect-only` lists every new reference test.
+- No “test” script remains uncollected without an explicit archival decision.
+
+### P0.3 TwoLevel reference cases
+
+Required tests:
+
+1. Free evolution of a superposition with analytic phase:
+   `psi_n(t) = exp(-i E_n t) psi_n(0)`.
+2. Density evolution equals the outer product of pure evolution.
+3. Constant-drive small-step RK4 agrees with a matrix-exponential reference.
+4. Scalar coupling produces identical results for normalized x, y, and mixed
+   polarization inputs at the workflow boundary.
+5. Dimensional and nondimensional population/time results agree.
+6. Dense and supported backend paths agree.
+
+Record all parameter values directly in the test fixture. Do not load an
+example configuration whose defaults may change.
+
+Acceptance tolerances:
+
+- analytic free evolution: scale-aware near machine precision;
+- RK4 reference: tolerance derived from step size and fourth-order convergence;
+- no unexplained absolute tolerance above `1e-8`.
+
+### P0.4 VibLadder and Morse reference cases
+
+Required tests:
+
+- harmonic energies and adjacent-level spacings;
+- anharmonic energy formula for at least three levels;
+- harmonic transition selection rule;
+- Morse `N` derivation;
+- zero anharmonicity rejection;
+- maximum bound-level acceptance and next-level rejection;
+- no Morse state leakage between two constructed models;
+- scalar-polarization independence;
+- dimensional/nondimensional agreement.
+
+The test must use at least two different Morse parameter pairs so a hidden
+global value would fail.
+
+### P0.5 LinMol reference cases
+
+Required tests:
+
+- state index to quantum numbers and reverse round trip;
+- exact basis size for `use_M=False` and `use_M=True`;
+- known low-lying rovibrational energies;
+- x/y/z dipole Hermiticity;
+- documented rotational/vibrational selection rules;
+- response difference between physically distinct Cartesian polarizations;
+- dense/sparse dipole and propagation agreement for a small basis;
+- coherent superposition includes cross terms;
+- incoherent ensemble omits cross terms.
+
+The user must provide or approve any domain-specific reference value that
+cannot be derived unambiguously from the implemented formula.
+
+### P0.6 Solver invariant and convergence suite
+
+Required tests:
+
+- RK4 fourth-order convergence trend on a small analytic system;
+- norm drift measurement with `renorm=False`;
+- explicit behavior with `renorm=True`;
+- split-operator norm conservation;
+- split-operator rejection of non-diagonal `H0`;
+- left/mid/right electric-field sampling;
+- trajectory/final-state equality;
+- time-grid endpoint and stride behavior;
+- Liouville trace and Hermiticity;
+- density validation threshold boundary;
+- unsupported capability errors.
+
+Acceptance:
+
+- All tests are deterministic.
+- Random inputs use explicit seeds.
+- Tests fail when the interaction sign or factor-of-two time rule is reversed.
+
+### P0.7 Record benchmark baseline
+
+Create a non-blocking benchmark report with:
+
+- environment and dependency versions;
+- JIT warmup excluded;
+- median of repeated runs;
+- TwoLevel, VibLadder, and small LinMol dimensions;
+- NumPy dense and sparse;
+- CuPy only on a real CUDA environment;
+- final norm/trace error;
+- peak trajectory memory estimate.
+
+Artifact:
+`benchmarks/baseline-v0.2.10.json` plus a human-readable README describing the
+measurement command.
+
+### Phase 0 acceptance
+
+- Required physics matrix is implemented or explicitly blocked by an open
+  decision.
+- Full test suite passes.
+- Baseline numerical outputs and tolerances are documented.
+- No package directory migration has started.
+- Phase status in `docs/refactoring/README.md` is updated.
+
+## 4. Phase 1 — repository and CI normalization
+
+Goal: make automated quality signals truthful before architectural movement.
+
+### P1.1 Classify and remove generated artifacts
+
+Inspect, then remove from Git and add ignore rules for:
+
+- root `.coverage`;
+- `tests/.coverage`;
+- historical `tests/results/`;
+- notebook checkpoint files;
+- transient build, cache, and result directories.
+
+Do not delete a file containing unique reference data until it is migrated to a
+fixture or archive with a documented purpose.
+
+Acceptance:
+
+- `git ls-files` contains no coverage database, runtime result, cache, or
+  notebook checkpoint.
+- Tests write only to pytest temporary directories.
+
+### P1.2 Normalize test collection
+
+- Convert useful assertions in root `test_basis_validation.py` to pytest.
+- Replace or delete print-based `test_new_api.py`.
+- Remove its self-deleting behavior immediately.
+- Decide whether the empty detailed RK4 files should be deleted.
+- Convert `test_splitop_advanced.py.disabled` or record why it is archived.
+- Classify `validation/` scripts as physics test, diagnostic tool, benchmark, or
+  delete.
+- Ensure all retained correctness checks run through pytest.
+
+Acceptance:
+
+~~~bash
+pytest --collect-only -q
+pytest -q
+~~~
+
+Both commands complete with no collection warnings or hidden root test suite.
+
+### P1.3 Classify legacy implementation files
+
+For each legacy file, identify unique logic and callers:
+
+- `dipole/rot/jm_old.py`;
+- `core/nondimensional/impl.py`;
+- `validation/core/*old*.py`;
+- archived example scripts;
+- deprecated dipole wrapper builders.
+
+If unique logic exists, add an equivalence test before removing it. If no caller
+or unique formula exists, delete it in a cleanup commit.
+
+Acceptance:
+
+- No file named `old` remains in importable package source.
+- Deprecated modules have a scheduled removal task or are removed.
+- No import emits a deprecation warning for an API that the target design will
+  not retain.
+
+### P1.4 Repository-wide formatting commit
+
+Run only after a clean worktree:
+
+~~~bash
+ruff format src tests
+~~~
+
+Include supported root tools only if they remain.
+
+This commit contains no semantic edits. Review generated changes and run all
+tests.
+
+### P1.5 Ruff lint normalization
+
+First run safe fixes on a clean dedicated branch/commit, then review manual
+issues:
+
+~~~bash
+ruff check --fix src tests
+ruff check --no-fix src tests
+~~~
+
+Manually resolve unused variables, ambiguous names, multiple statements, and
+import-order issues. Do not use unsafe fixes without reviewing each affected
+rule.
+
+Acceptance: zero Ruff findings in configured source and test paths.
+
+### P1.6 CI truthfulness
+
+Update workflows:
+
+- use Ruff formatter and linter; remove redundant Black;
+- test Python 3.10, 3.11, 3.12, and 3.13 because all are declared supported;
+- make build and wheel import tests mandatory;
+- make physics tests fail the job;
+- start coverage floor at the measured Phase 0 value and prohibit reduction;
+- upload test and benchmark summaries;
+- remove `continue-on-error` from gates labeled validation;
+- introduce mypy gradually, initially on new typed modules;
+- keep GPU support conditional until a real CUDA runner exists.
+
+Acceptance:
+
+- A deliberately failing unit test fails CI.
+- A deliberately failing physics test fails CI.
+- A formatting or lint error fails CI.
+- Coverage below the configured floor fails CI.
+- Built wheel installs into a clean environment and imports.
+
+### Phase 1 acceptance
+
+- Full tests pass on declared Python versions.
+- Ruff lint and format checks pass repository-wide.
+- CI gates reflect actual pass/fail state.
+- Generated artifacts and uncollected tests are resolved.
+- Coverage is measured consistently and documented.
+
+## 5. Phase 2 — typed propagation contracts
+
+Goal: replace implicit `**kwargs` and variable return types before moving
+packages.
+
+### P2.1 Introduce TimeGrid
+
+- Move validated time-grid semantics into a frozen type.
+- Keep `FIELD_INTERVALS_PER_PROPAGATION_STEP = 2` as a named invariant.
+- Construct `ElectricField` from the TimeGrid rather than reconstructing time
+  separately.
+- Add dimensional and nondimensional time tests.
+
+Do not remove old calls until all workflows use TimeGrid.
+
+### P2.2 Introduce explicit state kinds
+
+Add distinct input types:
+
+- `PureState`;
+- `IncoherentEnsemble`;
+- `DensityState`.
+
+Remove final public reliance on list/square-array inference. Temporary adapters
+may live at the old boundary during this phase.
+
+### P2.3 Introduce ExecutionPolicy and capabilities
+
+One policy controls backend and storage for model construction and propagation.
+A capability registry rejects unsupported combinations before matrix
+allocation.
+
+Add parameterized tests for every advertised combination.
+
+### P2.4 Introduce PropagationProblem and PropagationOptions
+
+Replace solver `**kwargs` with typed fields. Required choices are explicit;
+unsupported combinations fail during construction or preflight.
+
+The field TimeGrid is the only timestep source. No solver-level `dt` override.
+
+### P2.5 Introduce PropagationResult
+
+All high-level solvers return a result object containing time, state, state
+kind, trajectory flag, backend, and metadata.
+
+Temporary old-array adapters are tested and then removed because compatibility
+is not required.
+
+### Phase 2 acceptance
+
+- No high-level propagator public method accepts unrestricted `**kwargs`.
+- Return type no longer changes according to booleans.
+- Backend/storage/algorithm errors occur before expensive work.
+- Current physics and performance baselines pass.
+- API inventory and architecture documents are updated.
+
+## 6. Phase 3 — target package migration
+
+Goal: establish dependency direction using mechanical movement before redesign.
+
+Suggested movement order:
+
+1. generic states, operators, units, and TimeGrid into target `core`;
+2. electric-field modules into `fields`;
+3. propagation wrappers/kernels into `dynamics`;
+4. simulation model builders into target `models`;
+5. persistence modules into `io`;
+6. plotting into `visualization`.
+
+For each move:
+
+1. add/import smoke test;
+2. `git mv` the file;
+3. repair direct imports;
+4. run focused and full tests;
+5. commit;
+6. only then redesign internals in a later commit.
+
+Add an import-boundary test that rejects forbidden dependencies.
+
+### Phase 3 acceptance
+
+- Source tree matches `TARGET_ARCHITECTURE.md` at the package level.
+- No circular imports.
+- Internal modules do not import root convenience exports.
+- Old empty directories and duplicate factories are removed.
+- Wheel includes every target package.
+
+## 7. Phase 4 — units and nondimensionalization
+
+Goal: perform unit conversion exactly once and reduce overlapping policy.
+
+Tasks:
+
+- define explicit quantity/unit types or validated value-plus-unit dataclasses;
+- keep pure conversion functions in `core/units`;
+- move complete-problem scaling to `dynamics/scaling`;
+- consolidate `converter.py`, `analysis.py`, `strategies.py`, `scales.py`, and
+  `utils.py` by responsibility;
+- remove deprecated `impl.py`;
+- make scale choice and auto-timestep policy explicit;
+- serialize scales in results;
+- add property-style round-trip tests.
+
+Acceptance:
+
+- numerical kernels contain no unit conversion calls;
+- no mutable object parameter changes during conversion;
+- dimensional and nondimensional reference observables/time agree;
+- one documented internal dimensional unit exists per quantity;
+- all current supported input units have round-trip tests.
+
+## 8. Phase 5 — numerical dynamics engine
+
+Goal: make solver contracts common while retaining efficient backend-specific
+kernels.
+
+### P5.1 RK4
+
+Separate:
+
+- validation and preparation;
+- NumPy dense kernel;
+- NumPy sparse kernel;
+- CuPy dense kernel;
+- Liouville NumPy kernel.
+
+Unify field-stage indexing, interaction sign, stride semantics, and result
+construction through tests, not through runtime abstraction inside hot loops.
+
+### P5.2 Split operator
+
+- require diagonal `H0` explicitly;
+- document midpoint field sampling;
+- separate NumPy dense/sparse and CuPy implementations;
+- validate Hermitian interaction operator;
+- compare against RK4 for converged small-step cases.
+
+### P5.3 Backend transfer policy
+
+Decide whether public results are host arrays or backend-native arrays and
+encode it in `PropagationResult`. Eliminate repeated transfer.
+
+### Phase 5 acceptance
+
+- every advertised capability has an executing test;
+- CPU/GPU parity is tested where infrastructure permits;
+- no silent fallback;
+- physics baselines pass;
+- median performance regression is below 10% or explicitly approved;
+- memory use is documented for trajectories.
+
+## 9. Phase 6 — model consolidation
+
+Goal: co-locate model formulas, parameters, basis, Hamiltonian, dipole, and
+coupling.
+
+Order:
+
+1. TwoLevel;
+2. VibLadder;
+3. LinMol;
+4. SymTop only after O-005 is resolved.
+
+For each model:
+
+- add frozen parameter schema;
+- move basis and state mapping;
+- move Hamiltonian formula;
+- move dipole/selection-rule code;
+- expose coupling capability;
+- eliminate duplicate simulation builder;
+- update registry and reference tests.
+
+Morse `N` remains derived instance-local data.
+
+### Phase 6 acceptance
+
+- one model package owns every model-specific formula;
+- simulation contains no model physics;
+- no duplicate model/dipole factory path;
+- model construction validates all required parameters;
+- reference tests pass for dense/sparse/backend combinations supported.
+
+## 10. Phase 7 — workflows, optimization, and spectroscopy
+
+### P7.1 Simulation runner
+
+Split current runner into:
+
+- configuration parsing;
+- typed case construction;
+- one-case execution;
+- sweep expansion;
+- process management;
+- persistence/checkpoint service;
+- progress/reporting.
+
+One-case execution must be a deterministic pure application service aside from
+explicit result writing.
+
+### P7.2 Result schema and I/O
+
+- add schema version;
+- serialize model, field, time, solver, backend, and scaling metadata;
+- atomic result/checkpoint writes;
+- validated resume;
+- migration error for unknown schema.
+
+### P7.3 Optimization
+
+Before changes, add one trusted objective and gradient/reference test for each
+supported algorithm. Introduce common Objective, Evaluator, OptimizationResult,
+and constraint interfaces only after behavior is characterized.
+
+### P7.4 Spectroscopy
+
+Before splitting the 898-line module, characterize:
+
+- thermal state;
+- response function;
+- FFT sign/frequency convention;
+- broadening;
+- absorption/PFID/emission observables;
+- normalization or sum rules.
+
+Then split by scientific responsibility.
+
+### Phase 7 acceptance
+
+- runner modules are individually testable;
+- failed cases and resume behavior are deterministic;
+- result schema is versioned;
+- optimization and spectroscopy no longer have zero/near-zero critical
+  coverage;
+- no broad catch suppresses physics errors.
+
+## 11. Phase 8 — public API and release
+
+Tasks:
+
+- decide O-008 and reduce root exports;
+- rewrite README and Japanese README against the actual API;
+- execute documentation code snippets;
+- update every supported example;
+- move unsupported examples to an explicit archive or delete them;
+- update version to 0.3.0;
+- produce migration notes stating that backward compatibility is intentionally
+  broken;
+- build sdist and wheel;
+- test clean installation;
+- run all quality, physics, and benchmark gates;
+- tag only after the refactor branch is clean.
+
+### Phase 8 acceptance
+
+- documented examples execute;
+- README contains no removed name;
+- public API inventory matches exports;
+- wheel smoke test passes;
+- known limitations and backend matrix are published;
+- changelog and result schema version are current.
+
+## 12. Suggested immediate commit sequence
+
+The first work after these documents should use approximately this sequence:
+
+1. `test: establish two-level physics references`
+2. `test: establish vibrational and Morse references`
+3. `test: establish linear-molecule and dipole references`
+4. `test: establish solver convergence and invariant suite`
+5. `test: migrate uncollected root validation scripts`
+6. `chore: remove generated repository artifacts`
+7. `chore: classify and remove verified legacy files`
+8. `style: apply repository-wide Ruff formatting`
+9. `fix: resolve repository-wide Ruff findings`
+10. `ci: enforce truthful quality and physics gates`
+
+Actual boundaries may be smaller. Never combine steps 1–4 with steps 8–9.
+
+## 13. Mandatory checks per change class
+
+| Change class | Required checks |
+|---|---|
+| Documentation only | link/path check, `git diff --check` |
+| Formatting only | full pytest, Ruff format/lint |
+| File move | import smoke, focused tests, full pytest, wheel build |
+| Public API | contract tests, examples, full pytest, docs |
+| Physics formula | analytic/golden test, focused convergence, full pytest |
+| Backend | capability test, parity test, unavailable-backend error |
+| Serialization | round trip, schema mismatch, atomic write/resume |
+| Performance kernel | correctness, convergence, benchmark, memory |
+
+## 14. Stop and ask conditions
+
+Codex must stop and ask the user when:
+
+- a formula or sign is not covered by an accepted decision;
+- a “magic number” cannot be derived from documented parameters;
+- a legacy and new implementation disagree scientifically;
+- a required reference value cannot be obtained from an analytic relation or
+  existing trusted test;
+- normalization or clipping would alter user data;
+- a directory move changes scientific ownership in a way not covered by the
+  target architecture;
+- a backend implementation would require a materially different numeric type;
+- optimization or spectroscopy behavior has no trusted reference;
+- a destructive cleanup contains potentially unique scientific data.
+
+## 15. Phase completion record
+
+When completing a phase, append or update a record with:
+
+~~~markdown
+### Phase N completion
+
+- Commit(s):
+- Date:
+- Tests:
+- Coverage:
+- Lint/format:
+- Performance:
+- Documentation:
+- Accepted deviations:
+- Remaining open decisions:
+~~~
+
+Do not mark a phase complete while required work is merely deferred without an
+open decision or follow-up task.

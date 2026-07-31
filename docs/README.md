@@ -2,6 +2,19 @@
 
 このディレクトリには、rovibrational-excitation パッケージの詳細なドキュメントが含まれています。
 
+## Codex・開発者向けリファクタ資料
+
+リファクタ作業では、ルートの [`AGENTS.md`](../AGENTS.md) を入口として、
+次の資料をこの順序で参照してください。
+
+1. [`refactoring/PHYSICS_CONTRACTS.md`](refactoring/PHYSICS_CONTRACTS.md)
+2. [`refactoring/DECISIONS.md`](refactoring/DECISIONS.md)
+3. [`refactoring/TARGET_ARCHITECTURE.md`](refactoring/TARGET_ARCHITECTURE.md)
+4. [`refactoring/EXECUTION_PLAN.md`](refactoring/EXECUTION_PLAN.md)
+
+現状指標・進捗・既知の整理対象は
+[`refactoring/README.md`](refactoring/README.md) に集約しています。
+
 ## 📖 ドキュメント一覧
 
 ### 🔧 設定・パラメータ
@@ -153,7 +166,7 @@ docs/
 
 examples/
 ├── params_template.py           # 基本テンプレート
-├── params_CO2_AntiSymm.py      # CO2励起例  
+├── params_CO2_AntiSymm.py      # CO2励起例
 ├── params_example_new_sweep.py # 新スイープ仕様例
 └── params_example_checkpoint.py # チェックポイント例
 
@@ -178,4 +191,4 @@ tests/
 
 ---
 
-**💡 ヒント**: まずは **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** を読んで、パラメータの全体像を把握することをお勧めします。 
+**💡 ヒント**: まずは **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** を読んで、パラメータの全体像を把握することをお勧めします。
