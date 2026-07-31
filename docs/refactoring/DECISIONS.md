@@ -223,6 +223,26 @@ Codex reads root `AGENTS.md` first. Detailed physical, architecture, and phase
 information lives under `docs/refactoring/`. Whenever implementation changes a
 documented contract, the corresponding document changes in the same commit.
 
+### D-016: Vibrational omega is the fundamental transition frequency
+
+Status: Accepted
+Scope: VibLadder Hamiltonian construction
+
+`omega`/`omega01` is the angular frequency of the `v=0 -> 1` transition.
+`delta_omega` is the per-level decrease in adjacent transition frequency.
+
+The vibrational energies are:
+
+~~~text
+E_v = (omega01 + delta_omega) (v + 1/2)
+      - (delta_omega / 2) (v + 1/2)^2
+E_(v+1) - E_v = omega01 - v delta_omega
+~~~
+
+Stored-parameter and temporary-override Hamiltonian generation must call the
+same implementation. The earlier override path used a different formula and
+was incorrect.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

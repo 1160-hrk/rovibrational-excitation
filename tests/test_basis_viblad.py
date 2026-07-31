@@ -122,11 +122,9 @@ def test_viblad_generate_H0_custom():
     basis = VibLadderBasis(V_max=2)
     H0 = basis.generate_H0_with_params(omega=2.0, delta_omega=0.1, input_units="rad/fs", units="rad/fs")
 
-    # E = ω*(v+1/2) - Δω*(v+1/2)^2
-    # v=0: 2.0*0.5 - 0.1*0.25 = 1.0 - 0.025 = 0.975
-    # v=1: 2.0*1.5 - 0.1*2.25 = 3.0 - 0.225 = 2.775
-    # v=2: 2.0*2.5 - 0.1*6.25 = 5.0 - 0.625 = 4.375
-    expected_energies = [0.975, 2.775, 4.375]
+    # omega is omega01: E_v = (omega01 + delta)*(v+1/2) - (delta/2)*(v+1/2)^2
+    # Adjacent spacings are 2.0 and 1.9 rad/fs.
+    expected_energies = [1.0375, 3.0375, 4.9375]
     expected = np.diag(expected_energies)
 
     np.testing.assert_array_almost_equal(H0.matrix, expected)

@@ -227,7 +227,31 @@ normalization only after validation.
 Primary implementation:
 `core/propagation/algorithms/validation.py`.
 
-## 6. Morse potential
+## 6. Vibrational ladder and Morse potential
+
+### 6.1 Vibrational energy convention
+
+The configured `omega` is `omega01`, the angular frequency of the fundamental
+`v=0 -> 1` transition. The positive anharmonic shift `delta_omega` is the
+decrease in adjacent transition frequency per vibrational level:
+
+~~~text
+x = v + 1/2
+E_v = (omega01 + delta_omega) x - (delta_omega / 2) x^2
+E_(v+1) - E_v = omega01 - v delta_omega
+~~~
+
+For `delta_omega = 0`, this reduces to the harmonic ladder
+`E_v = omega01 (v + 1/2)`.
+
+`VibLadderBasis.generate_H0()` and `generate_H0_with_params()` must use one
+shared implementation of this formula. Their numeric results must agree when
+given the same physical parameters and output units.
+
+Primary implementation:
+`core/basis/viblad.py`.
+
+### 6.2 Morse bound levels
 
 A Morse potential requires nonzero anharmonic shift. Therefore:
 

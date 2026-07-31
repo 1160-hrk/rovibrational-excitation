@@ -13,7 +13,7 @@ The files are introduced with real checks in the following Phase 0 tasks:
 | File | Owner | Status | Required scope |
 |---|---|---|---|
 | `test_two_level_reference.py` | P0.3 | Implemented; CUDA parity pending | Analytic phase, density equivalence, constant drive, scalar polarization, dimensional/backend agreement |
-| `test_vib_ladder_reference.py` | P0.4 | Planned | Energies, Morse derivation/bounds/isolation, scalar polarization |
+| `test_vib_ladder_reference.py` | P0.4 | In progress; energy references implemented | Energies, Morse derivation/bounds/isolation, scalar polarization |
 | `test_linear_molecule_reference.py` | P0.5 | Planned | Indexing, energies, Cartesian polarization, dense/sparse behavior |
 | `test_dipole_selection_rules.py` | P0.4/P0.5 | Planned | Harmonic, Morse, and rotational selection rules |
 | `test_solver_invariants.py` | P0.6 | Planned | Convergence, norm/trace/Hermiticity, time sampling, capability errors |

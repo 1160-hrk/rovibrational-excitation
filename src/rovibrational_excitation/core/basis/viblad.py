@@ -10,6 +10,18 @@ from .base import BasisBase
 from .hamiltonian import Hamiltonian
 
 
+def _vibrational_energy_frequencies(
+    vibrational_levels: np.ndarray,
+    omega01_rad_pfs: float,
+    delta_omega_rad_pfs: float,
+) -> np.ndarray:
+    """Return E_v in rad/fs when omega01 is the v=0 -> 1 transition."""
+    vterm = vibrational_levels + 0.5
+    return (omega01_rad_pfs + delta_omega_rad_pfs) * vterm - (
+        delta_omega_rad_pfs / 2
+    ) * vterm**2
+
+
 class VibLadderBasis(BasisBase):
     """
     Vibrational ladder basis: |v=0⟩, |v=1⟩, ..., |v=V_max⟩.
@@ -21,9 +33,9 @@ class VibLadderBasis(BasisBase):
     V_max : int
         最大振動量子数
     omega : float, optional
-        振動周波数（input_unitsで指定した単位）
+        0→1遷移角周波数（input_unitsで指定した単位）
     delta_omega : float, optional
-        非調和性パラメータ（input_unitsで指定した単位）
+        隣接遷移周波数の準位ごとの減少量（input_unitsで指定した単位）
     input_units : str, optional
         入力パラメータの単位（"rad/fs", "cm^-1", "THz", "eV"など）
     output_units : str, optional
@@ -46,9 +58,9 @@ class VibLadderBasis(BasisBase):
         V_max : int
             Maximum vibrational quantum number.
         omega : float, optional
-            Vibrational frequency (in input_units).
+            Fundamental v=0 -> 1 transition angular frequency (in input_units).
         delta_omega : float, optional
-            Anharmonicity parameter (in input_units).
+            Per-level decrease in adjacent transition frequency (in input_units).
         input_units : str, optional
             Units of input parameters.
         output_units : str, optional
@@ -144,17 +156,18 @@ class VibLadderBasis(BasisBase):
         """
         保存されたパラメータから振動ハミルトニアンを生成
 
-        H_vib = ω*(v+1/2) - Δω*(v+1/2)^2
+        H_vib = (ω01 + Δω)*(v+1/2) - (Δω/2)*(v+1/2)^2
 
         Returns
         -------
         Hamiltonian
             Diagonal Hamiltonian object with unit information.
         """
-        vterm = self.V_array + 0.5
-        energy_freq = (
-            self.omega_rad_pfs + self.delta_omega_rad_pfs
-        ) * vterm - self.delta_omega_rad_pfs / 2 * vterm**2
+        energy_freq = _vibrational_energy_frequencies(
+            self.V_array,
+            self.omega_rad_pfs,
+            self.delta_omega_rad_pfs,
+        )
 
         # Create Hamiltonian in frequency units first
         H0_matrix = np.diag(energy_freq)
@@ -188,9 +201,9 @@ class VibLadderBasis(BasisBase):
         Parameters
         ----------
         omega : float, optional
-            Vibrational frequency. If None, use instance value.
+            Fundamental v=0 -> 1 transition angular frequency. If None, use the instance value.
         delta_omega : float, optional
-            Anharmonicity parameter. If None, use instance value.
+            Per-level decrease in adjacent transition frequency. If None, use the instance value.
         units : {"J", "rad/fs"}, optional
             返すハミルトニアンの単位
         input_units : str, optional
@@ -229,8 +242,11 @@ class VibLadderBasis(BasisBase):
         else:
             delta_omega_rad_pfs = delta_omega * conv
 
-        vterm = self.V_array + 0.5
-        energy_freq = omega_rad_pfs * vterm - delta_omega_rad_pfs * vterm**2
+        energy_freq = _vibrational_energy_frequencies(
+            self.V_array,
+            omega_rad_pfs,
+            delta_omega_rad_pfs,
+        )
 
         # Create Hamiltonian in frequency units first
         H0_matrix = np.diag(energy_freq)

@@ -84,7 +84,7 @@ VibLadder は偏光自由度を持たないモデルなので、入力値は規�
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `omega_rad_phz` | `float` | ✅ | rad/fs | 振動固有周波数 | `0.14847` |
+| `omega_rad_phz` | `float` | ✅ | rad/fs | 0→1振動遷移角周波数 | `0.14847` |
 | `mu0_Cm` | `float` | ✅ | C·m | 双極子モーメント | `1e-30` |
 | `energy_gap` | `float` | 二準位系のみ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
 
@@ -121,10 +121,12 @@ VibLadder は偏光自由度を持たないモデルなので、入力値は規�
 
 | パラメータ | 型 | デフォルト | 単位 | 説明 | 例 |
 |-----------|---|-----------|------|------|-----|
-| `delta_omega_rad_phz` | `float` | `0.0` | rad/fs | 振動非調和性 | `0.001` |
+| `delta_omega_rad_phz` | `float` | `0.0` | rad/fs | 隣接遷移周波数の準位ごとの減少量 | `0.001` |
 | `B_rad_phz` | `float` | `0.0` | rad/fs | 回転定数 | `0.02` |
 | `alpha_rad_phz` | `float` | `0.0` | rad/fs | 振動-回転相互作用定数 | `0.0001` |
 | `potential_type` | `str` | `"harmonic"` | - | ポテンシャル形式 | `"harmonic"` or `"morse"` |
+
+振動エネルギーは `omega_rad_phz` を0→1遷移角周波数として、`E_v = (omega + delta_omega)(v + 1/2) - (delta_omega / 2)(v + 1/2)^2` で定義します。
 
 `potential_type = "morse"` の場合、`delta_omega_rad_phz` は非ゼロ必須です。Morse準位パラメータは `omega_rad_phz` と `delta_omega_rad_phz` からケースごとに計算され、`V_max <= floor(N) - 1` を満たさない入力はエラーになります。
 
