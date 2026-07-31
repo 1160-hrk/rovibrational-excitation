@@ -56,6 +56,7 @@ def test_splitop_schrodinger_return_final():
     assert final.shape == (1, 2)  # (1, dim)
 
 
+@pytest.mark.gpu
 @pytest.mark.skipif(not HAS_CUPY, reason="CuPyがインストールされていないためスキップ")
 def test_splitop_schrodinger_cupy():
     H0, mu_x, mu_y, pol, Efield, psi0, dt = make_simple_case()

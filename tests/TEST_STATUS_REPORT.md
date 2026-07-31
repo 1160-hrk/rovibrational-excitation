@@ -49,7 +49,7 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 
 これらのテストは、より根本的な数値計算上の問題や、複雑なロジックの不整合を示唆しており、今後の修正対象となります。
 
-### `tests/test_integration.py`
+### `tests/integration/test_integration.py`
 - `test_multi_level_excitation`: `Returns NaN`
 - `test_mixed_vs_pure_states`: `AssertionError on rho comparison`
 - `test_coherent_vs_incoherent`: `Returns NaN`
@@ -61,7 +61,7 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 - `test_trajectory_consistency`: `Nondimensionalization calculation is incorrect`
 - `test_weak_field_consistency`: `Nondimensionalization calculation is incorrect`
 
-### `tests/test_performance.py`
+### `tests/performance/test_performance.py`
 - `test_very_large_system`: `Shape mismatch in return value`
 - `test_long_time_evolution`: `Norm is not conserved in long-time evolution`
 - `test_numerical_stability_large_system`: `Energy is not conserved in large system`

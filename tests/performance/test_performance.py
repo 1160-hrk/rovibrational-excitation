@@ -14,6 +14,9 @@ from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
 
+pytestmark = pytest.mark.performance
+
+
 class MockDipole:
     """パフォーマンステスト用の軽量ダミー双極子"""
 

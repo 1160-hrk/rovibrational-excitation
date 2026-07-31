@@ -76,6 +76,12 @@ Acceptance:
 
 ### P0.2 Create physics test layout
 
+Status: Complete on 2026-07-31. The ownership directories and markers exist,
+six physics modules are reserved in `tests/physics/README.md`, and legacy test
+scripts have explicit dispositions. Empty placeholder modules are forbidden;
+P0.3-P0.6 create each listed module together with its first real reference
+test.
+
 Create:
 
 ~~~text
@@ -93,6 +99,10 @@ tests/
 └── performance/
 ~~~
 
+The tree above is the Phase 0 target, not a requirement to add empty Python
+files in P0.2. The six `physics/test_*.py` files materialize in their owner
+tasks P0.3-P0.6.
+
 Do not move all existing tests immediately. Add the new structure and migrate
 tests incrementally so collection remains stable.
 
@@ -100,13 +110,17 @@ Add marker definitions:
 
 - `physics`: trusted scientific reference/invariant;
 - `gpu`: requires actual CuPy/CUDA execution;
-- `performance`: benchmark, excluded from ordinary CI;
+- `performance`: benchmark; Phase 1 excludes it from ordinary CI;
 - `slow`: long deterministic correctness test.
 
 Acceptance:
 
 - `pytest --collect-only` lists every new reference test.
 - No “test” script remains uncollected without an explicit archival decision.
+
+P0.2 validation retained all 369 collected items, the moved subset passed 89
+tests, the full suite passed 360 with 9 GPU skips, and `gpu`/`performance`
+each select exactly 9 tests.
 
 ### P0.3 TwoLevel reference cases
 

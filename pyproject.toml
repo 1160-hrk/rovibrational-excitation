@@ -58,6 +58,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
+    "physics: trusted scientific reference, analytic solution, or invariant",
+    "gpu: requires real CuPy/CUDA execution",
+    "performance: non-blocking runtime or memory benchmark",
     "slow: マークされたテストは実行時間が長い (deselect with '-m \"not slow\"')",
 ]
 addopts = "-v --tb=short --strict-markers"

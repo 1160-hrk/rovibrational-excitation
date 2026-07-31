@@ -158,6 +158,7 @@ class TestRK4AdvancedOptions:
         np.testing.assert_allclose(result_no_traj[0], result_with_traj[-1], atol=1e-12)
 
 
+@pytest.mark.gpu
 @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
 class TestRK4CuPyBackend:
     """CuPyバックエンドテスト"""

@@ -2,6 +2,71 @@
 
 このディレクトリには、rovibrational-excitation パッケージの包括的なテストスイートが含まれています。
 
+## P0.2 refactor status
+
+The authoritative refactor baseline is 360 passed, 9 skipped, and 47% measured
+coverage. Historical metrics and XFAIL descriptions later in this file and in
+`TEST_CATALOG.md`, `TEST_STATUS_REPORT.md`, and `XFAIL_FIXES_REPORT.md` are
+retained only as migration evidence; they are not current status.
+
+The test tree is being migrated incrementally:
+
+~~~text
+tests/
+├── unit/          # isolated conversion and component behavior
+├── contracts/     # API, validation, time, backend, and capability contracts
+├── physics/       # independently derived references and invariants
+├── integration/   # cross-component workflows
+└── performance/   # non-blocking runtime and memory measurements
+~~~
+
+Root-level test modules remain collected during the transition. A file moves
+only when its ownership is unambiguous; P0.2 does not rewrite numerical checks.
+
+### Markers
+
+| Marker | Meaning | Selection policy |
+|---|---|---|
+| `physics` | trusted analytic result, scientific reference, or invariant | included |
+| `gpu` | requires real CuPy/CUDA execution | select on a GPU runner |
+| `performance` | runtime or memory measurement; not a correctness gate | run explicitly or in the full baseline; Phase 1 excludes it from ordinary CI |
+| `slow` | long deterministic correctness test | opt in as needed |
+
+Useful commands:
+
+~~~bash
+pytest
+pytest -m physics
+pytest -m gpu
+pytest -m "not performance and not gpu"
+pytest --collect-only
+~~~
+
+### Uncollected and legacy test-script dispositions
+
+These files are outside normal `testpaths = ["tests"]`, disabled, empty, or
+manual scripts. Their disposition is explicit so no scientific intent is lost.
+
+| Path | Finding | Disposition |
+|---|---|---|
+| `/test_basis_validation.py` | manual print-based script with old `src.*` imports and constructor calls; behavior overlaps collected basis/Hamiltonian tests | delete in Phase 1 after final overlap check |
+| `/test_new_api.py` | import-time demo, not assertions; deletes its own source file | delete in Phase 1 without running |
+| `tests/test_splitop_advanced.py.disabled` | old `steps=` signature; four tests currently fail and one GPU test skips | migrate norm, polarization, and long-time intents in P0.6, replace silent Hermitian repair with explicit rejection, then delete |
+| `tests/test_rk4_detailed.py` | empty | delete in Phase 1 |
+| `tests/test_rk4_schrodinger_detailed.py` | empty | delete in Phase 1 |
+| `tests/run_tests.py` | redundant subprocess wrapper around pytest | delete in Phase 1 |
+| `validation/core/test_nondimensional_timestep_twolevel.py` | stale imports plus plotting, but contains timestep/physical-time diagnostic intent | migrate deterministic convergence/time checks in P0.3/P0.6, then delete |
+| `validation/dipole/test_unit_management.py` | print-based checks using obsolete constructors; overlaps collected conversion/dipole tests | delete in Phase 1 after overlap check |
+| `validation/test_object_oriented_migration.py` | imports nonexistent `ParameterConverter` and tests backward compatibility that D-001 rejects | delete in Phase 1 |
+
+Other `validation/check_*.py` and debug scripts are diagnostic artifacts rather
+than pytest tests. Phase 1 must compare any unique formula or reference value
+before archiving or deleting them.
+
+P0.2 validation retained all 369 collected tests. The 89 moved tests passed
+from their new paths, the full suite passed 360 tests with 9 GPU skips, and the
+`gpu` and `performance` marker selections each contain exactly 9 tests.
+
 ## 現在のテストカバレッジ
 
 **全体カバレッジ: 63%** (1504行中944行がテスト済み)
@@ -102,7 +167,7 @@ coverage report --include="*/propagator.py"
 - `test_splitop_schrodinger.py` - Split-Operator伝播のテスト
 
 ### 統合・パフォーマンステスト
-- `test_integration.py` - 複数モジュール間の統合テスト
+- `integration/test_integration.py` - 複数モジュール間の統合テスト
 - `test_runner.py` - シミュレーション実行システムのテスト
 
 ### 実行ツール

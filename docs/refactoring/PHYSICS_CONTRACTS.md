@@ -50,7 +50,7 @@ state `rho0 = |psi0><psi0|`, both solvers must agree within the expected
 integration tolerance.
 
 Regression anchor:
-`tests/test_density_solver_contracts.py::test_liouville_matches_schrodinger_for_a_pure_state`.
+`tests/contracts/test_density_solver_contracts.py::test_liouville_matches_schrodinger_for_a_pure_state`.
 
 ## 2. Canonical units at the propagation boundary
 

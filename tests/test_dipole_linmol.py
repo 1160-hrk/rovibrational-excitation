@@ -232,6 +232,7 @@ class TestLinMolDipoleMatrix:
         np.testing.assert_array_almost_equal(mu_y, mu_y.conj().T, decimal=10)
         np.testing.assert_array_almost_equal(mu_z, mu_z.conj().T, decimal=10)
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_cupy_backend(self):
         """CuPyバックエンドのテスト"""
@@ -244,6 +245,7 @@ class TestLinMolDipoleMatrix:
         assert hasattr(mu_x, "device")  # CuPy特有の属性
         assert mu_x.shape == (basis.size(), basis.size())
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_numpy_vs_cupy_consistency(self):
         """NumPyとCuPyの一貫性テスト"""
@@ -411,6 +413,7 @@ class TestBuildMuFunction:
             # 型チェッカー回避のためキャスト
             build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_build_mu_cupy_backend(self):
         """CuPyバックエンドのテスト"""

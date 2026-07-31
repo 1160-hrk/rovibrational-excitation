@@ -161,6 +161,7 @@ class TestRK4SchrodingerDetailed:
             overlap, 1.0, atol=1e-6, err_msg=f"時間可逆性誤差: {1 - overlap}"
         )
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(
         not HAS_CUPY, reason="CuPyがインストールされていないためスキップ"
     )
@@ -323,6 +324,7 @@ class TestSplitOperatorDetailed:
         energy_variation = np.max(energies) - np.min(energies)
         assert energy_variation < 1e-12
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(
         not HAS_CUPY, reason="CuPyがインストールされていないためスキップ"
     )
