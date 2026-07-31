@@ -4,16 +4,18 @@ Vibrational ladder system basis (rotation-free).
 
 import numpy as np
 
+from rovibrational_excitation.core.units.converters import converter
+
 from .base import BasisBase
 from .hamiltonian import Hamiltonian
-from rovibrational_excitation.core.units.converters import converter
+
 
 class VibLadderBasis(BasisBase):
     """
     Vibrational ladder basis: |v=0⟩, |v=1⟩, ..., |v=V_max⟩.
 
     Pure vibrational system without rotational degrees of freedom.
-    
+
     Parameters
     ----------
     V_max : int
@@ -29,9 +31,9 @@ class VibLadderBasis(BasisBase):
     """
 
     def __init__(
-        self, 
-        V_max: int, 
-        omega: float | None = None, 
+        self,
+        V_max: int,
+        omega: float | None = None,
         delta_omega: float = 0.0,
         input_units: str = "rad/fs",
         output_units: str = "J",
@@ -55,7 +57,7 @@ class VibLadderBasis(BasisBase):
         self.V_max = V_max
         self.input_units = input_units
         self.output_units = output_units
-        
+
         # 物理パラメータの単位変換と保存
         if input_units in converter.get_supported_units("frequency"):
             conv = converter.convert_frequency(1.0, input_units, "rad/fs")
@@ -64,9 +66,14 @@ class VibLadderBasis(BasisBase):
         elif input_units in converter.get_supported_units("energy"):
             # エネルギー単位からrad/fsへの変換
             energy_conv = converter.convert_energy(1.0, input_units, "J")
-            self.omega_rad_pfs = (omega * energy_conv / Hamiltonian._HBAR * 1e-15 
-                                  if omega is not None else 1.0)
-            self.delta_omega_rad_pfs = delta_omega * energy_conv / Hamiltonian._HBAR * 1e-15
+            self.omega_rad_pfs = (
+                omega * energy_conv / Hamiltonian._HBAR * 1e-15
+                if omega is not None
+                else 1.0
+            )
+            self.delta_omega_rad_pfs = (
+                delta_omega * energy_conv / Hamiltonian._HBAR * 1e-15
+            )
         else:
             raise ValueError(
                 f"Unsupported input_units '{input_units}'.\n"
@@ -145,11 +152,13 @@ class VibLadderBasis(BasisBase):
             Diagonal Hamiltonian object with unit information.
         """
         vterm = self.V_array + 0.5
-        energy_freq = (self.omega_rad_pfs + self.delta_omega_rad_pfs) * vterm - self.delta_omega_rad_pfs / 2 * vterm**2
-        
+        energy_freq = (
+            self.omega_rad_pfs + self.delta_omega_rad_pfs
+        ) * vterm - self.delta_omega_rad_pfs / 2 * vterm**2
+
         # Create Hamiltonian in frequency units first
         H0_matrix = np.diag(energy_freq)
-        
+
         # Create basis info for debugging
         basis_info = {
             "basis_type": "VibLadder",
@@ -160,10 +169,10 @@ class VibLadderBasis(BasisBase):
             "input_units": self.input_units,
             "output_units": self.output_units,
         }
-        
+
         # Create Hamiltonian object in rad/fs
         hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
-        
+
         # Convert to requested units
         if self.output_units == "J":
             return hamiltonian.to_energy_units()
@@ -171,12 +180,7 @@ class VibLadderBasis(BasisBase):
             return hamiltonian
 
     def generate_H0_with_params(
-        self, 
-        omega=None, 
-        delta_omega=None, 
-        units=None,
-        input_units=None,
-        **kwargs
+        self, omega=None, delta_omega=None, units=None, input_units=None, **kwargs
     ) -> Hamiltonian:
         """
         一時的にパラメータを変更してハミルトニアンを生成（後方互換性）
@@ -204,7 +208,7 @@ class VibLadderBasis(BasisBase):
             input_units = self.input_units
         if units is None:
             units = self.output_units
-            
+
         # Determine conversion factor from input_units to internal rad/fs
         if input_units not in converter.get_supported_units("frequency"):
             raise ValueError(
@@ -227,10 +231,10 @@ class VibLadderBasis(BasisBase):
 
         vterm = self.V_array + 0.5
         energy_freq = omega_rad_pfs * vterm - delta_omega_rad_pfs * vterm**2
-        
+
         # Create Hamiltonian in frequency units first
         H0_matrix = np.diag(energy_freq)
-        
+
         # Create basis info for debugging
         basis_info = {
             "basis_type": "VibLadder",
@@ -240,10 +244,10 @@ class VibLadderBasis(BasisBase):
             "delta_omega_rad_pfs": delta_omega_rad_pfs,
             "input_units": input_units,
         }
-        
+
         # Create Hamiltonian object in rad/fs
         hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
-        
+
         # Convert to requested units
         if units == "J":
             return hamiltonian.to_energy_units()
