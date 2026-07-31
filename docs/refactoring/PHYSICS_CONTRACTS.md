@@ -285,6 +285,36 @@ coupling directly so callers do not need a dummy polarization vector.
 A supplied polarization may still be normalized and structurally validated by
 the input layer. It must not change scalar-model excitation results.
 
+### TwoLevel Phase 0 reference anchor
+
+`tests/physics/test_two_level_reference.py` fixes the following parameter set:
+
+- `H0 = diag(0, 0.37)` rad/fs;
+- transition dipole `mu = 2e-29 C m`;
+- field sampling interval `0.001 fs`, hence RK4 propagation interval `0.002 fs`;
+- final physical time `0.2 fs` and constant driven field `5e8 V/m`.
+
+It independently checks:
+
+- field-free superposition phases against
+  `psi_n(t) = exp(-i E_n t) psi_n(0)`;
+- Liouville evolution against the outer product of Schrödinger evolution;
+- constant-drive RK4 against
+  `expm[-i (H0 - mu E) T]`, including the interaction sign;
+- scalar-polarization independence for x, y, diagonal linear, and circular
+  complex polarization inputs;
+- physical time and populations across dimensional and nondimensional paths;
+- NumPy dense/CSR parity and a real NumPy/CuPy final-state parity case.
+
+CPU tolerances are near the scale of the chosen fourth-order step: analytic,
+polarization, and dense/CSR comparisons use `2e-14`; density equivalence uses
+`3e-13`; the constant-drive matrix-exponential reference uses `2e-13`; time
+equivalence uses `2e-15`; and nondimensional population equivalence uses the
+largest absolute tolerance, `2e-12`.
+
+The CuPy comparison uses `rtol=2e-12`, `atol=2e-13`, is marked `gpu`, and must
+execute on real CUDA hardware before CuPy parity is considered verified.
+
 ## 8. Coherent and incoherent observables
 
 A coherent initial superposition evolves one state vector and includes
@@ -338,8 +368,12 @@ Additional constraints:
 A skipped CuPy test does not establish correctness. Keep capability wording
 conditional until tested in a CUDA CI job.
 
-Current anchor: `tests/contracts/test_solver_contracts.py` checks the CuPy
-final-only dispatch shape without requiring a GPU.
+Current anchors:
+
+- `tests/contracts/test_solver_contracts.py` checks the CuPy final-only dispatch
+  shape without requiring a GPU.
+- `tests/physics/test_two_level_reference.py` contains the real NumPy/CuPy
+  final-state parity case and is marked `gpu`.
 
 ## 10. Input validation principles
 

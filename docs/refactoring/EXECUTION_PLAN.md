@@ -124,6 +124,16 @@ each select exactly 9 tests.
 
 ### P0.3 TwoLevel reference cases
 
+Status: Implemented on 2026-07-31 in
+`tests/physics/test_two_level_reference.py`. The real NumPy/CuPy parity case is
+collected but remains unverified because this environment has no CUDA device;
+capability wording therefore remains conditional.
+
+Validation collected 380 tests: 370 passed and 10 GPU tests skipped. The
+`physics` and `gpu` markers each select 10 cases. The largest CPU absolute
+tolerance is `2e-12` for nondimensional population equivalence; the driven
+matrix-exponential reference uses `2e-13` with a 0.002 fs propagation step.
+
 Required tests:
 
 1. Free evolution of a superposition with analytic phase:

@@ -96,6 +96,8 @@ Implementation status (2026-07-31):
 - RK4 pure-state propagation now keeps the same low-level final-only shape,
   `(1, dimension)`, for NumPy and CuPy paths. A CPU-runnable mocked-CuPy
   contract test protects the dispatch boundary.
+- A real NumPy/CuPy numerical parity test exists under the `gpu` marker, but
+  remains unverified locally until it runs on a CUDA-capable environment.
 
 ### D-006: Physically defining parameters should be required
 
