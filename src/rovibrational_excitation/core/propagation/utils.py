@@ -244,8 +244,6 @@ def prepare_propagation_args(
         Dipole matrix object
     axes : str
         Polarization axes
-    dt : float, optional
-        Time step (if None, use field dt * 2)
     mu_x_override : Array, optional
         Override for x-component dipole
     mu_y_override : Array, optional
@@ -260,6 +258,11 @@ def prepare_propagation_args(
     tuple
         (H0, mu_a, mu_b, Ex, Ey, dt) prepared for propagation
         mu_a corresponds to Ex, mu_b corresponds to Ey
+
+    Notes
+    -----
+    The integration step is derived from the electric-field grid as
+    ``efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP``.
     """
     from ..nondimensional.converter import (
         auto_nondimensionalize,

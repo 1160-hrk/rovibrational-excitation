@@ -12,6 +12,8 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
+from ..validation import validate_density_matrix_problem
+
 
 # ------------------------------------------------------------
 # 低レベル共通コア（軌跡記録あり／なしをフラグで切替）
@@ -103,6 +105,19 @@ def rk4_lvne_traj(
     """
     軌跡を返す版  ―  shape = (steps//sample_stride+1, dim, dim)
     """
+    validate_density_matrix_problem(
+        H0,
+        (mu_x, mu_y),
+        (Efield_x, Efield_y),
+        rho0,
+        dt=dt,
+        stride=sample_stride,
+        backend="numpy",
+        require_odd_field=True,
+    )
+    expected_steps = (len(Efield_x) - 1) // 2
+    if steps != expected_steps:
+        raise ValueError(f"steps must be {expected_steps} for the supplied field grid")
     return _rk4_lvne_core(
         np.ascontiguousarray(H0, dtype=np.complex128),
         np.ascontiguousarray(mu_x, dtype=np.complex128),
@@ -130,6 +145,19 @@ def rk4_lvne(
     """
     最終密度行列だけ返す軽量版  ―  shape = (dim, dim)
     """
+    validate_density_matrix_problem(
+        H0,
+        (mu_x, mu_y),
+        (Efield_x, Efield_y),
+        rho0,
+        dt=dt,
+        stride=1,
+        backend="numpy",
+        require_odd_field=True,
+    )
+    expected_steps = (len(Efield_x) - 1) // 2
+    if steps != expected_steps:
+        raise ValueError(f"steps must be {expected_steps} for the supplied field grid")
     traj = _rk4_lvne_core(
         np.ascontiguousarray(H0, dtype=np.complex128),
         np.ascontiguousarray(mu_x, dtype=np.complex128),

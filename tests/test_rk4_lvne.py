@@ -1,6 +1,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
 
@@ -28,12 +30,5 @@ def test_rk4_lvne_trace():
 
 def test_rk4_lvne_error():
     H0, mux, muy, Ex, Ey, rho0, dt, steps = make_simple_case()
-    # Ex, Eyの長さが短すぎる場合はエラーをチェックしない（実装による）
-    # 実際の動作を確認
-    try:
+    with pytest.raises(ValueError, match="at least 3 points"):
         rk4_lvne(H0, mux, muy, np.array([1.0]), np.array([0.0]), rho0, dt, steps)
-        # エラーが出ない場合もある（実装による）
-        pass
-    except IndexError:
-        # エラーが出る場合もある
-        pass

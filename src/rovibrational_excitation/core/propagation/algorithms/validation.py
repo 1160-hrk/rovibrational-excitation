@@ -101,3 +101,36 @@ def validate_wavefunction_problem(
         raise ValueError("propagation inputs must contain only finite values")
 
     return dim
+
+
+def validate_density_matrix_problem(
+    h0: Any,
+    dipoles: tuple[Any, ...],
+    fields: tuple[Any, ...],
+    rho0: Any,
+    *,
+    dt: float,
+    stride: int,
+    backend: str,
+    require_odd_field: bool = False,
+) -> int:
+    """Validate a density-matrix propagation problem and return its dimension."""
+    h0_shape = _shape(h0)
+    if not h0_shape:
+        raise ValueError("H0 must be a one-dimensional diagonal or square matrix")
+    dimension_hint = h0_shape[0]
+    dim = validate_wavefunction_problem(
+        h0,
+        dipoles,
+        fields,
+        np.zeros(dimension_hint, dtype=np.complex128),
+        dt=dt,
+        stride=stride,
+        backend=backend,
+        require_odd_field=require_odd_field,
+    )
+    if _shape(rho0) != (dim, dim):
+        raise ValueError(f"rho0 must have shape {(dim, dim)}, got {_shape(rho0)}")
+    if not _all_finite(rho0):
+        raise ValueError("propagation inputs must contain only finite values")
+    return dim

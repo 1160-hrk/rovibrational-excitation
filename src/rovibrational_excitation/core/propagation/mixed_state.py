@@ -78,8 +78,10 @@ class MixedStatePropagator(PropagatorBase):
         self.sparse = sparse
         self._schrodinger_prop = SchrodingerPropagator(
             backend=backend,
+            algorithm=algorithm,
             validate_units=validate_units,
             renorm=renorm,
+            sparse=sparse,
         )
 
     def get_algorithm_name(self) -> str:
@@ -106,10 +108,8 @@ class MixedStatePropagator(PropagatorBase):
         form an equal mixture; arbitrary weights can be encoded as
         ``sqrt(w_i) * psi_i``.
         """
-        axes = kwargs.get("axes", "xy")
         return_traj = kwargs.get("return_traj", True)
         return_time_rho = kwargs.get("return_time_rho", False)
-        sample_stride = kwargs.get("sample_stride", 1)
         verbose = kwargs.get("verbose", False)
 
         if self.validate_units:
@@ -128,6 +128,13 @@ class MixedStatePropagator(PropagatorBase):
         ):
             from .liouville import LiouvillePropagator
 
+            if self.algorithm != "rk4":
+                raise ValueError("density matrices support only algorithm='rk4'")
+            if self.sparse:
+                raise ValueError(
+                    "density-matrix propagation does not support sparse matrices"
+                )
+
             liouville_prop = LiouvillePropagator(
                 backend=self.backend,
                 validate_units=False,
@@ -142,24 +149,30 @@ class MixedStatePropagator(PropagatorBase):
         rho_out = None
         time_psi = None
 
+        propagation_kwargs = dict(kwargs)
+        propagation_kwargs.pop("return_time_rho", None)
+        propagation_kwargs["return_time_psi"] = return_time_rho
+        propagation_kwargs["algorithm"] = self.algorithm
+        propagation_kwargs.setdefault("sparse", self.sparse)
+        propagation_kwargs["verbose"] = False
+
         for psi0, weight in zip(states, weights):
             result = self._schrodinger_prop.propagate(
                 hamiltonian,
                 efield,
                 dipole_matrix,
                 psi0,
-                axes=axes,
-                return_traj=return_traj,
-                return_time_psi=return_time_rho,
-                sample_stride=sample_stride,
-                verbose=False,
-                algorithm=self.algorithm,
+                **propagation_kwargs,
             )
 
             if isinstance(result, tuple):
                 component_time, psi_t = result
                 if time_psi is None:
                     time_psi = component_time
+                elif not np.allclose(time_psi, component_time):
+                    raise RuntimeError(
+                        "ensemble components returned inconsistent times"
+                    )
             else:
                 psi_t = result
 
@@ -175,6 +188,6 @@ class MixedStatePropagator(PropagatorBase):
                 rho_out = xp.zeros_like(component_density)
             rho_out += float(weight) * component_density
 
-        if return_traj and return_time_rho and time_psi is not None:
+        if return_time_rho and time_psi is not None:
             return time_psi, rho_out
         return rho_out
