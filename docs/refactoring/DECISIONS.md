@@ -294,6 +294,44 @@ Decide which small set should be available as
 `import rovibrational_excitation as rve` and which names require subpackage
 imports.
 
+P0.1 working proposal (not yet accepted):
+
+~~~python
+__all__ = [
+    "__version__",
+    "ElectricField",
+    "gaussian",
+    "gaussian_fwhm",
+    "TwoLevelModel",
+    "VibLadderModel",
+    "LinearMoleculeModel",
+    "TwoLevelParameters",
+    "VibLadderParameters",
+    "LinearMoleculeParameters",
+    "PropagationProblem",
+    "PropagationOptions",
+    "PropagationResult",
+    "propagate",
+]
+~~~
+
+Specialized capabilities remain public through explicit subpackages:
+
+- `rovibrational_excitation.core`: states, operators, time, units;
+- `rovibrational_excitation.fields`: additional envelopes and modulation;
+- `rovibrational_excitation.models`: advanced model-owned basis/dipole types;
+- `rovibrational_excitation.optimization`: optimization entry functions;
+- `rovibrational_excitation.spectroscopy`: spectroscopy facade;
+- `rovibrational_excitation.simulation`: configured workflows;
+- `rovibrational_excitation.visualization`: plotting helpers.
+
+The proposal intentionally removes generic state/operator classes,
+model-specific dipole caches, spectroscopy names, factories, low-level kernels,
+and runner helpers from the root. Exact model class names should be accepted
+only after the Phase 2 typed contracts show whether a separate `*Parameters`
+object is useful or redundant. See `API_INVENTORY.md` for every current name's
+disposition.
+
 ## Decision template
 
 Copy this template for a new entry:

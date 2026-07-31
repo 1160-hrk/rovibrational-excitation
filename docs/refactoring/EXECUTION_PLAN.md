@@ -48,6 +48,10 @@ Goal: make structural regressions detectable before package movement.
 
 ### P0.1 Inventory public and internal entry points
 
+Status: Complete on 2026-07-31. See `API_INVENTORY.md`. This checkpoint changed
+documentation only; package migration and API deletion remain forbidden until
+the rest of Phase 0 is complete.
+
 Tasks:
 
 - Enumerate root exports from `rovibrational_excitation.__init__`.

@@ -18,6 +18,7 @@ tests, and the decision log.
 | `DECISIONS.md` | Accepted decisions and questions that still require the user | Every resolved or newly discovered ambiguity |
 | `TARGET_ARCHITECTURE.md` | Target package tree, dependency rules, typed contracts, old-to-new mapping | Any architecture or ownership change |
 | `EXECUTION_PLAN.md` | Ordered phases, task IDs, acceptance criteria, commit rules | At the start and completion of every phase |
+| `API_INVENTORY.md` | Current exports, CLI/config routes, factories, examples, and v0.3 disposition | Any public/internal entry-point change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -102,7 +103,7 @@ These commits are the starting point, not the final architecture.
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Physics characterization baseline | Next |
+| 0 | Physics characterization baseline | In progress — P0.1 complete |
 | 1 | Repository and CI normalization | Pending |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |

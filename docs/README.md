@@ -14,6 +14,8 @@
 
 現状指標・進捗・既知の整理対象は
 [`refactoring/README.md`](refactoring/README.md) に集約しています。
+現行API・CLI・factory・examplesの移行先と廃止方針は
+[`refactoring/API_INVENTORY.md`](refactoring/API_INVENTORY.md) を参照してください。
 
 ## 📖 ドキュメント一覧
 
