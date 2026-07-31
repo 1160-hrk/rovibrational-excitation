@@ -13,6 +13,12 @@ from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
     rk4_lvne,
     rk4_lvne_traj,
 )
+from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
+from rovibrational_excitation.core.propagation.algorithms.validation import (
+    validate_density_matrix_properties,
+)
 
 
 def _low_level_problem(field_size=5):
@@ -207,3 +213,66 @@ def test_mixed_state_rejects_unsupported_options_for_explicit_density(
 
     with pytest.raises(ValueError, match=message):
         solver.propagate(object(), object(), object(), np.eye(2))
+
+
+def test_liouville_matches_schrodinger_for_a_pure_state():
+    h0 = np.diag([0.0, 0.4]).astype(np.complex128)
+    mu_x = np.array([[0.2, 1.0], [1.0, -0.1]], dtype=np.complex128)
+    mu_y = np.zeros((2, 2), dtype=np.complex128)
+    field_x = np.array([0.7, 0.9, 1.1])
+    field_y = np.zeros(3)
+    psi0 = np.array([1.0, 1.0j], dtype=np.complex128) / np.sqrt(2.0)
+    rho0 = np.outer(psi0, psi0.conj())
+    dt = 1.0e-3
+
+    psi = rk4_schrodinger(
+        h0,
+        mu_x,
+        mu_y,
+        field_x,
+        field_y,
+        psi0,
+        dt,
+        return_traj=True,
+    )[-1]
+    rho = rk4_lvne_traj(
+        h0,
+        mu_x,
+        mu_y,
+        field_x,
+        field_y,
+        rho0,
+        dt,
+        steps=1,
+    )[-1]
+
+    np.testing.assert_allclose(rho, np.outer(psi, psi.conj()), atol=1.0e-13)
+
+
+@pytest.mark.parametrize(
+    ("rho", "message"),
+    [
+        (
+            np.array([[0.5, 0.2], [0.0, 0.5]], dtype=np.complex128),
+            "Hermitian",
+        ),
+        (
+            np.diag([1.001, -0.001]).astype(np.complex128),
+            "positive semidefinite",
+        ),
+        (
+            np.array([[np.nan, 0.0], [0.0, 1.0]], dtype=np.complex128),
+            "finite",
+        ),
+    ],
+)
+def test_density_matrix_validation_rejects_nonphysical_input(rho, message):
+    with pytest.raises(ValueError, match=message):
+        validate_density_matrix_properties(rho)
+
+
+def test_density_matrix_validation_allows_roundoff_scale_negative_eigenvalue():
+    roundoff_eigenvalue = -1.0e-15
+    rho = np.diag([1.0 - roundoff_eigenvalue, roundoff_eigenvalue])
+
+    validate_density_matrix_properties(rho)

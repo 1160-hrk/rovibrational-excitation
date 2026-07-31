@@ -8,6 +8,7 @@ from typing import Literal
 import numpy as np
 
 from ..units.validators import validator
+from .algorithms.validation import validate_density_matrix_properties
 from .base import PropagatorBase
 from .schrodinger import SchrodingerPropagator
 from .utils import get_backend
@@ -51,13 +52,10 @@ def _normalized_ensemble(
 
 
 def _normalized_density_matrix(initial_state: np.ndarray) -> np.ndarray:
-    """Normalize an explicitly supplied density matrix to unit trace."""
+    """Validate and normalize an explicitly supplied density matrix."""
     density = np.asarray(initial_state, dtype=np.complex128)
+    validate_density_matrix_properties(density)
     trace = np.trace(density)
-    if not np.isfinite(trace) or not np.isclose(trace.imag, 0.0):
-        raise ValueError("density-matrix trace must be finite and real")
-    if trace.real <= 0.0:
-        raise ValueError("density-matrix trace must be positive")
     return density / trace.real
 
 

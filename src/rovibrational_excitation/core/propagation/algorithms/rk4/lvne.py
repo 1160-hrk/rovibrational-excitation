@@ -59,9 +59,9 @@ def _rk4_lvne_core(
         ey2 = Ey[idx + 1]
         ey4 = Ey[idx + 2]
 
-        H1 = H0 + mu_x * ex1 + mu_y * ey1
-        H2 = H0 + mu_x * ex2 + mu_y * ey2  # H3 と同じ
-        H4 = H0 + mu_x * ex4 + mu_y * ey4
+        H1 = H0 - mu_x * ex1 - mu_y * ey1
+        H2 = H0 - mu_x * ex2 - mu_y * ey2  # H3 と同じ
+        H4 = H0 - mu_x * ex4 - mu_y * ey4
 
         # --- RK4 ---
         k1 = -1j * (H1 @ rho - rho @ H1)

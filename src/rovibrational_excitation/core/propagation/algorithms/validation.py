@@ -103,6 +103,49 @@ def validate_wavefunction_problem(
     return dim
 
 
+_DENSITY_MATRIX_EPSILON_FACTOR = 100.0
+
+
+def _density_matrix_tolerance(density: np.ndarray) -> float:
+    """Return a scale-aware tolerance for Hermitian eigenvalue calculations."""
+    dimension = max(1, density.shape[0])
+    spectral_scale = float(np.linalg.norm(density, ord=2))
+    machine_epsilon = np.finfo(density.real.dtype).eps
+    # LAPACK errors scale as O(n * eps * ||A||). The factor leaves margin for
+    # roundoff accumulated while constructing a density matrix.
+    return _DENSITY_MATRIX_EPSILON_FACTOR * dimension * machine_epsilon * spectral_scale
+
+
+def validate_density_matrix_properties(rho: Any) -> None:
+    """Reject non-Hermitian, non-positive, or numerically invalid density matrices."""
+    density_source = rho.toarray() if sp.issparse(rho) else rho
+    density = np.asarray(density_source, dtype=np.complex128)
+    if density.ndim != 2 or density.shape[0] != density.shape[1]:
+        raise ValueError("density matrix must be square")
+    if not np.all(np.isfinite(density)):
+        raise ValueError("density matrix must contain only finite values")
+
+    tolerance = _density_matrix_tolerance(density)
+    trace = np.trace(density)
+    if abs(trace.imag) > tolerance:
+        raise ValueError("density-matrix trace must be real within numerical tolerance")
+    if trace.real <= 0.0:
+        raise ValueError("density-matrix trace must be positive")
+
+    hermiticity_error = float(np.linalg.norm(density - density.conj().T, ord=2))
+    if hermiticity_error > tolerance:
+        raise ValueError("density matrix must be Hermitian within numerical tolerance")
+
+    hermitian_density = 0.5 * (density + density.conj().T)
+    minimum_eigenvalue = float(np.linalg.eigvalsh(hermitian_density)[0])
+    if minimum_eigenvalue < -tolerance:
+        raise ValueError(
+            "density matrix must be positive semidefinite; "
+            f"minimum eigenvalue {minimum_eigenvalue:.3e} is below "
+            f"the tolerance {-tolerance:.3e}"
+        )
+
+
 def validate_density_matrix_problem(
     h0: Any,
     dipoles: tuple[Any, ...],
@@ -131,6 +174,5 @@ def validate_density_matrix_problem(
     )
     if _shape(rho0) != (dim, dim):
         raise ValueError(f"rho0 must have shape {(dim, dim)}, got {_shape(rho0)}")
-    if not _all_finite(rho0):
-        raise ValueError("propagation inputs must contain only finite values")
+    validate_density_matrix_properties(rho0)
     return dim
