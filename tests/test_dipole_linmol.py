@@ -153,7 +153,7 @@ class TestLinMolDipoleMatrix:
     def test_potential_types(self):
         """異なるpotential_typeのテスト（use_M=Trueで確認）"""
         # M量子数がある場合で比較（より多くの非ゼロ要素）
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
+        basis = LinMolBasis(V_max=2, J_max=1, use_M=True, delta_omega=0.1)
 
         dipole_harm = LinMolDipoleMatrix(basis, potential_type="harmonic")
         dipole_morse = LinMolDipoleMatrix(basis, potential_type="morse")
@@ -299,11 +299,9 @@ class TestLinMolDipoleMatrix:
 
     def test_repr_string(self):
         """文字列表現のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(
-            basis, mu0=0.3, potential_type="morse", dense=False
-        )
-        
+        basis = LinMolBasis(V_max=1, J_max=1, use_M=False, delta_omega=0.1)
+        dipole = LinMolDipoleMatrix(basis, mu0=0.3, potential_type="morse", dense=False)
+
         # reprにはクラス名、mu0、potential_type、backend、denseが含まれる
         repr_str = repr(dipole)
         assert "LinMolDipoleMatrix" in repr_str
@@ -311,7 +309,7 @@ class TestLinMolDipoleMatrix:
         assert "potential_type='morse'" in repr_str
         assert "backend='numpy'" in repr_str
         assert "dense=False" in repr_str
-        
+
         # キャッシュが機能していることを確認
         mu_x1 = dipole.mu_x
         mu_x2 = dipole.mu_x
@@ -351,7 +349,7 @@ class TestBuildMuFunction:
     def test_build_mu_potential_types(self):
         """異なるpotential_typeのテスト（use_M=Trueで確認）"""
         # M量子数がある場合で比較（より多くの非ゼロ要素）
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
+        basis = LinMolBasis(V_max=2, J_max=1, use_M=True, delta_omega=0.1)
 
         mu_harm = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
         mu_morse = build_mu(basis, "x", mu0=1.0, potential_type="morse")

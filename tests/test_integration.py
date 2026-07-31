@@ -6,24 +6,23 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import (
+    DensityMatrix,
     LinMolBasis,
     StateVector,
     TwoLevelBasis,
     VibLadderBasis,
 )
-from rovibrational_excitation.dipole import (
-    LinMolDipoleMatrix,
-    TwoLevelDipoleMatrix,
-    VibLadderDipoleMatrix,
-)
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagation import (
-    SchrodingerPropagator,
     LiouvillePropagator,
     MixedStatePropagator,
+    SchrodingerPropagator,
 )
-from rovibrational_excitation.core.basis import DensityMatrix
 from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dipole import (
+    LinMolDipoleMatrix,
+    VibLadderDipoleMatrix,
+)
 
 _DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
@@ -41,26 +40,26 @@ class MockDipole:
 
         # 物理的に妥当な値 (1 Debye) に設定
         one_debye_in_Cm = 3.33564e-30
-        
+
         # 対角要素の隣に遷移モーメントを配置
         for i in range(dim - 1):
             self.mu_x[i, i + 1] = one_debye_in_Cm
             self.mu_x[i + 1, i] = one_debye_in_Cm
-    
+
     def get_mu_in_units(self, axis: str, unit: str):
         src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
         if unit in ("C*m", "C·m", "Cm"):
             return src
         return converter.convert_dipole_moment(src, "C*m", unit)
-    
+
     def get_mu_x_SI(self, dense: bool = False):
         """Get μ_x in SI units (C·m)."""
         return self.mu_x
-    
+
     def get_mu_y_SI(self, dense: bool = False):
         """Get μ_y in SI units (C·m)."""
         return self.mu_y
-    
+
     def get_mu_z_SI(self, dense: bool = False):
         """Get μ_z in SI units (C·m)."""
         return self.mu_z
@@ -215,10 +214,7 @@ def test_different_basis_types():
 # @pytest.mark.xfail(reason="AssertionError on rho comparison")
 def test_mixed_vs_pure_states():
     """混合状態と純粋状態の比較テスト"""
-    basis = LinMolBasis(
-        V_max=1, J_max=1, use_M=True,
-        omega=1.0, 
-        B=0.001)
+    basis = LinMolBasis(V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001)
     H0 = basis.generate_H0()
     dipole = LinMolDipoleMatrix(basis, mu0=1e-30)
 
@@ -238,29 +234,41 @@ def test_mixed_vs_pure_states():
     psi0 = np.zeros(basis.size(), dtype=np.complex128)
     psi0[0] = 1.0
     psi_traj = SchrodingerPropagator().propagate(
-        H0, efield, dipole, psi0, return_traj=True, nondimensional=True, auto_timestep=True
+        H0,
+        efield,
+        dipole,
+        psi0,
+        return_traj=True,
+        nondimensional=True,
+        auto_timestep=True,
     )
 
     # 同じ純粋状態を混合状態として伝播
     psi0s = [psi0]
-    rho_traj = MixedStatePropagator().propagate(H0, efield, dipole, psi0s, return_traj=True)
+    rho_traj = MixedStatePropagator().propagate(
+        H0, efield, dipole, psi0s, return_traj=True
+    )
 
     # 結果の一致確認（純粋状態の密度行列と比較）
     # より緩い許容値を使用（数値誤差を考慮）
     for i in range(psi_traj.shape[0]):  # type: ignore
         expected_rho = np.outer(psi_traj[i], psi_traj[i].conj())
-        
+
         # 密度行列の対角要素（存在確率）を比較
         diag_diff = np.abs(np.diag(rho_traj[i]) - np.diag(expected_rho))
-        assert np.all(diag_diff < 1e-6), f"対角要素の差が大きすぎます: {np.max(diag_diff)}"
-        
+        assert np.all(diag_diff < 1e-6), (
+            f"対角要素の差が大きすぎます: {np.max(diag_diff)}"
+        )
+
         # 非対角要素（コヒーレンス）を比較（より緩い許容値）
         offdiag_diff = np.abs(rho_traj[i] - expected_rho)
         # 対角要素を除く
         mask = ~np.eye(rho_traj[i].shape[0], dtype=bool)
         offdiag_diff = offdiag_diff[mask]
-        assert np.all(offdiag_diff < 1e-6), f"非対角要素の差が大きすぎます: {np.max(offdiag_diff)}"
-        
+        assert np.all(offdiag_diff < 1e-6), (
+            f"非対角要素の差が大きすぎます: {np.max(offdiag_diff)}"
+        )
+
         # トレース保存の確認
         trace_diff = abs(np.trace(rho_traj[i]) - 1.0)
         assert trace_diff < 1e-10, f"トレースが保存されていません: {trace_diff}"
@@ -307,23 +315,31 @@ def test_liouville_vs_schrodinger():
     # Liouville方程式（同じ純粋状態から開始、正規化なし）
     rho0 = np.outer(psi0, psi0.conj())
     rho_final = LiouvillePropagator().propagate(
-        H0, efield, dipole, rho0, return_traj=False, nondimensional=True, auto_timestep=True
+        H0,
+        efield,
+        dipole,
+        rho0,
+        return_traj=False,
+        nondimensional=True,
+        auto_timestep=True,
     )
 
     # 結果の比較（正規化を考慮）
     expected_rho = np.outer(psi_final, psi_final.conj())
-    
+
     # 密度行列の対角要素（存在確率）を比較
     diag_diff = np.abs(np.diag(rho_final) - np.diag(expected_rho))
     assert np.all(diag_diff < 1e-3), f"対角要素の差が大きすぎます: {np.max(diag_diff)}"
-    
+
     # 非対角要素（コヒーレンス）を比較（より緩い許容値）
     offdiag_diff = np.abs(rho_final - expected_rho)
     # 対角要素を除く
     mask = ~np.eye(rho_final.shape[0], dtype=bool)
     offdiag_diff = offdiag_diff[mask]
-    assert np.all(offdiag_diff < 1e-3), f"非対角要素の差が大きすぎます: {np.max(offdiag_diff)}"
-    
+    assert np.all(offdiag_diff < 1e-3), (
+        f"非対角要素の差が大きすぎます: {np.max(offdiag_diff)}"
+    )
+
     # トレース保存の確認
     trace_diff = abs(np.trace(rho_final) - 1.0)
     assert trace_diff < 1e-10, f"トレースが保存されていません: {trace_diff}"
@@ -482,9 +498,9 @@ def test_coherent_vs_incoherent():
     assert np.all(pop_coherent >= 0)
     assert np.all(pop_incoherent >= 0)
     assert np.isclose(np.sum(pop_coherent), 1.0)
-    # 混合状態のトレースは状態数に比例（各状態のノルムが1なので2つの状態なら4）
+    # 混合重みは規格化されるため、密度行列のトレースは1
     total_trace = np.sum(pop_incoherent)
-    assert total_trace > 1.0  # 混合状態なので1より大きい
+    assert np.isclose(total_trace, 1.0, atol=1e-4)
 
 
 def test_field_strength_scaling():

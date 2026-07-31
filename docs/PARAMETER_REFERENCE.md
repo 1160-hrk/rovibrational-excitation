@@ -47,6 +47,11 @@ polarization = [1.0, 0.0]  # 固定値
 |-----------|---|------|------|------|-----|
 | `t_start` | `float` | ✅ | fs | 時間軸の開始時刻 | `-100.0` |
 | `t_end` | `float` | ✅ | fs | 時間軸の終了時刻 | `100.0` |
+
+`dt` は電場のサンプリング間隔です。RK4 / split-operator の1時間発展ステップは
+左端・中点・右端を使うため `2 * dt` 進みます。したがって
+`t_end - t_start` は `2 * dt` の整数倍でなければエラーになります。
+
 | `dt` | `float` | ✅ | fs | 時間刻み幅 | `0.1` |
 
 #### 1.3 量子系設定
@@ -61,11 +66,19 @@ polarization = [1.0, 0.0]  # 固定値
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `duration` | `float` | ✅ | fs | パルス幅（FWHM） | `20.0` |
+| `duration` | `float` | - | fs | パルス幅（FWHM） | `20.0` |
+
 | `t_center` | `float` | ✅ | fs | パルス中心時刻 | `0.0` |
+
+`duration` と旧名 `pulse_duration` のどちらも省略した場合は、`(t_end - t_start) / 2` を使用します。
+
 | `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
 | `polarization` | `list` | ✅ | - | 偏光ベクトル [x, y] | `[1.0, 0.0]` |
+
+`polarization` は LinMol では物理的な偏光として使われます。TwoLevel と
+VibLadder は偏光自由度を持たないモデルなので、入力値は規格化・検証だけされ、
+スカラー電場との結合結果は偏光ベクトルに依存しません。
 
 #### 1.5 基本物理パラメータ
 
@@ -73,12 +86,15 @@ polarization = [1.0, 0.0]  # 固定値
 |-----------|---|------|------|------|-----|
 | `omega_rad_phz` | `float` | ✅ | rad/fs | 振動固有周波数 | `0.14847` |
 | `mu0_Cm` | `float` | ✅ | C·m | 双極子モーメント | `1e-30` |
+| `energy_gap` | `float` | 二準位系のみ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
 
 #### 1.6 初期状態
 
 | パラメータ | 型 | 必須 | 説明 | 例 |
 |-----------|---|------|------|-----|
 | `initial_states` | `list[int]` | ✅ | 初期状態のインデックス | `[0]` |
+
+複数インデックスは、等振幅・同位相で正規化したコヒーレント重ね合わせとして扱います。インコヒーレント混合には `MixedStatePropagator` を使用します。空リストはエラーです。
 
 ### 2. オプションパラメータ
 
@@ -110,11 +126,19 @@ polarization = [1.0, 0.0]  # 固定値
 | `alpha_rad_phz` | `float` | `0.0` | rad/fs | 振動-回転相互作用定数 | `0.0001` |
 | `potential_type` | `str` | `"harmonic"` | - | ポテンシャル形式 | `"harmonic"` or `"morse"` |
 
+`potential_type = "morse"` の場合、`delta_omega_rad_phz` は非ゼロ必須です。Morse準位パラメータは `omega_rad_phz` と `delta_omega_rad_phz` からケースごとに計算され、`V_max <= floor(N) - 1` を満たさない入力はエラーになります。
+
 #### 2.4 双極子行列設定
 
 | パラメータ | 型 | デフォルト | 説明 | 例 |
+
+`backend` は双極子行列生成と時間発展の両方に適用されます。CuPy 経路は密行列専用で、
+`backend = "cupy"` と `sparse = True`（または `dense = False`）の組合せは
+型不一致へ進む前にエラーになります。
+
 |-----------|---|-----------|------|-----|
 | `backend` | `str` | `"numpy"` | 計算バックエンド | `"numpy"` or `"cupy"` |
+
 | `dense` | `bool` | `True` | 密行列を使用するか | `False` |
 
 #### 2.5 伝播設定
@@ -122,11 +146,24 @@ polarization = [1.0, 0.0]  # 固定値
 | パラメータ | 型 | デフォルト | 説明 | 例 |
 |-----------|---|-----------|------|-----|
 | `axes` | `str` | `"xy"` | 電場-双極子の軸対応 | `"xy"`, `"zx"` |
+| `algorithm` | `str` | `"rk4"` | 時間発展法 | `"rk4"`, `"split_operator"` |
+| `sparse` | `bool` | `not dense` | スパース演算を使うか | `True` |
+| `renorm` | `bool` | `False` | 各ステップで状態を再規格化するか | `True` |
+| `nondimensional` | `bool` | `False` | 無次元化して時間発展するか | `True` |
+| `auto_timestep` | `bool` | `False` | 無次元化時に互換な間引き幅を自動選択するか | `True` |
+| `target_accuracy` | `str` | `"standard"` | 自動刻みの精度設定 | `"high"`, `"standard"`, `"fast"` |
+| `validate_units` | `bool` | `True` | 物理単位を検証するか | `False` |
+| `verbose` | `bool` | `False` | 詳細な検証情報を表示するか | `True` |
 | `return_traj` | `bool` | `True` | 軌跡を返すか | `False` |
-| `return_time_psi` | `bool` | `True` | 時間配列も返すか | `False` |
 | `sample_stride` | `int` | `1` | サンプリング間隔 | `10` |
 
+runner は保存結果との対応を保証するため、常に物理時間 `t_p` を生成します。
+`return_traj = False` の場合、`t_p` は `[t_end]`、population は `(1, n_states)` です。
+
 #### 2.6 出力設定
+
+単位名が不正な場合、値を未変換のまま継続せず `ValueError` になります。必須値の欠落、
+非有限値、ゼロ偏光、モデルに不正な整数値も時間発展前にエラーになります。
 
 | パラメータ | 型 | デフォルト | 説明 | 例 |
 |-----------|---|-----------|------|-----|

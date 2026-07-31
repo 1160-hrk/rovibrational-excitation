@@ -35,6 +35,7 @@ from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
 from rovibrational_excitation.dipole.vib.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
+    validate_morse_v_max,
 )
 
 if TYPE_CHECKING:
@@ -45,6 +46,7 @@ if _cp is not None:
     Array: type = Union[_np.ndarray, _cp.ndarray]  # type: ignore
 else:
     Array: type = _np.ndarray  # type: ignore
+
 
 # -----------------------------------------------------------------------------
 # 1. Tiny wrappers jit-compiled so that Numba kernels have no untyped globals
@@ -59,7 +61,9 @@ def _vib_harm(v1: int, v2: int) -> float:
     else:
         return 0.0
 
+
 _vib_morse_jit = njit(cache=True, fastmath=True)(tdm_vib_morse)  # type: ignore[arg-type]
+
 
 # -----------------------------------------------------------------------------
 # 2. Shared CPU dense kernel (Numba, parallel)
@@ -73,6 +77,7 @@ def _dense_core(
     mu0: float,
     axis_idx: int,
     vib_is_morse: bool,
+    morse_level_parameter: float,
 ):
     dim = v_arr.size
     out = _np.zeros((dim, dim), dtype=_np.complex128)
@@ -100,33 +105,48 @@ def _dense_core(
                 continue
 
             # --- Vibrational factor ----------------------------------
-            vib = _vib_morse_jit(v1, v2) if vib_is_morse else _vib_harm(v1, v2)
+            vib = (
+                _vib_morse_jit(v1, v2, morse_level_parameter)
+                if vib_is_morse
+                else _vib_harm(v1, v2)
+            )
             if vib == 0.0:
                 continue
 
             out[i, j] = mu0 * rot * vib
     return out
 
+
 # -----------------------------------------------------------------------------
 # 3. CPU sparse implementation (Python loop – CSR)
 # -----------------------------------------------------------------------------
 
-def _sparse_cpu(v_arr, J_arr, M_arr, K_arr, mu0: float, axis_idx: int, vib_func):
+
+def _sparse_cpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    K_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
     rot_funcs = (tdm_jmk_x, tdm_jmk_y, tdm_jmk_z)
     rot_func = rot_funcs[axis_idx]
     data, row, col = [], [], []
 
     for i, (v1, J1, M1, K1) in enumerate(zip(v_arr, J_arr, M_arr, K_arr)):
-        mask = (
-            (abs(J1 - J_arr) <= 1)
-            & (K_arr == K1)
-            & (abs(M1 - M_arr) <= 1)
-        )
+        mask = (abs(J1 - J_arr) <= 1) & (K_arr == K1) & (abs(M1 - M_arr) <= 1)
         for j in _np.nonzero(mask)[0]:
             rot = rot_func(J1, M1, K1, J_arr[j], M_arr[j], K_arr[j])
             if rot == 0.0:
                 continue
-            vib = vib_func(v1, v_arr[j])
+            vib = (
+                tdm_vib_morse(v1, v_arr[j], morse_level_parameter)
+                if vib_is_morse
+                else tdm_vib_harm(v1, v_arr[j])
+            )
             if vib == 0.0:
                 continue
             data.append(mu0 * rot * vib)
@@ -136,12 +156,14 @@ def _sparse_cpu(v_arr, J_arr, M_arr, K_arr, mu0: float, axis_idx: int, vib_func)
     shape = (len(v_arr), len(v_arr))
     return _sp.csr_matrix((data, (row, col)), shape=shape, dtype=_np.complex128)
 
+
 # -----------------------------------------------------------------------------
 # 4. Public builder API
 # -----------------------------------------------------------------------------
 
+
 def build_mu(
-    basis: "SymTopBasis",
+    basis: SymTopBasis,
     axis: Literal["x", "y", "z"],
     mu0: float,
     *,
@@ -166,18 +188,44 @@ def build_mu(
 
     axis_idx = "xyz".index(axis_norm)
     vib_is_morse = pot == "morse"
-    vib_func = tdm_vib_morse if vib_is_morse else tdm_vib_harm
-
+    morse_level_parameter = (
+        omega01_domega_to_N(
+            basis.omega_rad_pfs,
+            basis.delta_omega_rad_pfs,
+        )
+        if vib_is_morse
+        else 0.0
+    )
     if vib_is_morse:
-        omega01_domega_to_N(basis.omega_rad_pfs, basis.delta_omega_rad_pfs)
+        validate_morse_v_max(basis.V_max, morse_level_parameter)
 
     # ----------------------------------------------------------------
     # Currently CPU-only.  GPU support can be added following LinMol.
     # ----------------------------------------------------------------
     if backend != "numpy":
-        raise NotImplementedError("GPU backend not yet implemented for SymTopDipoleMatrix")
+        raise NotImplementedError(
+            "GPU backend not yet implemented for SymTopDipoleMatrix"
+        )
 
     if dense:
-        return _dense_core(v_arr, J_arr, M_arr, K_arr, float(mu0), axis_idx, vib_is_morse)
+        return _dense_core(
+            v_arr,
+            J_arr,
+            M_arr,
+            K_arr,
+            float(mu0),
+            axis_idx,
+            vib_is_morse,
+            morse_level_parameter,
+        )
     else:
-        return _sparse_cpu(v_arr, J_arr, M_arr, K_arr, float(mu0), axis_idx, vib_func) 
+        return _sparse_cpu(
+            v_arr,
+            J_arr,
+            M_arr,
+            K_arr,
+            float(mu0),
+            axis_idx,
+            vib_is_morse,
+            morse_level_parameter,
+        )

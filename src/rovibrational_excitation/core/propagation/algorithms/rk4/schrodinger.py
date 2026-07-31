@@ -5,7 +5,7 @@
 * backend="numpy"  →  CPU  (NumPy / Numba)
 * backend="cupy"   →  GPU  (CuPy RawKernel)
 
-電場配列は奇数・偶数どちらの長さでも OK。
+電場配列は 1 propagation step あたり左端・中点・右端を持つ奇数長。
 """
 
 from __future__ import annotations
@@ -14,8 +14,9 @@ from typing import Literal, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
-from .sparse import to_csr, H_apply
 
+from ..validation import validate_wavefunction_problem
+from .sparse import H_apply, to_csr
 
 
 # ------------------------------------------------------------------ #
@@ -47,16 +48,16 @@ except ImportError:  # numba 不在でも動くダミー
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
-    "f8[:], f8[:],"
-    "c16[:], f8, b1, i8, b1)",
+    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],f8[:], f8[:],c16[:], f8, b1, i8, b1)",
     fastmath=True,
     cache=True,
 )
 def _rk4_cpu_numba(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
-
     steps = (Ex.size - 1) // 2  # 必ず整数
-    Ex3, Ey3 = np.zeros((steps, 3), dtype=np.float64), np.zeros((steps, 3), dtype=np.float64)
+    Ex3, Ey3 = (
+        np.zeros((steps, 3), dtype=np.float64),
+        np.zeros((steps, 3), dtype=np.float64),
+    )
     Ex3[:, 0], Ey3[:, 0] = Ex[0:-2:2], Ey[0:-2:2]
     Ex3[:, 1], Ey3[:, 1] = Ex[1:-1:2], Ey[1:-1:2]
     Ex3[:, 2], Ey3[:, 2] = Ex[2::2], Ey[2::2]
@@ -102,23 +103,20 @@ def _rk4_cpu_numba(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],"
-    "f8[:], f8[:], c16[:], f8, b1, i8, b1)",
-    fastmath=True, cache=True
+    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],f8[:], f8[:], c16[:], f8, b1, i8, b1)",
+    fastmath=True,
+    cache=True,
 )
-def _rk4_cpu_numba_sparse(
-    H0, mux, muy,
-    Ex, Ey, psi0, dt, return_traj, stride, renorm
-):
+def _rk4_cpu_numba_sparse(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
     H0_data, H0_idx, H0_ptr = to_csr(H0)
     mx_data, mx_idx, mx_ptr = to_csr(mux)
     my_data, my_idx, my_ptr = to_csr(muy)
     steps = (Ex.size - 1) // 2
     Ex3 = np.empty((steps, 3), np.float64)
     Ey3 = np.empty((steps, 3), np.float64)
-    Ex3[:,0], Ey3[:,0] = Ex[0:-2:2], Ey[0:-2:2]
-    Ex3[:,1], Ey3[:,1] = Ex[1:-1:2], Ey[1:-1:2]
-    Ex3[:,2], Ey3[:,2] = Ex[2::2],  Ey[2::2]
+    Ex3[:, 0], Ey3[:, 0] = Ex[0:-2:2], Ey[0:-2:2]
+    Ex3[:, 1], Ey3[:, 1] = Ex[1:-1:2], Ey[1:-1:2]
+    Ex3[:, 2], Ey3[:, 2] = Ex[2::2], Ey[2::2]
 
     psi = psi0.copy()
     dim = psi.size
@@ -137,48 +135,112 @@ def _rk4_cpu_numba_sparse(
     tmpy = np.empty_like(psi)
 
     for s in range(steps):
-        ex1, ex2, ex4 = Ex3[s,0], Ex3[s,1], Ex3[s,2]
-        ey1, ey2, ey4 = Ey3[s,0], Ey3[s,1], Ey3[s,2]
+        ex1, ex2, ex4 = Ex3[s, 0], Ex3[s, 1], Ex3[s, 2]
+        ey1, ey2, ey4 = Ey3[s, 0], Ey3[s, 1], Ey3[s, 2]
 
         # k1
-        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
-                ex1,ey1, psi, k1, tmp0,tmpx,tmpy)
+        H_apply(
+            H0_data,
+            H0_idx,
+            H0_ptr,
+            mx_data,
+            mx_idx,
+            mx_ptr,
+            my_data,
+            my_idx,
+            my_ptr,
+            ex1,
+            ey1,
+            psi,
+            k1,
+            tmp0,
+            tmpx,
+            tmpy,
+        )
         for i in range(dim):
             k1[i] = -1j * k1[i]
-            buf[i] = psi[i] + 0.5*dt*k1[i]
+            buf[i] = psi[i] + 0.5 * dt * k1[i]
 
         # k2 (=k3と同じ H2)
-        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
-                ex2,ey2, buf, k2, tmp0,tmpx,tmpy)
+        H_apply(
+            H0_data,
+            H0_idx,
+            H0_ptr,
+            mx_data,
+            mx_idx,
+            mx_ptr,
+            my_data,
+            my_idx,
+            my_ptr,
+            ex2,
+            ey2,
+            buf,
+            k2,
+            tmp0,
+            tmpx,
+            tmpy,
+        )
         for i in range(dim):
             k2[i] = -1j * k2[i]
-            buf[i] = psi[i] + 0.5*dt*k2[i]
+            buf[i] = psi[i] + 0.5 * dt * k2[i]
 
         # k3
-        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
-                ex2,ey2, buf, k3, tmp0,tmpx,tmpy)
+        H_apply(
+            H0_data,
+            H0_idx,
+            H0_ptr,
+            mx_data,
+            mx_idx,
+            mx_ptr,
+            my_data,
+            my_idx,
+            my_ptr,
+            ex2,
+            ey2,
+            buf,
+            k3,
+            tmp0,
+            tmpx,
+            tmpy,
+        )
         for i in range(dim):
             k3[i] = -1j * k3[i]
-            buf[i] = psi[i] + dt*k3[i]
+            buf[i] = psi[i] + dt * k3[i]
 
         # k4
-        H_apply(H0_data,H0_idx,H0_ptr, mx_data,mx_idx,mx_ptr, my_data,my_idx,my_ptr,
-                ex4,ey4, buf, k4, tmp0,tmpx,tmpy)
+        H_apply(
+            H0_data,
+            H0_idx,
+            H0_ptr,
+            mx_data,
+            mx_idx,
+            mx_ptr,
+            my_data,
+            my_idx,
+            my_ptr,
+            ex4,
+            ey4,
+            buf,
+            k4,
+            tmp0,
+            tmpx,
+            tmpy,
+        )
         for i in range(dim):
             k4[i] = -1j * k4[i]
 
         # accumulate
         for i in range(dim):
-            psi[i] += (dt/6.0)*(k1[i] + 2.0*k2[i] + 2.0*k3[i] + k4[i])
+            psi[i] += (dt / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i])
 
         if renorm:
             # conj @ psi を避けるなら手ループ
             ssum = 0.0
             for i in range(dim):
                 # |psi|^2
-                ssum += (psi[i].real*psi[i].real + psi[i].imag*psi[i].imag)
+                ssum += psi[i].real * psi[i].real + psi[i].imag * psi[i].imag
             if ssum > 1e-24:
-                inv = 1.0/np.sqrt(ssum)
+                inv = 1.0 / np.sqrt(ssum)
                 for i in range(dim):
                     psi[i] *= inv
             else:
@@ -235,7 +297,7 @@ def _rk4_cpu_sparse(
     steps = (Ex.size - 1) // 2  # 必ず整数
     Ex3 = _field_to_triplets(Ex)
     Ey3 = _field_to_triplets(Ey)
-    
+
     if not isinstance(H0, csr_matrix):
         H0 = csr_matrix(H0)
     if not isinstance(mux, csr_matrix):
@@ -251,7 +313,7 @@ def _rk4_cpu_sparse(
     idx = 1
 
     # 1️⃣ 共通パターン（構造のみ）を作成
-    pattern = ((H0 != 0) + (mux != 0) + (muy != 0))
+    pattern = (H0 != 0) + (mux != 0) + (muy != 0)
     pattern = pattern.astype(np.complex128)  # 確実に複素数
     pattern.data[:] = 1.0 + 0j
     pattern = pattern.tocsr()
@@ -285,25 +347,25 @@ def _rk4_cpu_sparse(
         ey1, ey2, ey4 = Ey3[s]
 
         # H1
-        H.data[:] = H0_data -mux_data * ex1 -muy_data * ey1
+        H.data[:] = H0_data - mux_data * ex1 - muy_data * ey1
         k1[:] = -1j * H.dot(psi)
         buf[:] = psi + 0.5 * dt * k1
 
         # H2
-        H.data[:] = H0_data -mux_data * ex2 -muy_data * ey2
+        H.data[:] = H0_data - mux_data * ex2 - muy_data * ey2
         k2[:] = -1j * H.dot(buf)
         buf[:] = psi + 0.5 * dt * k2
 
         # H3
-        H.data[:] = H0_data -mux_data * ex2 -muy_data * ey2
+        H.data[:] = H0_data - mux_data * ex2 - muy_data * ey2
         k3[:] = -1j * H.dot(buf)
         buf[:] = psi + dt * k3
 
         # H4
-        H.data[:] = H0_data -mux_data * ex4 -muy_data * ey4
+        H.data[:] = H0_data - mux_data * ex4 - muy_data * ey4
         k4[:] = -1j * H.dot(buf)
         psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        
+
         if renorm:
             # より高精度な正規化
             norm = np.sqrt((psi.conj() @ psi).real)
@@ -311,7 +373,7 @@ def _rk4_cpu_sparse(
                 psi *= 1.0 / norm
             else:
                 continue
-        
+
         if return_traj and (s + 1) % stride == 0:
             out[idx] = psi
             idx += 1
@@ -320,7 +382,6 @@ def _rk4_cpu_sparse(
         return out
     else:
         return psi
-
 
 
 # ================================================================== #
@@ -463,6 +524,16 @@ def rk4_schrodinger(
     psi_traj : (n_sample, dim) complex128
         return_traj=False → shape (1, dim)
     """
+    validate_wavefunction_problem(
+        H0,
+        (mux, muy),
+        (Ex, Ey),
+        psi0,
+        dt=dt,
+        stride=stride,
+        backend=backend,
+        require_odd_field=True,
+    )
     psi0 = np.asarray(psi0, np.complex128).ravel()
 
     if backend == "cupy":
@@ -473,7 +544,7 @@ def rk4_schrodinger(
 
     if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
         return _rk4_cpu_sparse(
-            H0, 
+            H0,
             mux,
             muy,
             Ex,
@@ -486,14 +557,14 @@ def rk4_schrodinger(
         )
     else:
         return _rk4_cpu_numba_sparse(
-        np.ascontiguousarray(H0, np.complex128),
-        np.ascontiguousarray(mux, np.complex128),
-        np.ascontiguousarray(muy, np.complex128),
-        Ex,
-        Ey,
-        psi0,
-        float(dt),
-        return_traj,
-        stride,
-        renorm
-    )
+            np.ascontiguousarray(H0, np.complex128),
+            np.ascontiguousarray(mux, np.complex128),
+            np.ascontiguousarray(muy, np.complex128),
+            Ex,
+            Ey,
+            psi0,
+            float(dt),
+            return_traj,
+            stride,
+            renorm,
+        )

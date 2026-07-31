@@ -5,38 +5,40 @@ This module provides the SchrodingerPropagator class for time-dependent
 Schrödinger equation propagation.
 """
 
-from typing import Optional, Dict, Any, Literal, Union, cast, Callable
-import numpy as np
-from collections.abc import Sized
+from collections.abc import Callable, Sized
+from typing import Any, Literal, Union, cast
 
+import numpy as np
+
+from ..units.validators import validator
 from .base import PropagatorBase
 from .utils import (
-    get_backend,
-    prepare_propagation_args,
-    ensure_sparse_matrix,
     HAS_CUPY,
+    ensure_sparse_matrix,
+    prepare_propagation_args,
 )
-from ..units.validators import validator
 
 
 class SchrodingerPropagator(PropagatorBase):
     """
     Time-dependent Schrödinger equation propagator.
-    
+
     This class implements various algorithms for solving the time-dependent
     Schrödinger equation with external fields.
     """
-    
+
     def __init__(
         self,
         backend: Literal["numpy", "cupy"] = "numpy",
+        algorithm: Literal["rk4", "split_operator"] = "rk4",
         validate_units: bool = True,
         renorm: bool = False,
-        custom_propagator: Optional[Callable] = None,
+        sparse: bool = False,
+        custom_propagator: Callable | None = None,
     ):
         """
         Initialize Schrödinger propagator.
-        
+
         Parameters
         ----------
         backend : {"numpy", "cupy"}
@@ -50,18 +52,26 @@ class SchrodingerPropagator(PropagatorBase):
             Should have signature: func(H0, mu_x, mu_y, Ex, Ey, initial_state, dt, return_traj, sample_stride)
         """
         super().__init__(validate_units)
+        if algorithm not in {"rk4", "split_operator"}:
+            raise ValueError("algorithm must be 'rk4' or 'split_operator'")
+
         self.backend = backend
         self.renorm = renorm
+        self.algorithm = algorithm
         self.custom_propagator = custom_propagator
-        
+        self.sparse = sparse
+
         # Validate backend availability
         if backend == "cupy" and not HAS_CUPY:
             raise RuntimeError("CuPy backend requested but CuPy not installed")
-    
+
+        if backend == "cupy" and sparse:
+            raise ValueError("sparse=True is not supported by the CuPy propagator")
+
     def set_custom_propagator(self, propagator_func: Callable) -> None:
         """
         Set custom propagation function from outside.
-        
+
         Parameters
         ----------
         propagator_func : callable
@@ -69,20 +79,20 @@ class SchrodingerPropagator(PropagatorBase):
             Should have signature: func(H0, mu_x, mu_y, Ex, Ey, initial_state, dt, return_traj, sample_stride)
         """
         self.custom_propagator = propagator_func
-    
+
     def get_algorithm_name(self) -> str:
         """Get the name of the propagation algorithm."""
         if self.custom_propagator is not None:
             return f"Schrödinger-Custom-{getattr(self.custom_propagator, '__name__', 'Unknown')}"
-        return "Schrödinger-Default"
-    
+        return f"Schrödinger-{self.algorithm}"
+
     def get_supported_backends(self) -> list:
         """Get list of supported computational backends."""
         backends = ["numpy"]
         if HAS_CUPY:
             backends.append("cupy")
         return backends
-    
+
     def propagate(
         self,
         hamiltonian,
@@ -93,7 +103,7 @@ class SchrodingerPropagator(PropagatorBase):
     ) -> Union[np.ndarray, tuple]:
         """
         Propagate wavefunction using time-dependent Schrödinger equation.
-        
+
         Parameters
         ----------
         hamiltonian : Hamiltonian
@@ -128,27 +138,34 @@ class SchrodingerPropagator(PropagatorBase):
                 Use sparse matrix operations
             - propagator_func : callable, optional
                 Override propagation function for this call only
-            
+
         Returns
         -------
         np.ndarray or tuple
             Propagated wavefunction(s), optionally with time array
         """
         # Extract parameters with defaults
-        axes = kwargs.get('axes', 'xy')
-        return_traj = kwargs.get('return_traj', True)
-        return_time_psi = kwargs.get('return_time_psi', False)
-        sample_stride = kwargs.get('sample_stride', 1)
-        nondimensional = kwargs.get('nondimensional', False)
-        auto_timestep = kwargs.get('auto_timestep', False)
-        target_accuracy = kwargs.get('target_accuracy', 'standard')
-        verbose = kwargs.get('verbose', False)
-        algorithm = kwargs.get('algorithm', 'rk4')
-        sparse = kwargs.get('sparse', False)
-        propagator_func = kwargs.get('propagator_func', None)
-        renorm = kwargs.get('renorm', self.renorm)
-        
+        axes = kwargs.get("axes", "xy")
+        return_traj = kwargs.get("return_traj", True)
+        return_time_psi = kwargs.get("return_time_psi", False)
+        sample_stride = kwargs.get("sample_stride", 1)
+        nondimensional = kwargs.get("nondimensional", False)
+        auto_timestep = kwargs.get("auto_timestep", False)
+        target_accuracy = kwargs.get("target_accuracy", "standard")
+        coupling_mode = kwargs.get("coupling_mode", "cartesian")
+        coupling_axis = kwargs.get("coupling_axis")
+        verbose = kwargs.get("verbose", False)
+        algorithm = kwargs.get("algorithm", self.algorithm)
+        sparse = kwargs.get("sparse", self.sparse)
+        propagator_func = kwargs.get("propagator_func", None)
+        renorm = kwargs.get("renorm", self.renorm)
+
         # Unit validation
+        if algorithm not in {"rk4", "split_operator"}:
+            raise ValueError("algorithm must be 'rk4' or 'split_operator'")
+        if self.backend == "cupy" and sparse:
+            raise ValueError("sparse=True is not supported by the CuPy propagator")
+
         if self.validate_units:
             warnings = validator.validate_propagation_units(
                 hamiltonian, dipole_matrix, efield
@@ -157,60 +174,97 @@ class SchrodingerPropagator(PropagatorBase):
                 self._last_validation_warnings = warnings
                 if verbose:
                     self.print_validation_warnings()
-        
+
         # Prepare arguments
-        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, t0_calc = prepare_propagation_args(
-            hamiltonian,
-            efield,
-            dipole_matrix,
-            axes=axes,
-            nondimensional=nondimensional,
-            auto_timestep=auto_timestep,
+        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, t0_calc = (
+            prepare_propagation_args(
+                hamiltonian,
+                efield,
+                dipole_matrix,
+                axes=axes,
+                nondimensional=nondimensional,
+                auto_timestep=auto_timestep,
+                target_accuracy=target_accuracy,
+                coupling_mode=coupling_mode,
+                coupling_axis=coupling_axis,
+            )
         )
-        
+
         # Handle sparse matrices if requested
         if sparse:
             H0 = ensure_sparse_matrix(H0)
             mu_x = ensure_sparse_matrix(mu_x)
             mu_y = ensure_sparse_matrix(mu_y)
-        
+
         # Select and run algorithm
         # Priority: kwargs propagator_func > instance custom_propagator > built-in algorithms
         active_propagator = propagator_func or self.custom_propagator
-        
+
         if active_propagator is not None:
             result = active_propagator(
-                H0, mu_x, mu_y, Ex, Ey, initial_state, dt_calc,
-                return_traj, sample_stride
+                H0,
+                mu_x,
+                mu_y,
+                Ex,
+                Ey,
+                initial_state,
+                dt_calc,
+                return_traj,
+                sample_stride,
             )
         else:
             if algorithm == "rk4":
                 result = self._propagate_rk4(
-                    H0, mu_x, mu_y, Ex, Ey, initial_state, dt_calc,
-                    return_traj, sample_stride, sparse, renorm
+                    H0,
+                    mu_x,
+                    mu_y,
+                    Ex,
+                    Ey,
+                    initial_state,
+                    dt_calc,
+                    return_traj,
+                    sample_stride,
+                    sparse,
+                    renorm,
                 )
             elif algorithm == "split_operator":
                 result = self._propagate_split_operator(
-                    H0, mu_x, mu_y, pol, E_scalar, initial_state, dt_calc,
-                    return_traj, sample_stride, sparse, renorm
+                    H0,
+                    mu_x,
+                    mu_y,
+                    pol,
+                    E_scalar,
+                    initial_state,
+                    dt_calc,
+                    return_traj,
+                    sample_stride,
+                    sparse,
+                    renorm,
                 )
             else:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
-        
+
         # Handle return values
         if return_traj:
             psi = result
         else:
-            psi = result[-1] if hasattr(result, '__len__') else result
-        
+            psi = result[-1] if hasattr(result, "__len__") else result
+
         if return_time_psi:
-            t = np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * dt_calc * sample_stride * t0_calc
-            if nondimensional:
-                t *= 1e15
+            if return_traj:
+                step_fs = dt_calc * sample_stride * t0_calc
+                if nondimensional:
+                    step_fs *= 1e15
+                t = (
+                    efield.tlist[0]
+                    + np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * step_fs
+                )
+            else:
+                t = np.array([efield.tlist[-1]], dtype=np.float64)
             return t, psi
-        
+
         return psi
-    
+
     def _propagate_rk4(
         self,
         H0: Union[np.ndarray, Any],
@@ -227,18 +281,24 @@ class SchrodingerPropagator(PropagatorBase):
     ) -> np.ndarray:
         """Run RK4 propagation algorithm."""
         from .algorithms.rk4.schrodinger import rk4_schrodinger
-        
+
         backend_typed = cast(Literal["numpy", "cupy"], self.backend)
-        
+
         return rk4_schrodinger(
-            H0, mu_x, mu_y, Ex, Ey, initial_state, dt,
+            H0,
+            mu_x,
+            mu_y,
+            Ex,
+            Ey,
+            initial_state,
+            dt,
             return_traj=return_traj,
             stride=stride,
             renorm=renorm,
             sparse=sparse,
             backend=backend_typed,
         )
-    
+
     def _propagate_split_operator(
         self,
         H0: Union[np.ndarray, Any],
@@ -255,14 +315,20 @@ class SchrodingerPropagator(PropagatorBase):
     ) -> np.ndarray:
         """Run split-operator propagation algorithm."""
         from .algorithms.split_operator.schrodinger import splitop_schrodinger
-        
+
         backend_typed = cast(Literal["numpy", "cupy"], self.backend)
-        
+
         return splitop_schrodinger(
-            H0, mu_x, mu_y, pol, E_scalar, initial_state, dt,
+            H0,
+            mu_x,
+            mu_y,
+            pol,
+            E_scalar,
+            initial_state,
+            dt,
             return_traj=return_traj,
             sample_stride=stride,
             backend=backend_typed,
             sparse=sparse,
             renorm=renorm,
-        ) 
+        )

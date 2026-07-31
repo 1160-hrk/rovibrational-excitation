@@ -10,10 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Union
 
-from rovibrational_excitation.dipole.base import DipoleMatrixBase, _xp, Array
-from rovibrational_excitation.core.units.converters import converter
-
 import numpy as np
+
+from rovibrational_excitation.dipole.base import Array, DipoleMatrixBase, _xp
 
 try:
     import cupy as cp  # optional GPU backend
@@ -33,7 +32,11 @@ else:
     Array: type = np.ndarray  # type: ignore[assignment,no-redef]
 
 from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
-from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N, tdm_vib_morse
+from rovibrational_excitation.dipole.vib.morse import (
+    omega01_domega_to_N,
+    tdm_vib_morse,
+    validate_morse_v_max,
+)
 
 
 # ----------------------------------------------------------------------
@@ -46,25 +49,30 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
 
     For vibrational systems without rotation, only the z-component
     of the dipole moment is typically non-zero (parallel transitions).
-    
+
     Includes automatic unit conversion between C·m (SI), D (Debye), and ea0 (atomic units).
     """
-    
+
     basis: VibLadderBasis
     mu0: float = 1.0
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
-    units: Literal["C*m", "D", "ea0"] = "C*m"           # internal storage units
-    units_input: Literal["C*m", "D", "ea0"] = "C*m"     # units in which mu0 is provided
+    units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
+    units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
 
     _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[type-arg]
         init=False, default_factory=dict, repr=False
     )
+    _morse_level_parameter: float | None = field(init=False, default=None, repr=False)
 
     def __post_init__(self):
         # Potential-specific initialisation
         if self.potential_type == "morse":
-            omega01_domega_to_N(self.basis.omega_rad_pfs, self.basis.delta_omega_rad_pfs)
+            self._morse_level_parameter = omega01_domega_to_N(
+                self.basis.omega_rad_pfs,
+                self.basis.delta_omega_rad_pfs,
+            )
+            validate_morse_v_max(self.basis.V_max, self._morse_level_parameter)
 
         # Convert mu0 if units differ
         self._convert_mu0_if_needed()
@@ -78,12 +86,18 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
         matrix = xp.zeros((dim, dim), dtype=xp.complex128)
 
         if axis == "z":
-            vib_func = tdm_vib_morse if self.potential_type == "morse" else tdm_vib_harm
             for i in range(dim):
                 v1 = self.basis.V_array[i]
                 for j in range(dim):
                     v2 = self.basis.V_array[j]
-                    val = vib_func(v1, v2)
+                    if self._morse_level_parameter is None:
+                        val = tdm_vib_harm(v1, v2)
+                    else:
+                        val = tdm_vib_morse(
+                            v1,
+                            v2,
+                            self._morse_level_parameter,
+                        )
                     if val != 0.0:
                         matrix[i, j] = self.mu0 * val
         elif axis == "x":
@@ -103,4 +117,4 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
             f"<VibLadderDipoleMatrix mu0={self.mu0} "
             f"potential='{self.potential_type}' units='{self.units}' "
             f"backend='{self.backend}' cached=[{cached}]>"
-        ) 
+        )

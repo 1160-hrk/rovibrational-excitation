@@ -16,8 +16,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
+from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+    rk4_lvne,
+    rk4_lvne_traj,
+)
+from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
 
 # CuPy可用性チェック
 try:
@@ -218,7 +223,9 @@ class TestRK4CuPyBackend:
             E_field = np.array([0, 0.1, 0])
             psi0 = np.array([1, 0], dtype=complex)
 
-            with pytest.raises(RuntimeError, match="CuPy backend requested but CuPy not installed"):
+            with pytest.raises(
+                RuntimeError, match="CuPy backend requested but CuPy not installed"
+            ):
                 rk4_schrodinger(
                     H0, mu_x, mu_y, E_field, E_field, psi0, dt=0.1, backend="cupy"
                 )
@@ -364,7 +371,7 @@ class TestRK4EdgeCases:
         np.testing.assert_allclose(np.abs(result[0, 0]), 1.0, atol=1e-12)
 
     def test_odd_even_field_lengths(self):
-        """奇数・偶数長電場の処理"""
+        """奇数長電場を受理し、偶数長電場を拒否する。"""
         H0 = np.diag([0.0, 1.0])
         mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
         mu_y = np.zeros((2, 2), dtype=complex)
@@ -374,12 +381,11 @@ class TestRK4EdgeCases:
         E_odd = np.array([0, 0.1, 0, 0.1, 0])  # 5点
         result_odd = rk4_schrodinger(H0, mu_x, mu_y, E_odd, E_odd, psi0, dt=0.1)
 
-        # 偶数長（末尾1点削除される）
-        E_even = np.array([0, 0.1, 0, 0.1, 0, 0.05])  # 6点 -> 5点使用
-        result_even = rk4_schrodinger(H0, mu_x, mu_y, E_even, E_even, psi0, dt=0.1)
+        E_even = np.array([0, 0.1, 0, 0.1, 0, 0.05])
+        with pytest.raises(ValueError, match=r"2\*n_steps \+ 1"):
+            rk4_schrodinger(H0, mu_x, mu_y, E_even, E_even, psi0, dt=0.1)
 
-        # 結果は同じになるはず（最後の1点は無視される）
-        np.testing.assert_allclose(result_odd, result_even, atol=1e-12)
+        assert result_odd.shape == (3, 2)
 
     def test_very_small_timestep(self):
         """非常に小さな時間ステップ"""

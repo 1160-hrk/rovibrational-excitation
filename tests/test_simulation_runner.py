@@ -396,8 +396,8 @@ class TestRunOneSafe:
         """リトライ機構テスト"""
         # 最初の2回は失敗、3回目は成功
         mock_run_one.side_effect = [
-            RuntimeError("First failure"),
-            RuntimeError("Second failure"),
+            OSError("First failure"),
+            OSError("Second failure"),
             np.array([[1.0, 0.0]]),
         ]
 
@@ -410,14 +410,14 @@ class TestRunOneSafe:
     @patch("rovibrational_excitation.simulation.runner._run_one")
     def test_failure_after_max_retries(self, mock_run_one):
         """最大リトライ後の失敗テスト"""
-        mock_run_one.side_effect = RuntimeError("Persistent error")
+        mock_run_one.side_effect = ValueError("Persistent error")
 
         with patch("time.sleep"):
             result, error = _run_one_safe({"save": False}, max_retries=1)
 
         assert result is None
         assert error is not None and "Persistent error" in error
-        assert mock_run_one.call_count == 2
+        assert mock_run_one.call_count == 1
 
 
 class TestRunAllBasic:

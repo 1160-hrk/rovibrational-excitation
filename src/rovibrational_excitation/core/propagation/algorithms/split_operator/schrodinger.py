@@ -26,6 +26,8 @@ import numpy as np
 import scipy.sparse
 from scipy.sparse import csr_matrix
 
+from ..validation import validate_wavefunction_problem
+
 # ---------------------------------------------------------------------------
 # Optional back‑ends ----------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -63,7 +65,7 @@ __all__ = ["splitop_schrodinger"]
 
 
 @njit(
-    "c16[:, :](c16[:, :], c16[:, :], f8[:], c16[:], c16[:], f8[:], c16, b1, i8)", # type: ignore
+    "c16[:, :](c16[:, :], c16[:, :], f8[:], c16[:], c16[:], f8[:], c16, b1, i8, b1)",  # type: ignore
     cache=True,
 )
 def _propagate_numpy(
@@ -76,6 +78,7 @@ def _propagate_numpy(
     phase_coeff: complex,  # −i·2·dt/hbar   (scalar complex)
     return_traj: bool,
     stride: int,
+    renorm: bool,
 ) -> np.ndarray:
     """Numba‑accelerated inner loop (CPU, NumPy)."""
 
@@ -98,6 +101,10 @@ def _propagate_numpy(
 
         # H0 – 後半
         psi *= exp_half
+        if renorm:
+            norm = np.sqrt((psi.conj() @ psi).real)
+            if norm > 1e-12:
+                psi *= 1.0 / norm
 
         if return_traj and (k + 1) % stride == 0:
             traj[s_idx] = psi
@@ -126,7 +133,7 @@ def _propagate_numpy_sparse(
         U = csr_matrix(U)  # type: ignore
     if not isinstance(U_H, csr_matrix):
         U_H = csr_matrix(U_H)  # type: ignore
-    pattern = ((U != 0) + (U_H != 0))
+    pattern = (U != 0) + (U_H != 0)
     # Ensure pattern is a sparse matrix with complex dtype
     if not scipy.sparse.issparse(pattern):
         pattern = scipy.sparse.csr_matrix(pattern, dtype=np.complex128)
@@ -181,6 +188,7 @@ def _propagate_numpy_sparse(
     else:
         return psi.reshape((1, dim))
 
+
 # ---------------------------------------------------------------------------
 # Public API -----------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -211,15 +219,36 @@ def splitop_schrodinger(
     """
 
     steps = (len(Efield) - 1) // 2
+    validate_wavefunction_problem(
+        H0,
+        (mu_x, mu_y),
+        (Efield,),
+        psi,
+        dt=dt,
+        stride=sample_stride,
+        backend=backend,
+        require_diagonal_h0=True,
+        require_odd_field=True,
+    )
+
     E_mid = Efield[1 : 2 * steps + 1 : 2]
-    
+
     if backend == "cupy":
         if cp is None:
             raise RuntimeError(
                 "backend='cupy' was requested but CuPy is not installed."
             )
         return _splitop_cupy(
-            H0, mu_x, mu_y, pol, E_mid, psi, dt, return_traj, sample_stride
+            H0,
+            mu_x,
+            mu_y,
+            pol,
+            E_mid,
+            psi,
+            dt,
+            return_traj,
+            sample_stride,
+            renorm,
         )
 
     # ---------------- CPU / NumPy (+Numba) path ---------------------------
@@ -247,8 +276,10 @@ def splitop_schrodinger(
     diag_H0 = np.diag(H0) if H0.ndim == 2 else H0
     exp_half = np.exp(-1j * diag_H0 * dt / (2.0))
 
-    M_raw = np.triu(-pol[0] * mu_x - pol[1] * mu_y, k=1)
-    A = (M_raw + M_raw.conj().T)
+    M_raw = -pol[0] * mu_x - pol[1] * mu_y
+    if sp is not None and sp.issparse(M_raw):
+        M_raw = M_raw.toarray()
+    A = 0.5 * (M_raw + M_raw.conj().T)
     eigvals, U = np.linalg.eigh(A)
     U_H = U.conj().T
     # midpoint electric field samples (len = steps)
@@ -257,11 +288,29 @@ def splitop_schrodinger(
 
     if sparse:
         return _propagate_numpy_sparse(
-            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride, renorm
+            U,
+            U_H,
+            eigvals,
+            psi,
+            exp_half,
+            E_mid,
+            phase_coeff,
+            return_traj,
+            sample_stride,
+            renorm,
         )
     else:
         return _propagate_numpy(
-            U, U_H, eigvals, psi, exp_half, E_mid, phase_coeff, return_traj, sample_stride, renorm
+            U,
+            U_H,
+            eigvals,
+            psi,
+            exp_half,
+            E_mid,
+            phase_coeff,
+            return_traj,
+            sample_stride,
+            renorm,
         )
 
 

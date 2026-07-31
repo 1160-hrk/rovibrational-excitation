@@ -1,27 +1,69 @@
-"""
-Mixed state propagator implementation.
+"""Propagation of incoherent statistical mixtures of pure states."""
 
-This module provides the MixedStatePropagator class for propagating
-statistical mixtures of quantum states.
-"""
+from __future__ import annotations
 
-from typing import Optional, Literal, Union, Iterable
+from collections.abc import Iterable
+from typing import Literal
+
 import numpy as np
 
+from ..units.validators import validator
 from .base import PropagatorBase
 from .schrodinger import SchrodingerPropagator
-from .utils import get_backend, HAS_CUPY
-from ..units.validators import validator
+from .utils import get_backend
+
+
+def _normalized_ensemble(
+    initial_states: Iterable[np.ndarray],
+) -> tuple[list[np.ndarray], np.ndarray]:
+    """Normalize state vectors and their norm-squared statistical weights."""
+    raw_states = list(initial_states)
+    if not raw_states:
+        raise ValueError("initial_state ensemble must not be empty")
+
+    states: list[np.ndarray] = []
+    raw_weights: list[float] = []
+    dimension: int | None = None
+    for index, state in enumerate(raw_states):
+        state_array = np.asarray(state, dtype=np.complex128).reshape(-1)
+        if dimension is None:
+            dimension = state_array.size
+        elif state_array.size != dimension:
+            raise ValueError(
+                "all initial states must have the same dimension; "
+                f"state 0 has {dimension}, state {index} has {state_array.size}"
+            )
+
+        weight = float(np.vdot(state_array, state_array).real)
+        if not np.isfinite(weight):
+            raise ValueError("initial-state weights must be finite")
+        if weight == 0.0:
+            continue
+        states.append(state_array / np.sqrt(weight))
+        raw_weights.append(weight)
+
+    if not raw_weights:
+        raise ValueError("at least one initial state must have non-zero norm")
+
+    weights = np.asarray(raw_weights, dtype=float)
+    weights /= weights.sum()
+    return states, weights
+
+
+def _normalized_density_matrix(initial_state: np.ndarray) -> np.ndarray:
+    """Normalize an explicitly supplied density matrix to unit trace."""
+    density = np.asarray(initial_state, dtype=np.complex128)
+    trace = np.trace(density)
+    if not np.isfinite(trace) or not np.isclose(trace.imag, 0.0):
+        raise ValueError("density-matrix trace must be finite and real")
+    if trace.real <= 0.0:
+        raise ValueError("density-matrix trace must be positive")
+    return density / trace.real
 
 
 class MixedStatePropagator(PropagatorBase):
-    """
-    Mixed state propagator for statistical ensembles.
-    
-    This class propagates a statistical mixture of quantum states by
-    evolving each pure state component and constructing the density matrix.
-    """
-    
+    """Propagate a normalized statistical mixture of pure states."""
+
     def __init__(
         self,
         algorithm: Literal["rk4", "split_operator"] = "rk4",
@@ -30,89 +72,46 @@ class MixedStatePropagator(PropagatorBase):
         validate_units: bool = True,
         renorm: bool = False,
     ):
-        """
-        Initialize mixed state propagator.
-        
-        Parameters
-        ----------
-        algorithm : {"rk4", "split_operator"}
-            Propagation algorithm for individual states
-        backend : {"numpy", "cupy"}
-            Computational backend
-        sparse : bool
-            Use sparse matrix operations
-        validate_units : bool
-            Whether to validate physical units
-        """
         super().__init__(validate_units)
         self.algorithm = algorithm
         self.backend = backend
         self.sparse = sparse
-        
-        # Create underlying Schrödinger propagator
         self._schrodinger_prop = SchrodingerPropagator(
             backend=backend,
             validate_units=validate_units,
             renorm=renorm,
         )
-    
+
     def get_algorithm_name(self) -> str:
-        """Get the name of the propagation algorithm."""
+        """Return the selected mixed-state algorithm name."""
         return f"MixedState-{self.algorithm}"
-    
+
     def get_supported_backends(self) -> list:
-        """Get list of supported computational backends."""
+        """Return computational backends supported by the pure-state solver."""
         return self._schrodinger_prop.get_supported_backends()
-    
+
     def propagate(
         self,
         hamiltonian,
         efield,
         dipole_matrix,
-        initial_state: Union[np.ndarray, Iterable[np.ndarray]],
+        initial_state: np.ndarray | Iterable[np.ndarray],
         **kwargs,
-    ) -> Union[np.ndarray, tuple]:
+    ) -> np.ndarray | tuple:
+        """Propagate a density matrix or an ensemble of pure states.
+
+        For an ensemble, each input vector contributes a raw statistical weight
+        ``w_i = ||psi_i||^2``. The weights are normalized to sum to one and each
+        vector is normalized before propagation. Unit-norm vectors therefore
+        form an equal mixture; arbitrary weights can be encoded as
+        ``sqrt(w_i) * psi_i``.
         """
-        Propagate mixed state ensemble.
-        
-        Parameters
-        ----------
-        hamiltonian : Hamiltonian
-            Hamiltonian object with internal unit management
-        efield : ElectricField
-            Electric field object
-        dipole_matrix : DipoleMatrixBase
-            Dipole moment matrices with internal unit management
-        initial_state : array or iterable of arrays
-            Initial state(s). Can be:
-            - Single density matrix (will be returned as-is)
-            - Iterable of pure states (will be evolved and summed)
-        **kwargs
-            Additional parameters:
-            - axes : str, default "xy"
-                Polarization axes mapping
-            - return_traj : bool, default True
-                Return full trajectory vs final state only
-            - return_time_rho : bool, default False
-                Return time array along with trajectory
-            - sample_stride : int, default 1
-                Sampling stride for trajectory
-            - verbose : bool, default False
-                Print detailed information
-            
-        Returns
-        -------
-        np.ndarray or tuple
-            Propagated density matrix or trajectory, optionally with time
-        """
-        # Extract kwargs
-        axes = kwargs.get('axes', 'xy')
-        return_traj = kwargs.get('return_traj', True)
-        return_time_rho = kwargs.get('return_time_rho', False)
-        sample_stride = kwargs.get('sample_stride', 1)
-        verbose = kwargs.get('verbose', False)
-        
-        # Unit validation
+        axes = kwargs.get("axes", "xy")
+        return_traj = kwargs.get("return_traj", True)
+        return_time_rho = kwargs.get("return_time_rho", False)
+        sample_stride = kwargs.get("sample_stride", 1)
+        verbose = kwargs.get("verbose", False)
+
         if self.validate_units:
             warnings = validator.validate_propagation_units(
                 hamiltonian, dipole_matrix, efield
@@ -121,39 +120,29 @@ class MixedStatePropagator(PropagatorBase):
                 self._last_validation_warnings = warnings
                 if verbose:
                     self.print_validation_warnings()
-        
-        # Get backend
-        xp = get_backend(self.backend)
-        
-        # Check if input is already a density matrix
-        if isinstance(initial_state, np.ndarray) and initial_state.ndim == 2:
-            # Already a density matrix - use Liouville propagator
+
+        if (
+            isinstance(initial_state, np.ndarray)
+            and initial_state.ndim == 2
+            and initial_state.shape[0] == initial_state.shape[1]
+        ):
             from .liouville import LiouvillePropagator
+
             liouville_prop = LiouvillePropagator(
-                backend=self.backend,  # type: ignore
+                backend=self.backend,
                 validate_units=False,
             )
+            density = _normalized_density_matrix(initial_state)
             return liouville_prop.propagate(
-                hamiltonian, efield, dipole_matrix, initial_state, **kwargs
+                hamiltonian, efield, dipole_matrix, density, **kwargs
             )
-        
-        # Convert iterable to list for indexing
-        psi0_list = list(initial_state)
-        dim = psi0_list[0].shape[0]
-        
-        # Calculate output dimensions
-        steps_out = (len(efield.tlist) // 2) // sample_stride + 1
-        rho_out = (
-            xp.zeros((steps_out, dim, dim), dtype=xp.complex128)
-            if return_traj
-            else xp.zeros((dim, dim), dtype=xp.complex128)
-        )
-        
-        # Initialize time_psi
+
+        states, weights = _normalized_ensemble(initial_state)
+        xp = get_backend(self.backend)
+        rho_out = None
         time_psi = None
-        
-        # Propagate each pure state
-        for psi0 in psi0_list:
+
+        for psi0, weight in zip(states, weights):
             result = self._schrodinger_prop.propagate(
                 hamiltonian,
                 efield,
@@ -166,23 +155,26 @@ class MixedStatePropagator(PropagatorBase):
                 verbose=False,
                 algorithm=self.algorithm,
             )
-            
-            # Handle result format
-            if isinstance(result, tuple) or return_time_rho:
-                psi_t = result[1]
-                if return_time_rho:
-                    time_psi = result[0]
+
+            if isinstance(result, tuple):
+                component_time, psi_t = result
+                if time_psi is None:
+                    time_psi = component_time
             else:
                 psi_t = result
-            
-            # Accumulate density matrix
+
+            psi_backend = xp.asarray(psi_t)
             if return_traj:
-                rho_out += xp.einsum("ti, tj -> tij", psi_t, psi_t.conj())
+                component_density = xp.einsum(
+                    "ti, tj -> tij", psi_backend, psi_backend.conj()
+                )
             else:
-                rho_out += xp.outer(psi_t, psi_t.conj())
-        
-        # Return with time if requested
+                component_density = xp.outer(psi_backend, psi_backend.conj())
+
+            if rho_out is None:
+                rho_out = xp.zeros_like(component_density)
+            rho_out += float(weight) * component_density
+
         if return_traj and return_time_rho and time_psi is not None:
             return time_psi, rho_out
-        
-        return rho_out 
+        return rho_out

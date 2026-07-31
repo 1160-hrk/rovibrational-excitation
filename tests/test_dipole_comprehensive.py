@@ -18,10 +18,14 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import VibLadderBasis
+from rovibrational_excitation.dipole import VibLadderDipoleMatrix
 from rovibrational_excitation.dipole.rot.jm import tdm_jm_x, tdm_jm_y, tdm_jm_z
 from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
-from rovibrational_excitation.dipole.vib.morse import omega01_domega_to_N, tdm_vib_morse
-from rovibrational_excitation.dipole import VibLadderDipoleMatrix
+from rovibrational_excitation.dipole.vib.morse import (
+    omega01_domega_to_N,
+    tdm_vib_morse,
+    validate_morse_v_max,
+)
 
 
 class TestVibLadderDipoleMatrix:
@@ -72,7 +76,9 @@ class TestVibLadderDipoleMatrix:
 
     def test_morse_z_component(self):
         """Morse振動子z成分のテスト"""
-        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.1, input_units="rad/fs")
+        basis = VibLadderBasis(
+            V_max=2, omega=1.0, delta_omega=0.1, input_units="rad/fs"
+        )
         dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="morse")
 
         mu_z = dipole.mu_z
@@ -81,8 +87,30 @@ class TestVibLadderDipoleMatrix:
         for i in range(basis.size()):
             for j in range(basis.size()):
                 v1, v2 = basis.V_array[i], basis.V_array[j]
-                expected = tdm_vib_morse(v1, v2)
+                expected = tdm_vib_morse(
+                    v1,
+                    v2,
+                    omega01_domega_to_N(basis.omega_rad_pfs, basis.delta_omega_rad_pfs),
+                )
                 np.testing.assert_allclose(mu_z[i, j], expected, atol=1e-12)
+
+    def test_morse_parameters_do_not_leak_between_instances(self):
+        basis_a = VibLadderBasis(
+            V_max=2, omega=1.0, delta_omega=0.1, input_units="rad/fs"
+        )
+        basis_b = VibLadderBasis(
+            V_max=2, omega=1.0, delta_omega=0.2, input_units="rad/fs"
+        )
+        dipole_a = VibLadderDipoleMatrix(basis_a, mu0=1.0, potential_type="morse")
+        dipole_b = VibLadderDipoleMatrix(basis_b, mu0=1.0, potential_type="morse")
+
+        _ = dipole_b.mu_z
+        expected_a = tdm_vib_morse(
+            0,
+            1,
+            omega01_domega_to_N(basis_a.omega_rad_pfs, basis_a.delta_omega_rad_pfs),
+        )
+        np.testing.assert_allclose(dipole_a.mu_z[0, 1], expected_a)
 
     def test_x_y_components_zero(self):
         """x, y成分は純振動系では0"""
@@ -197,7 +225,7 @@ class TestMorseVibrationDetailed:
         """低振動数でのMorse vs 調和比較"""
         # 低振動数では両者は近似的に等しい
         for v1, v2 in [(0, 1), (1, 0), (1, 2), (2, 1)]:
-            morse_val = tdm_vib_morse(v1, v2)
+            morse_val = tdm_vib_morse(v1, v2, 200.0)
             harm_val = tdm_vib_harm(v1, v2)
 
             # 相対誤差が20%以内（Morseパラメータに依存）
@@ -211,17 +239,27 @@ class TestMorseVibrationDetailed:
         omega_rad_phz = 1.0
         delta_omega_rad_phz = 0.1
 
-        # エラーなく実行されることを確認
-        try:
-            omega01_domega_to_N(omega_rad_phz, delta_omega_rad_phz)
-        except Exception as e:
-            pytest.fail(f"Morse parameter setup failed: {e}")
+        level_parameter = omega01_domega_to_N(omega_rad_phz, delta_omega_rad_phz)
+        assert level_parameter == pytest.approx(10.5)
+
+    def test_morse_v_max_boundary(self):
+        level_parameter = omega01_domega_to_N(1.0, 0.1)
+
+        validate_morse_v_max(9, level_parameter)
+        with pytest.raises(ValueError, match="V_max=10 exceeds"):
+            validate_morse_v_max(10, level_parameter)
+
+        basis = VibLadderBasis(
+            V_max=10, omega=1.0, delta_omega=0.1, input_units="rad/fs"
+        )
+        with pytest.raises(ValueError, match="Morse limit 9"):
+            VibLadderDipoleMatrix(basis, potential_type="morse")
 
     def test_morse_high_v_behavior(self):
         """高振動数での非調和効果"""
         # 高振動数では非調和効果により遷移強度が変化
-        morse_low = tdm_vib_morse(0, 1)
-        morse_high = tdm_vib_morse(5, 6)
+        morse_low = tdm_vib_morse(0, 1, 200.0)
+        morse_high = tdm_vib_morse(5, 6, 200.0)
 
         # 両方ともゼロでないことを確認
         assert abs(morse_low) > 1e-12
@@ -269,7 +307,7 @@ class TestDipolePhysicalConsistency:
 
     def test_different_potential_types(self):
         """異なるポテンシャルタイプでの行列形状一貫性"""
-        basis = VibLadderBasis(V_max=2)
+        basis = VibLadderBasis(V_max=2, delta_omega=0.1)
 
         dipole_harm = VibLadderDipoleMatrix(basis, potential_type="harmonic")
         dipole_morse = VibLadderDipoleMatrix(basis, potential_type="morse")

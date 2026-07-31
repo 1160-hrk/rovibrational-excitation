@@ -8,34 +8,33 @@
 """
 
 import inspect
-from typing import Union, Optional
+from typing import Union
+
 import numpy as np
 from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
 
 from rovibrational_excitation.core.units.converters import converter
+
 from .modulation import (
-    apply_sinusoidal_mod, 
-    apply_dispersion, 
-    get_mod_spectrum_from_bin_setting, 
+    _remove_linear_phase,
     _select_window,
-    _remove_linear_phase
+    apply_dispersion,
+    apply_sinusoidal_mod,
+    get_mod_spectrum_from_bin_setting,
 )
 
 
 class ElectricField:
     """
     電場波形を表現するクラス（偏光、包絡線、GDD/TOD付き）
-    
+
     SI単位系（fs, V/m）で内部保持し、単位変換機能を提供。
     無次元化機能は nondimensional.converter に委譲。
     """
 
     def __init__(
-        self, 
-        tlist: np.ndarray, 
-        time_units: str = "fs",
-        field_units: str = "V/m"
+        self, tlist: np.ndarray, time_units: str = "fs", field_units: str = "V/m"
     ):
         """
         Parameters
@@ -50,37 +49,60 @@ class ElectricField:
         # 単位情報を保存
         self.time_units = time_units
         self.field_units = field_units
-        
+
         # 時間配列を内部単位（fs）に変換
         self.tlist = self._convert_time_to_fs(np.asarray(tlist), time_units)
+        if self.tlist.ndim != 1 or self.tlist.size < 2:
+            raise ValueError(
+                "tlist must be a one-dimensional array with at least 2 points"
+            )
+        if not np.all(np.isfinite(self.tlist)):
+            raise ValueError("tlist must contain only finite values")
+        intervals = np.diff(self.tlist)
+        if np.any(intervals <= 0):
+            raise ValueError("tlist must be strictly increasing")
+        if not np.allclose(intervals, intervals[0], rtol=1e-10, atol=1e-12):
+            raise ValueError("tlist must be uniformly spaced")
         self.dt = self.tlist[1] - self.tlist[0]  # fs単位
         self.dt_state = self.dt * 2
         self.steps_state = len(self.tlist) // 2
-        
+
         # 電場配列を初期化（内部はV/m単位で保持）
         self.Efield = np.zeros((len(self.tlist), 2))  # V/m単位
         self.add_history = []
         self._constant_pol: Union[np.ndarray, None, bool] = None
-        self._scalar_field: Optional[np.ndarray] = None
+        self._scalar_field: np.ndarray | None = None
 
     # ------------------------------------------------------------------
     # Unit conversion helpers
     # ------------------------------------------------------------------
-    def _convert_time_to_fs(self, time_array: np.ndarray, from_units: str) -> np.ndarray:
+    def _convert_time_to_fs(
+        self, time_array: np.ndarray, from_units: str
+    ) -> np.ndarray:
         """Convert a time array to femtoseconds via UnitConverter."""
         return np.asarray(converter.convert_time(time_array, from_units, "fs"))
-    
-    def _convert_time_from_fs(self, time_array_fs: np.ndarray, to_units: str) -> np.ndarray:
+
+    def _convert_time_from_fs(
+        self, time_array_fs: np.ndarray, to_units: str
+    ) -> np.ndarray:
         """Convert a time array from femtoseconds to the requested units."""
         return np.asarray(converter.convert_time(time_array_fs, "fs", to_units))
-    
-    def _convert_field_to_SI(self, field_array: np.ndarray, from_units: str) -> np.ndarray:
+
+    def _convert_field_to_SI(
+        self, field_array: np.ndarray, from_units: str
+    ) -> np.ndarray:
         """Convert electric-field array to SI (V/m) units via UnitConverter."""
-        return np.asarray(converter.convert_electric_field(field_array, from_units, "V/m"))
-    
-    def _convert_field_from_SI(self, field_array_SI: np.ndarray, to_units: str) -> np.ndarray:
+        return np.asarray(
+            converter.convert_electric_field(field_array, from_units, "V/m")
+        )
+
+    def _convert_field_from_SI(
+        self, field_array_SI: np.ndarray, to_units: str
+    ) -> np.ndarray:
         """Convert electric-field array from SI (V/m) to requested units via UnitConverter."""
-        return np.asarray(converter.convert_electric_field(field_array_SI, "V/m", to_units))
+        return np.asarray(
+            converter.convert_electric_field(field_array_SI, "V/m", to_units)
+        )
 
     def init_Efield(self) -> "ElectricField":
         """電場をゼロに初期化"""
@@ -98,32 +120,32 @@ class ElectricField:
     def get_time_SI(self) -> np.ndarray:
         """SI単位系での時間軸を取得（常にfs）"""
         return np.asarray(self.tlist)
-    
+
     def get_time_in_units(self, target_units: str) -> np.ndarray:
         """指定単位での時間配列を取得"""
         return self._convert_time_from_fs(self.tlist, target_units)
-    
+
     def get_Efield_in_units(self, target_units: str) -> np.ndarray:
         """指定単位での電場を取得"""
         field_SI = self.get_Efield_SI()  # Get in V/m
         return self._convert_field_from_SI(field_SI, target_units)
-    
+
     def set_Efield_from_units(self, field_array: np.ndarray, from_units: str) -> None:
         """指定単位から電場を設定"""
         field_SI = self._convert_field_to_SI(field_array, from_units)
         self.Efield = field_SI.copy()
-    
+
     def get_field_scale_factor(self) -> float:
         """電場スケールファクターを取得"""
         efield_array = np.asarray(self.Efield)
         if np.all(efield_array == 0):
             return 1e8  # 1 MV/cm as default
         return float(np.max(np.abs(efield_array)))
-    
+
     def get_field_scale_info(self) -> dict:
         """電場スケール情報を取得"""
         scale_V_per_m = self.get_field_scale_factor()
-        
+
         return {
             "scale_V_per_m": scale_V_per_m,
             "scale_MV_per_cm": scale_V_per_m / 1e8,
@@ -141,13 +163,13 @@ class ElectricField:
         if isinstance(self._constant_pol, bool):
             raise ValueError("Polarisation is time-dependent (use RK4 path).")
         return self._constant_pol
-    
+
     def get_scalar_field(self) -> np.ndarray:
         """スカラー電場を取得"""
         if self._scalar_field is None:
             raise ValueError("Scalar field is not set.")
         return self._scalar_field
-    
+
     def get_scalar_and_pol(self) -> tuple[np.ndarray, np.ndarray]:
         """スカラー電場と偏光を取得"""
         if (
@@ -182,14 +204,14 @@ class ElectricField:
         tod: float = 0.0,
         gdd_units: str = "fs^2",
         tod_units: str = "fs^3",
-        const_polarisation: Optional[bool] = None,
+        const_polarisation: bool | None = None,
     ) -> None:
         """分散付き電場パルスを追加"""
         polarization = np.array(polarization, dtype=np.complex128)
         if polarization.shape != (2,):
             raise ValueError("polarization must be a 2-element vector")
         polarization /= np.linalg.norm(polarization)
-        
+
         # 偏光の一定性を判定
         if const_polarisation is None:  # 従来の自動判定
             if self._constant_pol is None:
@@ -202,13 +224,13 @@ class ElectricField:
                 self._constant_pol = polarization.copy()
             else:  # False → 可変
                 self._constant_pol = False
-        
+
         # 履歴に追加
         frame = inspect.currentframe()
         if frame is not None:
             args, _, _, values = inspect.getargvalues(frame)
             self.add_history.append({k: values[k] for k in args if k != "self"})
-        
+
         # 単位変換
         duration_fs = float(converter.convert_time(duration, duration_units, "fs"))
         t_center_fs = float(converter.convert_time(t_center, t_center_units, "fs"))
@@ -221,7 +243,9 @@ class ElectricField:
             cycles_per_fs = carrier_freq
         else:
             # Convert to rad/fs then → cycles/fs
-            rad_per_fs = float(converter.convert_frequency(carrier_freq, carrier_freq_units, "rad/fs"))
+            rad_per_fs = float(
+                converter.convert_frequency(carrier_freq, carrier_freq_units, "rad/fs")
+            )
             cycles_per_fs = rad_per_fs / (2 * pi)
 
         # 包絡線とキャリア波の構築
@@ -238,30 +262,29 @@ class ElectricField:
             Efield_vec_disp = Efield_vec_disp[0]
         Efield_vec_disp = np.asarray(Efield_vec_disp)
         self.Efield += np.real(Efield_vec_disp)
-        
+
         # Split-Op用スカラー場を保持
         if const_polarisation is True or (
             const_polarisation is None and isinstance(self._constant_pol, np.ndarray)
         ):
             ef_real = np.real(np.asarray(Efield))  # 1次元配列
             ef_real_2d = ef_real.reshape(-1, 1)
-            ef_disp = apply_dispersion(self.tlist, ef_real_2d, cycles_per_fs, gdd_fs2, tod_fs3)
+            ef_disp = apply_dispersion(
+                self.tlist, ef_real_2d, cycles_per_fs, gdd_fs2, tod_fs3
+            )
             if isinstance(ef_disp, tuple):
                 ef_disp = ef_disp[0]
             ef_disp = np.asarray(ef_disp)
             self._scalar_field = np.real(ef_disp).flatten()
 
-    @classmethod 
+    @classmethod
     def create_from_SI(cls, tlist_fs: np.ndarray) -> "ElectricField":
         """SI単位系（fs, V/m）でElectricFieldを作成"""
         return cls(tlist_fs, time_units="fs", field_units="V/m")
-    
+
     @classmethod
     def create_with_units(
-        cls,
-        tlist: np.ndarray,
-        time_units: str,
-        field_units: str
+        cls, tlist: np.ndarray, time_units: str, field_units: str
     ) -> "ElectricField":
         """指定単位でElectricFieldを作成"""
         return cls(tlist, time_units=time_units, field_units=field_units)
@@ -284,6 +307,17 @@ class ElectricField:
             phase_rad,
             type_mod,
         )
+        if self._scalar_field is not None:
+            scalar_2d = self._scalar_field.reshape(-1, 1)
+            self._scalar_field = apply_sinusoidal_mod(
+                self.tlist,
+                scalar_2d,
+                center_freq,
+                amplitude,
+                carrier_freq,
+                phase_rad,
+                type_mod,
+            ).reshape(-1)
 
     def apply_binned_mod(
         self,
@@ -291,7 +325,7 @@ class ElectricField:
         bin_width: int,
         mod_values: np.ndarray,
         mode: str = "phase",
-        window: Optional[str] = None,
+        window: str | None = None,
     ) -> "ElectricField":
         """ビン幅指定変調を適用"""
         spec = get_mod_spectrum_from_bin_setting(
@@ -329,7 +363,7 @@ class ElectricField:
             E_freq_mod = (
                 E_freq * np.exp(-1j * mod_spectrum[:, 0]) * np.abs(mod_spectrum[:, 1])
             )
-        
+
         if E_freq_mod is not None:
             self.Efield = irfft(E_freq_mod, axis=0, n=len(self.tlist))
         return self
@@ -370,17 +404,17 @@ class ElectricField:
     def plot_spectrum(
         self,
         remove_linear_phase: bool = True,
-        freq_range: Optional[tuple] = None,
-        t_center: Optional[float] = None,
-        center_freq: Optional[float] = None,
-        width_fit: Optional[float] = None,
+        freq_range: tuple | None = None,
+        t_center: float | None = None,
+        center_freq: float | None = None,
+        width_fit: float | None = None,
     ):
         """電場のスペクトルをプロット"""
         import matplotlib.pyplot as plt
 
         freq, E_freq = self.get_Efield_spectrum()
         E_freq = np.asarray(E_freq)
-        
+
         if t_center is None:
             phase_x = np.unwrap(np.angle(E_freq[:, 0]))
             phase_y = np.unwrap(np.angle(E_freq[:, 1]))
@@ -397,14 +431,14 @@ class ElectricField:
             )
             phase_x = np.unwrap(np.angle(E_freq_comp[:, 0]))
             phase_y = np.unwrap(np.angle(E_freq_comp[:, 1]))
-            
+
         if freq_range is not None:
             mask = (freq >= freq_range[0]) & (freq <= freq_range[1])
             E_freq = E_freq[mask]
             phase_x = phase_x[mask]
             phase_y = phase_y[mask]
             freq = freq[mask]
-            
+
         # プロット
         fig, (ax0, ax1) = plt.subplots(2, 1, sharex=True)
         ax0.plot(freq, np.abs(E_freq[:, 0]))
@@ -419,4 +453,4 @@ class ElectricField:
         ax0.set_ylabel(r"$E_x$ (V/m)")
         ax1.set_ylabel(r"$E_y$ (V/m)")
         ax1.set_xlabel("Frequency (rad/fs)")
-        plt.show() 
+        plt.show()

@@ -28,6 +28,7 @@ from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm  # Python 
 from rovibrational_excitation.dipole.vib.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
+    validate_morse_v_max,
 )  # Python 版
 
 # ----------------------------------------------------------------------
@@ -66,7 +67,15 @@ _vib_morse_jit = njit(cache=True, fastmath=True)(tdm_vib_morse)  # type: ignore[
 #   * vib_is_morse : True なら Morse、False なら Harmonic
 # ----------------------------------------------------------------------
 @njit(parallel=True, fastmath=True, cache=True)
-def _dense_core(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_is_morse: bool):
+def _dense_core(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
     dim = v_arr.size
     out = _np.zeros((dim, dim), dtype=_np.complex128)
 
@@ -100,7 +109,11 @@ def _dense_core(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_is_morse: bo
                 continue
 
             # --- 振動ファクター ----------------------------------------
-            vfac = _vib_morse_jit(v1, v2) if vib_is_morse else _vib_harm(v1, v2)
+            vfac = (
+                _vib_morse_jit(v1, v2, morse_level_parameter)
+                if vib_is_morse
+                else _vib_harm(v1, v2)
+            )
             if vfac == 0.0:
                 continue
 
@@ -111,7 +124,15 @@ def _dense_core(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_is_morse: bo
 # ----------------------------------------------------------------------
 # --- 3. CPU sparse (Python loop) --------------------------------------
 # ----------------------------------------------------------------------
-def _sparse_cpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
+def _sparse_cpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
     rot_func = (tdm_jm_x, tdm_jm_y, tdm_jm_z)[axis_idx]
     data, row, col = [], [], []
 
@@ -124,7 +145,11 @@ def _sparse_cpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
             r = rot_func(J1, M1, J_arr[j], M_arr[j])
             if r == 0.0:
                 continue
-            vfac = vib_func(v1, v_arr[j])
+            vfac = (
+                tdm_vib_morse(v1, v_arr[j], morse_level_parameter)
+                if vib_is_morse
+                else tdm_vib_harm(v1, v_arr[j])
+            )
             if vfac == 0.0:
                 continue
             data.append(mu0 * r * vfac)
@@ -140,7 +165,15 @@ def _sparse_cpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
 # --- 4. GPU dense helper ---------------------------------------------
 #   CuPy では Python vectorize を使うのでラップ不要
 # ----------------------------------------------------------------------
-def _dense_gpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
+def _dense_gpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
     xp = _cp
     rot_func = (tdm_jm_x, tdm_jm_y, tdm_jm_z)[axis_idx]
 
@@ -160,7 +193,12 @@ def _dense_gpu(v_arr, J_arr, M_arr, mu0: float, axis_idx: int, vib_func):
     )
 
     rot = xp.vectorize(rot_func, otypes=[xp.complex128])(J1, M1, J2, M2)
-    vib = xp.vectorize(vib_func, otypes=[xp.float64])(v1, v2)
+    if vib_is_morse:
+        vib = xp.vectorize(tdm_vib_morse, otypes=[xp.float64])(
+            v1, v2, morse_level_parameter
+        )
+    else:
+        vib = xp.vectorize(tdm_vib_harm, otypes=[xp.float64])(v1, v2)
     return mu0 * rot * vib * mask
 
 
@@ -207,9 +245,16 @@ def build_mu(
 
     axis_idx = "xyz".index(axis_normalized)
     vib_is_morse = pot == "morse"
-    vib_func = tdm_vib_morse if vib_is_morse else tdm_vib_harm
+    morse_level_parameter = (
+        omega01_domega_to_N(
+            basis.omega_rad_pfs,
+            basis.delta_omega_rad_pfs,
+        )
+        if vib_is_morse
+        else 0.0
+    )
     if vib_is_morse:
-        omega01_domega_to_N(basis.omega_rad_pfs, basis.delta_omega_rad_pfs)
+        validate_morse_v_max(basis.V_max, morse_level_parameter)
     # ---- GPU ---------------------------------------------------------
     if backend == "cupy":
         if _cp is None:
@@ -220,7 +265,8 @@ def build_mu(
             _cp.asarray(M_arr),
             float(mu0),
             axis_idx,
-            vib_func,
+            vib_is_morse,
+            morse_level_parameter,
         )
         return mat if dense else _csp.csr_matrix(mat)  # type: ignore[arg-type]
 
@@ -233,6 +279,7 @@ def build_mu(
             float(mu0),
             axis_idx,
             vib_is_morse,
+            morse_level_parameter,
         )
 
     # ---- CPU sparse --------------------------------------------------
@@ -242,5 +289,6 @@ def build_mu(
         M_arr,
         float(mu0),
         axis_idx,
-        vib_func,
+        vib_is_morse,
+        morse_level_parameter,
     )

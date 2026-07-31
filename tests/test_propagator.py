@@ -6,16 +6,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis, Hamiltonian
+from rovibrational_excitation.core.basis import Hamiltonian, LinMolBasis, TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagation import (
-    SchrodingerPropagator,
-    LiouvillePropagator,
     MixedStatePropagator,
+    SchrodingerPropagator,
 )
 from rovibrational_excitation.core.propagation.utils import get_backend
 from rovibrational_excitation.core.units.converters import converter
-from tests.mock_objects import MockDipole, MockEfield, DummyDipole
+from tests.mock_objects import MockDipole, MockEfield
 
 
 class DummyDipole:
@@ -24,7 +23,7 @@ class DummyDipole:
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
         self.units = "C*m"  # SI単位を使用
-    
+
     def get_mu_in_units(self, axis: str, unit: str):
         src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
         if unit in ("C*m", "C·m", "Cm"):
@@ -34,11 +33,11 @@ class DummyDipole:
     def get_mu_x_SI(self):
         """Get μ_x in SI units (C·m)."""
         return self.mu_x
-    
+
     def get_mu_y_SI(self):
         """Get μ_y in SI units (C·m)."""
         return self.mu_y
-    
+
     def get_mu_z_SI(self):
         """Get μ_z in SI units (C·m)."""
         return self.mu_z
@@ -47,16 +46,16 @@ class DummyDipole:
 class DummyDipoleOffDiag:
     """非対角要素を持つダミー双極子"""
 
-    def __init__(self, dim=2):
+    def __init__(self, dim=2, mu_scale=1.0):
         self.mu_x = (
             np.array([[0, 1], [1, 0]], dtype=np.complex128)
             if dim == 2
             else np.random.random((dim, dim)) + 1j * np.random.random((dim, dim))
-        )
+        ) * mu_scale
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
         self.units = "C*m"  # SI単位を使用
-    
+
     def get_mu_in_units(self, axis: str, unit: str):
         src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
         if unit in ("C*m", "C·m", "Cm"):
@@ -66,11 +65,11 @@ class DummyDipoleOffDiag:
     def get_mu_x_SI(self):
         """Get μ_x in SI units (C·m)."""
         return self.mu_x
-    
+
     def get_mu_y_SI(self):
         """Get μ_y in SI units (C·m)."""
         return self.mu_y
-    
+
     def get_mu_z_SI(self):
         """Get μ_z in SI units (C·m)."""
         return self.mu_z
@@ -93,7 +92,9 @@ def test_mixed_state_propagation():
     ef = ElectricField(tlist)
     ef.Efield[:, 0] = 1.0
     LinMolBasis(V_max=0, J_max=1, use_M=False)
-    H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")  # mixed_state_propagationは内部でschrodinger_propagationを呼ぶためHamiltonianが必要
+    H0 = Hamiltonian(
+        np.diag([0.0, 1.0]), units="J"
+    )  # mixed_state_propagationは内部でschrodinger_propagationを呼ぶためHamiltonianが必要
     dip = DummyDipole()
     psi0s = [
         np.array([1.0, 0.0], dtype=np.complex128),
@@ -109,9 +110,9 @@ def test_liouville_propagation():
     H0 = basis.generate_H0()
     dip = MockDipole(basis)
     ef = MockEfield()
-    
+
     rho0 = np.array([[0.8, 0.2j], [-0.2j, 0.2]], dtype=complex)
-    
+
     # Prepare arguments for RK4
     backend = "numpy"
     xp = get_backend(backend)
@@ -123,15 +124,18 @@ def test_liouville_propagation():
     # Use simple constant fields with correct length
     Ex = np.ones(2 * steps + 1)
     Ey = np.zeros(2 * steps + 1)
-    
+
     # Use a reasonable timestep in fs
     dt = 0.1
-    
+
     rk4_args = (H0_mat, mu_x, mu_y, Ex, Ey, xp.asarray(rho0), dt, steps)
-    
-    from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne_traj
+
+    from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+        rk4_lvne_traj,
+    )
+
     result = rk4_lvne_traj(*rk4_args)
-    
+
     # 形状とトレース保存を確認
     assert result.shape == (11, 2, 2)
     final_trace = np.trace(result[-1])
@@ -162,7 +166,7 @@ def test_schrodinger_propagation_with_constant_polarization():
     result_traj = SchrodingerPropagator(renorm=True).propagate(
         H0, ef, dip, psi0, return_traj=True
     )
-    
+
     # 結果の形状が正しいことを確認
     if isinstance(result_traj, tuple):
         psi_traj = result_traj[1]
@@ -271,17 +275,15 @@ def test_mixed_state_propagation_detailed():
         const_polarisation=True,
     )
 
-    H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
-    dip = DummyDipoleOffDiag()
+    H0 = Hamiltonian(np.diag([0.0, 1.0]), units="rad/fs")
+    dip = DummyDipoleOffDiag(mu_scale=1e-30)
     psi0s = [
         np.array([1.0, 0.0], dtype=np.complex128),
         np.array([0.0, 1.0], dtype=np.complex128),
     ]
 
     # 軌跡あり
-    result_traj = MixedStatePropagator().propagate(
-        H0, ef, dip, psi0s, return_traj=True
-    )
+    result_traj = MixedStatePropagator().propagate(H0, ef, dip, psi0s, return_traj=True)
     assert result_traj.shape[1:] == (2, 2)  # 密度行列の形状
 
     # 軌跡なし
@@ -305,8 +307,8 @@ def test_mixed_state_propagation_with_time():
         const_polarisation=True,
     )
 
-    H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
-    dip = DummyDipoleOffDiag()
+    H0 = Hamiltonian(np.diag([0.0, 1.0]), units="rad/fs")
+    dip = DummyDipoleOffDiag(mu_scale=1e-30)
     psi0s = [
         np.array([1.0, 0.0], dtype=np.complex128),
         np.array([0.0, 1.0], dtype=np.complex128),
@@ -400,3 +402,50 @@ def test_propagation_large_system():
 
     result = SchrodingerPropagator().propagate(H0, ef, dip, psi0)
     assert result.shape[-1] == 4
+
+
+def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
+    propagator = MixedStatePropagator(validate_units=False)
+
+    def return_initial_state(*args, **kwargs):
+        return np.asarray(args[3], dtype=np.complex128)
+
+    monkeypatch.setattr(
+        propagator._schrodinger_prop,
+        "propagate",
+        return_initial_state,
+    )
+    states = [
+        2.0 * np.array([1.0, 0.0], dtype=np.complex128),
+        np.array([0.0, 1.0], dtype=np.complex128),
+    ]
+
+    density = propagator.propagate(
+        None,
+        None,
+        None,
+        states,
+        return_traj=False,
+    )
+
+    np.testing.assert_allclose(density, np.diag([0.8, 0.2]))
+    np.testing.assert_allclose(np.trace(density), 1.0)
+
+
+def test_mixed_state_ignores_zero_weight_components(monkeypatch):
+    propagator = MixedStatePropagator(validate_units=False)
+    monkeypatch.setattr(
+        propagator._schrodinger_prop,
+        "propagate",
+        lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
+    )
+
+    density = propagator.propagate(
+        None,
+        None,
+        None,
+        [np.array([1.0, 0.0]), np.zeros(2)],
+        return_traj=False,
+    )
+
+    np.testing.assert_allclose(density, np.diag([1.0, 0.0]))

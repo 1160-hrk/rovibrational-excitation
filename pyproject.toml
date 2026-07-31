@@ -29,13 +29,19 @@ dependencies = [
     "numpy>=1.22",
     "scipy>=1.10", 
     "numba>=0.59",
-    "cupy; extra == \"gpu\"",
     "pandas",
     "tqdm",
+    "PyYAML>=6",
 ]
 
+
+[project.scripts]
+rve-simulate = "rovibrational_excitation.cli.simulate:main"
+rve-optimize = "rovibrational_excitation.cli.optimize:main"
 [project.optional-dependencies]
-gpu = ["cupy-cuda12x"]   # 例：GPU 用 extras
+gpu = ["cupy-cuda12x"]
+io = ["h5py>=3.8"]
+plot = ["matplotlib>=3.7"]
 dev = ["pytest", "build", "twine", "ruff", "black", "mypy", "coverage"]
 
 [tool.setuptools]
@@ -43,7 +49,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["rovibrational_excitation*", "linmol_dipole*", "rot_tdms*", "vib_tdms*"]
+include = ["rovibrational_excitation*"]
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [tool.pytest.ini_options]
