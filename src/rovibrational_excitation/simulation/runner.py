@@ -156,6 +156,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],
         polarization=polarization,
+        phase_rad=params.get("phase_rad", 0.0),
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
     )

@@ -190,6 +190,7 @@ def test_runner_uses_interval_duration_and_one_backend(
         "carrier_freq": 1.0,
         "amplitude": 0.0,
         "polarization": [1.0, 0.0],
+        "phase_rad": 0.37,
         "initial_states": [0],
         "backend": "numpy",
         "save": False,
@@ -207,6 +208,7 @@ def test_runner_uses_interval_duration_and_one_backend(
 
     field = electric_field_cls.return_value
     assert field.add_dispersed_Efield.call_args.kwargs["duration"] == 2.0
+    assert field.add_dispersed_Efield.call_args.kwargs["phase_rad"] == 0.37
     propagator_cls.assert_called_once_with(
         backend="numpy",
         algorithm="split_operator",
