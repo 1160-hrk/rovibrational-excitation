@@ -248,6 +248,23 @@ Acceptance:
 
 ### P0.7 Record benchmark baseline
 
+Status: Complete on 2026-08-01. `benchmarks/baseline-v0.2.10.json` was
+measured from clean source commit `3b081e1` with one excluded warmup and the
+median of seven runs. The timed region contains propagation only.
+
+The report covers dimensions 2 (TwoLevel), 16 (VibLadder), and 18
+(M-resolved LinMol) through NumPy dense and SciPy sparse RK4, plus dense
+TwoLevel Liouville propagation. Pure-state norm errors are at most `2.34e-15`,
+the Liouville trace error is `2.95e-18`, and dense/sparse final-state L2
+differences are at most `1.58e-16`. Returned trajectory allocations range
+from 64,032 to 576,288 bytes for pure states and are 128,064 bytes for the
+density case.
+
+The full suite collects 437 tests: 427 pass and 10 GPU tests skip. Marker
+selection finds 60 physics, 10 GPU, and 16 performance cases. CuPy is not
+installed in the measurement environment, so no GPU performance result is
+claimed. Absolute runtime remains non-blocking and environment-specific.
+
 Create a non-blocking benchmark report with:
 
 - environment and dependency versions;
@@ -264,6 +281,12 @@ Artifact:
 measurement command.
 
 ### Phase 0 acceptance
+
+Status: Complete on 2026-08-01 for the CPU baseline. Required physics cases,
+solver invariants, numerical tolerances, and the non-blocking performance
+artifact are recorded without moving the package tree. Real-CUDA parity and
+performance remain explicitly unverified because this environment has no
+CuPy/CUDA; no GPU capability claim is inferred from skipped tests.
 
 - Required physics matrix is implemented or explicitly blocked by an open
   decision.

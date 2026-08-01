@@ -2,7 +2,7 @@
 
 Last verified: 2026-07-31
 Active refactor branch: `refactor/v0.3`
-Verified baseline commit: `613ce93`
+Verified baseline commit: `3b081e1`
 
 ## Purpose
 
@@ -112,17 +112,18 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current full test baseline:
+Current full test baseline at benchmark source commit `3b081e1`:
 
 ~~~bash
 pytest -q
 ~~~
 
-Expected at baseline `613ce93`:
-
 ~~~text
-360 passed, 9 skipped
+427 passed, 10 GPU tests skipped
 ~~~
+
+The Phase 0 CPU performance artifact is
+`benchmarks/baseline-v0.2.10.json`. CUDA remains unverified.
 
 Use Ruff without broad automatic fixes while a worktree contains unrelated
 changes:
@@ -175,11 +176,12 @@ recorded baseline for a phase.
 
 ## Current next work
 
-The next authorized roadmap work starts with Phase 0 and Phase 1:
+Phase 0 is complete for the CPU baseline. The next authorized roadmap work is
+Phase 1 repository and CI normalization:
 
-1. Add physics characterization/golden tests.
-2. Convert or remove tests outside `tests/`.
-3. Remove tracked generated artifacts and classify legacy files.
+1. Classify and remove tracked generated artifacts.
+2. Convert, archive, or remove tests and validation scripts outside `tests/`.
+3. Normalize pytest collection and marker policy.
 4. Apply repository-wide Ruff formatting in an isolated commit.
 5. Make lint, type, coverage, build, and physics CI gates truthful.
 

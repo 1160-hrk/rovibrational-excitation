@@ -1,0 +1,497 @@
+{
+  "artifact": "baseline-v0.2.10",
+  "comparisons": [
+    {
+      "dense_sparse_final_l2_difference": 5.551115123125783e-17,
+      "model": "two_level",
+      "sparse_to_dense_median_time_ratio": 102.72471989937955
+    },
+    {
+      "dense_sparse_final_l2_difference": 1.1102569074940892e-16,
+      "model": "vib_ladder",
+      "sparse_to_dense_median_time_ratio": 48.48485383690632
+    },
+    {
+      "dense_sparse_final_l2_difference": 1.5701555353105971e-16,
+      "model": "linear_molecule",
+      "sparse_to_dense_median_time_ratio": 45.02319741768883
+    }
+  ],
+  "environment": {
+    "cuda": {
+      "reason": "CuPy is not installed; no GPU result is claimed.",
+      "status": "not_run"
+    },
+    "dependencies": {
+      "PyYAML": "6.0.3",
+      "numba": "0.63.1",
+      "numpy": "2.3.5",
+      "pandas": "3.0.0",
+      "rovibrational-excitation": "0.2.10",
+      "scipy": "1.17.0",
+      "tqdm": "4.67.1"
+    },
+    "logical_cpu_count": 14,
+    "machine": "aarch64",
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "processor": null,
+    "python": {
+      "executable": "/usr/local/bin/python",
+      "implementation": "CPython",
+      "version": "3.12.12"
+    }
+  },
+  "generated_at_utc": "2026-08-01T07:25:01.332109+00:00",
+  "methodology": {
+    "absolute_runtime_gate": false,
+    "jit_warmup_excluded": true,
+    "repeats": 7,
+    "summary_statistic": "median",
+    "timed_scope": "Propagator.propagate only; model, dipole, field, and initial-state construction are excluded.",
+    "timer": "time.perf_counter_ns",
+    "trajectory_memory_definition": "Returned complex128 trajectory allocation only; excludes operators, JIT/runtime allocations, temporaries, and Python overhead.",
+    "warmup_runs_per_workload": 1
+  },
+  "schema_version": 1,
+  "source": {
+    "branch": "refactor/v0.3",
+    "commit": "3b081e16f85dcc6ade1592ebc3be9d91801d35ea",
+    "worktree_dirty": false
+  },
+  "workloads": [
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 2,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 1.0000000000000013,
+      "final_norm_error": 1.3322676295501878e-15,
+      "final_state": {
+        "imag": [
+          0.0,
+          -0.7420758944605484
+        ],
+        "real": [
+          0.6324555320336759,
+          0.22208864640179043
+        ],
+        "shape": [
+          2
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.000410333,
+      "median_seconds": 0.000380042,
+      "minimum_seconds": 0.000332167,
+      "model": "two_level",
+      "name": "two_level_schrodinger_numpy_dense",
+      "peak_trajectory_memory_estimate_bytes": 64032,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.000391167,
+        0.000333083,
+        0.0004085,
+        0.000350042,
+        0.000332167,
+        0.000410333,
+        0.000380042
+      ],
+      "saved_states": 2001,
+      "storage": "dense",
+      "trajectory_array_bytes": 64032
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 16,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 0.9999999999999978,
+      "final_norm_error": 2.220446049250313e-15,
+      "final_state": {
+        "imag": [
+          -0.6852276638504374,
+          0.0008911678948906103,
+          7.817912433913263e-05,
+          6.524395596174748e-07,
+          1.804348146903591e-09,
+          -8.547941752813842e-12,
+          -9.822246706657308e-14,
+          -3.4848633851218465e-16,
+          1.2955167083536474e-19,
+          6.468098999952067e-21,
+          2.572013402323584e-23,
+          1.3996508792734317e-26,
+          -2.697446333044073e-28,
+          -1.1022344544614565e-30,
+          -7.23096710927442e-34,
+          8.768673424325291e-36
+        ],
+        "real": [
+          0.7282338942034836,
+          0.011732017524578722,
+          5.91562454077964e-05,
+          -1.430836113732158e-07,
+          -3.5099768527404148e-09,
+          -1.9055852192507472e-11,
+          -2.3641592989229295e-14,
+          2.8947132848249717e-16,
+          1.8982517679353283e-18,
+          3.8810541046525446e-21,
+          -1.205201898604721e-23,
+          -1.0113102436238814e-25,
+          -2.2574140004347255e-28,
+          3.789074885857544e-31,
+          3.654757202573291e-33,
+          7.466134037908101e-36
+        ],
+        "shape": [
+          16
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.002817166,
+      "median_seconds": 0.000849291,
+      "minimum_seconds": 0.000808166,
+      "model": "vib_ladder",
+      "name": "vib_ladder_schrodinger_numpy_dense",
+      "peak_trajectory_memory_estimate_bytes": 512256,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.000808166,
+        0.002817166,
+        0.000832875,
+        0.000918709,
+        0.000846791,
+        0.000859333,
+        0.000849291
+      ],
+      "saved_states": 2001,
+      "storage": "dense",
+      "trajectory_array_bytes": 512256
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 18,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 0.9999999999999994,
+      "final_norm_error": 5.551115123125783e-16,
+      "final_state": {
+        "imag": [
+          -0.6852682952736991,
+          0.0,
+          0.0,
+          0.0,
+          1.136360420228475e-05,
+          0.0,
+          -9.278343978181432e-06,
+          0.0,
+          1.136360420228475e-05,
+          0.0,
+          0.0003088611623184113,
+          0.0,
+          -0.0003088611623184113,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "real": [
+          0.7282590825816476,
+          0.0,
+          0.0,
+          0.0,
+          -6.502457498681999e-06,
+          0.0,
+          5.309234315301728e-06,
+          0.0,
+          -6.502457498681999e-06,
+          0.0,
+          0.004789618068093529,
+          0.0,
+          -0.004789618068093529,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "shape": [
+          18
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.001212541,
+      "median_seconds": 0.000968125,
+      "minimum_seconds": 0.000913792,
+      "model": "linear_molecule",
+      "name": "linear_molecule_schrodinger_numpy_dense",
+      "peak_trajectory_memory_estimate_bytes": 576288,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.001097708,
+        0.001212541,
+        0.000949542,
+        0.00097125,
+        0.000913792,
+        0.000968125,
+        0.000959583
+      ],
+      "saved_states": 2001,
+      "storage": "dense",
+      "trajectory_array_bytes": 576288
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 2,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 1.0000000000000013,
+      "final_norm_error": 1.3322676295501878e-15,
+      "final_state": {
+        "imag": [
+          0.0,
+          -0.7420758944605484
+        ],
+        "real": [
+          0.6324555320336759,
+          0.22208864640179038
+        ],
+        "shape": [
+          2
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.051279917,
+      "median_seconds": 0.039039708,
+      "minimum_seconds": 0.037954709,
+      "model": "two_level",
+      "name": "two_level_schrodinger_numpy_sparse",
+      "peak_trajectory_memory_estimate_bytes": 64032,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.051279917,
+        0.045539333,
+        0.038190708,
+        0.039039708,
+        0.039132084,
+        0.037954709,
+        0.037970084
+      ],
+      "saved_states": 2001,
+      "storage": "sparse",
+      "trajectory_array_bytes": 64032
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 16,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 0.9999999999999977,
+      "final_norm_error": 2.3314683517128287e-15,
+      "final_state": {
+        "imag": [
+          -0.6852276638504374,
+          0.0008911678948906094,
+          7.817912433913263e-05,
+          6.524395596174748e-07,
+          1.8043481469035907e-09,
+          -8.547941752813842e-12,
+          -9.822246706657311e-14,
+          -3.48486338512185e-16,
+          1.295516708353646e-19,
+          6.468098999952072e-21,
+          2.5720134023235836e-23,
+          1.3996508792734286e-26,
+          -2.6974463330440736e-28,
+          -1.1022344544614576e-30,
+          -7.230967109274415e-34,
+          8.768673424325291e-36
+        ],
+        "real": [
+          0.7282338942034835,
+          0.011732017524578722,
+          5.915624540779641e-05,
+          -1.4308361137321585e-07,
+          -3.5099768527404148e-09,
+          -1.9055852192507475e-11,
+          -2.3641592989229276e-14,
+          2.894713284824974e-16,
+          1.8982517679353303e-18,
+          3.881054104652543e-21,
+          -1.2052018986047213e-23,
+          -1.0113102436238815e-25,
+          -2.2574140004347264e-28,
+          3.7890748858575454e-31,
+          3.654757202573292e-33,
+          7.466134037908104e-36
+        ],
+        "shape": [
+          16
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.045214,
+      "median_seconds": 0.04117775,
+      "minimum_seconds": 0.039989583,
+      "model": "vib_ladder",
+      "name": "vib_ladder_schrodinger_numpy_sparse",
+      "peak_trajectory_memory_estimate_bytes": 512256,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.045214,
+        0.043960125,
+        0.044800875,
+        0.04117775,
+        0.039989583,
+        0.041074375,
+        0.041035958
+      ],
+      "saved_states": 2001,
+      "storage": "sparse",
+      "trajectory_array_bytes": 512256
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 18,
+      "equation": "schrodinger",
+      "field_points": 4001,
+      "final_hermiticity_error": null,
+      "final_norm": 0.9999999999999994,
+      "final_norm_error": 5.551115123125783e-16,
+      "final_state": {
+        "imag": [
+          -0.6852682952736993,
+          0.0,
+          0.0,
+          0.0,
+          1.1363604202284746e-05,
+          0.0,
+          -9.278343978181427e-06,
+          0.0,
+          1.1363604202284746e-05,
+          0.0,
+          0.0003088611623184118,
+          0.0,
+          -0.0003088611623184118,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "real": [
+          0.7282590825816475,
+          0.0,
+          0.0,
+          0.0,
+          -6.502457498682001e-06,
+          0.0,
+          5.309234315301728e-06,
+          0.0,
+          -6.502457498682001e-06,
+          0.0,
+          0.004789618068093528,
+          0.0,
+          -0.004789618068093528,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "shape": [
+          18
+        ]
+      },
+      "final_trace_error": null,
+      "maximum_seconds": 0.057578167,
+      "median_seconds": 0.043588083,
+      "minimum_seconds": 0.041590375,
+      "model": "linear_molecule",
+      "name": "linear_molecule_schrodinger_numpy_sparse",
+      "peak_trajectory_memory_estimate_bytes": 576288,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.042707875,
+        0.048593708,
+        0.043588083,
+        0.051390541,
+        0.057578167,
+        0.043427208,
+        0.041590375
+      ],
+      "saved_states": 2001,
+      "storage": "sparse",
+      "trajectory_array_bytes": 576288
+    },
+    {
+      "algorithm": "rk4",
+      "backend": "numpy",
+      "dimension": 2,
+      "equation": "liouville",
+      "field_points": 4001,
+      "final_hermiticity_error": 5.8878239386600105e-18,
+      "final_norm": null,
+      "final_norm_error": null,
+      "final_state": {
+        "imag": [
+          [
+            0.0,
+            0.46933000464041136
+          ],
+          [
+            -0.46933000464041136,
+            -2.9439119693300052e-18
+          ]
+        ],
+        "real": [
+          [
+            0.4,
+            0.14046119301868296
+          ],
+          [
+            0.14046119301868296,
+            0.6
+          ]
+        ],
+        "shape": [
+          2,
+          2
+        ]
+      },
+      "final_trace_error": 2.9439119693300052e-18,
+      "maximum_seconds": 0.002407959,
+      "median_seconds": 0.002079375,
+      "minimum_seconds": 0.002026208,
+      "model": "two_level",
+      "name": "two_level_liouville_numpy_dense",
+      "peak_trajectory_memory_estimate_bytes": 128064,
+      "propagation_steps": 2000,
+      "samples_seconds": [
+        0.002079375,
+        0.002048083,
+        0.00211675,
+        0.002026208,
+        0.002143,
+        0.002407959,
+        0.00207275
+      ],
+      "saved_states": 2001,
+      "storage": "dense",
+      "trajectory_array_bytes": 128064
+    }
+  ]
+}

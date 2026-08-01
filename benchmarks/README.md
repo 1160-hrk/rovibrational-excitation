@@ -34,6 +34,26 @@ python benchmarks/run_baseline.py \
   --output /tmp/rve-benchmark.json
 ~~~
 
+## Recorded v0.2.10 result
+
+The committed artifact was measured from clean source commit `3b081e1` on
+CPython 3.12.12, Linux aarch64, NumPy 2.3.5, SciPy 1.17.0, and Numba 0.63.1.
+
+| Workload | Dimension | Median (ms) | Norm/trace error | Trajectory (KiB) |
+|---|---:|---:|---:|---:|
+| TwoLevel dense Schrödinger | 2 | 0.380 | `1.33e-15` norm | 62.5 |
+| TwoLevel sparse Schrödinger | 2 | 39.040 | `1.33e-15` norm | 62.5 |
+| VibLadder dense Schrödinger | 16 | 0.849 | `2.22e-15` norm | 500.2 |
+| VibLadder sparse Schrödinger | 16 | 41.178 | `2.33e-15` norm | 500.2 |
+| LinMol dense Schrödinger | 18 | 0.968 | `5.55e-16` norm | 562.8 |
+| LinMol sparse Schrödinger | 18 | 43.588 | `5.55e-16` norm | 562.8 |
+| TwoLevel dense Liouville | 2 | 2.079 | `2.94e-18` trace | 125.1 |
+
+Dense/sparse final-state L2 differences are between `5.55e-17` and
+`1.57e-16`. Sparse is 45–103 times slower for these deliberately small
+systems; this is a migration baseline, not a claim that sparse storage is
+advantageous below a crossover dimension.
+
 ## Interpreting memory and GPU fields
 
 `peak_trajectory_memory_estimate_bytes` is the allocated size of the returned

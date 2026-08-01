@@ -96,6 +96,7 @@ been compared with the replacement.
 | `7ce9419` | Modularized simulation construction and hardened propagation contracts |
 | `af21fbe` | Aligned density propagation options, backend honesty, time return, validation |
 | `613ce93` | Unified `-mu E` sign and added physical density matrix validation |
+| `3b081e1` | Added the reproducible, non-blocking Phase 0 benchmark recorder |
 
 These commits are the starting point, not the final architecture.
 
@@ -103,7 +104,7 @@ These commits are the starting point, not the final architecture.
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Physics characterization baseline | In progress — P0.1-P0.6 implemented; CUDA validation pending |
+| 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Pending |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
