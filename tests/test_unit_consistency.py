@@ -149,7 +149,7 @@ def test_physical_regime_analysis():
     from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
     
     # 現実的なCO2系
-    basis = LinMolBasis(V_max=3, J_max=5, use_M=False, omega=0.159, B=3.9e-5, input_units="rad/fs")
+    basis = LinMolBasis(V_max=3, J_max=5, use_M=True, omega=0.159, B=3.9e-5, input_units="rad/fs")
     H0 = basis.generate_H0()
     dip = LinMolDipoleMatrix(basis, mu0=0.3e-29, backend="numpy", dense=True)
     

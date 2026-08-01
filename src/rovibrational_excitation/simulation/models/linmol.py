@@ -12,6 +12,11 @@ from .common import build_initial_state
 
 def build_linmol(params: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
     """Build basis, initial state, Hamiltonian, and dipole without changing formulas."""
+    if not params.get("use_M", True):
+        raise ValueError(
+            "use_M=False is an incoherent M-averaged workflow and cannot be "
+            "represented by one pure-state model; use the simulation runner"
+        )
     basis = LinMolBasis(
         params["V_max"],
         params["J_max"],

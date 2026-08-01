@@ -131,6 +131,16 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
 
     # --- Electric field 共通 ---
     validate_simulation_case(params)
+    polarization = _deserialize_pol(params["polarization"])
+    use_m_average = params.get(
+        "basis_type", "linmol"
+    ).lower() == "linmol" and not params.get("use_M", True)
+    if use_m_average:
+        from .models.linmol_m_average import (
+            canonicalize_fixed_linear_polarization,
+        )
+
+        polarization = canonicalize_fixed_linear_polarization(polarization)
     t_E = build_time_grid(params["t_start"], params["t_end"], params["dt"])
     E = ElectricField(tlist=t_E)
     E.add_dispersed_Efield(
@@ -145,7 +155,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         t_center=params.get("t_center", 0.0),
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],
-        polarization=_deserialize_pol(params["polarization"]),
+        polarization=polarization,
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
     )
@@ -157,6 +167,31 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             phase_rad=params.get("phase_rad_sin_mod", 0.0),
             type_mod=params.get("type_mod_sin_mod", "phase"),
         )
+
+    if use_m_average:
+        from .models.linmol_m_average import propagate_m_average
+
+        result = propagate_m_average(params, E)
+        if params.get("save", True):
+            outdir = Path(params["outdir"])
+            save_data: dict[str, Any] = {
+                "t_E": t_E,
+                "pop": result.population,
+                "E": np.array(E.Efield),
+                "t_p": result.time_fs,
+                "representation": np.array("m_incoherent_average"),
+                "abs_m": np.array([block.abs_m for block in result.blocks]),
+                "m_multiplicity": np.array(
+                    [block.multiplicity for block in result.blocks]
+                ),
+                "m_weight": np.array([block.weight for block in result.blocks]),
+            }
+            for block, wavefunction in zip(result.blocks, result.block_wavefunctions):
+                save_data[f"psi_abs_m_{block.abs_m}"] = wavefunction
+            np.savez_compressed(outdir / "result.npz", **save_data)
+            with open(outdir / "parameters.json", "w") as f:
+                json.dump(_json_safe(params), f, indent=2)
+        return result.population
 
     # --- 系タイプ別の構築 ---
     model = build_model(params)

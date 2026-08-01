@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -182,6 +182,19 @@ The test must use at least two different Morse parameter pairs so a hidden
 global value would fail.
 
 ### P0.5 LinMol reference cases
+
+Status: Complete on 2026-08-01. All 23 cases in
+`tests/physics/test_linear_molecule_reference.py` pass. D-017 replaces the
+old implicit `use_M=False -> M=0` interpretation with fixed-linear,
+separate-|M|-block propagation and a normalized incoherent population sum.
+The reduced workflow agrees with a full M-resolved reference at
+`atol=3e-13`; energy and Hermiticity references use near-roundoff absolute
+tolerances. Explicit-M x/z response, dense/CSR propagation, coherent cross
+terms, reduced work, polarization validation, result serialization, and
+ambiguous cross-J rejection are covered. The CuPy selection mask was aligned
+with CPU J=0 and Morse behavior, but real GPU parity remains pending CUDA.
+The full suite collects 419 tests: 409 pass and 10 GPU tests skip. The
+`physics` marker selects 49 cases.
 
 Required tests:
 

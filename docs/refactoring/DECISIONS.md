@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 ## How to use this log
 
@@ -242,6 +242,53 @@ E_(v+1) - E_v = omega01 - v delta_omega
 Stored-parameter and temporary-override Hamiltonian generation must call the
 same implementation. The earlier override path used a different formula and
 was incorrect.
+
+### D-017: Reduced LinMol uses fixed-linear M-block averaging
+
+Status: Accepted
+Scope: LinMol `use_M`, polarization, initial states, propagation, and results
+
+`use_M=True` is the explicit `|v,J,M>` Cartesian model. `use_M=False`
+means a qualitative, lower-cost calculation that averages unresolved magnetic
+degeneracy. It is not an `M=0` pure-state approximation.
+
+For `use_M=False`, any fixed linear laboratory polarization is accepted. Its
+Jones vector is normalized, a common complex phase is removed, and the
+quantization axis is aligned with that direction. Propagation then uses only
+the internal z component, so `Delta M=0`.
+
+For an initial rotational quantum number `J0`, each M component has
+statistical weight `1/(2 J0 + 1)`. Fixed-M blocks evolve separately and
+populations are summed incoherently. Because the z-coupling matrix is identical
+for `+M` and `-M`, only non-negative `|M|` representatives are propagated:
+`M=0` has multiplicity one and `M>0` has multiplicity two.
+
+Consequences:
+
+- circular, elliptical, and time-dependent polarization are rejected;
+- `axes` is not applicable and is rejected instead of ignored;
+- equal-amplitude coherent initial states are supported only when every
+  selected reduced state has the same J; coherence across v is retained;
+- a coherent selection spanning different J is rejected because an isotropic
+  M average does not define unique cross-J coherences;
+- the returned population index is the reduced `(v,J)` ordering;
+- serialized results identify `m_incoherent_average`, store representative
+  block wavefunctions and weights, and do not store a fictitious aggregate
+  `psi`;
+- constructing a Cartesian `LinMolDipoleMatrix` from a basis without explicit
+  M quantum numbers is an error;
+- backend selection remains common to block dipole construction and block time
+  propagation under D-005.
+
+The fixed-linear test tolerance is
+`128 * machine_epsilon` after Jones-vector normalization. It distinguishes
+roundoff from a physical relative phase without introducing a field-scale
+threshold.
+
+Implementation anchors:
+`simulation/models/linmol_m_average.py`,
+`simulation/runner.py`, and
+`tests/physics/test_linear_molecule_reference.py`.
 
 ## Open decisions
 

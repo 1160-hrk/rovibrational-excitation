@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-07-31
+Last verified: 2026-08-01
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -103,7 +103,7 @@ These commits are the starting point, not the final architecture.
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Physics characterization baseline | In progress — P0.1-P0.4 implemented; CUDA validation pending |
+| 0 | Physics characterization baseline | In progress — P0.1-P0.5 implemented; CUDA validation pending |
 | 1 | Repository and CI normalization | Pending |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |

@@ -184,13 +184,9 @@ def _dense_gpu(
     M1 = xp.expand_dims(M_arr, 1)
     M2 = xp.expand_dims(M_arr, 0)
 
-    mask = (
-        (xp.abs(v1 - v2) == 1)
-        & (xp.abs(J1 - J2) == 1)
-        & (xp.abs(M1 - M2) <= 1)
-        & (J1 != 0)
-        & (J2 != 0)
-    )
+    mask = (xp.abs(J1 - J2) == 1) & (xp.abs(M1 - M2) <= 1)
+    if not vib_is_morse:
+        mask &= xp.abs(v1 - v2) == 1
 
     rot = xp.vectorize(rot_func, otypes=[xp.complex128])(J1, M1, J2, M2)
     if vib_is_morse:
@@ -237,11 +233,12 @@ def build_mu(
     v_arr = _np.asarray(basis.V_array, _np.int64)
     J_arr = _np.asarray(basis.J_array, _np.int64)
 
-    # M_arrayがない場合（use_M=False）はM=0で埋める
-    if hasattr(basis, "M_array"):
-        M_arr = _np.asarray(basis.M_array, _np.int64)
-    else:
-        M_arr = _np.zeros_like(J_arr, dtype=_np.int64)
+    if not hasattr(basis, "M_array"):
+        raise ValueError(
+            "LinMol dipoles require explicit M quantum numbers; "
+            "use_M=False must use the incoherent M-averaged workflow"
+        )
+    M_arr = _np.asarray(basis.M_array, _np.int64)
 
     axis_idx = "xyz".index(axis_normalized)
     vib_is_morse = pot == "morse"

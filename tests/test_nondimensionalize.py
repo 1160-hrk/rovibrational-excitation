@@ -153,7 +153,7 @@ def test_dimensionalize_wavefunction():
 def test_nondimensionalize_with_realistic_system():
     """現実的なシステムでの無次元化テスト"""
     # CO2の無次元振動子
-    basis = LinMolBasis(V_max=3, J_max=5, use_M=False)
+    basis = LinMolBasis(V_max=3, J_max=5, use_M=True)
     
     # 時間軸
     tlist = np.linspace(-50, 50, 1001)

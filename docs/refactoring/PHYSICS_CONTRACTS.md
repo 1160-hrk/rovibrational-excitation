@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-07-31
+Last verified against source and tests: 2026-08-01
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -386,6 +386,68 @@ These are not interchangeable. A function or runner must state which
 semantics it uses in its name, type, or required options. No generic list input
 may silently switch meaning based only on array shape except the currently
 documented explicit square density-matrix dispatch in `MixedStatePropagator`.
+
+### 8.1 LinMol fixed-linear M average
+
+Decision D-017 defines two distinct LinMol workflows:
+
+- `use_M=True`: explicit `|v,J,M>` basis, Cartesian x/y/z coupling, and
+  physically direction-dependent polarization response;
+- `use_M=False`: reduced `|v,J>` output with an incoherent average over
+  separately propagated fixed-M blocks.
+
+For a reduced initial state with rotational number `J0`,
+
+~~~text
+w_M = 1 / (2 J0 + 1),              M = -J0, ..., J0
+P_(v,J)(t) = sum_M w_M |psi_(v,J,M)(t)|^2
+~~~
+
+With fixed linear polarization the quantization axis is chosen along the field,
+so the internal interaction is `-mu_z E_scalar` and every block conserves M.
+The `+M` and `-M` z-coupling blocks are identical. The implementation
+therefore propagates `|M|=0,...,J0` with representative weights
+
+~~~text
+W_0 = 1 / (2 J0 + 1)
+W_|M| = 2 / (2 J0 + 1),            |M| > 0
+sum_|M| W_|M| = 1
+~~~
+
+The full explicit dimension and each block dimension are:
+
+~~~text
+D_full = (V_max + 1) (J_max + 1)^2
+D_M = (V_max + 1) (J_max - |M| + 1)
+~~~
+
+Dense matrix work is consequently proportional to `sum D_M^2` for the
+required representatives rather than `D_full^2`. No full M-resolved dipole
+matrix is constructed by the reduced runner.
+
+A fixed linear Jones vector may be real or may contain one common complex
+phase. After normalization, the common phase is removed and the remaining
+imaginary norm must not exceed `128 * epsilon_float64`. A physical relative
+complex phase is circular or elliptical and must raise. `axes` must also raise
+in this mode because the laboratory direction is the internal quantization
+axis.
+
+An equal-amplitude coherent superposition across v is allowed when all selected
+states share one J. A selection spanning multiple J values raises rather than
+silently discarding cross-J coherence. Such an initial condition requires an
+explicitly specified incoherent ensemble or a future rotational density
+contract.
+
+The reduced result is a mixed-state population trajectory, not a state vector.
+Saved results contain `representation="m_incoherent_average"`, `abs_m`,
+`m_multiplicity`, `m_weight`, and one `psi_abs_m_<M>` per representative.
+They intentionally contain no aggregate `psi`.
+
+Regression anchor:
+`tests/physics/test_linear_molecule_reference.py` compares the reduced result
+against a full M-resolved incoherent reference, verifies weight normalization
+and reduced work, and separates explicit-M Cartesian response from reduced
+direction-independent response.
 
 ## 9. Algorithm and backend capability matrix
 

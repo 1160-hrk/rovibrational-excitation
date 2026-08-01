@@ -122,6 +122,22 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
             validate_axes(params.get("axes", "xy"))
         except (AttributeError, ValueError) as exc:
             raise SimulationConfigurationError(str(exc)) from exc
+        if not params.get("use_M", True):
+            if "axes" in params:
+                raise SimulationConfigurationError(
+                    "axes is not applicable when use_M=False; fixed linear "
+                    "polarization is aligned with the internal z axis"
+                )
+            from .models.linmol_m_average import (
+                canonicalize_fixed_linear_polarization,
+                validate_m_average_initial_states,
+            )
+
+            try:
+                canonicalize_fixed_linear_polarization(polarization)
+                validate_m_average_initial_states(dict(params))
+            except ValueError as exc:
+                raise SimulationConfigurationError(str(exc)) from exc
 
     if params.get("algorithm", "rk4") not in {"rk4", "split_operator"}:
         raise SimulationConfigurationError(

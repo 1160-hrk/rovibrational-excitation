@@ -14,8 +14,8 @@ The files are introduced with real checks in the following Phase 0 tasks:
 |---|---|---|---|
 | `test_two_level_reference.py` | P0.3 | Implemented; CUDA parity pending | Analytic phase, density equivalence, constant drive, scalar polarization, dimensional/backend agreement |
 | `test_vib_ladder_reference.py` | P0.4 | Complete | Energies, Morse derivation/bounds/isolation, scalar polarization, dimensional agreement |
-| `test_linear_molecule_reference.py` | P0.5 | Planned | Indexing, energies, Cartesian polarization, dense/sparse behavior |
-| `test_dipole_selection_rules.py` | P0.4/P0.5 | Planned | Harmonic, Morse, and rotational selection rules |
+| `test_linear_molecule_reference.py` | P0.5 | Complete; CUDA parity pending | Indexing, energies, selection rules, Cartesian response, M averaging, dense/sparse behavior |
+| `test_dipole_selection_rules.py` | P0.4/P0.5 | Covered in model reference files | Harmonic, Morse, and rotational selection rules |
 | `test_solver_invariants.py` | P0.6 | Planned | Convergence, norm/trace/Hermiticity, time sampling, capability errors |
 | `test_dimensional_equivalence.py` | P0.3/P0.4 | TwoLevel and VibLadder covered in model files | Cross-model dimensional and nondimensional result/time agreement |
 

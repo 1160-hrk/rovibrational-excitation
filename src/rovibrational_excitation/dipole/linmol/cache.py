@@ -23,10 +23,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Union
 
-from rovibrational_excitation.dipole.base import DipoleMatrixBase, _xp, Array
-from rovibrational_excitation.core.units.converters import converter
-
 import numpy as np
+
+from rovibrational_excitation.dipole.base import Array, DipoleMatrixBase
 
 try:
     import cupy as cp  # optional GPU backend
@@ -49,13 +48,6 @@ from rovibrational_excitation.dipole.linmol.builder import build_mu
 
 
 # ----------------------------------------------------------------------
-# Helper
-# ----------------------------------------------------------------------
-def _xp(backend: str):
-    return cp if (backend == "cupy" and cp is not None) else np
-
-
-# ----------------------------------------------------------------------
 # Main class
 # ----------------------------------------------------------------------
 @dataclass(slots=True)
@@ -65,8 +57,8 @@ class LinMolDipoleMatrix(DipoleMatrixBase):
     potential_type: Literal["harmonic", "morse"] = "harmonic"
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
-    units: Literal["C*m", "D", "ea0"] = "C*m"           # internal storage units
-    units_input: Literal["C*m", "D", "ea0"] = "C*m"     # units in which mu0 is provided
+    units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
+    units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
 
     _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[type-arg]
         init=False, default_factory=dict, repr=False
@@ -90,5 +82,10 @@ class LinMolDipoleMatrix(DipoleMatrixBase):
     # DipoleMatrixBase already provides unit conversion, stacking, persistence, __repr__
     # ------------------------------------------------------------------
     def __post_init__(self):
+        if not hasattr(self.basis, "M_array"):
+            raise ValueError(
+                "LinMolDipoleMatrix requires an explicit M-resolved basis; "
+                "use_M=False is an incoherent M-averaged simulation workflow"
+            )
         # convert mu0 units using base helper
         self._convert_mu0_if_needed()
