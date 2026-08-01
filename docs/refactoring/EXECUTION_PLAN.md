@@ -213,6 +213,19 @@ cannot be derived unambiguously from the implemented formula.
 
 ### P0.6 Solver invariant and convergence suite
 
+Status: Complete on 2026-08-01. All 11 deterministic cases in
+`tests/physics/test_solver_invariants.py` pass. RK4 fourth-order convergence,
+the analytic RK4 norm-amplification polynomial, explicit renormalization,
+left/mid/right sampling, `-mu E`, trajectory/final equivalence, split
+unitarity and diagonal-H0 validation, factor-of-two physical time, current
+stride endpoint behavior, Liouville trace/Hermiticity, the D-012 threshold
+boundary, and unsupported capability errors are covered.
+
+The full suite collects 430 tests: 420 pass and 10 GPU tests skip. The
+`physics` marker selects 60 cases. No solver source change was required.
+O-001, O-003, and O-004 remain open; their current behavior is characterized
+without choosing a future API policy.
+
 Required tests:
 
 - RK4 fourth-order convergence trend on a small analytic system;

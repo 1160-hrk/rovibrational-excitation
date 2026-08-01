@@ -488,6 +488,41 @@ Current anchors:
 - `tests/physics/test_two_level_reference.py` contains the real NumPy/CuPy
   final-state parity case and is marked `gpu`.
 
+### Solver invariant Phase 0 reference anchor
+
+`tests/physics/test_solver_invariants.py` is the P0.6 independent reference.
+It fixes the following deterministic problems and tolerances:
+
+- RK4 global order uses free evolution with energies `(0, 1.7) rad/fs`,
+  total time `2 fs`, and steps `0.2`, `0.1`, and `0.05 fs`. Error ratios
+  must lie between 14 and 18 around the analytic fourth-order value 16.
+- RK4 norm drift uses one eigenstate at `4 rad/fs`, step `0.3 fs`, and 20
+  steps. With `renorm=False`, the norm must equal the fourth-order stability
+  polynomial magnitude raised to the twentieth power and must visibly differ
+  from one. With `renorm=True`, every saved norm agrees with one to `2e-15`.
+- One nonautonomous RK4 step uses `E_left=0.2`, `E_mid=0.7`,
+  `E_right=0.1`, and `dt=0.01 fs`. A direct four-stage calculation must
+  agree to `2e-15` and fixes both left/mid/right sampling and `H0-mu E`.
+- RK4 trajectory and final-only paths must return identical final vectors.
+- Split operator uses 50 steps of `0.02 fs` with a sinusoidal field. All
+  norms agree with one to `2e-14`; trajectory and final-only results agree
+  exactly. A non-diagonal `H0` must raise before propagation.
+- The physical-time reference uses a field grid from `1.0` to `1.5 fs`
+  with `0.05 fs` field intervals. Propagation times advance by `0.1 fs`.
+  With stride two, the current regular output is `(1.0, 1.2, 1.4) fs` and
+  omits the `1.5 fs` endpoint; final-only output reports `1.5 fs`.
+- Liouville propagation uses 40 steps of `0.01 fs`. Trace and Hermiticity
+  errors remain below `3e-15` without projection or normalization.
+- The density positivity boundary is derived directly from
+  `100*n*eps*||rho||_2`: half the reference scale is accepted and twice the
+  reference scale is rejected.
+- Invalid RK4 backends, CuPy Liouville, and factory split-operator mixed
+  states raise explicit capability errors.
+
+The endpoint, mixed split-operator factory, and renormalization checks
+characterize O-001, O-003, and O-004 respectively; they do not resolve those
+open API decisions.
+
 ## 10. Input validation principles
 
 Parameters that define the physical problem must be required rather than
