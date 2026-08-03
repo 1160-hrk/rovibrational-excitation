@@ -326,7 +326,7 @@ Consequences:
 - dense and sparse implementations stay separate inside the hot loop;
 - `tests/physics/test_sparse_rk4_reference.py` is the numerical anchor.
 
-Implementation commit: pending
+Implementation commit: `6e154ec`
 
 ## Open decisions
 

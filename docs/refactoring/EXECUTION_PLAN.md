@@ -537,6 +537,22 @@ kernels.
 
 ### P5.1 RK4
 
+Status: P5.1-a completed early on 2026-08-03 in `6e154ec`. NumPy dense and
+CSR propagation now use separate allocation-stable Numba kernels. CSR input
+is canonicalized without approximate truncation, `sparse=True` is explicit,
+and final-only propagation allocates one returned state.
+
+`benchmarks/numba-csr-v0.2.10.json` records 100.6x, 50.4x, and 44.8x
+speedups over the former Python/SciPy sparse paths for TwoLevel, 16-level
+VibLadder, and 18-state LinMol. Dense/sparse final differences are at most
+`1.11e-16`, and final norm errors are at most `2.34e-15`. A separate
+final-only tridiagonal diagnostic measured 5.67x at dimension 64 and 24.77x
+at dimension 256. Full validation collected 442 tests: 432 passed and 10 GPU
+tests skipped.
+
+CuPy dense and Liouville kernel separation remain part of the later P5.1
+completion; this early unit does not claim all of P5.1 complete.
+
 Separate:
 
 - validation and preparation;

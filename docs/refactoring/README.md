@@ -97,6 +97,7 @@ been compared with the replacement.
 | `af21fbe` | Aligned density propagation options, backend honesty, time return, validation |
 | `613ce93` | Unified `-mu E` sign and added physical density matrix validation |
 | `3b081e1` | Added the reproducible, non-blocking Phase 0 benchmark recorder |
+| `6e154ec` | Replaced the Python/SciPy sparse RK4 loop with explicit Numba CSR propagation |
 
 These commits are the starting point, not the final architecture.
 
@@ -109,7 +110,7 @@ These commits are the starting point, not the final architecture.
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | Pending |
-| 5 | Numerical dynamics engine | Pending |
+| 5 | Numerical dynamics engine | Early work — P5.1-a NumPy dense/CSR RK4 kernels complete |
 | 6 | Model consolidation | Pending |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |

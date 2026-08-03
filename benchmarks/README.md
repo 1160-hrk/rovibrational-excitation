@@ -67,6 +67,34 @@ artifact records GPU timing as not run unless a dedicated measurement is made
 on a real CUDA device. The committed v0.2.10 artifact is the NumPy CPU baseline;
 CUDA remains separately unverified.
 
+## Numba CSR RK4 result
+
+The post-change artifact was recorded from clean source commit `6e154ec`:
+
+~~~bash
+python benchmarks/run_baseline.py \
+  --artifact numba-csr-v0.2.10 \
+  --output benchmarks/numba-csr-v0.2.10.json
+~~~
+
+| Sparse workload | Previous SciPy (ms) | Numba CSR (ms) | Speedup |
+|---|---:|---:|---:|
+| TwoLevel | 39.040 | 0.388 | 100.6x |
+| VibLadder, dimension 16 | 41.178 | 0.818 | 50.4x |
+| LinMol, dimension 18 | 43.588 | 0.974 | 44.8x |
+
+The largest dense/sparse final-state L2 difference is `1.11e-16`; the largest
+final norm error is `2.34e-15`. The Liouville trace reference is unchanged at
+`2.94e-18`.
+
+The old workload labelled dense accepted dense input but internally scanned it
+into CSR. The new dense measurement executes the actual dense kernel. For the
+structurally sparse 16- and 18-dimensional models, explicit Numba CSR is 1.80
+and 1.97 times faster than the honest dense path respectively. A final-only
+tridiagonal diagnostic with 200 RK4 steps measured 5.67x speedup at dimension
+64 and 24.77x at dimension 256, with dense/sparse final L2 differences below
+`5.56e-17`.
+
 ## Regression policy
 
 Wall time is environment-dependent, so the artifact contains no absolute test

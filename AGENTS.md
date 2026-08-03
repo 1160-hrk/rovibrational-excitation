@@ -2,7 +2,7 @@
 
 Last verified: 2026-07-31
 Active refactor branch: `refactor/v0.3`
-Verified baseline commit: `3b081e1`
+Verified baseline commit: `6e154ec`
 
 ## Purpose
 
@@ -112,18 +112,19 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current full test baseline at benchmark source commit `3b081e1`:
+Current full test baseline at Numba CSR source commit `6e154ec`:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-427 passed, 10 GPU tests skipped
+432 passed, 10 GPU tests skipped
 ~~~
 
-The Phase 0 CPU performance artifact is
-`benchmarks/baseline-v0.2.10.json`. CUDA remains unverified.
+The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
+Numba CSR comparison is `benchmarks/numba-csr-v0.2.10.json`. CUDA remains
+unverified.
 
 Use Ruff without broad automatic fixes while a worktree contains unrelated
 changes:
