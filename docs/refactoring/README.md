@@ -71,8 +71,8 @@ testability do.
 
 ## Known repository hygiene problems
 
-- Generated `.coverage` and historical `tests/results/` files are tracked.
-- An example notebook checkpoint is tracked.
+- P1.1 removed tracked coverage databases, historical runner-test output, and
+  the Notebook checkpoint; saving runner tests now use pytest temporary paths.
 - `test_basis_validation.py` and `test_new_api.py` are outside configured
   `testpaths = ["tests"]` and are not part of normal pytest.
 - `test_new_api.py` contains code that deletes its own source file when run.

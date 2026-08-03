@@ -5,8 +5,15 @@ __pycache__/
 
 # Coverage
 .coverage
+.coverage.*
 coverage.xml
 htmlcov/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
 
 # pandas、numpy などの大きなデータ
 *.h5

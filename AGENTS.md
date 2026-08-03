@@ -1,6 +1,6 @@
 # Codex repository instructions
 
-Last verified: 2026-07-31
+Last verified: 2026-08-03
 Active refactor branch: `refactor/v0.3`
 Verified baseline commit: `6e154ec`
 
@@ -138,8 +138,8 @@ git diff --check
 A repository-wide formatting cleanup is a dedicated Phase 1 commit. Do not run
 `ruff check --fix .` as part of a behavioral change.
 
-Coverage must use a temporary data file so the tracked legacy `.coverage` file
-is not overwritten:
+Coverage must use a temporary data file so repository-local coverage databases
+are not created:
 
 ~~~bash
 coverage run --data-file=/tmp/rve-coverage \
@@ -177,14 +177,13 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 is complete for the CPU baseline. The next authorized roadmap work is
-Phase 1 repository and CI normalization:
+Phase 0 is complete for the CPU baseline, and P1.1 generated-artifact cleanup
+is complete. The next authorized roadmap work is P1.2 test normalization:
 
-1. Classify and remove tracked generated artifacts.
-2. Convert, archive, or remove tests and validation scripts outside `tests/`.
-3. Normalize pytest collection and marker policy.
-4. Apply repository-wide Ruff formatting in an isolated commit.
-5. Make lint, type, coverage, build, and physics CI gates truthful.
+1. Convert, archive, or remove tests and validation scripts outside `tests/`.
+2. Normalize pytest collection and marker policy.
+3. Apply repository-wide Ruff formatting in an isolated commit.
+4. Make lint, type, coverage, build, and physics CI gates truthful.
 
 Do not start the target directory migration before Phase 0 acceptance criteria
 are met.

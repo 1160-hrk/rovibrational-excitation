@@ -441,7 +441,7 @@ class TestRunAllBasic:
         assert any("Dry-run" in call for call in calls)
 
     @patch("rovibrational_excitation.simulation.runner._run_one")
-    def test_single_case_execution(self, mock_run_one):
+    def test_single_case_execution(self, mock_run_one, tmp_path):
         """単一ケース実行テスト"""
         mock_run_one.return_value = np.array([[1.0, 0.0]])
 
@@ -453,7 +453,11 @@ class TestRunAllBasic:
         }
 
         # save=Trueにしてcheckpoint_managerが作成されるようにする
-        result = run_all(params, save=True)
+        with patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=tmp_path,
+        ):
+            result = run_all(params, save=True)
 
         assert len(result) == 1
         mock_run_one.assert_called_once()
@@ -560,7 +564,7 @@ class TestErrorHandling:
             run_all(None)  # type: ignore  # Noneは無効
 
     @patch("rovibrational_excitation.simulation.runner._run_one")
-    def test_partial_failure_handling(self, mock_run_one):
+    def test_partial_failure_handling(self, mock_run_one, tmp_path):
         """部分的失敗の処理テスト"""
         # 1つ目は成功、2つ目は失敗
         mock_run_one.side_effect = [
@@ -576,7 +580,11 @@ class TestErrorHandling:
         }
 
         # save=Trueにしてcheckpoint_managerが作成されるようにする
-        results = run_all(params, save=True)
+        with patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=tmp_path,
+        ):
+            results = run_all(params, save=True)
 
         # 成功したケースの結果のみ返される
         assert len(results) == 1

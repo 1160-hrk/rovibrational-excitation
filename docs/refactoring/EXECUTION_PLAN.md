@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-01
+Last updated: 2026-08-03
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -300,6 +300,16 @@ CuPy/CUDA; no GPU capability claim is inferred from skipped tests.
 Goal: make automated quality signals truthful before architectural movement.
 
 ### P1.1 Classify and remove generated artifacts
+
+Status: Complete on 2026-08-03. Two tracked coverage databases, 19 historical
+runner-test output files, and one Notebook checkpoint were removed after
+confirming that they contained repeated runtime metadata and mock tracebacks,
+not unique scientific reference data. Ignore rules now cover coverage shards,
+tool caches, and Notebook checkpoints. The two runner tests that previously
+wrote to the repository now patch their output root to pytest's `tmp_path`.
+Focused validation passed all 44 runner and simulation-contract tests. The
+full suite passed 432 tests with 10 GPU skips, and no `tests/results/`
+directory was recreated.
 
 Inspect, then remove from Git and add ignore rules for:
 
