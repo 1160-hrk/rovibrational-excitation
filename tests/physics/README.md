@@ -18,6 +18,7 @@ The files are introduced with real checks in the following Phase 0 tasks:
 | `test_dipole_selection_rules.py` | P0.4/P0.5 | Covered in model reference files | Harmonic, Morse, and rotational selection rules |
 | `test_solver_invariants.py` | P0.6 | Complete | Convergence, norm/trace/Hermiticity, time sampling, capability errors |
 | `test_dimensional_equivalence.py` | P0.3/P0.4 | TwoLevel and VibLadder covered in model files | Cross-model dimensional and nondimensional result/time agreement |
+| `test_sparse_rk4_reference.py` | P5.1-a | Complete | Explicit CSR dispatch, fused Hamiltonian application, dense parity, final-only and renormalization errors |
 
 Empty placeholder test modules are intentionally forbidden: a planned filename
 appears only when at least one meaningful reference test is implemented.

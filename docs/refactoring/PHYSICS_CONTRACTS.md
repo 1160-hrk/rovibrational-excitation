@@ -478,6 +478,24 @@ Additional constraints:
   This silent fallback is a known defect and must be replaced by an explicit
   availability error.
 
+### Numba CSR RK4 reference anchor
+
+`tests/physics/test_sparse_rk4_reference.py` fixes the NumPy sparse contract:
+
+- matrix storage is selected explicitly with `sparse=True`;
+- SciPy sparse input without that selection raises before propagation;
+- canonical CSR preparation does not mutate input or discard nonzero values;
+- fused CSR application implements `-1j*(H0-mu_x*Ex-mu_y*Ey)@psi`;
+- a deterministic 64-state Hermitian problem agrees with dense RK4 over the
+  full trajectory to absolute tolerance `3e-13`;
+- sparse trajectory and final-only paths return identical final states;
+- renormalizing a zero or non-finite state raises instead of returning
+  partially uninitialized output.
+
+The tolerance covers accumulated floating-point ordering differences between
+dense fastmath and strict CSR row reductions. It is not an operator-element
+cutoff; the propagation layer applies no approximate sparsification.
+
 A skipped CuPy test does not establish correctness. Keep capability wording
 conditional until tested in a CUDA CI job.
 

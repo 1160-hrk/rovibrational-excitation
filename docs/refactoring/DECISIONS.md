@@ -290,6 +290,44 @@ Implementation anchors:
 `simulation/runner.py`, and
 `tests/physics/test_linear_molecule_reference.py`.
 
+### D-018: RK4 matrix storage is explicit and CSR propagation is JIT-compiled
+
+Status: Accepted
+Scope: NumPy RK4 dense/sparse dispatch, CSR preparation, and numerical policy
+
+The previous dispatch sent `sparse=True` and SciPy CSR inputs through a
+Python/SciPy RK4 loop, while dense inputs were scanned and converted to CSR
+inside a Numba function. The public storage choice therefore did not describe
+the executed kernel and repeated dense-to-CSR scans obscured performance.
+
+`sparse=True` now means that each operator is copied into canonical SciPy CSR
+once before propagation and its contiguous `data`, `indices`, and `indptr`
+arrays are passed to a fused Numba RK4 kernel. Sparse operator input without
+`sparse=True` is rejected rather than inferred. `sparse=False` uses the
+allocation-stable dense Numba kernel.
+
+CSR preparation sums duplicate entries, removes stored exact zeros, and sorts
+indices without mutating caller-owned matrices. It performs no tolerance-based
+truncation. Approximate sparsification would change the operator and therefore
+requires a separate explicit policy and user-approved threshold.
+
+The sparse Hamiltonian application preserves `H0 - mu_x*Ex - mu_y*Ey` and
+does not use `fastmath`. Dense `fastmath` is retained only after invariant and
+dense/sparse parity tests found final differences below the documented
+tolerances. Opt-in renormalization raises for a zero or non-finite norm instead
+of skipping trajectory storage.
+
+Consequences:
+
+- CSR matrices remain sparse from model construction through the hot loop;
+- final-only propagation allocates only one returned state;
+- field stages are indexed directly as left, midpoint, and right samples;
+- the current stride endpoint behavior remains governed by O-001;
+- dense and sparse implementations stay separate inside the hot loop;
+- `tests/physics/test_sparse_rk4_reference.py` is the numerical anchor.
+
+Implementation commit: pending
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

@@ -10,13 +10,14 @@
 
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Literal
 
 import numpy as np
-from scipy.sparse import csr_matrix
+import scipy.sparse as sp
+from numba import njit
 
 from ..validation import validate_wavefunction_problem
-from .sparse import H_apply, to_csr
+from .sparse import apply_hamiltonian_csr, prepare_csr_arrays
 
 
 # ------------------------------------------------------------------ #
@@ -36,352 +37,252 @@ def _field_to_triplets(field: np.ndarray) -> np.ndarray:
 # ================================================================== #
 # 1.  CPU (NumPy / Numba)                                            #
 # ================================================================== #
-try:
-    from numba import njit
-except ImportError:  # numba 不在でも動くダミー
-
-    def njit(*args, **kwargs):  # type: ignore
-        def deco(f):
-            return f
-
-        return deco
 
 
-@njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],f8[:], f8[:],c16[:], f8, b1, i8, b1)",
-    fastmath=True,
-    cache=True,
-)
-def _rk4_cpu_numba(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
-    steps = (Ex.size - 1) // 2  # 必ず整数
-    Ex3, Ey3 = (
-        np.zeros((steps, 3), dtype=np.float64),
-        np.zeros((steps, 3), dtype=np.float64),
-    )
-    Ex3[:, 0], Ey3[:, 0] = Ex[0:-2:2], Ey[0:-2:2]
-    Ex3[:, 1], Ey3[:, 1] = Ex[1:-1:2], Ey[1:-1:2]
-    Ex3[:, 2], Ey3[:, 2] = Ex[2::2], Ey[2::2]
-    psi = psi0.copy()
-    dim = psi.size
-    n_out = steps // stride + 1
-    out = np.empty((n_out, dim), np.complex128)
-    out[0] = psi
-    idx = 1
-    buf = np.empty_like(psi)
-    k1 = np.empty_like(psi)
-    k2 = np.empty_like(psi)
-    k3 = np.empty_like(psi)
-    k4 = np.empty_like(psi)
-    for s in range(steps):
-        ex1, ex2, ex4 = Ex3[s]
-        ey1, ey2, ey4 = Ey3[s]
-        H1 = H0 - mux * ex1 - muy * ey1
-        H2 = H0 - mux * ex2 - muy * ey2  # =H3
-        H4 = H0 - mux * ex4 - muy * ey4
-        k1[:] = -1j * (H1 @ psi)
-        buf[:] = psi + 0.5 * dt * k1
-        k2[:] = -1j * (H2 @ buf)
-        buf[:] = psi + 0.5 * dt * k2
-        k3[:] = -1j * (H2 @ buf)
-        buf[:] = psi + dt * k3
-        k4[:] = -1j * (H4 @ buf)
-        psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
-        if renorm:
-            # より高精度な正規化
-            norm = np.sqrt((psi.conj() @ psi).real)
-            if norm > 1e-12:  # 数値的にゼロでない場合のみ正規化
-                psi *= 1.0 / norm
-            else:
-                continue
-        if return_traj and (s + 1) % stride == 0:
-            out[idx] = psi
-            idx += 1
-    if return_traj:
-        return out
-    else:
-        return psi.reshape((1, dim))
+@njit(cache=True, fastmath=True, inline="always")
+def _apply_hamiltonian_dense(H0, mu_x, mu_y, field_x, field_y, state, output):
+    """Set output to -1j * (H0 - mu_x*Ex - mu_y*Ey) @ state."""
+    dimension = state.size
+    for row in range(dimension):
+        value = 0.0 + 0.0j
+        for column in range(dimension):
+            value += (
+                H0[row, column]
+                - field_x * mu_x[row, column]
+                - field_y * mu_y[row, column]
+            ) * state[column]
+        output[row] = -1j * value
 
 
-@njit(
-    "c16[:, :](c16[:, :], c16[:, :], c16[:, :],f8[:], f8[:], c16[:], f8, b1, i8, b1)",
-    fastmath=True,
-    cache=True,
-)
-def _rk4_cpu_numba_sparse(H0, mux, muy, Ex, Ey, psi0, dt, return_traj, stride, renorm):
-    H0_data, H0_idx, H0_ptr = to_csr(H0)
-    mx_data, mx_idx, mx_ptr = to_csr(mux)
-    my_data, my_idx, my_ptr = to_csr(muy)
+@njit(cache=True, fastmath=True)
+def _rk4_cpu_numba(H0, mu_x, mu_y, Ex, Ey, psi0, dt, return_traj, stride, renorm):
+    """Run allocation-stable dense RK4 entirely inside Numba."""
     steps = (Ex.size - 1) // 2
-    Ex3 = np.empty((steps, 3), np.float64)
-    Ey3 = np.empty((steps, 3), np.float64)
-    Ex3[:, 0], Ey3[:, 0] = Ex[0:-2:2], Ey[0:-2:2]
-    Ex3[:, 1], Ey3[:, 1] = Ex[1:-1:2], Ey[1:-1:2]
-    Ex3[:, 2], Ey3[:, 2] = Ex[2::2], Ey[2::2]
-
     psi = psi0.copy()
-    dim = psi.size
-    n_out = steps // stride + 1
-    out = np.empty((n_out, dim), np.complex128)
-    out[0] = psi
-    idx = 1
+    dimension = psi.size
+    output_rows = steps // stride + 1 if return_traj else 1
+    output = np.empty((output_rows, dimension), dtype=np.complex128)
+    output_index = 0
+    if return_traj:
+        output[0] = psi
+        output_index = 1
 
-    buf = np.empty_like(psi)
+    buffer = np.empty_like(psi)
     k1 = np.empty_like(psi)
     k2 = np.empty_like(psi)
     k3 = np.empty_like(psi)
     k4 = np.empty_like(psi)
-    tmp0 = np.empty_like(psi)
-    tmpx = np.empty_like(psi)
-    tmpy = np.empty_like(psi)
 
-    for s in range(steps):
-        ex1, ex2, ex4 = Ex3[s, 0], Ex3[s, 1], Ex3[s, 2]
-        ey1, ey2, ey4 = Ey3[s, 0], Ey3[s, 1], Ey3[s, 2]
+    for step_index in range(steps):
+        field_index = 2 * step_index
 
-        # k1
-        H_apply(
-            H0_data,
-            H0_idx,
-            H0_ptr,
-            mx_data,
-            mx_idx,
-            mx_ptr,
-            my_data,
-            my_idx,
-            my_ptr,
-            ex1,
-            ey1,
+        _apply_hamiltonian_dense(
+            H0,
+            mu_x,
+            mu_y,
+            Ex[field_index],
+            Ey[field_index],
             psi,
             k1,
-            tmp0,
-            tmpx,
-            tmpy,
         )
-        for i in range(dim):
-            k1[i] = -1j * k1[i]
-            buf[i] = psi[i] + 0.5 * dt * k1[i]
+        for index in range(dimension):
+            buffer[index] = psi[index] + 0.5 * dt * k1[index]
 
-        # k2 (=k3と同じ H2)
-        H_apply(
-            H0_data,
-            H0_idx,
-            H0_ptr,
-            mx_data,
-            mx_idx,
-            mx_ptr,
-            my_data,
-            my_idx,
-            my_ptr,
-            ex2,
-            ey2,
-            buf,
+        _apply_hamiltonian_dense(
+            H0,
+            mu_x,
+            mu_y,
+            Ex[field_index + 1],
+            Ey[field_index + 1],
+            buffer,
             k2,
-            tmp0,
-            tmpx,
-            tmpy,
         )
-        for i in range(dim):
-            k2[i] = -1j * k2[i]
-            buf[i] = psi[i] + 0.5 * dt * k2[i]
+        for index in range(dimension):
+            buffer[index] = psi[index] + 0.5 * dt * k2[index]
 
-        # k3
-        H_apply(
-            H0_data,
-            H0_idx,
-            H0_ptr,
-            mx_data,
-            mx_idx,
-            mx_ptr,
-            my_data,
-            my_idx,
-            my_ptr,
-            ex2,
-            ey2,
-            buf,
+        _apply_hamiltonian_dense(
+            H0,
+            mu_x,
+            mu_y,
+            Ex[field_index + 1],
+            Ey[field_index + 1],
+            buffer,
             k3,
-            tmp0,
-            tmpx,
-            tmpy,
         )
-        for i in range(dim):
-            k3[i] = -1j * k3[i]
-            buf[i] = psi[i] + dt * k3[i]
+        for index in range(dimension):
+            buffer[index] = psi[index] + dt * k3[index]
 
-        # k4
-        H_apply(
-            H0_data,
-            H0_idx,
-            H0_ptr,
-            mx_data,
-            mx_idx,
-            mx_ptr,
-            my_data,
-            my_idx,
-            my_ptr,
-            ex4,
-            ey4,
-            buf,
+        _apply_hamiltonian_dense(
+            H0,
+            mu_x,
+            mu_y,
+            Ex[field_index + 2],
+            Ey[field_index + 2],
+            buffer,
             k4,
-            tmp0,
-            tmpx,
-            tmpy,
         )
-        for i in range(dim):
-            k4[i] = -1j * k4[i]
 
-        # accumulate
-        for i in range(dim):
-            psi[i] += (dt / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i])
+        for index in range(dimension):
+            psi[index] += (dt / 6.0) * (
+                k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]
+            )
 
         if renorm:
-            # conj @ psi を避けるなら手ループ
-            ssum = 0.0
-            for i in range(dim):
-                # |psi|^2
-                ssum += psi[i].real * psi[i].real + psi[i].imag * psi[i].imag
-            if ssum > 1e-24:
-                inv = 1.0 / np.sqrt(ssum)
-                for i in range(dim):
-                    psi[i] *= inv
-            else:
-                # underflow 回避：スキップ
-                continue
+            norm_squared = 0.0
+            for index in range(dimension):
+                norm_squared += (
+                    psi[index].real * psi[index].real
+                    + psi[index].imag * psi[index].imag
+                )
+            if norm_squared <= 0.0 or not np.isfinite(norm_squared):
+                raise ValueError("cannot renormalize a zero or non-finite wavefunction")
+            inverse_norm = 1.0 / np.sqrt(norm_squared)
+            for index in range(dimension):
+                psi[index] *= inverse_norm
 
-        if return_traj and (s + 1) % stride == 0:
-            out[idx] = psi
-            idx += 1
+        if return_traj and (step_index + 1) % stride == 0:
+            output[output_index] = psi
+            output_index += 1
 
-    if return_traj:
-        return out
-    else:
-        return psi.reshape((1, dim))
+    if not return_traj:
+        output[0] = psi
+    return output
 
 
-def _rk4_cpu_sparse(
-    H0: Union[csr_matrix, np.ndarray],
-    mux: Union[csr_matrix, np.ndarray],
-    muy: Union[csr_matrix, np.ndarray],
-    Ex: np.ndarray,
-    Ey: np.ndarray,
-    psi0: np.ndarray,
-    dt: float,
-    return_traj: bool,
-    stride: int,
-    renorm: bool = False,
-) -> np.ndarray:
-    """
-    4th-order Runge-Kutta propagator with sparse matrices using precomputed pattern.
-
-    Parameters
-    ----------
-    H0, mux, muy : csr_matrix
-        Hamiltonian and dipole operators (sparse)
-    Ex, Ey : (2*steps+1) ndarray
-        Electric field triplets
-    psi0 : (dim,) ndarray
-        Initial wavefunction
-    dt : float
-        Time step
-    steps : int
-        Number of time steps
-    stride : int
-        Output stride
-    renorm : bool
-        Normalize wavefunction at each step
-
-    Returns
-    -------
-    out : (n_out, dim) ndarray
-        Time evolution
-    """
-    steps = (Ex.size - 1) // 2  # 必ず整数
-    Ex3 = _field_to_triplets(Ex)
-    Ey3 = _field_to_triplets(Ey)
-
-    if not isinstance(H0, csr_matrix):
-        H0 = csr_matrix(H0)
-    if not isinstance(mux, csr_matrix):
-        mux = csr_matrix(mux)
-    if not isinstance(muy, csr_matrix):
-        muy = csr_matrix(muy)
-
+@njit(cache=True)
+def _rk4_cpu_numba_csr(
+    h0_data,
+    h0_indices,
+    h0_indptr,
+    mu_x_data,
+    mu_x_indices,
+    mu_x_indptr,
+    mu_y_data,
+    mu_y_indices,
+    mu_y_indptr,
+    Ex,
+    Ey,
+    psi0,
+    dt,
+    return_traj,
+    stride,
+    renorm,
+):
+    """Run RK4 entirely in Numba using pre-canonicalized CSR arrays."""
+    steps = (Ex.size - 1) // 2
     psi = psi0.copy()
-    dim = psi.size
-    n_out = steps // stride + 1
-    out = np.empty((n_out, dim), dtype=np.complex128)
-    out[0] = psi
-    idx = 1
+    dimension = psi.size
+    output_rows = steps // stride + 1 if return_traj else 1
+    output = np.empty((output_rows, dimension), dtype=np.complex128)
+    output_index = 0
+    if return_traj:
+        output[0] = psi
+        output_index = 1
 
-    # 1️⃣ 共通パターン（構造のみ）を作成
-    pattern = (H0 != 0) + (mux != 0) + (muy != 0)
-    pattern = pattern.astype(np.complex128)  # 確実に複素数
-    pattern.data[:] = 1.0 + 0j
-    pattern = pattern.tocsr()
-
-    # 2️⃣ パターンに合わせてデータを展開
-    def expand_to_pattern(matrix: csr_matrix, pattern: csr_matrix) -> np.ndarray:
-        result_data = np.zeros_like(pattern.data, dtype=np.complex128)
-        m_csr = matrix.tocsr()
-        pi, pj = pattern.nonzero()
-        m_dict = {(i, j): v for i, j, v in zip(*m_csr.nonzero(), m_csr.data)}
-        for idx_, (i, j) in enumerate(zip(pi, pj)):
-            result_data[idx_] = m_dict.get((i, j), 0.0 + 0j)
-        return result_data
-
-    H0_data = expand_to_pattern(H0, pattern)
-    mux_data = expand_to_pattern(mux, pattern)
-    muy_data = expand_to_pattern(muy, pattern)
-
-    # 3️⃣ 計算用行列
-    H = pattern.copy()
-
-    # 4️⃣ 作業バッファ
-    buf = np.empty_like(psi)
+    buffer = np.empty_like(psi)
     k1 = np.empty_like(psi)
     k2 = np.empty_like(psi)
     k3 = np.empty_like(psi)
     k4 = np.empty_like(psi)
 
-    for s in range(steps):
-        ex1, ex2, ex4 = Ex3[s]
-        ey1, ey2, ey4 = Ey3[s]
+    for step_index in range(steps):
+        field_index = 2 * step_index
 
-        # H1
-        H.data[:] = H0_data - mux_data * ex1 - muy_data * ey1
-        k1[:] = -1j * H.dot(psi)
-        buf[:] = psi + 0.5 * dt * k1
+        apply_hamiltonian_csr(
+            h0_data,
+            h0_indices,
+            h0_indptr,
+            mu_x_data,
+            mu_x_indices,
+            mu_x_indptr,
+            mu_y_data,
+            mu_y_indices,
+            mu_y_indptr,
+            Ex[field_index],
+            Ey[field_index],
+            psi,
+            k1,
+        )
+        for index in range(dimension):
+            buffer[index] = psi[index] + 0.5 * dt * k1[index]
 
-        # H2
-        H.data[:] = H0_data - mux_data * ex2 - muy_data * ey2
-        k2[:] = -1j * H.dot(buf)
-        buf[:] = psi + 0.5 * dt * k2
+        apply_hamiltonian_csr(
+            h0_data,
+            h0_indices,
+            h0_indptr,
+            mu_x_data,
+            mu_x_indices,
+            mu_x_indptr,
+            mu_y_data,
+            mu_y_indices,
+            mu_y_indptr,
+            Ex[field_index + 1],
+            Ey[field_index + 1],
+            buffer,
+            k2,
+        )
+        for index in range(dimension):
+            buffer[index] = psi[index] + 0.5 * dt * k2[index]
 
-        # H3
-        H.data[:] = H0_data - mux_data * ex2 - muy_data * ey2
-        k3[:] = -1j * H.dot(buf)
-        buf[:] = psi + dt * k3
+        apply_hamiltonian_csr(
+            h0_data,
+            h0_indices,
+            h0_indptr,
+            mu_x_data,
+            mu_x_indices,
+            mu_x_indptr,
+            mu_y_data,
+            mu_y_indices,
+            mu_y_indptr,
+            Ex[field_index + 1],
+            Ey[field_index + 1],
+            buffer,
+            k3,
+        )
+        for index in range(dimension):
+            buffer[index] = psi[index] + dt * k3[index]
 
-        # H4
-        H.data[:] = H0_data - mux_data * ex4 - muy_data * ey4
-        k4[:] = -1j * H.dot(buf)
-        psi += (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+        apply_hamiltonian_csr(
+            h0_data,
+            h0_indices,
+            h0_indptr,
+            mu_x_data,
+            mu_x_indices,
+            mu_x_indptr,
+            mu_y_data,
+            mu_y_indices,
+            mu_y_indptr,
+            Ex[field_index + 2],
+            Ey[field_index + 2],
+            buffer,
+            k4,
+        )
+
+        for index in range(dimension):
+            psi[index] += (dt / 6.0) * (
+                k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]
+            )
 
         if renorm:
-            # より高精度な正規化
-            norm = np.sqrt((psi.conj() @ psi).real)
-            if norm > 1e-12:  # 数値的にゼロでない場合のみ正規化
-                psi *= 1.0 / norm
-            else:
-                continue
+            norm_squared = 0.0
+            for index in range(dimension):
+                norm_squared += (
+                    psi[index].real * psi[index].real
+                    + psi[index].imag * psi[index].imag
+                )
+            if norm_squared <= 0.0 or not np.isfinite(norm_squared):
+                raise ValueError("cannot renormalize a zero or non-finite wavefunction")
+            inverse_norm = 1.0 / np.sqrt(norm_squared)
+            for index in range(dimension):
+                psi[index] *= inverse_norm
 
-        if return_traj and (s + 1) % stride == 0:
-            out[idx] = psi
-            idx += 1
+        if return_traj and (step_index + 1) % stride == 0:
+            output[output_index] = psi
+            output_index += 1
 
-    if return_traj:
-        return out
-    else:
-        return psi
+    if not return_traj:
+        output[0] = psi
+    return output
 
 
 # ================================================================== #
@@ -542,29 +443,36 @@ def rk4_schrodinger(
         else:
             return _rk4_gpu(H0, mux, muy, Ex, Ey, psi0, float(dt))
 
-    if sparse or isinstance(mux, csr_matrix) or isinstance(muy, csr_matrix):
-        return _rk4_cpu_sparse(
-            H0,
-            mux,
-            muy,
-            Ex,
-            Ey,
+    operators = (H0, mux, muy)
+    if sparse:
+        h0_arrays = prepare_csr_arrays(H0)
+        mu_x_arrays = prepare_csr_arrays(mux)
+        mu_y_arrays = prepare_csr_arrays(muy)
+        return _rk4_cpu_numba_csr(
+            *h0_arrays,
+            *mu_x_arrays,
+            *mu_y_arrays,
+            np.ascontiguousarray(Ex, dtype=np.float64),
+            np.ascontiguousarray(Ey, dtype=np.float64),
             psi0,
             float(dt),
             return_traj,
             stride,
             renorm,
         )
-    else:
-        return _rk4_cpu_numba_sparse(
-            np.ascontiguousarray(H0, np.complex128),
-            np.ascontiguousarray(mux, np.complex128),
-            np.ascontiguousarray(muy, np.complex128),
-            Ex,
-            Ey,
-            psi0,
-            float(dt),
-            return_traj,
-            stride,
-            renorm,
-        )
+
+    if any(sp.issparse(operator) for operator in operators):
+        raise ValueError("CSR operator input requires sparse=True")
+
+    return _rk4_cpu_numba(
+        np.ascontiguousarray(H0, np.complex128),
+        np.ascontiguousarray(mux, np.complex128),
+        np.ascontiguousarray(muy, np.complex128),
+        np.ascontiguousarray(Ex, dtype=np.float64),
+        np.ascontiguousarray(Ey, dtype=np.float64),
+        psi0,
+        float(dt),
+        return_traj,
+        stride,
+        renorm,
+    )

@@ -517,6 +517,7 @@ def validate_report(report: dict) -> None:
 
 def run_baseline(
     *,
+    artifact: str = "baseline-v0.2.10",
     repeats: int = 7,
     warmup_runs: int = 1,
     field_points: int = 4001,
@@ -535,7 +536,7 @@ def run_baseline(
 
     report = {
         "schema_version": 1,
-        "artifact": "baseline-v0.2.10",
+        "artifact": artifact,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source": _git_metadata(),
         "environment": _environment_metadata(),
@@ -565,6 +566,7 @@ def run_baseline(
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--artifact", default="baseline-v0.2.10")
     parser.add_argument("--repeats", type=int, default=7)
     parser.add_argument("--warmup-runs", type=int, default=1)
     parser.add_argument("--field-points", type=int, default=4001)
@@ -574,6 +576,7 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
     report = run_baseline(
+        artifact=args.artifact,
         repeats=args.repeats,
         warmup_runs=args.warmup_runs,
         field_points=args.field_points,

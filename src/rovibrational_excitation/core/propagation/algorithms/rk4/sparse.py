@@ -1,80 +1,60 @@
+"""CSR preparation and Numba kernels for RK4 wavefunction propagation."""
+
+from __future__ import annotations
+
 import numpy as np
+import scipy.sparse as sp
+from numba import njit
 
-try:
-    from numba import njit
-except ImportError:  # numba 不在でも動くダミー
-
-    def njit(*args, **kwargs):  # type: ignore
-        def deco(f):
-            return f
-
-        return deco
-
-@njit(cache=True, fastmath=True)
-def to_csr(A, tol=0.0):
-    m, n = A.shape
-    # 1st pass: nnz カウント
-    nnz = 0
-    for i in range(m):
-        for j in range(n):
-            a = A[i, j]
-            if a != 0.0 and (tol == 0.0 or (a.real*a.real + a.imag*a.imag) > tol*tol):
-                nnz += 1
-
-    data = np.empty(nnz, np.complex128)
-    indices = np.empty(nnz, np.int64)
-    indptr = np.empty(m+1, np.int64)
-
-    # 2nd pass: 詰める
-    k = 0
-    indptr[0] = 0
-    for i in range(m):
-        for j in range(n):
-            a = A[i, j]
-            if a != 0.0 and (tol == 0.0 or (a.real*a.real + a.imag*a.imag) > tol*tol):
-                data[k] = a
-                indices[k] = j
-                k += 1
-        indptr[i+1] = k
-
-    return data, indices, indptr
+CSRArrays = tuple[np.ndarray, np.ndarray, np.ndarray]
 
 
+def prepare_csr_arrays(matrix) -> CSRArrays:
+    """Return canonical contiguous CSR arrays without mutating the input.
 
-@njit(cache=True, fastmath=True)
-def csr_matvec(data, indices, indptr, x, y):
-    # y[:] = A @ x
-    n = indptr.size - 1
-    for i in range(n):
-        s = 0.0 + 0.0j
-        row_start = indptr[i]
-        row_end   = indptr[i+1]
-        for k in range(row_start, row_end):
-            s += data[k] * x[indices[k]]
-        y[i] = s
-
-@njit(cache=True, fastmath=True)
-def axpy_inplace(alpha, x, y):
-    # y[:] += alpha * x
-    n = y.size
-    for i in range(n):
-        y[i] += alpha * x[i]
+    Numerical sparsification is intentionally absent: only stored exact zeros
+    are removed. Any approximate truncation must be an explicit preprocessing
+    policy outside the propagation kernel.
+    """
+    csr = sp.csr_matrix(matrix, dtype=np.complex128, copy=True)
+    csr.sum_duplicates()
+    csr.eliminate_zeros()
+    csr.sort_indices()
+    return (
+        np.ascontiguousarray(csr.data, dtype=np.complex128),
+        np.ascontiguousarray(csr.indices),
+        np.ascontiguousarray(csr.indptr),
+    )
 
 
-@njit(cache=True, fastmath=True)
-def H_apply( # y = (H0 - ex*mux - ey*muy) @ x
-    H0_data, H0_idx, H0_ptr,
-    mx_data, mx_idx, mx_ptr,
-    my_data, my_idx, my_ptr,
-    ex, ey,
-    x, y, tmp0, tmpx, tmpy
+@njit(cache=True)
+def apply_hamiltonian_csr(
+    h0_data,
+    h0_indices,
+    h0_indptr,
+    mu_x_data,
+    mu_x_indices,
+    mu_x_indptr,
+    mu_y_data,
+    mu_y_indices,
+    mu_y_indptr,
+    field_x,
+    field_y,
+    state,
+    output,
 ):
-    # tmp* は作業用。呼び出し側で再利用する
-    csr_matvec(H0_data, H0_idx, H0_ptr, x, tmp0)
-    csr_matvec(mx_data, mx_idx, mx_ptr, x, tmpx)
-    csr_matvec(my_data, my_idx, my_ptr, x, tmpy)
+    """Set output to -1j * (H0 - mu_x*Ex - mu_y*Ey) @ state."""
+    dimension = h0_indptr.size - 1
+    for row in range(dimension):
+        value = 0.0 + 0.0j
 
-    # y = tmp0 - ex*tmpx - ey*tmpy
-    n = y.size
-    for i in range(n):
-        y[i] = tmp0[i] - ex*tmpx[i] - ey*tmpy[i]
+        for index in range(h0_indptr[row], h0_indptr[row + 1]):
+            value += h0_data[index] * state[h0_indices[index]]
+
+        for index in range(mu_x_indptr[row], mu_x_indptr[row + 1]):
+            value -= field_x * mu_x_data[index] * state[mu_x_indices[index]]
+
+        for index in range(mu_y_indptr[row], mu_y_indptr[row + 1]):
+            value -= field_y * mu_y_data[index] * state[mu_y_indices[index]]
+
+        output[row] = -1j * value
