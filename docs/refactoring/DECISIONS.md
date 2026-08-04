@@ -370,7 +370,7 @@ Consequences:
 - CPU and GPU paths implement the same interaction construction and final-state shape;
 - `tests/physics/test_split_operator_polarization.py` is the physics anchor.
 
-Implementation commit: pending
+Implementation commit: `93ee9eb`
 
 ## Open decisions
 

@@ -1,0 +1,77 @@
+{
+  "artifact": "split-polarization-v0.3",
+  "created_utc": "2026-08-04T16:07:27.863844+00:00",
+  "environment": {
+    "python": "3.12.12",
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "numba": "0.63.1",
+    "openblas_num_threads": "1",
+    "omp_num_threads": "1",
+    "gpu": "not run; CUDA hardware unavailable in this environment"
+  },
+  "source": {
+    "commit": "93ee9ebada729706dc710ed04c7f530424d007ff",
+    "worktree_dirty": true
+  },
+  "methodology": {
+    "timing": "median perf_counter_ns after one untimed warmup",
+    "timed_scope": "public final-state propagation, including eigendecomposition",
+    "comparison": "same field grid; projected difference is a model difference"
+  },
+  "workloads": [
+    {
+      "j_max": 3,
+      "dimension": 32,
+      "steps": 400,
+      "dt": 0.002,
+      "median_ms": {
+        "rk4_dense": 1.026541,
+        "split_cartesian": 0.614833,
+        "split_helicity_projected": 0.487
+      },
+      "speedup_vs_rk4": {
+        "split_cartesian": 1.6696257357688997,
+        "split_helicity_projected": 2.107887063655031
+      },
+      "final_norm_error": {
+        "rk4_dense": 6.661338147750939e-16,
+        "split_cartesian": 1.8429702208777599e-13,
+        "split_helicity_projected": 7.915890165577366e-14
+      },
+      "same_grid_cartesian_vs_rk4_l2": 6.703874706119716e-09,
+      "projected_vs_cartesian_model_difference_l2": 0.012320789205057416
+    },
+    {
+      "j_max": 5,
+      "dimension": 72,
+      "steps": 400,
+      "dt": 0.002,
+      "median_ms": {
+        "rk4_dense": 5.192583,
+        "split_cartesian": 2.243625,
+        "split_helicity_projected": 2.064833
+      },
+      "speedup_vs_rk4": {
+        "split_cartesian": 2.3143720541534347,
+        "split_helicity_projected": 2.5147714125064833
+      },
+      "final_norm_error": {
+        "rk4_dense": 6.661338147750939e-16,
+        "split_cartesian": 3.297362383136715e-14,
+        "split_helicity_projected": 8.670841822322473e-14
+      },
+      "same_grid_cartesian_vs_rk4_l2": 6.703882231320245e-09,
+      "projected_vs_cartesian_model_difference_l2": 0.012320789204978044
+    }
+  ],
+  "cartesian_convergence": {
+    "coarse_dt": 0.02,
+    "fine_dt": 0.01,
+    "coarse_l2": 1.4470674237135304e-06,
+    "fine_l2": 3.6295304452650703e-07,
+    "coarse_to_fine_error_ratio": 3.986927360263123,
+    "interpretation": "approximately 4 indicates second-order convergence"
+  }
+}

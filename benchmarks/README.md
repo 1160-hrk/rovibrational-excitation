@@ -103,3 +103,39 @@ larger than 10% requires investigation under the refactoring policy, but is not
 automatically a correctness failure. Dense/sparse final-state differences,
 norm/trace error, dependency versions, source commit, and worktree state are
 stored so comparisons are auditable.
+
+## Split-operator polarization result
+
+The explicit Cartesian and helicity-projected contracts can be measured with:
+
+~~~bash
+python benchmarks/run_split_operator.py
+~~~
+
+The command writes `benchmarks/split-polarization-v0.3.json`. It pins
+OpenBLAS and OpenMP to one thread before importing NumPy, performs one untimed
+warmup, and reports the median of seven public-API calls. The timed scope
+includes validation and eigendecomposition; basis, operator, field, and initial
+state construction are excluded.
+
+The recorded CPU result used 400 propagation steps and seven timed repetitions:
+
+| LinMol workload | Dimension | Dense RK4 (ms) | Cartesian split (ms) | Speedup | Projected split (ms) |
+|---|---:|---:|---:|---:|---:|
+| `J_max=3` | 32 | 1.027 | 0.615 | 1.67x | 0.487 |
+| `J_max=5` | 72 | 5.193 | 2.244 | 2.31x | 2.065 |
+
+The maximum Cartesian final-state norm error is `1.85e-13`. Its same-grid
+L2 difference from RK4 is `6.71e-9`; halving the step from 0.02 to 0.01
+reduces that difference by a factor of 3.987, consistent with the expected
+second-order split formula. RK4 remains fourth order, so this is a same-grid
+speed comparison rather than a universal equal-accuracy speed claim.
+
+The projected-to-Cartesian final-state L2 difference is about `1.23e-2` for
+this pulse. That value is intentionally labelled a **model difference**:
+`helicity_projected` applies the approved one-way-transition approximation,
+whereas `cartesian` evolves the exact real Cartesian Hamiltonian.
+
+These timings were collected on CPython 3.12.12, Linux aarch64, NumPy 2.3.5,
+SciPy 1.17.0, and Numba 0.63.1. CUDA was not available, so GPU parity remains
+unverified.

@@ -98,6 +98,7 @@ been compared with the replacement.
 | `613ce93` | Unified `-mu E` sign and added physical density matrix validation |
 | `3b081e1` | Added the reproducible, non-blocking Phase 0 benchmark recorder |
 | `6e154ec` | Replaced the Python/SciPy sparse RK4 loop with explicit Numba CSR propagation |
+| `93ee9eb` | Made Cartesian and helicity-projected split interactions explicit and physically tested |
 
 These commits are the starting point, not the final architecture.
 
