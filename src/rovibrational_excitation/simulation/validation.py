@@ -143,5 +143,12 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
         raise SimulationConfigurationError(
             "algorithm must be 'rk4' or 'split_operator'"
         )
+    if params.get("split_interaction", "cartesian") not in {
+        "cartesian",
+        "helicity_projected",
+    }:
+        raise SimulationConfigurationError(
+            "split_interaction must be 'cartesian' or 'helicity_projected'"
+        )
     if params.get("backend", "numpy") not in {"numpy", "cupy"}:
         raise SimulationConfigurationError("backend must be 'numpy' or 'cupy'")

@@ -336,6 +336,34 @@ coupling directly so callers do not need a dummy polarization vector.
 A supplied polarization may still be normalized and structurally validated by
 the input layer. It must not change scalar-model excitation results.
 
+### Split-operator polarization reference
+
+`split_interaction="cartesian"` is the physical reference. It consumes the
+real Cartesian field arrays and therefore uses exactly the RK4 generator
+`H0 - mu_x Ex - mu_y Ey`. For M-resolved LinMol xy dipoles, the tested
+identity is
+
+~~~text
+D(phi) mu_x D(phi)^dagger = cos(phi) mu_x + sin(phi) mu_y
+D_nn(phi) = exp(i M_n phi).
+~~~
+
+The implementation uses the field midpoint, `hypot(Ex,Ey)` and
+`atan2(Ey,Ex)`. The M rotations are elementwise, while the fixed `mu_x`
+eigensystem requires two dense matrix-vector products per step. Tests at
+`dt=0.02` and `0.01` confirm the expected factor-four reduction of the
+second-order error relative to RK4.
+
+`split_interaction="helicity_projected"` is a separate approximation. It
+keeps the upper-triangular one-way part of the complex Jones-weighted
+transition dipole and adds its adjoint. There is no factor one half.
+`(1,+i)/sqrt(2)` selects Delta M=+1 and `(1,-i)/sqrt(2)` selects Delta M=-1
+under the library convention. Non-Hermitian component dipoles, unnormalized
+Jones vectors, and nonzero diagonal transition terms are rejected.
+
+Sparse operator inputs are accepted for parity, but spectral eigenvectors are
+dense; this path does not claim sparse-memory scaling.
+
 ### TwoLevel Phase 0 reference anchor
 
 `tests/physics/test_two_level_reference.py` fixes the following parameter set:

@@ -20,7 +20,6 @@ def test_split_operator_preserves_permanent_dipole_contribution():
     h0 = np.zeros((2, 2))
     mu_x = np.diag([1.0, 2.0]).astype(np.complex128)
     mu_y = np.zeros((2, 2), dtype=np.complex128)
-    polarization = np.array([1.0, 0.0])
     field = np.ones(5)
     psi0 = np.array([1.0, 1.0], dtype=np.complex128) / np.sqrt(2.0)
     dt = 0.1
@@ -29,8 +28,8 @@ def test_split_operator_preserves_permanent_dipole_contribution():
         h0,
         mu_x,
         mu_y,
-        polarization,
         field,
+        np.zeros_like(field),
         psi0,
         dt,
         return_traj=False,
@@ -77,7 +76,7 @@ def test_split_operator_rejects_nondiagonal_free_hamiltonian():
             h0,
             mu,
             mu,
-            np.array([1.0, 0.0]),
+            np.zeros(3),
             np.zeros(3),
             psi0,
             dt=0.1,

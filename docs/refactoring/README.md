@@ -110,7 +110,7 @@ These commits are the starting point, not the final architecture.
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | Pending |
-| 5 | Numerical dynamics engine | Early work — P5.1-a NumPy dense/CSR RK4 kernels complete |
+| 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |

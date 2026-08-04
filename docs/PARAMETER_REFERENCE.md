@@ -162,6 +162,7 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 |-----------|---|-----------|------|-----|
 | `axes` | `str` | `"xy"` | 電場-双極子の軸対応 | `"xy"`, `"zx"` |
 | `algorithm` | `str` | `"rk4"` | 時間発展法 | `"rk4"`, `"split_operator"` |
+| `split_interaction` | `str` | `"cartesian"` | split相互作用モデル | `"cartesian"`, `"helicity_projected"` |
 | `sparse` | `bool` | `not dense` | スパース演算を使うか | `True` |
 | `renorm` | `bool` | `False` | 各ステップで状態を再規格化するか | `True` |
 | `nondimensional` | `bool` | `False` | 無次元化して時間発展するか | `True` |
@@ -174,6 +175,11 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 
 runner は保存結果との対応を保証するため、常に物理時間 `t_p` を生成します。
 `return_traj = False` の場合、`t_p` は `[t_end]`、population は `(1, n_states)` です。
+`split_interaction = "cartesian"` はRK4と同じ実Cartesian電場を使用します。
+`"helicity_projected"` は片方向遷移演算子とその随伴を使う明示的な近似です。
+split法はスパース入力を受け付けますが、相互作用の固有ベクトルは密行列なので、
+`sparse = True` はsplit法のスパースメモリスケーリングを意味しません。
+
 
 #### 2.6 出力設定
 

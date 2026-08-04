@@ -328,6 +328,50 @@ Consequences:
 
 Implementation commit: `6e154ec`
 
+### D-019: Split-operator polarization models are explicit
+
+Status: Accepted
+Scope: Schrödinger split propagation for fixed and complex polarization
+
+The old CPU path kept the upper triangle of a complex Cartesian dipole
+combination and added its adjoint. Later changes cast the Jones vector to
+float and replaced that construction with an average of the full matrix.
+That discarded helicity and made the CPU and GPU physics inconsistent.
+
+The default `split_interaction="cartesian"` uses the same Hamiltonian as RK4:
+
+~~~text
+H(t) = H0 - mu_x Ex(t) - mu_y Ey(t).
+~~~
+
+For an M-resolved LinMol xy operator,
+`D(phi) mu_x D(phi)^dagger = cos(phi) mu_x + sin(phi) mu_y`, with
+`D_nn(phi) = exp(i M_n phi)`. The split kernel diagonalizes `mu_x` once and
+applies `D`, the spectral interaction exponential, and `D^dagger` at each
+midpoint. This keeps two dense matrix-vector products per propagation step.
+A fixed real field direction uses one static Hermitian interaction and needs
+no M labels.
+
+The explicit `split_interaction="helicity_projected"` approximation builds
+`T = triu(-p_x mu_x - p_y mu_y, k=1)` and uses `T + T^dagger`, without a
+factor of one half. Under the current carrier and tensor convention,
+`p=(1,+i)/sqrt(2)` selects resonant Delta M=+1 absorption and the opposite
+sign selects Delta M=-1. This construction is a defined one-way transition
+model, not permission to repair arbitrary non-Hermitian input.
+
+Consequences:
+
+- Cartesian is the default and must converge to RK4 with second-order Strang error;
+- helicity-projected must be requested explicitly and may differ for strong or ultrashort fields;
+- complex Jones vectors remain complex and normalized at the field boundary;
+- component dipoles are validated as Hermitian with a scale-aware roundoff tolerance;
+- changing Cartesian direction requires M labels and verified xy rotation covariance;
+- spectral eigenvectors are dense even when the input operators are sparse;
+- CPU and GPU paths implement the same interaction construction and final-state shape;
+- `tests/physics/test_split_operator_polarization.py` is the physics anchor.
+
+Implementation commit: pending
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

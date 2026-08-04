@@ -212,6 +212,7 @@ def test_runner_uses_interval_duration_and_one_backend(
     propagator_cls.assert_called_once_with(
         backend="numpy",
         algorithm="split_operator",
+        split_interaction="cartesian",
         validate_units=False,
         renorm=True,
         sparse=True,
@@ -219,6 +220,7 @@ def test_runner_uses_interval_duration_and_one_backend(
     propagate_kwargs = propagator_cls.return_value.propagate.call_args.kwargs
     assert "backend" not in propagate_kwargs
     assert propagate_kwargs["algorithm"] == "split_operator"
+    assert propagate_kwargs["split_interaction"] == "cartesian"
     assert propagate_kwargs["renorm"] is True
     assert propagate_kwargs["sparse"] is True
     assert propagate_kwargs["auto_timestep"] is True

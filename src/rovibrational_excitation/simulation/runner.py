@@ -208,6 +208,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     prop = SchrodingerPropagator(
         backend=backend,
         algorithm=algorithm,
+        split_interaction=params.get("split_interaction", "cartesian"),
         validate_units=params.get("validate_units", True),
         renorm=params.get("renorm", False),
         sparse=sparse,
@@ -228,6 +229,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         target_accuracy=params.get("target_accuracy", "standard"),
         verbose=params.get("verbose", False),
         algorithm=algorithm,
+        split_interaction=params.get("split_interaction", "cartesian"),
         sparse=sparse,
         renorm=params.get("renorm", False),
     )

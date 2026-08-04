@@ -32,6 +32,7 @@ class SchrodingerPropagator(PropagatorBase):
         backend: Literal["numpy", "cupy"] = "numpy",
         algorithm: Literal["rk4", "split_operator"] = "rk4",
         validate_units: bool = True,
+        split_interaction: Literal["cartesian", "helicity_projected"] = "cartesian",
         renorm: bool = False,
         sparse: bool = False,
         custom_propagator: Callable | None = None,
@@ -54,11 +55,16 @@ class SchrodingerPropagator(PropagatorBase):
         super().__init__(validate_units)
         if algorithm not in {"rk4", "split_operator"}:
             raise ValueError("algorithm must be 'rk4' or 'split_operator'")
+        if split_interaction not in {"cartesian", "helicity_projected"}:
+            raise ValueError(
+                "split_interaction must be 'cartesian' or 'helicity_projected'"
+            )
 
         self.backend = backend
         self.renorm = renorm
         self.algorithm = algorithm
         self.custom_propagator = custom_propagator
+        self.split_interaction = split_interaction
         self.sparse = sparse
 
         # Validate backend availability
@@ -157,12 +163,17 @@ class SchrodingerPropagator(PropagatorBase):
         verbose = kwargs.get("verbose", False)
         algorithm = kwargs.get("algorithm", self.algorithm)
         sparse = kwargs.get("sparse", self.sparse)
+        split_interaction = kwargs.get("split_interaction", self.split_interaction)
         propagator_func = kwargs.get("propagator_func", None)
         renorm = kwargs.get("renorm", self.renorm)
 
         # Unit validation
         if algorithm not in {"rk4", "split_operator"}:
             raise ValueError("algorithm must be 'rk4' or 'split_operator'")
+        if split_interaction not in {"cartesian", "helicity_projected"}:
+            raise ValueError(
+                "split_interaction must be 'cartesian' or 'helicity_projected'"
+            )
         if self.backend == "cupy" and sparse:
             raise ValueError("sparse=True is not supported by the CuPy propagator")
 
@@ -228,18 +239,24 @@ class SchrodingerPropagator(PropagatorBase):
                     renorm,
                 )
             elif algorithm == "split_operator":
+                basis = getattr(dipole_matrix, "basis", None)
+                magnetic_quantum_numbers = getattr(basis, "M_array", None)
                 result = self._propagate_split_operator(
                     H0,
                     mu_x,
                     mu_y,
-                    pol,
-                    E_scalar,
+                    Ex,
+                    Ey,
                     initial_state,
                     dt_calc,
                     return_traj,
                     sample_stride,
                     sparse,
                     renorm,
+                    pol,
+                    E_scalar,
+                    magnetic_quantum_numbers,
+                    split_interaction,
                 )
             else:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
@@ -304,14 +321,18 @@ class SchrodingerPropagator(PropagatorBase):
         H0: Union[np.ndarray, Any],
         mu_x: Union[np.ndarray, Any],
         mu_y: Union[np.ndarray, Any],
-        pol: np.ndarray,
-        E_scalar: np.ndarray,
+        field_x: np.ndarray,
+        field_y: np.ndarray,
         initial_state: np.ndarray,
         dt: float,
         return_traj: bool,
         stride: int,
         sparse: bool,
         renorm: bool,
+        pol: np.ndarray,
+        E_scalar: np.ndarray,
+        magnetic_quantum_numbers: np.ndarray | None,
+        split_interaction: Literal["cartesian", "helicity_projected"],
     ) -> np.ndarray:
         """Run split-operator propagation algorithm."""
         from .algorithms.split_operator.schrodinger import splitop_schrodinger
@@ -322,12 +343,16 @@ class SchrodingerPropagator(PropagatorBase):
             H0,
             mu_x,
             mu_y,
-            pol,
-            E_scalar,
+            field_x,
+            field_y,
             initial_state,
             dt,
             return_traj=return_traj,
             sample_stride=stride,
+            interaction_mode=split_interaction,
+            magnetic_quantum_numbers=magnetic_quantum_numbers,
+            polarization=pol,
+            scalar_field=E_scalar,
             backend=backend_typed,
             sparse=sparse,
             renorm=renorm,

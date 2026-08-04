@@ -577,10 +577,14 @@ construction through tests, not through runtime abstraction inside hot loops.
 ### P5.2 Split operator
 
 - require diagonal `H0` explicitly;
-- document midpoint field sampling;
-- separate NumPy dense/sparse and CuPy implementations;
-- validate Hermitian interaction operator;
-- compare against RK4 for converged small-step cases.
+- sample both Cartesian field components at propagation midpoints;
+- use a static eigensystem for fixed direction and M-diagonal rotations for changing xy direction;
+- expose `cartesian` and `helicity_projected` as distinct physical models;
+- validate component Hermiticity and xy rotation covariance without silent repair;
+- accept sparse inputs but state explicitly that spectral eigenvectors are dense;
+- keep NumPy and CuPy construction and final-state shape aligned;
+- compare Cartesian propagation against RK4 at two step sizes;
+- benchmark setup and propagation separately before making a speed claim.
 
 ### P5.3 Backend transfer policy
 
