@@ -336,8 +336,11 @@ Hamiltonian assertions from the root validation script now run in
 empty RK4 files, disabled old-API split test, and obsolete
 `validation/test_object_oriented_migration.py` were removed.
 `pytest --collect-only -q` finds 459 tests without warnings; 449 pass and
-10 GPU tests skip. Classification of the remaining `validation/` diagnostics
-and `tests/run_tests.py` is P1.2-B.
+10 GPU tests skip. The P1.2-B read-only audit now classifies every remaining
+`validation/` diagnostic and `tests/run_tests.py` in
+`VALIDATION_INVENTORY.md`. It records collected replacements and unresolved
+nondimensional scale-policy constants. Proposed deletions remain pending
+explicit user review.
 
 - Convert useful assertions in root `test_basis_validation.py` to pytest.
 - Replace or delete print-based `test_new_api.py`.

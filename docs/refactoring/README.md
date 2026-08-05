@@ -19,6 +19,7 @@ tests, and the decision log.
 | `TARGET_ARCHITECTURE.md` | Target package tree, dependency rules, typed contracts, old-to-new mapping | Any architecture or ownership change |
 | `EXECUTION_PLAN.md` | Ordered phases, task IDs, acceptance criteria, commit rules | At the start and completion of every phase |
 | `API_INVENTORY.md` | Current exports, CLI/config routes, factories, examples, and v0.3 disposition | Any public/internal entry-point change |
+| `VALIDATION_INVENTORY.md` | P1.2-B audit of standalone diagnostics, replacements, and unresolved scale-policy constants | Any legacy validation disposition or recovered scientific intent |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -76,9 +77,10 @@ testability do.
 - P1.2-A removed the approved root print scripts, two empty RK4 files, the
   disabled old-API split test, and one obsolete migration validator after
   migrating or confirming overlap for their useful assertions.
-- `tests/run_tests.py` and the remaining `validation/` diagnostics still need
-  P1.2-B classification; unique formulas and reference figures must be retained
-  before any deletion.
+- P1.2-B classified `tests/run_tests.py` and every remaining `validation/`
+  diagnostic in `VALIDATION_INVENTORY.md`. The proposed deletions await
+  explicit review; no tracked script or ignored generated PNG was removed by
+  the audit.
 - `dipole/rot/jm_old.py` and old validation scripts remain tracked.
 - `core/nondimensional/impl.py` is deprecated but still present.
 - CI runs Ruff and Black, while Ruff formatting is already configured.
@@ -108,7 +110,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.1 and P1.2-A complete; validation classification pending |
+| 1 | Repository and CI normalization | In progress — P1.1 and P1.2-A complete; P1.2-B deletion proposal documented |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | Pending |
