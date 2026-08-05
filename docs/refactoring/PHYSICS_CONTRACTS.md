@@ -338,6 +338,9 @@ the input layer. It must not change scalar-model excitation results.
 
 ### Split-operator polarization reference
 
+M 位相回転、Hermitian 性、Strang 分割、計算量の詳しい導出は
+[docs/CARTESIAN_SPLIT_OPERATOR.md](../CARTESIAN_SPLIT_OPERATOR.md) を参照する。
+
 `split_interaction="cartesian"` is the physical reference. It consumes the
 real Cartesian field arrays and therefore uses exactly the RK4 generator
 `H0 - mu_x Ex - mu_y Ey`. For M-resolved LinMol xy dipoles, the tested

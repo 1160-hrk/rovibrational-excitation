@@ -2,6 +2,11 @@
 
 ### ― Split-Operator 法 & 4 次 Runge–Kutta 法 ―
 
+> **現行実装について**：Mを明示した LinMol の時間変化する xy 偏光は、
+> M 位相回転を使う厳密 Cartesian split-operator で扱える。複素偏光の
+> Hermitian 性と高速化の詳しい原理は
+> [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) を参照。
+
 > **対象式** $i\hbar\dfrac{\partial}{\partial t}\Psi(t)=\hat H(t)\Psi(t)$
 > ここで $\hat H(t)=\hat T+\hat V(t)$   （運動エネルギー項＋時間依存ポテンシャル）
 
@@ -108,8 +113,9 @@ k_4 &= -\tfrac{i}{\hbar}\bigl[\mathbf H_0+\mathbf V(t+\Delta t)\bigr]
 
 1. **数 10〜100 状態・長時間・ノルム重視** → **Split-Operator 2 次**
 2. **さらに高精度を要す** → **Split-Operator 4 次**
-3. **時間に強く依存する外場・偏光が変動** → **RK4 (係数)**
-4. **グリッドが必要（トンネル・干渉を描写）** → 実空間 **SO**（FFT）
+3. **M-resolved LinMol の変動する xy 偏光** → **厳密 Cartesian Split-Operator**
+4. **回転共変性を使えない一般の時間依存相互作用** → **RK4 (係数)**
+5. **グリッドが必要（トンネル・干渉を描写）** → 実空間 **SO**（FFT）
 
 表を見れば、SO は“位相×指数×位相”の 3 操作で済むため
 **行列演算が半減**し、大規模系ほど有利であることが分かります。

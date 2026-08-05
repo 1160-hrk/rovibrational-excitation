@@ -33,6 +33,13 @@
 | [../examples/](../examples/) | パラメータファイル例 | 初級～中級 |
 | [../tests/](../tests/) | テストコード例 | 上級 |
 
+### 🧮 数値計算法
+
+| ドキュメント | 内容 |
+|-------------|------|
+| [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) | 厳密 Cartesian split-operator 法、M 位相回転、高速化、適用条件 |
+| [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | Split-operator と RK4 の一般的な比較 |
+
 ## 🚀 クイックスタート
 
 ### 1. 基本的な使い方
