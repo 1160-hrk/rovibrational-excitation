@@ -177,13 +177,16 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 is complete for the CPU baseline, and P1.1 generated-artifact cleanup
-is complete. The next authorized roadmap work is P1.2 test normalization:
+Phase 0 is complete for the CPU baseline. P1.1 generated-artifact cleanup and
+P1.2-A root/disabled test normalization are complete. The next authorized
+roadmap work is P1.2-B and the remainder of Phase 1:
 
-1. Convert, archive, or remove tests and validation scripts outside `tests/`.
-2. Normalize pytest collection and marker policy.
+1. Classify `tests/run_tests.py` and every remaining `validation/` diagnostic;
+   migrate unique formulas or reference values before deletion.
+2. Classify legacy implementations in P1.3.
 3. Apply repository-wide Ruff formatting in an isolated commit.
-4. Make lint, type, coverage, build, and physics CI gates truthful.
+4. Resolve Ruff findings, then make lint, type, coverage, build, and physics CI
+   gates truthful.
 
 Do not start the target directory migration before Phase 0 acceptance criteria
 are met.

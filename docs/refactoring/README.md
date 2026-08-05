@@ -73,11 +73,12 @@ testability do.
 
 - P1.1 removed tracked coverage databases, historical runner-test output, and
   the Notebook checkpoint; saving runner tests now use pytest temporary paths.
-- `test_basis_validation.py` and `test_new_api.py` are outside configured
-  `testpaths = ["tests"]` and are not part of normal pytest.
-- `test_new_api.py` contains code that deletes its own source file when run.
-- Two detailed RK4 test files are empty.
-- `tests/test_splitop_advanced.py.disabled` is not collected.
+- P1.2-A removed the approved root print scripts, two empty RK4 files, the
+  disabled old-API split test, and one obsolete migration validator after
+  migrating or confirming overlap for their useful assertions.
+- `tests/run_tests.py` and the remaining `validation/` diagnostics still need
+  P1.2-B classification; unique formulas and reference figures must be retained
+  before any deletion.
 - `dipole/rot/jm_old.py` and old validation scripts remain tracked.
 - `core/nondimensional/impl.py` is deprecated but still present.
 - CI runs Ruff and Black, while Ruff formatting is already configured.
@@ -107,7 +108,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | Pending |
+| 1 | Repository and CI normalization | In progress — P1.1 and P1.2-A complete; validation classification pending |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | Pending |

@@ -330,6 +330,15 @@ Acceptance:
 
 ### P1.2 Normalize test collection
 
+Status: In progress. P1.2-A completed on 2026-08-05. Useful abstract-basis and
+Hamiltonian assertions from the root validation script now run in
+`tests/unit/test_basis_primitives.py`. The approved root print scripts, two
+empty RK4 files, disabled old-API split test, and obsolete
+`validation/test_object_oriented_migration.py` were removed.
+`pytest --collect-only -q` finds 459 tests without warnings; 449 pass and
+10 GPU tests skip. Classification of the remaining `validation/` diagnostics
+and `tests/run_tests.py` is P1.2-B.
+
 - Convert useful assertions in root `test_basis_validation.py` to pytest.
 - Replace or delete print-based `test_new_api.py`.
 - Remove its self-deleting behavior immediately.

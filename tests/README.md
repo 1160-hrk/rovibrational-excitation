@@ -2,10 +2,10 @@
 
 このディレクトリには、rovibrational-excitation パッケージの包括的なテストスイートが含まれています。
 
-## P0.2 refactor status
+## Refactor status
 
-The authoritative refactor baseline is 360 passed, 9 skipped, and 47% measured
-coverage. Historical metrics and XFAIL descriptions later in this file and in
+The current P1.2-A collection contains 459 tests: 449 pass and 10 GPU tests
+skip when CUDA is unavailable. Historical metrics and XFAIL descriptions in
 `TEST_CATALOG.md`, `TEST_STATUS_REPORT.md`, and `XFAIL_FIXES_REPORT.md` are
 retained only as migration evidence; they are not current status.
 
@@ -20,8 +20,9 @@ tests/
 └── performance/   # non-blocking runtime and memory measurements
 ~~~
 
-Root-level test modules remain collected during the transition. A file moves
-only when its ownership is unambiguous; P0.2 does not rewrite numerical checks.
+Modules directly under `tests/` remain collected during the transition. A file
+moves only when its ownership is unambiguous; structural moves do not rewrite
+numerical checks.
 
 ### Markers
 
@@ -49,19 +50,24 @@ manual scripts. Their disposition is explicit so no scientific intent is lost.
 
 | Path | Finding | Disposition |
 |---|---|---|
-| `/test_basis_validation.py` | manual print-based script with old `src.*` imports and constructor calls; behavior overlaps collected basis/Hamiltonian tests | delete in Phase 1 after final overlap check |
-| `/test_new_api.py` | import-time demo, not assertions; deletes its own source file | delete in Phase 1 without running |
-| `tests/test_splitop_advanced.py.disabled` | old `steps=` signature; four tests currently fail and one GPU test skips | migrate norm, polarization, and long-time intents in P0.6, replace silent Hermitian repair with explicit rejection, then delete |
-| `tests/test_rk4_detailed.py` | empty | delete in Phase 1 |
-| `tests/test_rk4_schrodinger_detailed.py` | empty | delete in Phase 1 |
+| `/test_basis_validation.py` | useful abstract-basis and Hamiltonian contracts run in `unit/test_basis_primitives.py`; model checks overlap collected tests | removed in P1.2-A after explicit approval |
+| `/test_new_api.py` | import-time print demo; conversion and override behavior overlap collected tests; contained self-deletion | removed without execution in P1.2-A after explicit approval |
+| `tests/test_splitop_advanced.py.disabled` | old API; silent Hermitian repair contradicts D-019; remaining intents are collected | removed in P1.2-A; CUDA parity remains explicitly unverified |
+| `tests/test_rk4_detailed.py` | empty | removed in P1.2-A |
+| `tests/test_rk4_schrodinger_detailed.py` | empty | removed in P1.2-A |
 | `tests/run_tests.py` | redundant subprocess wrapper around pytest | delete in Phase 1 |
 | `validation/core/test_nondimensional_timestep_twolevel.py` | stale imports plus plotting, but contains timestep/physical-time diagnostic intent | migrate deterministic convergence/time checks in P0.3/P0.6, then delete |
 | `validation/dipole/test_unit_management.py` | print-based checks using obsolete constructors; overlaps collected conversion/dipole tests | delete in Phase 1 after overlap check |
-| `validation/test_object_oriented_migration.py` | imports nonexistent `ParameterConverter` and tests backward compatibility that D-001 rejects | delete in Phase 1 |
+| `validation/test_object_oriented_migration.py` | imported nonexistent `ParameterConverter`; conversion checks overlap collected tests; compatibility premise contradicts D-001 | removed in P1.2-A after explicit approval |
 
 Other `validation/check_*.py` and debug scripts are diagnostic artifacts rather
 than pytest tests. Phase 1 must compare any unique formula or reference value
 before archiving or deleting them.
+
+P1.2-A completed on 2026-08-05. `pytest --collect-only -q` collected 459
+tests without warnings or a hidden root suite. The migrated/overlapping focused
+set passed 112 tests with one GPU skip, and the full suite passed 449 tests
+with 10 GPU skips.
 
 P0.2 validation retained all 369 collected tests. The 89 moved tests passed
 from their new paths, the full suite passed 360 tests with 9 GPU skips, and the
