@@ -533,7 +533,7 @@ Add an import-boundary test that rejects forbidden dependencies.
 Goal: perform unit conversion exactly once and reduce overlapping policy.
 
 Status: P4.1 strict scale/fallback contract completed early on 2026-08-06
-(implementation commit pending). Complete-generator scaling now uses the
+(implementation commit `4c33359`). Complete-generator scaling now uses the
 centered eigenspectrum, active dipole operator norms, and peak field-vector
 magnitude. ZeroField and inactive scale provenance are explicit. Absolute
 Schrodinger phase is restored after centering. Heuristic auto-timestep and

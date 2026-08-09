@@ -439,7 +439,7 @@ Consequences:
 - tests/contracts/test_strict_nondimensional_contracts.py anchors scale,
   zero-state, gapless, and absolute-phase behavior.
 
-Implementation commit: pending
+Implementation commit: `4c33359`
 
 ### D-021: Requested capabilities and options never silently fall back
 
@@ -471,7 +471,7 @@ Consequences:
 - remaining findings are tracked in FALLBACK_AUDIT.md;
 - physics-bearing configuration defaults require a separate user decision.
 
-Implementation commit: pending
+Implementation commit: `4c33359`
 
 ## Open decisions
 
