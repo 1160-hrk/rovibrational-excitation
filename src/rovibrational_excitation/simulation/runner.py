@@ -218,18 +218,23 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         efield=E,
         dipole_matrix=dip,
         initial_state=sv.data,
-        axes=params.get("axes", model.coupling.default_axes),
         coupling_mode=model.coupling.mode,
-        coupling_axis=model.coupling.axis,
+        **(
+            {"axes": params.get("axes", model.coupling.default_axes)}
+            if model.coupling.mode == "cartesian"
+            else {"coupling_axis": model.coupling.axis}
+        ),
         return_traj=params.get("return_traj", True),
         return_time_psi=True,
         sample_stride=params.get("sample_stride", 1),
         nondimensional=use_nondimensional,
-        auto_timestep=params.get("auto_timestep", False),
-        target_accuracy=params.get("target_accuracy", "standard"),
         verbose=params.get("verbose", False),
         algorithm=algorithm,
-        split_interaction=params.get("split_interaction", "cartesian"),
+        **(
+            {"split_interaction": params.get("split_interaction", "cartesian")}
+            if algorithm == "split_operator"
+            else {}
+        ),
         sparse=sparse,
         renorm=params.get("renorm", False),
     )

@@ -13,15 +13,9 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 # スケールクラス
+from ..electric_field import ZeroField
 from .scales import NondimensionalizationScales
-from .utils import (
-    _EV_TO_J,
-    _HBAR,
-    DEFAULT_TO_SI_CONVERSIONS,
-    get_dipole_scale_from_matrices,
-    get_electric_field_scale,
-    get_energy_scale_from_hamiltonian,
-)
+from .utils import _HBAR
 
 # 型ヒント用 (循環参照を避けるため文字列で書く)
 if TYPE_CHECKING:  # pragma: no cover
@@ -37,6 +31,108 @@ def _as_numpy(value: Any) -> np.ndarray:
         value = get()
     return np.asarray(value)
 
+def _validated_hermitian(matrix: np.ndarray, *, name: str) -> np.ndarray:
+    """Validate a finite Hermitian matrix without modifying it."""
+    value = np.asarray(matrix)
+    if value.ndim != 2 or value.shape[0] != value.shape[1]:
+        raise ValueError(f"{name} must be a square matrix")
+    if not np.all(np.isfinite(value)):
+        raise ValueError(f"{name} must contain only finite values")
+    scale = float(np.linalg.norm(value, ord=2))
+    roundoff = np.finfo(float).eps * max(1, value.shape[0]) * scale
+    if not np.allclose(value, value.conj().T, rtol=0.0, atol=roundoff):
+        raise ValueError(f"{name} must be Hermitian")
+    return value
+
+
+def _derive_scales(
+    H0_energy_J: np.ndarray,
+    coupling_dipoles_Cm: np.ndarray,
+    field_amplitude_V_per_m: float,
+    *,
+    explicit_zero_field: bool,
+    hbar: float = _HBAR,
+    energy_scale_J: float | None = None,
+) -> tuple[np.ndarray, NondimensionalizationScales]:
+    """Center the free Hamiltonian and derive scales from the full generator."""
+    h0 = _validated_hermitian(H0_energy_J, name="H0")
+    dipoles = np.asarray(coupling_dipoles_Cm)
+    if dipoles.ndim == 2:
+        dipoles = dipoles[np.newaxis, ...]
+    if dipoles.ndim != 3 or dipoles.shape[1:] != h0.shape:
+        raise ValueError("coupling dipoles must be square matrices matching H0")
+    if not np.all(np.isfinite(dipoles)):
+        raise ValueError("coupling dipoles must contain only finite values")
+    for index, matrix in enumerate(dipoles):
+        _validated_hermitian(matrix, name=f"coupling dipole {index}")
+    if not np.isfinite(field_amplitude_V_per_m) or field_amplitude_V_per_m < 0:
+        raise ValueError("field amplitude must be finite and non-negative")
+
+    eigenvalues = np.linalg.eigvalsh(h0)
+    energy_offset = float(eigenvalues[0])
+    free_energy_span = float(eigenvalues[-1] - eigenvalues[0])
+    centered_h0 = h0 - energy_offset * np.eye(h0.shape[0], dtype=h0.dtype)
+
+    dipole_norm = float(
+        max((np.linalg.norm(matrix, ord=2) for matrix in dipoles), default=0.0)
+    )
+    mu0 = dipole_norm if dipole_norm > 0 else None
+
+    if explicit_zero_field:
+        if field_amplitude_V_per_m != 0:
+            raise ValueError("ZeroField must be identically zero")
+        Efield0 = None
+        interaction_energy = 0.0
+    else:
+        if field_amplitude_V_per_m == 0:
+            raise ValueError(
+                "an identically zero ElectricField is ambiguous; use ZeroField "
+                "to request field-free evolution"
+            )
+        if mu0 is None:
+            raise ValueError("a driven problem requires a non-zero coupling dipole")
+        Efield0 = float(field_amplitude_V_per_m)
+        interaction_energy = Efield0 * mu0
+
+    if energy_scale_J is None:
+        E0 = max(free_energy_span, interaction_energy)
+        energy_source = "derived"
+        energy_method = "max(spectral_span,interaction_operator_norm)"
+        if E0 == 0 and energy_offset != 0:
+            E0 = abs(energy_offset)
+            energy_method = "absolute_identity_offset"
+    else:
+        if not np.isfinite(energy_scale_J) or energy_scale_J <= 0:
+            raise ValueError("energy_scale_J must be finite and positive")
+        E0 = float(energy_scale_J)
+        energy_source = "explicit"
+        energy_method = "caller_supplied"
+    if E0 == 0:
+        raise ValueError(
+            "the generator has no characteristic energy; handle trivial "
+            "evolution explicitly at the high-level propagation boundary"
+        )
+
+    physical_ratio = (
+        interaction_energy / free_energy_span
+        if free_energy_span > 0
+        else (None if interaction_energy > 0 else 0.0)
+    )
+    scales = NondimensionalizationScales(
+        E0=E0,
+        mu0=mu0,
+        Efield0=Efield0,
+        t0=hbar / E0,
+        lambda_coupling=interaction_energy / E0,
+        energy_offset=energy_offset,
+        free_energy_span=free_energy_span,
+        interaction_energy=interaction_energy,
+        physical_coupling_ratio=physical_ratio,
+        energy_source=energy_source,
+        energy_method=energy_method,
+    )
+    return centered_h0, scales
+
 
 def nondimensionalize_system(
     H0: np.ndarray,
@@ -48,7 +144,7 @@ def nondimensionalize_system(
     H0_units: str = "energy",
     time_units: str = "fs",
     hbar: float = _HBAR,
-    max_time_scale_fs: float = 1000.0,
+    energy_scale_J: float | None = None,
 ) -> tuple[
     np.ndarray,
     np.ndarray,
@@ -77,10 +173,8 @@ def nondimensionalize_system(
         時間の単位。"fs" または "s"。デフォルトは"fs"
     hbar : float
         プランク定数 [J·s]
-    min_energy_diff : float
-        最小エネルギー差の閾値
-    max_time_scale_fs : float
-        時間スケール上限 [fs]
+    energy_scale_J : float, optional
+        Explicit positive reference energy. By default it is derived.
 
     Returns
     -------
@@ -105,22 +199,29 @@ def nondimensionalize_system(
     else:
         raise ValueError("H0_units must be 'energy' or 'frequency'")
 
-    E0 = get_energy_scale_from_hamiltonian(H0_energy, max_time_scale_fs, hbar)
+    field_array = np.asarray(efield.get_Efield())
+    field_amplitude = float(np.max(np.linalg.norm(field_array, axis=1)))
+    centered_h0, scales = _derive_scales(
+        H0_energy,
+        np.stack([mu_x, mu_y]),
+        field_amplitude,
+        explicit_zero_field=isinstance(efield, ZeroField),
+        hbar=hbar,
+        energy_scale_J=energy_scale_J,
+    )
 
-    # 2. 時間スケール
-    t0 = hbar / E0  # [s]
-
-    # 3. 電場スケール
-    Efield0 = get_electric_field_scale(efield)
-
-    # 4. 双極子モーメントスケール
-    mu0 = get_dipole_scale_from_matrices(mu_x, mu_y)
-
-    # 5. 無次元化の実行
-    H0_prime = H0_energy / E0
-    mu_x_prime = mu_x / mu0
-    mu_y_prime = mu_y / mu0
-    Efield_prime = efield.get_Efield() / Efield0
+    H0_prime = centered_h0 / scales.E0
+    if scales.mu0 is None:
+        mu_x_prime = np.zeros_like(mu_x)
+        mu_y_prime = np.zeros_like(mu_y)
+    else:
+        mu_x_prime = mu_x / scales.mu0
+        mu_y_prime = mu_y / scales.mu0
+    Efield_prime = (
+        np.zeros_like(field_array)
+        if scales.Efield0 is None
+        else field_array / scales.Efield0
+    )
 
     # 6. 時間軸の無次元化
     if time_units == "fs":
@@ -134,20 +235,8 @@ def nondimensionalize_system(
     else:
         raise ValueError("time_units must be 'fs' or 's'")
 
-    tlist_prime = tlist / t0
-    dt_prime = dt_s / t0
-
-    # 7. 結合強度パラメータ
-    lambda_coupling = (Efield0 * mu0) / E0
-
-    # 8. スケール情報
-    scales = NondimensionalizationScales(
-        E0=E0,
-        mu0=mu0,
-        Efield0=Efield0,
-        t0=t0,
-        lambda_coupling=lambda_coupling,
-    )
+    tlist_prime = tlist / scales.t0
+    dt_prime = dt_s / scales.t0
 
     return (
         H0_prime,
@@ -164,6 +253,10 @@ def determine_SI_based_scales(
     H0_energy_J: np.ndarray,
     mu_values_Cm: np.ndarray,
     field_amplitude_V_per_m: float,
+    *,
+    explicit_zero_field: bool = False,
+    hbar: float = _HBAR,
+    energy_scale_J: float | None = None,
 ) -> NondimensionalizationScales:
     """
     SI基本単位の物理量から無次元化スケールを決定
@@ -182,47 +275,14 @@ def determine_SI_based_scales(
     NondimensionalizationScales
         無次元化スケール
     """
-    # エネルギースケールの決定 [J]
-    E0 = get_energy_scale_from_hamiltonian(H0_energy_J)
-
-    # 双極子モーメントスケールの決定 [C·m]
-    mu0 = get_dipole_scale_from_matrices(mu_values_Cm, mu_values_Cm)
-
-    # 電場スケール [V/m]
-    Efield0 = field_amplitude_V_per_m if field_amplitude_V_per_m > 0 else 1e8
-
-    # 時間スケール [s]
-    t0 = _HBAR / E0
-
-    # 結合強度パラメータ
-    lambda_coupling = (Efield0 * mu0) / E0
-
-    # スケール情報
-    scales = NondimensionalizationScales(
-        E0=E0,
-        mu0=mu0,
-        Efield0=Efield0,
-        t0=t0,
-        lambda_coupling=lambda_coupling,
+    _, scales = _derive_scales(
+        H0_energy_J,
+        mu_values_Cm,
+        field_amplitude_V_per_m,
+        explicit_zero_field=explicit_zero_field,
+        hbar=hbar,
+        energy_scale_J=energy_scale_J,
     )
-
-    # デフォルト単位での表示
-    energy_scale_eV = E0 / _EV_TO_J
-    dipole_scale_D = mu0 / DEFAULT_TO_SI_CONVERSIONS["dipole_D_to_Cm"]
-    field_scale_MV_per_cm = (
-        Efield0 / DEFAULT_TO_SI_CONVERSIONS["field_MV_per_cm_to_V_per_m"]
-    )
-    time_scale_fs = t0 * 1e15
-
-    print(f"""
-📏 SI-based nondimensionalization scales:
-   Energy scale: {energy_scale_eV:.3f} eV ({E0:.3e} J)
-   Dipole scale: {dipole_scale_D:.3f} D ({mu0:.3e} C·m)
-   Field scale: {field_scale_MV_per_cm:.3f} MV/cm ({Efield0:.3e} V/m)
-   Time scale: {time_scale_fs:.3f} fs ({t0:.3e} s)
-   Coupling strength λ: {lambda_coupling:.3f}
-""")
-
     return scales
 
 
@@ -233,10 +293,8 @@ def nondimensionalize_with_SI_base_units(
     efield: np.ndarray,
     tlist: np.ndarray,
     *,
-    params: dict[str, Any] | None = None,
-    auto_timestep: bool = False,
-    timestep_method: str = "adaptive",
-    timestep_safety_factor: float = 0.1,
+    explicit_zero_field: bool = False,
+    energy_scale_J: float | None = None,
 ) -> tuple[
     np.ndarray,
     np.ndarray,
@@ -246,121 +304,60 @@ def nondimensionalize_with_SI_base_units(
     float,
     NondimensionalizationScales,
 ]:
+    """Nondimensionalize arrays already expressed in SI base units.
+
+    tlist is in seconds. Its uniform step is preserved exactly.
     """
-    デフォルト単位を自動的にSI基本単位に変換してから無次元化を実行
-
-    Parameters
-    ----------
-    H0 : np.ndarray
-        ハミルトニアン行列（J）
-    mu_x, mu_y : np.ndarray
-        双極子行列（C·m）
-    efield : np.ndarray
-        電場（V/m）
-    tlist : np.ndarray
-        時間軸（s）
-    params : dict,  optional
-        パラメータ辞書（参考情報用）
-    auto_timestep : bool, optional
-        lambda_couplingに基づく自動時間ステップ選択, デフォルト: False
-    timestep_method : str, optional
-        自動時間ステップの計算方法, デフォルト: "adaptive"
-    timestep_safety_factor : float, optional
-        時間ステップの安全係数, デフォルト: 0.1
-
-    Returns
-    -------
-    tuple
-        (H0_prime, mu_x_prime, mu_y_prime, Efield_prime, tlist_prime,
-         dt_prime, scales)
-    """
-    print("🎯 Starting nondimensionalization with SI base unit conversion...")
-
-    # パラメータをデフォルト単位経由でSI単位に変換
-    if params is not None:
-        from rovibrational_excitation.core.units.parameter_processor import (
-            parameter_processor,
-        )
-
-        print("🔄 Converting parameters via default units to SI...")
-        parameter_processor.auto_convert_parameters(params)
-        print("✓ Parameter conversion completed.")
-
-    # 入力が既にSI単位[J, C·m, V/m]の場合、そのまま使用
-    H0_energy_J = H0.copy()
-    mu_x_Cm = mu_x.copy()
-    mu_y_Cm = mu_y.copy()
-
-    # 電場: 既に [V/m]
-    field_amplitude_V_per_m = np.max(np.abs(efield))
-
-    print("📊 Physical quantities in SI base units:")
-    if H0_energy_J.ndim == 1:
-        energy_range = f"{np.min(H0_energy_J):.3e} to {np.max(H0_energy_J):.3e}"
-    else:
-        energy_range = (
-            f"{np.min(np.diag(H0_energy_J)):.3e} to {np.max(np.diag(H0_energy_J)):.3e}"
-        )
-    print(f"   Energy range: {energy_range} J")
-    print(
-        f"   Dipole range: {np.min(np.abs(mu_x_Cm[mu_x_Cm != 0])):.3e} to {np.max(np.abs(mu_x_Cm)):.3e} C·m"
+    time_s = np.asarray(tlist, dtype=np.float64)
+    if time_s.ndim != 1 or time_s.size < 2 or not np.all(np.isfinite(time_s)):
+        raise ValueError("tlist must be a finite one-dimensional SI-second grid")
+    intervals = np.diff(time_s)
+    time_roundoff = (
+        np.finfo(float).eps
+        * max(1, time_s.size)
+        * max(float(np.max(np.abs(time_s))), float(np.max(np.abs(intervals))))
     )
-    print(f"   Field amplitude: {field_amplitude_V_per_m:.3e} V/m")
+    if intervals[0] <= 0 or not np.allclose(
+        intervals, intervals[0], rtol=0.0, atol=time_roundoff
+    ):
+        raise ValueError("tlist must be strictly increasing and uniformly spaced")
 
-    # SI基本単位に基づいた無次元化スケールの決定
-    print("\n📏 Determining nondimensionalization scales from SI base units...")
-    scales = determine_SI_based_scales(H0_energy_J, mu_x_Cm, field_amplitude_V_per_m)
+    field = np.asarray(efield)
+    if field.ndim == 1:
+        field_amplitude = float(np.max(np.abs(field)))
+    elif field.ndim == 2:
+        field_amplitude = float(np.max(np.linalg.norm(field, axis=1)))
+    else:
+        raise ValueError("efield must be a scalar waveform or component matrix")
+    if field.shape[0] != time_s.size:
+        raise ValueError("efield and tlist must have the same number of samples")
 
-    # 自動時間ステップ選択
-    dt_final = tlist[1] - tlist[0]  # Default dt in seconds
-    if auto_timestep:
-        print(
-            f"\n⏱️  Auto-selecting timestep based on λ={scales.lambda_coupling:.3f}..."
-        )
-        dt_recommended_fs = scales.get_recommended_timestep_fs(
-            safety_factor=timestep_safety_factor, method=timestep_method
-        )
-        dt_recommended_s = dt_recommended_fs * 1e-15
-        print(
-            f"   Recommended dt: {dt_recommended_fs:.3f} fs (method: {timestep_method})"
-        )
-        print(f"   Original dt: {dt_final * 1e15:.3f} fs")
-
-        # 推奨値と元の値の比較
-        if dt_recommended_s < dt_final * 0.5:
-            print("   ⚠️  Warning: Recommended dt is much smaller than original")
-            print(f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability")
-
-        dt_final = dt_recommended_s
-
-    # 無次元化の実行
-    print("\n🔢 Performing nondimensionalization...")
-
-    # エネルギー（ハミルトニアン）の無次元化
-    H0_prime = H0_energy_J / scales.E0
-
-    # 双極子モーメントの無次元化
-    mu_x_prime = mu_x_Cm / scales.mu0
-    mu_y_prime = mu_y_Cm / scales.mu0
-
-    # 電場の無次元化
-    Efield_prime = efield / scales.Efield0
-
-    # 時間軸の無次元化
-    tlist_s = tlist * 1e-15
-
-    tlist_prime = tlist_s / scales.t0
-    dt_prime = dt_final / scales.t0
-
-    print("✓ Nondimensionalization completed successfully!")
-
+    centered_h0, scales = _derive_scales(
+        np.asarray(H0),
+        np.stack([mu_x, mu_y]),
+        field_amplitude,
+        explicit_zero_field=explicit_zero_field,
+        energy_scale_J=energy_scale_J,
+    )
+    H0_prime = centered_h0 / scales.E0
+    if scales.mu0 is None:
+        mu_x_prime = np.zeros_like(mu_x)
+        mu_y_prime = np.zeros_like(mu_y)
+    else:
+        mu_x_prime = np.asarray(mu_x) / scales.mu0
+        mu_y_prime = np.asarray(mu_y) / scales.mu0
+    Efield_prime = (
+        np.zeros_like(field)
+        if scales.Efield0 is None
+        else field / scales.Efield0
+    )
     return (
         H0_prime,
         mu_x_prime,
         mu_y_prime,
         Efield_prime,
-        tlist_prime,
-        dt_prime,
+        time_s / scales.t0,
+        float(intervals[0] / scales.t0),
         scales,
     )
 
@@ -368,61 +365,27 @@ def nondimensionalize_with_SI_base_units(
 def create_dimensionless_time_array(
     scales: NondimensionalizationScales,
     duration_fs: float,
-    dt_fs: float | None = None,
-    auto_timestep: bool = True,
-    target_accuracy: str = "standard",
+    dt_fs: float,
 ) -> tuple[np.ndarray, float]:
+    """Create a dimensionless grid from an explicit physical step.
+
+    The duration must contain an integer number of intervals. The function
+    never changes dt_fs or extends the requested endpoint.
     """
-    無次元化時間配列を作成（推奨時間ステップで）
+    if not np.isfinite(duration_fs) or duration_fs <= 0:
+        raise ValueError("duration_fs must be finite and positive")
+    if not np.isfinite(dt_fs) or dt_fs <= 0:
+        raise ValueError("dt_fs must be finite and positive")
 
-    Parameters
-    ----------
-    scales : NondimensionalizationScales
-        無次元化スケールファクター
-    duration_fs : float
-        シミュレーション時間長（fs）
-    dt_fs : float, optional
-        時間ステップ（fs）。Noneの場合は自動選択
-    auto_timestep : bool, optional
-        自動時間ステップ選択を使用するか, デフォルト: True
-    target_accuracy : str, optional
-        目標精度, デフォルト: "standard"
+    interval_ratio = duration_fs / dt_fs
+    intervals = int(round(interval_ratio))
+    roundoff = np.finfo(float).eps * max(1.0, abs(interval_ratio))
+    if not np.isclose(interval_ratio, intervals, rtol=0.0, atol=roundoff):
+        raise ValueError("duration_fs must be an integer multiple of dt_fs")
 
-    Returns
-    -------
-    tuple
-        (tlist_dimensionless, dt_dimensionless)
-    """
-    if auto_timestep or dt_fs is None:
-        # 分析機能を使用（循環インポートを避けるため遅延インポート）
-        from .analysis import NondimensionalAnalyzer
-
-        optimization = NondimensionalAnalyzer.optimize_timestep_for_coupling(
-            scales, target_accuracy=target_accuracy, verbose=True
-        )
-        dt_fs = optimization["recommended_dt_fs"]
-        print(f"🎯 Auto-selected timestep: {dt_fs:.3f} fs")
-
-    # dt_fs がまだ None の場合のフォールバック
-    if dt_fs is None:
-        raise ValueError("dt_fs must be provided or auto_timestep must be True")
-
-    # fs単位での時間配列作成
-    tlist_fs = np.arange(0, duration_fs + dt_fs / 2, dt_fs)
-
-    # 無次元化
-    t0_fs = scales.t0 * 1e15  # s → fs
-    tlist_dimensionless = tlist_fs / t0_fs
-    dt_dimensionless = dt_fs / t0_fs
-
-    print("📊 Time array info:")
-    print(
-        f"   Duration: {duration_fs:.1f} fs ({duration_fs / t0_fs:.3f} dimensionless)"
-    )
-    print(f"   Steps: {len(tlist_fs)}")
-    print(f"   dt: {dt_fs:.3f} fs ({dt_dimensionless:.6f} dimensionless)")
-
-    return tlist_dimensionless, dt_dimensionless
+    tlist_fs = np.linspace(0.0, duration_fs, intervals + 1)
+    t0_fs = scales.t0 * 1e15
+    return tlist_fs / t0_fs, dt_fs / t0_fs
 
 
 def nondimensionalize_from_objects(
@@ -430,12 +393,11 @@ def nondimensionalize_from_objects(
     dipole_matrix: DipoleMatrixBase,
     efield: ElectricField,
     *,
-    auto_timestep: bool = False,
-    timestep_method: str = "adaptive",
-    timestep_safety_factor: float = 0.1,
+    auto_timestep: bool | None = None,
     verbose: bool = True,
     coupling_axes: tuple[str, ...] | None = None,
     scalar_coupling: bool = False,
+    energy_scale_J: float | None = None,
 ) -> tuple[
     np.ndarray,
     np.ndarray,
@@ -458,16 +420,9 @@ def nondimensionalize_from_objects(
         双極子行列オブジェクト（内部単位管理）
     efield : ElectricField
         電場オブジェクト
-    dt : float, optional
-        時間ステップ [fs]。auto_timestep=Trueの場合は無視される
-    time_units : str, optional
-        時間の単位。"fs" または "s"。デフォルトは"fs"
     auto_timestep : bool, optional
-        lambda_couplingに基づく自動時間ステップ選択, デフォルト: False
-    timestep_method : str, optional
-        自動時間ステップの計算方法, デフォルト: "adaptive"
-    timestep_safety_factor : float, optional
-        時間ステップの安全係数, デフォルト: 0.1
+        Removed migration guard. Any supplied value raises instead of being
+        silently ignored or changing the grid.
     verbose : bool, optional
         詳細出力の有無, デフォルト: True
 
@@ -477,6 +432,13 @@ def nondimensionalize_from_objects(
         (H0_prime, mu_x_prime, mu_y_prime, mu_z_prime, Efield_prime, tlist_prime,
          dt_prime, scales)
     """
+    if auto_timestep is not None:
+        raise ValueError(
+            "auto_timestep was removed because it changed the supplied field "
+            "grid using unvalidated heuristics; provide and convergence-test "
+            "the ElectricField grid explicitly"
+        )
+
     if verbose:
         print("🎯 Nondimensionalization from Hamiltonian and DipoleMatrix objects...")
 
@@ -529,81 +491,61 @@ def nondimensionalize_from_objects(
         else:
             print("   mu_z range: All elements are zero.")
 
-    # 3. 電場はそのまま使用（既にV/mの想定）
-    Efield_array = efield.get_Efield()
+    Efield_array = np.asarray(efield.get_Efield())
+    try:
+        scalar_field = np.asarray(efield.get_scalar_and_pol()[0])
+    except ValueError as exc:
+        if scalar_coupling:
+            raise ValueError(
+                "scalar_coupling requires an ElectricField with an explicit "
+                "constant polarization"
+            ) from exc
+        scalar_field = None
+
     if scalar_coupling:
-        field_amplitude_V_per_m = np.max(np.abs(efield.get_scalar_field()))
+        assert scalar_field is not None
+        field_amplitude_V_per_m = float(np.max(np.abs(scalar_field)))
     else:
-        field_amplitude_V_per_m = np.max(np.abs(Efield_array))
+        field_amplitude_V_per_m = float(
+            np.max(np.linalg.norm(Efield_array, axis=1))
+        )
 
     if verbose:
         print(f"📊 Electric field amplitude: {field_amplitude_V_per_m:.3e} V/m")
 
-    # 4. 時間ステップの設定
     tlist = efield.tlist
     dt = efield.dt
-
-    # 5. SI基本単位に基づいた無次元化スケールの決定
-    if verbose:
-        print("\n📏 Determining nondimensionalization scales from SI base units...")
-
-    scales = determine_SI_based_scales(
-        H0_energy_J, coupling_dipoles, field_amplitude_V_per_m
+    centered_h0, scales = _derive_scales(
+        H0_energy_J,
+        coupling_dipoles,
+        field_amplitude_V_per_m,
+        explicit_zero_field=isinstance(efield, ZeroField),
+        energy_scale_J=energy_scale_J,
     )
 
-    # 6. 自動時間ステップ選択
-    sampling_stride = 1
-    if auto_timestep:
-        if verbose:
-            print(
-                f"\n⏱️  Auto-selecting timestep based on λ={scales.lambda_coupling:.3f}..."
-            )
-        dt_recommended_fs = scales.get_recommended_timestep_fs(
-            safety_factor=timestep_safety_factor, method=timestep_method
-        )
-        if verbose:
-            print(
-                f"   Recommended dt: {dt_recommended_fs:.3f} fs (method: {timestep_method})"
-            )
-            print(f"   Original dt: {dt:.3f} fs")
-
-        if dt_recommended_fs < dt * 0.5:
-            if verbose:
-                print("   ⚠️  Warning: Recommended dt is much smaller than original")
-                print(
-                    f"   ⚠️  Consider using dt ≤ {dt_recommended_fs:.3f} fs for stability"
-                )
-        maximum_stride = max(1, int(np.ceil(dt_recommended_fs / dt)))
-        field_intervals = len(tlist) - 1
-        sampling_stride = next(
-            stride
-            for stride in range(maximum_stride, 0, -1)
-            if field_intervals % stride == 0 and (field_intervals // stride) % 2 == 0
-        )
-        dt *= sampling_stride
-        Efield_array = Efield_array[::sampling_stride]
-        tlist = tlist[::sampling_stride]
-
-    # 7. 無次元化の実行
     if verbose:
         print("\n🔢 Performing nondimensionalization...")
 
-    # エネルギー（ハミルトニアン）の無次元化
-    H0_prime = H0_energy_J / scales.E0
+    H0_prime = centered_h0 / scales.E0
+    if scales.mu0 is None:
+        mu_x_prime = np.zeros_like(mu_x_Cm)
+        mu_y_prime = np.zeros_like(mu_y_Cm)
+        mu_z_prime = np.zeros_like(mu_z_Cm)
+    else:
+        mu_x_prime = mu_x_Cm / scales.mu0
+        mu_y_prime = mu_y_Cm / scales.mu0
+        mu_z_prime = mu_z_Cm / scales.mu0
 
-    # 双極子モーメントの無次元化
-    mu_x_prime = mu_x_Cm / scales.mu0
-    mu_y_prime = mu_y_Cm / scales.mu0
-    mu_z_prime = mu_z_Cm / scales.mu0
-
-    # 電場の無次元化
-    Efield_prime = Efield_array / scales.Efield0
-    try:
+    if scales.Efield0 is None:
+        Efield_prime = np.zeros_like(Efield_array)
         Efield_prime_scalar = (
-            efield.get_scalar_and_pol()[0][::sampling_stride] / scales.Efield0
+            None if scalar_field is None else np.zeros_like(scalar_field)
         )
-    except ValueError:
-        Efield_prime_scalar = np.zeros_like(Efield_prime)[:, 0]
+    else:
+        Efield_prime = Efield_array / scales.Efield0
+        Efield_prime_scalar = (
+            None if scalar_field is None else scalar_field / scales.Efield0
+        )
 
     # 8. 時間軸の無次元化
     tlist_s = tlist * 1e-15  # fs → s
@@ -674,32 +616,12 @@ def auto_nondimensionalize(
         (H0_prime, mu_x_prime, mu_y_prime, mu_z_prime, Efield_prime, tlist_prime,
          dt_prime, scales)
     """
-    accuracy_settings = {
-        "high": {"safety_factor": 0.02, "method": "adaptive"},
-        "standard": {"safety_factor": 0.1, "method": "adaptive"},
-        "fast": {"safety_factor": 0.3, "method": "stability"},
-    }
-
-    if target_accuracy not in accuracy_settings:
-        raise ValueError(
-            f"target_accuracy must be one of {list(accuracy_settings.keys())}"
-        )
-
-    settings = accuracy_settings[target_accuracy]
-
-    if verbose:
-        print(f"🚀 Auto-nondimensionalization (target: {target_accuracy})")
-
-    return nondimensionalize_from_objects(
-        hamiltonian,
-        dipole_matrix,
-        efield,
-        auto_timestep=True,
-        timestep_method=settings["method"],
-        timestep_safety_factor=settings["safety_factor"],
-        verbose=verbose,
-        coupling_axes=coupling_axes,
-        scalar_coupling=scalar_coupling,
+    del hamiltonian, dipole_matrix, efield
+    del target_accuracy, verbose, coupling_axes, scalar_coupling
+    raise RuntimeError(
+        "auto_nondimensionalize() was removed because its heuristic changed "
+        "the supplied time grid; use nondimensionalize_from_objects() with an "
+        "explicit ElectricField grid and perform a convergence study"
     )
 
 

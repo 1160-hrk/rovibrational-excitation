@@ -10,11 +10,13 @@ from typing import Any, Literal, Union, cast
 
 import numpy as np
 
+from ..units.constants import CONSTANTS
 from ..units.validators import validator
 from .base import PropagatorBase
 from .utils import (
     HAS_CUPY,
     ensure_sparse_matrix,
+    get_backend,
     prepare_propagation_args,
 )
 
@@ -53,12 +55,21 @@ class SchrodingerPropagator(PropagatorBase):
             Should have signature: func(H0, mu_x, mu_y, Ex, Ey, initial_state, dt, return_traj, sample_stride)
         """
         super().__init__(validate_units)
+        if backend not in {"numpy", "cupy"}:
+            raise ValueError("backend must be 'numpy' or 'cupy'")
         if algorithm not in {"rk4", "split_operator"}:
             raise ValueError("algorithm must be 'rk4' or 'split_operator'")
         if split_interaction not in {"cartesian", "helicity_projected"}:
             raise ValueError(
                 "split_interaction must be 'cartesian' or 'helicity_projected'"
             )
+
+        if algorithm != "split_operator" and split_interaction != "cartesian":
+            raise ValueError(
+                "helicity_projected interaction requires algorithm='split_operator'"
+            )
+        if custom_propagator is not None and not callable(custom_propagator):
+            raise TypeError("custom_propagator must be callable or None")
 
         self.backend = backend
         self.renorm = renorm
@@ -84,6 +95,8 @@ class SchrodingerPropagator(PropagatorBase):
             Custom propagation function.
             Should have signature: func(H0, mu_x, mu_y, Ex, Ey, initial_state, dt, return_traj, sample_stride)
         """
+        if not callable(propagator_func):
+            raise TypeError("propagator_func must be callable")
         self.custom_propagator = propagator_func
 
     def get_algorithm_name(self) -> str:
@@ -132,10 +145,9 @@ class SchrodingerPropagator(PropagatorBase):
                 Sampling stride for trajectory
             - nondimensional : bool, default False
                 Use nondimensional propagation
-            - auto_timestep : bool, default False
-                Automatically select optimal timestep
-            - target_accuracy : str, default "standard"
-                Target accuracy for auto timestep
+            The removed auto_timestep and target_accuracy options are
+            rejected explicitly. The ElectricField grid is the sole source of
+            propagation timing.
             - verbose : bool, default False
                 Print detailed information
             - algorithm : {"rk4", "split_operator"}, default "rk4"
@@ -156,8 +168,34 @@ class SchrodingerPropagator(PropagatorBase):
         return_time_psi = kwargs.get("return_time_psi", False)
         sample_stride = kwargs.get("sample_stride", 1)
         nondimensional = kwargs.get("nondimensional", False)
-        auto_timestep = kwargs.get("auto_timestep", False)
-        target_accuracy = kwargs.get("target_accuracy", "standard")
+        removed_timestep_options = {
+            key for key in ("auto_timestep", "target_accuracy") if key in kwargs
+        }
+        if removed_timestep_options:
+            names = ", ".join(sorted(removed_timestep_options))
+            raise ValueError(
+                f"{names} were removed; define the ElectricField grid explicitly"
+            )
+        allowed_options = {
+            "axes",
+            "return_traj",
+            "return_time_psi",
+            "sample_stride",
+            "nondimensional",
+            "coupling_mode",
+            "coupling_axis",
+            "verbose",
+            "algorithm",
+            "sparse",
+            "split_interaction",
+            "propagator_func",
+            "renorm",
+        }
+        unknown_options = sorted(set(kwargs) - allowed_options)
+        if unknown_options:
+            raise ValueError(
+                "unsupported propagation options: " + ", ".join(unknown_options)
+            )
         coupling_mode = kwargs.get("coupling_mode", "cartesian")
         coupling_axis = kwargs.get("coupling_axis")
         verbose = kwargs.get("verbose", False)
@@ -166,6 +204,19 @@ class SchrodingerPropagator(PropagatorBase):
         split_interaction = kwargs.get("split_interaction", self.split_interaction)
         propagator_func = kwargs.get("propagator_func", None)
         renorm = kwargs.get("renorm", self.renorm)
+
+        if propagator_func is not None and not callable(propagator_func):
+            raise TypeError("propagator_func must be callable or None")
+        if coupling_mode == "scalar" and "axes" in kwargs:
+            raise ValueError("axes is not applicable to scalar coupling")
+        if coupling_mode == "cartesian" and "coupling_axis" in kwargs:
+            raise ValueError(
+                "coupling_axis is not applicable to Cartesian coupling"
+            )
+        if algorithm != "split_operator" and "split_interaction" in kwargs:
+            raise ValueError(
+                "split_interaction is applicable only to algorithm='split_operator'"
+            )
 
         # Unit validation
         if algorithm not in {"rk4", "split_operator"}:
@@ -187,15 +238,13 @@ class SchrodingerPropagator(PropagatorBase):
                     self.print_validation_warnings()
 
         # Prepare arguments
-        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, t0_calc = (
+        H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, scales_calc = (
             prepare_propagation_args(
                 hamiltonian,
                 efield,
                 dipole_matrix,
                 axes=axes,
                 nondimensional=nondimensional,
-                auto_timestep=auto_timestep,
-                target_accuracy=target_accuracy,
                 coupling_mode=coupling_mode,
                 coupling_axis=coupling_axis,
             )
@@ -209,7 +258,11 @@ class SchrodingerPropagator(PropagatorBase):
 
         # Select and run algorithm
         # Priority: kwargs propagator_func > instance custom_propagator > built-in algorithms
-        active_propagator = propagator_func or self.custom_propagator
+        active_propagator = (
+            propagator_func
+            if propagator_func is not None
+            else self.custom_propagator
+        )
 
         if active_propagator is not None:
             result = active_propagator(
@@ -261,17 +314,43 @@ class SchrodingerPropagator(PropagatorBase):
             else:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
 
-        # Handle return values
         if return_traj:
             psi = result
         else:
             psi = result[-1] if hasattr(result, "__len__") else result
 
+        if scales_calc is not None and scales_calc.energy_offset != 0:
+            if return_traj:
+                elapsed_seconds = (
+                    np.arange(len(cast(Sized, psi)), dtype=np.float64)
+                    * dt_calc
+                    * sample_stride
+                    * scales_calc.t0
+                )
+            else:
+                elapsed_seconds = np.array(
+                    [(efield.tlist[-1] - efield.tlist[0]) * 1e-15]
+                )
+            phase = np.exp(
+                -1j * scales_calc.energy_offset * elapsed_seconds / CONSTANTS.HBAR
+            )
+            xp = (
+                get_backend(self.backend)
+                if hasattr(psi, "__cuda_array_interface__")
+                else np
+            )
+            phase_backend = xp.asarray(phase)
+            psi = (
+                psi * phase_backend[:, np.newaxis]
+                if return_traj
+                else psi * phase_backend[0]
+            )
+
         if return_time_psi:
             if return_traj:
-                step_fs = dt_calc * sample_stride * t0_calc
-                if nondimensional:
-                    step_fs *= 1e15
+                step_fs = dt_calc * sample_stride
+                if scales_calc is not None:
+                    step_fs *= scales_calc.t0 * 1e15
                 t = (
                     efield.tlist[0]
                     + np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * step_fs
@@ -329,8 +408,8 @@ class SchrodingerPropagator(PropagatorBase):
         stride: int,
         sparse: bool,
         renorm: bool,
-        pol: np.ndarray,
-        E_scalar: np.ndarray,
+        pol: np.ndarray | None,
+        E_scalar: np.ndarray | None,
         magnetic_quantum_numbers: np.ndarray | None,
         split_interaction: Literal["cartesian", "helicity_projected"],
     ) -> np.ndarray:

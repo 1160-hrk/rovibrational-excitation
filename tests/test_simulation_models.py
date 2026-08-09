@@ -197,8 +197,6 @@ def test_runner_uses_interval_duration_and_one_backend(
         "algorithm": "split_operator",
         "renorm": True,
         "dense": False,
-        "auto_timestep": True,
-        "target_accuracy": "fast",
         "verbose": True,
         "validate_units": False,
         "sample_stride": 2,
@@ -223,8 +221,6 @@ def test_runner_uses_interval_duration_and_one_backend(
     assert propagate_kwargs["split_interaction"] == "cartesian"
     assert propagate_kwargs["renorm"] is True
     assert propagate_kwargs["sparse"] is True
-    assert propagate_kwargs["auto_timestep"] is True
-    assert propagate_kwargs["target_accuracy"] == "fast"
     assert propagate_kwargs["verbose"] is True
     assert propagate_kwargs["sample_stride"] == 2
     assert propagate_kwargs["return_time_psi"] is True

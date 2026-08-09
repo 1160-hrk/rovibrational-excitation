@@ -138,8 +138,6 @@ class ElectricField:
     def get_field_scale_factor(self) -> float:
         """電場スケールファクターを取得"""
         efield_array = np.asarray(self.Efield)
-        if np.all(efield_array == 0):
-            return 1e8  # 1 MV/cm as default
         return float(np.max(np.abs(efield_array)))
 
     def get_field_scale_info(self) -> dict:
@@ -454,3 +452,27 @@ class ElectricField:
         ax1.set_ylabel(r"$E_y$ (V/m)")
         ax1.set_xlabel("Frequency (rad/fs)")
         plt.show()
+
+
+class ZeroField(ElectricField):
+    """An explicitly field-free time grid.
+
+    A plain :class:`ElectricField` whose samples happen to be zero is treated
+    as an incomplete driven-field setup by strict nondimensionalization.
+    ``ZeroField`` records that zero interaction is the caller's intent.
+    """
+
+    def __init__(
+        self, tlist: np.ndarray, time_units: str = "fs", field_units: str = "V/m"
+    ):
+        super().__init__(tlist, time_units=time_units, field_units=field_units)
+        self._constant_pol = np.array([1.0, 0.0], dtype=np.complex128)
+        self._scalar_field = np.zeros(self.tlist.size, dtype=np.float64)
+
+    def add_dispersed_Efield(self, *args, **kwargs) -> None:
+        raise TypeError("ZeroField cannot contain a pulse; use ElectricField")
+
+    def add_arbitrary_Efield(self, Efield: np.ndarray):
+        if np.any(np.asarray(Efield) != 0):
+            raise TypeError("ZeroField accepts only identically zero samples")
+        return super().add_arbitrary_Efield(Efield)

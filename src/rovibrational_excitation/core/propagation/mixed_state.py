@@ -106,7 +106,42 @@ class MixedStatePropagator(PropagatorBase):
         form an equal mixture; arbitrary weights can be encoded as
         ``sqrt(w_i) * psi_i``.
         """
+        removed_timestep_options = {
+            key for key in ("auto_timestep", "target_accuracy") if key in kwargs
+        }
+        if removed_timestep_options:
+            names = ", ".join(sorted(removed_timestep_options))
+            raise ValueError(
+                f"{names} were removed; define the ElectricField grid explicitly"
+            )
+        allowed_options = {
+            "axes",
+            "return_traj",
+            "return_time_rho",
+            "sample_stride",
+            "nondimensional",
+            "coupling_mode",
+            "coupling_axis",
+            "verbose",
+            "algorithm",
+            "sparse",
+            "split_interaction",
+            "propagator_func",
+            "renorm",
+            "dt",
+        }
+        unknown_options = sorted(set(kwargs) - allowed_options)
+        if unknown_options:
+            raise ValueError(
+                "unsupported propagation options: " + ", ".join(unknown_options)
+            )
         return_traj = kwargs.get("return_traj", True)
+        if "algorithm" in kwargs and kwargs["algorithm"] != self.algorithm:
+            raise ValueError(
+                "algorithm propagation override conflicts with the "
+                "MixedStatePropagator constructor"
+            )
+
         return_time_rho = kwargs.get("return_time_rho", False)
         verbose = kwargs.get("verbose", False)
 

@@ -35,7 +35,13 @@ else:
 
 def _xp(backend: str):
     """Return NumPy or CuPy module depending on backend string."""
-    return cp if (backend == "cupy" and cp is not None) else np
+    if backend == "numpy":
+        return np
+    if backend == "cupy":
+        if cp is None:
+            raise RuntimeError("CuPy backend requested but CuPy is not installed")
+        return cp
+    raise ValueError(f"Unknown backend: {backend}")
 
 
 # -----------------------------------------------------------------------------

@@ -69,6 +69,15 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
 
 def validate_simulation_case(params: Mapping[str, Any]) -> None:
     """Validate one fully-expanded case without changing its values."""
+    removed_options = {
+        key for key in ("auto_timestep", "target_accuracy") if key in params
+    }
+    if removed_options:
+        names = ", ".join(sorted(removed_options))
+        raise SimulationConfigurationError(
+            f"{names} were removed; define dt explicitly and validate convergence"
+        )
+
     basis_type_raw = params.get("basis_type", "linmol")
     if not isinstance(basis_type_raw, str):
         raise SimulationConfigurationError("basis_type must be a string")

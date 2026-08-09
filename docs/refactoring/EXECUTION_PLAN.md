@@ -532,6 +532,26 @@ Add an import-boundary test that rejects forbidden dependencies.
 
 Goal: perform unit conversion exactly once and reduce overlapping policy.
 
+Status: P4.1 strict scale/fallback contract completed early on 2026-08-06
+(implementation commit pending). Complete-generator scaling now uses the
+centered eigenspectrum, active dipole operator norms, and peak field-vector
+magnitude. ZeroField and inactive scale provenance are explicit. Absolute
+Schrodinger phase is restored after centering. Heuristic auto-timestep and
+invented zero scales now raise.
+
+The 2026-08-09 explicit-fallback audit also rejects removed and unknown solver
+options and prevents dipole CuPy requests from becoming NumPy arrays. Remaining
+P1/P2 findings and physics-facing default decisions are in FALLBACK_AUDIT.md.
+
+Remaining Phase 4 work:
+
+- move the implemented policy into the target dynamics/scaling package;
+- delete or redesign legacy analysis.py, strategies.py, and impl.py APIs that
+  still describe obsolete scale strategies;
+- attach scale provenance to the unified PropagationResult rather than
+  recomputing it in simulation/runner.py;
+- finish explicit quantity types and property-style unit round trips;
+- define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 
 - define explicit quantity/unit types or validated value-plus-unit dataclasses;

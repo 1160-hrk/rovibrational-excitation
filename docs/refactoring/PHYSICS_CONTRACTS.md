@@ -135,6 +135,73 @@ Primary implementation anchors:
 - `core/propagation/schrodinger.py`
 - `core/propagation/liouville.py`
 
+### 3.1 Strict nondimensional generator
+
+The nondimensional path analyzes the complete active generator in SI units
+before converting arrays. Let epsilon_0 be the smallest eigenvalue of H0,
+Delta_H its spectral span, mu_ref the largest operator 2-norm among the dipole
+components selected by coupling_axes, and E_peak the peak active field
+magnitude. Cartesian coupling uses max_t sqrt(sum_a |E_a(t)|^2); scalar
+coupling uses max_t |E_scalar(t)|.
+
+~~~text
+H0' = (H0 - epsilon_0 I) / E_ref
+mu_a' = mu_a / mu_ref
+E_a' = E_a / E_peak
+lambda_num = mu_ref E_peak / E_ref
+tau = (t - t_start) / (hbar / E_ref)
+E_ref = max(Delta_H, mu_ref E_peak)
+~~~
+
+When an explicit positive energy_scale_J is supplied, only the last E_ref
+selection is replaced. All other quantities and diagnostics retain their
+physical definitions. The physical ratio mu_ref E_peak / Delta_H is never
+replaced by lambda_num: it is None for a driven gapless problem.
+
+Boundary behavior is part of the physics contract:
+
+| Input state | Result |
+|---|---|
+| Ordinary ElectricField with zero samples | error; caller must choose ZeroField |
+| ZeroField and nonzero free span | field scale inactive; field-free propagation |
+| Driven field and zero active dipole operator | error |
+| ZeroField and zero dipole operator | both interaction scales inactive |
+| H0 proportional to identity, nonzero offset | use absolute offset only to carry phase |
+| Completely zero generator | low-level error; no characteristic scale exists |
+| Non-finite or non-Hermitian operator | error before scaling |
+
+Inactive scales are represented by None, never by a nonphysical divisor.
+Normalized arrays for inactive terms are exact zeros. Scale metadata records
+the value, source (derived, explicit, or inactive), and derivation method.
+
+Energy-origin centering changes a state vector by a global phase. For every
+returned physical elapsed time Delta_t, the high-level Schrodinger path
+multiplies the centered result by
+
+~~~text
+exp(-i epsilon_0 Delta_t / hbar).
+~~~
+
+The initial trajectory state therefore has phase one, sampled trajectory
+phases use the actual propagation stride, and final-only output uses the field
+endpoint. Density matrices receive no phase operation because it cancels
+between ket and bra. Absolute wavefunction parity is tested, not inferred from
+population parity.
+
+The electric-field grid remains the only integration-grid source. No
+nondimensionalization function may resample it. Legacy auto_timestep,
+target-accuracy recommendations, 1000 fs caps, and invented 1 fs, 1 Debye, or
+1e8 V/m scales are forbidden. A convenience time-array builder accepts an
+explicit positive dt whose interval count divides the duration; otherwise it
+raises rather than rounding or extending the endpoint.
+
+Implementation anchors:
+
+- core/electric_field/core.py: ZeroField;
+- core/nondimensional/converter.py: validation, centering, and scale derivation;
+- core/nondimensional/scales.py: values and provenance;
+- core/propagation/schrodinger.py: global-phase restoration;
+- tests/contracts/test_strict_nondimensional_contracts.py: reference contracts.
 ## 4. Initial-state semantics
 
 ### 4.1 Normal simulation runner: coherent superposition

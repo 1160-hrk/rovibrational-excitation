@@ -226,11 +226,21 @@ def prepare_propagation_args(
     mu_x_override: Array | None = None,
     mu_y_override: Array | None = None,
     nondimensional: bool = False,
-    auto_timestep: bool = False,
-    target_accuracy: Literal["high", "standard", "fast"] = "standard",
+    auto_timestep: bool | None = None,
+    target_accuracy: Literal["high", "standard", "fast"] | None = None,
     coupling_mode: Literal["cartesian", "scalar"] = "cartesian",
     coupling_axis: Literal["x", "y", "z"] | None = None,
-) -> tuple[Array, Array, Array, Array, Array, Array, Array, float, float]:
+) -> tuple[
+    Array,
+    Array,
+    Array,
+    Array,
+    Array,
+    Array | None,
+    Array | None,
+    float,
+    Any,
+]:
     """
     Prepare arguments for propagation algorithms.
 
@@ -250,8 +260,9 @@ def prepare_propagation_args(
         Override for y-component dipole
     nondimensional : bool
         Use nondimensional units
-    auto_timestep : bool
-        Automatically select timestep
+    auto_timestep, target_accuracy
+        Removed options retained only as migration guards. Supplying either
+        option raises instead of silently selecting or ignoring a time grid.
 
     Returns
     -------
@@ -264,17 +275,14 @@ def prepare_propagation_args(
     The integration step is derived from the electric-field grid as
     ``efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP``.
     """
-    from ..nondimensional.converter import (
-        auto_nondimensionalize,
-        nondimensionalize_from_objects,
-    )
+    from ..nondimensional.converter import nondimensionalize_from_objects
 
     if coupling_mode == "cartesian":
         ax0, ax1 = validate_axes(axes)
         try:
             pol = efield.get_pol()
         except ValueError:
-            pol = np.zeros((2,))
+            pol = None
     elif coupling_mode == "scalar":
         if coupling_axis not in {"x", "y", "z"}:
             raise ValueError(
@@ -285,53 +293,37 @@ def prepare_propagation_args(
     else:
         raise ValueError("coupling_mode must be 'cartesian' or 'scalar'")
 
+    if auto_timestep is not None or target_accuracy is not None:
+        raise ValueError(
+            "auto_timestep and target_accuracy were removed; provide the "
+            "ElectricField grid explicitly and validate convergence"
+        )
+
     if nondimensional:
-        if auto_timestep:
-            # Complete auto nondimensionalization
-            (
-                H0_prime,
-                mu_x_prime,
-                mu_y_prime,
-                mu_z_prime,
-                Efield_prime,
-                E_scalar,
-                tlist_prime,
-                dt_prime,
-                scales,
-            ) = auto_nondimensionalize(
-                hamiltonian,
-                dipole_matrix,
-                efield,
-                target_accuracy=target_accuracy,
-                verbose=False,
-                coupling_axes=(ax0,) if coupling_mode == "scalar" else (ax0, ax1),
-                scalar_coupling=coupling_mode == "scalar",
-            )
-        else:
-            # Object-based nondimensionalization
-            (
-                H0_prime,
-                mu_x_prime,
-                mu_y_prime,
-                mu_z_prime,
-                Efield_prime,
-                E_scalar,
-                tlist_prime,
-                dt_prime,
-                scales,
-            ) = nondimensionalize_from_objects(
-                hamiltonian,
-                dipole_matrix,
-                efield,
-                verbose=False,
-                coupling_axes=(ax0,) if coupling_mode == "scalar" else (ax0, ax1),
-                scalar_coupling=coupling_mode == "scalar",
-            )
+        (
+            H0_prime,
+            mu_x_prime,
+            mu_y_prime,
+            mu_z_prime,
+            Efield_prime,
+            E_scalar,
+            _,
+            dt_prime,
+            scales,
+        ) = nondimensionalize_from_objects(
+            hamiltonian,
+            dipole_matrix,
+            efield,
+            verbose=False,
+            coupling_axes=(ax0,) if coupling_mode == "scalar" else (ax0, ax1),
+            scalar_coupling=coupling_mode == "scalar",
+        )
         dt = dt_prime * FIELD_INTERVALS_PER_PROPAGATION_STEP
 
-        # Map dipole components based on axes
         dipole_map = {"x": mu_x_prime, "y": mu_y_prime, "z": mu_z_prime}
         if coupling_mode == "scalar":
+            if E_scalar is None:
+                raise ValueError("scalar coupling requires a scalar field waveform")
             Ex = np.asarray(E_scalar)
             Ey = np.zeros_like(Ex)
             mu_a = dipole_map[ax0] * scales.lambda_coupling
@@ -340,7 +332,7 @@ def prepare_propagation_args(
             Ex, Ey = Efield_prime[:, 0], Efield_prime[:, 1]
             mu_a = dipole_map[ax0] * scales.lambda_coupling
             mu_b = dipole_map[ax1] * scales.lambda_coupling
-        return H0_prime, mu_a, mu_b, Ex, Ey, pol, E_scalar, dt, scales.t0
+        return H0_prime, mu_a, mu_b, Ex, Ey, pol, E_scalar, dt, scales
 
     # Standard dimensional calculation
     dt = efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP
@@ -359,8 +351,6 @@ def prepare_propagation_args(
         Ey = np.zeros_like(Ex)
     else:
         Ex, Ey = get_field_components(efield)
-        if E_scalar is None:
-            E_scalar = np.zeros_like(Ex)
 
     # Get dipole components
     mu_a_prime = None
@@ -392,7 +382,7 @@ def prepare_propagation_args(
     # mu_a_prime = cm_to_rad_phz(mu_a)
     # mu_b_prime = cm_to_rad_phz(mu_b)
 
-    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt, 1.0
+    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt, None
 
 
 def is_sparse_matrix(dipole_matrix, threshold: float = 0.1) -> bool:

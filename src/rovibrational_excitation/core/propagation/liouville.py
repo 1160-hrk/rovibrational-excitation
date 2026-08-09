@@ -104,10 +104,40 @@ class LiouvillePropagator(PropagatorBase):
         sample_stride = kwargs.get("sample_stride", 1)
         verbose = kwargs.get("verbose", False)
         nondimensional = kwargs.get("nondimensional", False)
-        auto_timestep = kwargs.get("auto_timestep", False)
-        target_accuracy = kwargs.get("target_accuracy", "standard")
+        removed_timestep_options = {
+            key for key in ("auto_timestep", "target_accuracy") if key in kwargs
+        }
+        if removed_timestep_options:
+            names = ", ".join(sorted(removed_timestep_options))
+            raise ValueError(
+                f"{names} were removed; define the ElectricField grid explicitly"
+            )
+        allowed_options = {
+            "axes",
+            "return_traj",
+            "return_time_rho",
+            "sample_stride",
+            "verbose",
+            "nondimensional",
+            "coupling_mode",
+            "coupling_axis",
+            "dt",
+            "algorithm",
+            "sparse",
+        }
+        unknown_options = sorted(set(kwargs) - allowed_options)
+        if unknown_options:
+            raise ValueError(
+                "unsupported propagation options: " + ", ".join(unknown_options)
+            )
         coupling_mode = kwargs.get("coupling_mode", "cartesian")
         coupling_axis = kwargs.get("coupling_axis")
+        if coupling_mode == "scalar" and "axes" in kwargs:
+            raise ValueError("axes is not applicable to scalar coupling")
+        if coupling_mode == "cartesian" and "coupling_axis" in kwargs:
+            raise ValueError(
+                "coupling_axis is not applicable to Cartesian coupling"
+            )
         if kwargs.get("dt") is not None:
             raise ValueError(
                 "dt override is unsupported; construct ElectricField with the desired grid"
@@ -131,14 +161,12 @@ class LiouvillePropagator(PropagatorBase):
                     self.print_validation_warnings()
 
         # Prepare arguments using the same utility as SchrodingerPropagator
-        H0, mu_x, mu_y, Ex, Ey, _, _, dt_calc, t0_calc = prepare_propagation_args(
+        H0, mu_x, mu_y, Ex, Ey, _, _, dt_calc, scales_calc = prepare_propagation_args(
             hamiltonian,
             efield,
             dipole_matrix,
             axes=axes,
             nondimensional=nondimensional,
-            auto_timestep=auto_timestep,
-            target_accuracy=target_accuracy,
             coupling_mode=coupling_mode,
             coupling_axis=coupling_axis,
         )
@@ -157,9 +185,9 @@ class LiouvillePropagator(PropagatorBase):
 
         if return_time_rho:
             if return_traj:
-                step_fs = dt_calc * sample_stride * t0_calc
-                if nondimensional:
-                    step_fs *= 1e15
+                step_fs = dt_calc * sample_stride
+                if scales_calc is not None:
+                    step_fs *= scales_calc.t0 * 1e15
                 time = efield.tlist[0] + np.arange(rho.shape[0]) * step_fs
             else:
                 time = np.array([efield.tlist[-1]], dtype=np.float64)

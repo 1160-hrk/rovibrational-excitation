@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+import rovibrational_excitation.dipole.base as dipole_base
 from rovibrational_excitation.core.propagation import PropagatorFactory
 from rovibrational_excitation.core.propagation.algorithms.rk4 import (
     schrodinger as rk4_module,
@@ -140,3 +141,15 @@ def test_factory_automatic_selection_is_observable():
 def test_factory_rejects_unknown_algorithm():
     with pytest.raises(ValueError, match="algorithm"):
         PropagatorFactory.create_propagator(algorithm="split-operator")
+
+
+def test_dipole_backend_does_not_fall_back_from_cupy(monkeypatch):
+    monkeypatch.setattr(dipole_base, "cp", None)
+
+    with pytest.raises(RuntimeError, match="CuPy backend requested"):
+        dipole_base._xp("cupy")
+
+
+def test_dipole_backend_rejects_unknown_name():
+    with pytest.raises(ValueError, match="Unknown backend"):
+        dipole_base._xp("cuda")

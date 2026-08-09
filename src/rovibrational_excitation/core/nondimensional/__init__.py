@@ -30,7 +30,7 @@ Main Functions:
 """
 
 # コアクラス
-from .scales import NondimensionalizationScales
+from .scales import NondimensionalizationScales, ScaleValue
 
 # 変換機能
 from .converter import (
@@ -76,6 +76,7 @@ __all__ = [
     # コアクラス
     "NondimensionalizationScales",
     
+    "ScaleValue",
     # 変換機能
     "NondimensionalConverter",
     "nondimensionalize_system",

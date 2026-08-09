@@ -1,6 +1,6 @@
 # Codex repository instructions
 
-Last verified: 2026-08-03
+Last verified: 2026-08-09
 Active refactor branch: `refactor/v0.3`
 Verified baseline commit: `6e154ec`
 
@@ -22,7 +22,8 @@ Before changing source code, read these files in order:
 2. `docs/refactoring/DECISIONS.md`
 3. `docs/refactoring/TARGET_ARCHITECTURE.md`
 4. `docs/refactoring/EXECUTION_PLAN.md`
-5. The source files and tests directly involved in the requested phase
+5. `docs/refactoring/FALLBACK_AUDIT.md`
+6. The source files and tests directly involved in the requested phase
 
 `docs/refactoring/README.md` records the current baseline and document status.
 

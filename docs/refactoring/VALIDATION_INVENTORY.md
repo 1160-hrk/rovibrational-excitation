@@ -68,34 +68,33 @@ were a constant resonant drive. They can be useful order-of-magnitude
 diagnostics, but they are not exact reference solutions and have no asserted
 tolerance.
 
-## Nondimensionalization findings requiring policy decisions
+## Nondimensionalization findings resolved by D-020
 
-The audit exposed constants in current importable source, not trustworthy
-answers in the scripts proposed for deletion. They must be resolved in Phase 4
-before the scaling API is stabilized:
+The 2026-08-06 P4.1 implementation resolves the policy questions exposed by
+the stale validation scripts:
 
-1. `get_energy_scale_from_hamiltonian` caps the derived time scale at
-   `1000 fs`. The cap can change `E0`, `H0'`, and the reported coupling.
-2. A zero Hamiltonian falls back to the energy corresponding to `1 fs`.
-3. A zero transition dipole falls back to `1 Debye`, while a zero field falls
-   back to `1e8 V/m`. These keep divisions finite but make the reported scale
-   and coupling policy-dependent.
-4. `NondimensionalizationScales.from_physical_system` ignores energy gaps at
-   or below the absolute threshold `1e-20 J`, whereas
-   `get_energy_scale_from_hamiltonian` accepts every positive gap. The two
-   paths can select different scales.
-5. Coupling regimes use boundaries `0.1` and `1.0` without a documented
-   physical or numerical contract.
-6. Automatic timestep selection contains empirical boundaries and constants:
-   `0.01`, `0.1`, `1.0`, powers such as `lambda**1.2`, method correction
-   factors, safety factors, and min/max clipping. No retained diagnostic
-   establishes an error bound for them.
-7. Energy extraction uses the diagonal entries of a matrix, not its
-   eigenvalues. This is consistent with the current diagonal-H0 model path,
-   but the input contract does not make that requirement explicit.
+1. The 1000 fs time-scale cap was removed. The reference energy is derived from
+   the full active generator or supplied explicitly.
+2. Zero Hamiltonian span no longer creates a 1 fs energy. A driven gapless
+   problem uses its interaction scale; a completely zero generator raises.
+3. Zero dipole and zero field no longer create 1 Debye or 1e8 V/m values.
+   ZeroField and inactive scale metadata express field-free intent.
+4. The absolute 1e-20 J gap threshold and duplicate
+   from_physical_system implementation were removed from execution; the legacy
+   factory now raises migration guidance.
+5. Weak/intermediate/strong boundaries 0.1 and 1.0 were removed from regime
+   reporting. Numerical coefficient and physical coupling ratio are separate.
+6. Empirical auto-timestep selection was removed from propagation and
+   convenience helpers. The ElectricField grid is authoritative; future
+   adaptation requires error tolerances and a distinct algorithm.
+7. Energy extraction now uses eigvalsh on a finite Hermitian matrix. Active
+   coupling dipoles are likewise validated as finite and Hermitian.
 
-Until those decisions are made, refactoring may characterize existing results
-but must not reinterpret these constants as scientifically approved defaults.
+Replacement validation is collected in
+tests/contracts/test_strict_nondimensional_contracts.py and the dimensional
+versus nondimensional integration tests. The former checks non-diagonal H0,
+operator-norm scaling, gapless drive, explicit ZeroField, invalid driven-zero
+coupling, all-zero rejection, and absolute wavefunction phase restoration.
 
 ## Future validation policy
 

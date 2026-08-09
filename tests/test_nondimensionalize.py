@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.core.electric_field import ElectricField, ZeroField, gaussian_fwhm
 from rovibrational_excitation.core.nondimensional import (
     NondimensionalizationScales,
     analyze_regime,
@@ -16,7 +16,6 @@ from rovibrational_excitation.core.nondimensional import (
     nondimensionalize_system,
 )
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.core.units.constants import CONSTANTS
 
 
 def test_nondimensionalization_scales():
@@ -98,32 +97,50 @@ def test_nondimensionalize_system_basic():
 
 
 def test_analyze_regime():
-    """物理レジーム分析のテスト"""
-    # 弱結合
-    scales_weak = NondimensionalizationScales(1e-20, 1e-30, 1e8, 1e-15, 0.05)
-    regime_weak = analyze_regime(scales_weak)
-    assert regime_weak["regime"] == "weak_coupling"
-    assert regime_weak["lambda"] == 0.05
-    
-    # 中間結合
-    scales_intermediate = NondimensionalizationScales(1e-20, 1e-30, 1e8, 1e-15, 0.5)
-    regime_intermediate = analyze_regime(scales_intermediate)
-    assert regime_intermediate["regime"] == "intermediate_coupling"
-    assert regime_intermediate["lambda"] == 0.5
-    
-    # 強結合
-    scales_strong = NondimensionalizationScales(1e-20, 1e-30, 1e8, 1e-15, 2.0)
-    regime_strong = analyze_regime(scales_strong)
-    assert regime_strong["regime"] == "strong_coupling"
-    assert regime_strong["lambda"] == 2.0
-    
-    # 返り値の型チェック
-    for regime in [regime_weak, regime_intermediate, regime_strong]:
-        assert "regime" in regime
-        assert "lambda" in regime
-        assert "description" in regime
-        assert "energy_scale_eV" in regime
-        assert "time_scale_fs" in regime
+    """Diagnostics avoid model-independent weak/strong thresholds."""
+    field_free = NondimensionalizationScales(
+        1e-20,
+        1e-30,
+        None,
+        1e-15,
+        0.0,
+        interaction_energy=0.0,
+        physical_coupling_ratio=0.0,
+    )
+    gapless = NondimensionalizationScales(
+        1e-20,
+        1e-30,
+        1e8,
+        1e-15,
+        1.0,
+        free_energy_span=0.0,
+        interaction_energy=1e-20,
+        physical_coupling_ratio=None,
+    )
+    classified_only_by_data = NondimensionalizationScales(
+        1e-20,
+        1e-30,
+        1e8,
+        1e-15,
+        0.5,
+        interaction_energy=5e-21,
+        physical_coupling_ratio=0.5,
+    )
+
+    diagnostics = [
+        analyze_regime(field_free),
+        analyze_regime(gapless),
+        analyze_regime(classified_only_by_data),
+    ]
+    assert [item["regime"] for item in diagnostics] == [
+        "field_free",
+        "gapless_driven",
+        "unclassified",
+    ]
+    for item in diagnostics:
+        assert "numerical_coupling_coefficient" in item
+        assert "physical_coupling_ratio" in item
+        assert "reference_energy" in item
 
 
 def test_get_physical_time():
@@ -191,8 +208,8 @@ def test_nondimensionalize_with_realistic_system():
     # 基本チェック
     assert H0_prime.shape == H0.shape
     assert len(tlist_prime) == len(tlist)
-    assert regime_info["lambda"] > 0
-    assert regime_info["regime"] in ["weak_coupling", "intermediate_coupling", "strong_coupling"]
+    assert regime_info["numerical_coupling_coefficient"] > 0
+    assert regime_info["regime"] == "unclassified"
     
     # エネルギースケールが妥当か（eV範囲）
     energy_eV = regime_info["energy_scale_eV"]
@@ -204,55 +221,32 @@ def test_nondimensionalize_with_realistic_system():
 
 
 def test_edge_cases():
-    """エッジケースのテスト"""
-    # ゼロ電場
+    """Zero scales are explicit inactive states, never invented defaults."""
     tlist = np.linspace(-5, 5, 101)
-    efield_zero = ElectricField(tlist)
-    # 電場を追加しない（ゼロのまま）
-    
-    dim = 2
-    # エネルギー単位（J）に変換
-    _HBAR = 1.054571817e-34
-    H0_freq = np.diag([0.0, 0.1])  # rad/fs
-    H0 = H0_freq * _HBAR / 1e-15  # rad/fs → J
+    ambiguous_zero = ElectricField(tlist)
+    zero_field = ZeroField(tlist)
+
+    hbar = 1.054571817e-34
+    h0 = np.diag([0.0, 0.1]) * hbar / 1e-15
     mu_x = np.array([[0, 1e-30], [1e-30, 0]])
     mu_y = np.zeros_like(mu_x)
-    
-    # デフォルト値が使われるはず
-    (
-        H0_prime,
-        mu_x_prime,
-        mu_y_prime,
-        Efield_prime,
-        tlist_prime,
-        dt_prime,
-        scales,
-    ) = nondimensionalize_system(H0, mu_x, mu_y, efield_zero,
-                                 H0_units="energy", time_units="fs")
-    
-    # デフォルト値チェック
-    # 現行仕様ではデフォルト電場スケールは 1e8 V/m
-    assert scales.Efield0 == 1e8  # デフォルト電場スケール
-    assert np.all(Efield_prime == 0)  # ゼロ電場
-    
-    # ゼロ双極子
-    mu_x_zero = np.zeros_like(mu_x)
-    mu_y_zero = np.zeros_like(mu_y)
-    
-    (
-        H0_prime,
-        mu_x_prime,
-        mu_y_prime,
-        Efield_prime,
-        tlist_prime,
-        dt_prime,
-        scales,
-    ) = nondimensionalize_system(H0, mu_x_zero, mu_y_zero, efield_zero,
-                                 H0_units="energy", time_units="fs")
-    
-    assert scales.mu0 == CONSTANTS.DEBYE_TO_CM  # デフォルト双極子スケール
-    assert np.all(mu_x_prime == 0)
-    assert np.all(mu_y_prime == 0)
+
+    with pytest.raises(ValueError, match="ZeroField"):
+        nondimensionalize_system(h0, mu_x, mu_y, ambiguous_zero)
+
+    *_, field_prime, _, _, scales = nondimensionalize_system(
+        h0, mu_x, mu_y, zero_field
+    )
+    assert scales.Efield0 is None
+    np.testing.assert_array_equal(field_prime, np.zeros((tlist.size, 2)))
+
+    zero_dipole = np.zeros_like(mu_x)
+    _, mu_x_prime, mu_y_prime, _, _, _, scales = nondimensionalize_system(
+        h0, zero_dipole, zero_dipole, zero_field
+    )
+    assert scales.mu0 is None
+    np.testing.assert_array_equal(mu_x_prime, zero_dipole)
+    np.testing.assert_array_equal(mu_y_prime, zero_dipole)
 
 
 if __name__ == "__main__":

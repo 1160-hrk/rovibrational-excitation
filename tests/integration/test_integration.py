@@ -12,7 +12,11 @@ from rovibrational_excitation.core.basis import (
     TwoLevelBasis,
     VibLadderBasis,
 )
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian
+from rovibrational_excitation.core.electric_field import (
+    ElectricField,
+    ZeroField,
+    gaussian,
+)
 from rovibrational_excitation.core.propagation import (
     LiouvillePropagator,
     MixedStatePropagator,
@@ -101,7 +105,6 @@ def test_full_simulation_workflow():
         psi0,
         return_traj=True,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # resultがtupleの場合の処理
@@ -240,7 +243,6 @@ def test_mixed_vs_pure_states():
         psi0,
         return_traj=True,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # 同じ純粋状態を混合状態として伝播
@@ -293,7 +295,6 @@ def test_liouville_vs_schrodinger():
         psi0,
         return_traj=False,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # resultがtupleの場合の処理
@@ -321,7 +322,6 @@ def test_liouville_vs_schrodinger():
         rho0,
         return_traj=False,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # 結果の比較（正規化を考慮）
@@ -353,7 +353,7 @@ def test_energy_conservation():
 
     # 電場なし
     tlist = np.linspace(0, 5, 51)
-    efield = ElectricField(tlist)
+    efield = ZeroField(tlist)
     # 電場は追加しない（ゼロのまま）
 
     # 重ね合わせ状態で開始
@@ -369,7 +369,6 @@ def test_energy_conservation():
         psi0,
         return_traj=True,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # resultがtupleの場合の処理
@@ -466,7 +465,7 @@ def test_coherent_vs_incoherent():
     # コヒーレント状態（重ね合わせ）
     psi_coherent = np.array([1.0, 1.0], dtype=np.complex128) / np.sqrt(2)
     result_coherent = SchrodingerPropagator().propagate(
-        H0, efield, dipole, psi_coherent, nondimensional=True, auto_timestep=True
+        H0, efield, dipole, psi_coherent, nondimensional=True
     )
 
     # resultがtupleの場合の処理
@@ -593,7 +592,6 @@ def test_numerical_precision():
         psi0,
         return_traj=True,
         nondimensional=True,
-        auto_timestep=True,
     )
 
     # resultがtupleの場合の処理

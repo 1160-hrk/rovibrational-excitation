@@ -1,5 +1,14 @@
 # 無次元化モジュール使用ガイド
 
+> **重要:** このファイルの後半は旧 API の履歴資料であり、使用例には
+> 廃止済みの auto_timestep、target_accuracy、経験的な結合レジームが
+> 残っています。現行の正式契約は
+> docs/refactoring/PHYSICS_CONTRACTS.md の 3.1 節と D-020 です。
+> ElectricField の時間グリッドを明示し、ZeroField で無電場を表し、
+> nondimensionalize_from_objects を使用してください。自動刻み API は
+> 明示エラーになります。この旧ガイドは Phase 4 のモジュール統合時に
+> 削除または全面置換します。
+
 ## 概要
 
 `rovibrational_excitation.core.nondimensional` パッケージは、量子力学的方程式の無次元化を体系的に行うためのモジュラーシステムです。数値計算の安定性と効率性を向上させることを目的としています。

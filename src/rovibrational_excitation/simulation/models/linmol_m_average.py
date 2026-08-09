@@ -205,6 +205,14 @@ def propagate_m_average(
     electric_field: Any,
 ) -> MAveragePropagationResult:
     """Propagate fixed-M blocks and incoherently sum reduced populations."""
+    removed_options = {
+        key for key in ("auto_timestep", "target_accuracy") if key in params
+    }
+    if removed_options:
+        names = ", ".join(sorted(removed_options))
+        raise ValueError(
+            f"{names} were removed; define the ElectricField grid explicitly"
+        )
     blocks = build_m_average_blocks(params)
     sparse = params.get("sparse", not params.get("dense", True))
     algorithm = params.get("algorithm", "rk4")
@@ -232,8 +240,6 @@ def propagate_m_average(
             return_time_psi=True,
             sample_stride=params.get("sample_stride", 1),
             nondimensional=params.get("nondimensional", False),
-            auto_timestep=params.get("auto_timestep", False),
-            target_accuracy=params.get("target_accuracy", "standard"),
             verbose=params.get("verbose", False),
             algorithm=algorithm,
             sparse=sparse,

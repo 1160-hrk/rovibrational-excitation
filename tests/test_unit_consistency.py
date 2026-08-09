@@ -58,7 +58,9 @@ def test_nondimensionalization_unit_options():
     H0_freq = basis.generate_H0_with_params(omega=0.159, input_units="rad/fs", units="rad/fs")
     
     # ダミー双極子
-    mu_x = np.random.random(H0_energy.matrix.shape) * 1e-30
+    rng = np.random.default_rng(0)
+    random_mu = rng.random(H0_energy.matrix.shape)
+    mu_x = (random_mu + random_mu.T) * 0.5e-30
     mu_y = np.zeros_like(mu_x)
     
     # エネルギー単位での無次元化
@@ -184,14 +186,13 @@ def test_physical_regime_analysis():
     )
     regime_strong = analyze_regime(scales_strong)
     
-    # 弱結合の方がλが小さいはず
-    assert scales_weak.lambda_coupling < scales_strong.lambda_coupling
-    
-    # レジーム分類が適切か
-    if scales_weak.lambda_coupling < 0.1:
-        assert regime_weak["regime"] == "weak_coupling"
-    if scales_strong.lambda_coupling >= 1.0:
-        assert regime_strong["regime"] == "strong_coupling"
+    assert scales_weak.physical_coupling_ratio < scales_strong.physical_coupling_ratio
+    assert regime_weak["regime"] == "unclassified"
+    assert regime_strong["regime"] == "unclassified"
+    assert (
+        regime_weak["physical_coupling_ratio"]
+        < regime_strong["physical_coupling_ratio"]
+    )
 
 
 if __name__ == "__main__":

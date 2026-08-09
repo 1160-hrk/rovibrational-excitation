@@ -66,7 +66,7 @@ def test_liouville_rejects_ignored_timestep_override():
         solver.propagate(None, None, None, np.eye(2), dt=0.1)
 
 
-def test_liouville_returns_physical_time_and_forwards_preparation_options(
+def test_liouville_returns_physical_time_and_forwards_coupling_options(
     monkeypatch,
 ):
     import rovibrational_excitation.core.propagation.liouville as liouville_module
@@ -76,7 +76,8 @@ def test_liouville_returns_physical_time_and_forwards_preparation_options(
 
     def fake_prepare(*args, **kwargs):
         captured.update(kwargs)
-        return h0, mu, mu, fields, fields, None, None, 0.5, 1.0
+        scales = SimpleNamespace(t0=1e-15, energy_offset=0.0)
+        return h0, mu, mu, fields, fields, None, None, 0.5, scales
 
     monkeypatch.setattr(liouville_module, "prepare_propagation_args", fake_prepare)
     efield = SimpleNamespace(tlist=np.linspace(-1.0, 0.0, fields.size))
@@ -89,14 +90,12 @@ def test_liouville_returns_physical_time_and_forwards_preparation_options(
         return_traj=True,
         return_time_rho=True,
         sample_stride=1,
-        target_accuracy="high",
         coupling_mode="scalar",
         coupling_axis="z",
     )
 
     np.testing.assert_allclose(time, [-1.0, -0.5, 0.0])
     assert rho.shape == (3, 2, 2)
-    assert captured["target_accuracy"] == "high"
     assert captured["coupling_mode"] == "scalar"
     assert captured["coupling_axis"] == "z"
 
@@ -162,8 +161,6 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
         return_time_rho=True,
         sample_stride=3,
         nondimensional=True,
-        auto_timestep=True,
-        target_accuracy="fast",
         coupling_mode="scalar",
         coupling_axis="x",
     )
@@ -176,12 +173,25 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
         assert call["return_traj"] is False
         assert call["sample_stride"] == 3
         assert call["nondimensional"] is True
-        assert call["auto_timestep"] is True
-        assert call["target_accuracy"] == "fast"
         assert call["coupling_mode"] == "scalar"
         assert call["coupling_axis"] == "x"
         assert call["algorithm"] == "split_operator"
         assert call["sparse"] is True
+
+
+@pytest.mark.parametrize("option", ["auto_timestep", "target_accuracy"])
+def test_mixed_state_rejects_removed_timestep_options(option):
+    solver = MixedStatePropagator(validate_units=False)
+    states = [np.array([1.0, 0.0]), np.array([0.0, 1.0])]
+
+    with pytest.raises(ValueError, match=rf"{option}.*removed"):
+        solver.propagate(
+            object(),
+            object(),
+            object(),
+            states,
+            **{option: True},
+        )
 
 
 @pytest.mark.parametrize(
@@ -276,3 +286,50 @@ def test_density_matrix_validation_allows_roundoff_scale_negative_eigenvalue():
     rho = np.diag([1.0 - roundoff_eigenvalue, roundoff_eigenvalue])
 
     validate_density_matrix_properties(rho)
+
+
+def test_liouville_rejects_unknown_propagation_option():
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="unsupported propagation options: typo"):
+        solver.propagate(None, None, None, np.eye(2), typo=True)
+
+
+def test_mixed_state_rejects_unknown_propagation_option():
+    solver = MixedStatePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="unsupported propagation options: typo"):
+        solver.propagate(
+            None,
+            None,
+            None,
+            [np.array([1.0, 0.0])],
+            typo=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"coupling_mode": "scalar", "coupling_axis": "x", "axes": "xy"},
+        {"coupling_mode": "cartesian", "coupling_axis": "x"},
+    ],
+)
+def test_liouville_rejects_inapplicable_coupling_options(kwargs):
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="not applicable"):
+        solver.propagate(None, None, None, np.eye(2), **kwargs)
+
+
+def test_mixed_state_rejects_conflicting_algorithm_override():
+    solver = MixedStatePropagator(algorithm="rk4", validate_units=False)
+
+    with pytest.raises(ValueError, match="constructor"):
+        solver.propagate(
+            None,
+            None,
+            None,
+            [np.array([1.0, 0.0])],
+            algorithm="split_operator",
+        )

@@ -372,6 +372,107 @@ Consequences:
 
 Implementation commit: `93ee9eb`
 
+### D-020: Nondimensionalization never invents missing scales or time grids
+
+Status: Accepted
+Scope: core/nondimensional, propagation preparation, returned wavefunction phase
+
+A zero Hamiltonian, zero transition dipole, or zero electric field previously
+triggered arbitrary replacements corresponding to 1 fs, 1 Debye, or
+1e8 V/m. The energy helper could also cap the derived time scale at 1000 fs,
+and auto_timestep could resample the caller's field grid using empirical
+coupling thresholds. These choices changed the normalized generator without a
+scientific error bound and were not visible in the result.
+
+For a finite Hermitian free Hamiltonian and the coupling components active in
+the selected propagation mode, define
+
+~~~text
+epsilon_min = min eig(H0)
+H0_centered = H0 - epsilon_min I
+Delta_H = max eig(H0) - min eig(H0)
+mu_ref = max_a ||mu_a||_2
+E_ref_field = max_t ||E(t)||_2
+V_ref = mu_ref E_ref_field
+E_ref = max(Delta_H, V_ref)
+t_ref = hbar / E_ref
+~~~
+
+A caller may replace only E_ref with an explicit positive energy_scale_J; its
+provenance is recorded as explicit. The numerical interaction coefficient is
+V_ref / E_ref. The physical coupling ratio is separate: V_ref / Delta_H when
+Delta_H > 0, undefined for a driven gapless system, and zero for an explicit
+field-free system.
+
+An identically zero ordinary ElectricField is ambiguous and raises. ZeroField
+is the explicit field-free type. Its field scale is inactive (None) and its
+normalized samples and interaction coefficient are zero. A driven system with
+a zero coupling operator raises. A zero coupling operator is allowed with
+ZeroField and has an inactive dipole scale. A completely zero generator has no
+low-level characteristic scale and raises; a future high-level
+trivial-evolution shortcut must be explicit.
+
+The free Hamiltonian is normalized after energy-origin centering. Schrodinger
+propagation restores the exact global factor
+
+~~~text
+exp(-i epsilon_min (t - t_start) / hbar)
+~~~
+
+on both trajectories and final states. Density propagation needs no correction
+because the global phase cancels. Thus absolute dimensional and
+nondimensional wavefunctions, not only populations, remain comparable.
+
+Consequences:
+
+- full eigenspectra and operator 2-norms are used; diagonal-only and
+  off-diagonal-only shortcuts are forbidden;
+- component Hamiltonians and dipoles are validated as finite and Hermitian;
+- no 1000 fs cap, 1 fs, 1 Debye, or 1e8 V/m fallback remains;
+- heuristic weak/intermediate/strong labels are not emitted without a
+  model-specific accepted threshold;
+- scale values carry derived, explicit, or inactive provenance;
+- auto_timestep and legacy recommendation helpers raise with migration
+  guidance;
+- explicit time-array construction requires a positive step that divides the
+  requested duration and never extends the endpoint;
+- tests/contracts/test_strict_nondimensional_contracts.py anchors scale,
+  zero-state, gapless, and absolute-phase behavior.
+
+Implementation commit: pending
+
+### D-021: Requested capabilities and options never silently fall back
+
+Status: Accepted
+Scope: propagation options, backend selection, scaling, configuration boundaries
+
+A requested physical model, numerical algorithm, backend, scale, or time grid
+must either execute as requested or raise before propagation. A removed option
+must raise migration guidance even when its supplied value equals the old
+default; accepting it would hide stale configuration. Unknown propagation
+kwargs must raise rather than disappear into a variadic signature.
+
+An optional acceleration dependency may use a slower implementation only when
+the selected numerical backend, array type, equations, and result contract are
+unchanged. Such a performance fallback must be observable through capability
+reporting. It must never turn an explicit CuPy request into NumPy.
+
+Batch runners may isolate a failed case only when they retain a structured
+failure record and traceback. Validation errors, unit errors, and optimization
+rule changes must not be converted into successful results or warning-only
+execution.
+
+Consequences:
+
+- removed auto_timestep and target_accuracy options raise at every public route;
+- Schrodinger, Liouville, and MixedState reject unknown propagation kwargs;
+- dipole backend selection raises when CuPy is requested but unavailable;
+- strict validation may not fall back to raw unit-ambiguous attributes;
+- remaining findings are tracked in FALLBACK_AUDIT.md;
+- physics-bearing configuration defaults require a separate user decision.
+
+Implementation commit: pending
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

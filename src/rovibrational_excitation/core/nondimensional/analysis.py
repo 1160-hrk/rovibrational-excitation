@@ -28,24 +28,32 @@ def analyze_regime(scales: NondimensionalizationScales) -> Dict[str, Any]:
     dict
         分析結果
     """
-    lambda_val = scales.lambda_coupling
-    
-    if lambda_val < 0.1:
-        regime = "weak_coupling"
-        description = "弱結合: 摂動論的取り扱いが有効"
-    elif lambda_val < 1.0:
-        regime = "intermediate_coupling"
-        description = "中間結合: 非摂動効果が現れ始める"
+    interaction = scales.interaction_energy
+    physical_ratio = scales.physical_coupling_ratio
+    if interaction == 0:
+        regime = "field_free"
+        description = "The interaction generator is inactive."
+    elif physical_ratio is None:
+        regime = "gapless_driven"
+        description = "Driven system with no non-zero field-free spectral span."
     else:
-        regime = "strong_coupling"
-        description = "強結合: Rabi振動など非線形効果が顕著"
-    
+        regime = "unclassified"
+        description = (
+            "No weak/strong label is assigned without a model-specific threshold."
+        )
+
     return {
         "regime": regime,
-        "lambda": lambda_val,
+        "numerical_coupling_coefficient": scales.lambda_coupling,
+        "physical_coupling_ratio": physical_ratio,
         "description": description,
-        "energy_scale_eV": scales.E0 / _EV_TO_J,  # J → eV
-        "time_scale_fs": scales.t0 * 1e15,  # s → fs
+        "energy_scale_eV": scales.E0 / _EV_TO_J,
+        "time_scale_fs": scales.t0 * 1e15,
+        "reference_energy": {
+            "value_J": scales.reference_energy.value,
+            "source": scales.reference_energy.source,
+            "method": scales.reference_energy.method,
+        },
     }
 
 
