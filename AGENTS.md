@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-10
 Active refactor branch: `refactor/v0.3`
-Verified behavioral checkpoint: `7d14fda` plus D-023 spectroscopy changes
+Verified behavioral checkpoint: `e4102d0`
 
 ## Purpose
 

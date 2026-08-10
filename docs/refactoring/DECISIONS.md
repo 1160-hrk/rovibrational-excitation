@@ -558,7 +558,7 @@ Consequences:
 - focused tests compare realistic-dipole exact routes, validate every explicit
   mode contract, and exercise grid-derived Doppler and device broadening.
 
-Implementation commit: pending.
+Implementation commit: `e4102d0`
 
 ## Open decisions
 

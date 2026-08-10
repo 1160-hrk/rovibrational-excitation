@@ -3,7 +3,7 @@
 Last verified: 2026-08-10
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: `7d14fda`
+Latest API checkpoint: `e4102d0`
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.

@@ -104,6 +104,7 @@ been compared with the replacement.
 | `6e154ec` | Replaced the Python/SciPy sparse RK4 loop with explicit Numba CSR propagation |
 | `93ee9eb` | Made Cartesian and helicity-projected split interactions explicit and physically tested |
 | `7d14fda` | Required physical inputs and consolidated strict nondimensionalization |
+| `e4102d0` | Made spectroscopy conditions, exact/approximate/auto routes, broadening, and execution reports explicit |
 
 These commits are the starting point, not the final architecture.
 
