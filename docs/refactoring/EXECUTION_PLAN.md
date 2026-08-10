@@ -431,6 +431,27 @@ rule.
 
 Acceptance: zero Ruff findings in configured source and test paths.
 
+### P1.5-A Spectroscopy numerical-policy checkpoint
+
+Status: Complete on 2026-08-10. D-023 replaced the ignored
+`sparse_threshold`, fixed absolute response/Doppler cutoffs, implicit optimized
+routing, and duplicated constants with explicit tested contracts. Exact routes
+retain response-relevant nonzero elements; approximation requires a relative
+threshold and reports its discarded commutator norm; automatic selection
+requires a memory budget and reports the executed route. Experimental
+conditions are required, device broadening is applied when requested, and
+Doppler width is derived from the actual uniform grid.
+
+A realistic two-level reference now compares the `loop`, `matrix`, `2d`, and
+`chunked` exact paths and exposed a chunked transition-frequency orientation
+error plus catastrophic pruning of physical dipoles near `1e-30 C m`. The
+focused spectroscopy/unit suite passes 42 tests. The complete suite passes 505
+tests with 10 GPU skips, and Ruff remains clean.
+
+This checkpoint resolves the numerical-policy portion of O-007. Trusted
+experimental spectra, sum rules, and FFT/broadening reference conventions
+remain Phase 7 prerequisites before decomposing the spectroscopy monolith.
+
 ### P1.6 CI truthfulness
 
 Update workflows:

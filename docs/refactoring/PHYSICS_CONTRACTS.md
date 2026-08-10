@@ -673,7 +673,49 @@ The endpoint, mixed split-operator factory, and renormalization checks
 characterize O-001, O-003, and O-004 respectively; they do not resolve those
 open API decisions.
 
-## 10. Input validation principles
+## 10. Spectroscopy evaluation contract
+
+Experimental spectroscopy inputs are part of the physical problem. Temperature
+`T`, pressure, optical length, dephasing time `T2`, and molecular mass `m` are
+required positive finite values. Spectroscopy uses the constants from
+`core.units.constants`; local rounded copies are forbidden.
+
+For an angular-frequency grid, transition-specific Doppler broadening uses
+
+~~~text
+sigma_omega = |omega_0| sqrt(k_B T / (m c^2))
+sigma_pixels = sigma_omega / delta_omega
+~~~
+
+The aggregate wavenumber route uses the mean nonzero transition angular
+frequency, converts its width to `cm^-1`, and divides by the actual wavenumber
+grid spacing. Broadening requires a strictly monotonic uniform grid. It is
+applied at every positive resolved width; no fixed absolute threshold decides
+whether the physics is skipped.
+
+The response calculation policy is:
+
+- `matrix`, `loop`, `2d`, and `chunked` are exact routes. They retain every
+  response-relevant matrix element that is not literally zero.
+- `approximate_sparse` is a distinct opt-in route. It requires a relative
+  threshold with `0 < threshold <= 1`, scales it by the largest relevant
+  commutator magnitude, and reports the discarded commutator L2 fraction.
+- `auto` is also opt-in. It requires a positive memory budget and chunk size,
+  and reports whether `2d` or `chunked` actually ran.
+- `auto` with Doppler broadening is unsupported until exact routes share one
+  characterized broadening kernel. It must raise rather than let a memory
+  choice change transition-specific versus aggregate broadening.
+- A requested device function must be recognized and applied. Its resolution
+  is required, positive, and expressed on the supplied wavenumber grid.
+
+`SpectroscopyCalculationReport` is the observable record of requested and
+executed method, estimated allocation, explicit memory/threshold controls,
+discarded fraction, and device-function application. Exact-route agreement and
+contract failures are anchored by
+`tests/physics/test_spectroscopy_reference.py`. Independent experimental spectra
+or sum rules remain required before decomposing the full spectroscopy module.
+
+## 11. Input validation principles
 
 Parameters that define the physical problem must be required rather than
 filled with extreme or arbitrary defaults. In particular:
@@ -693,7 +735,7 @@ documented meaning, such as `backend="numpy"` or
 Unknown keys and unsupported combinations must fail with the parameter name and
 reason. No physical input may be ignored.
 
-## 11. Required physics test matrix
+## 12. Required physics test matrix
 
 Every major solver or model migration must cover the applicable rows:
 
@@ -710,11 +752,12 @@ Every major solver or model migration must cover the applicable rows:
 | Units | round trips and canonical-boundary equivalence |
 | Nondimensional | physical/nondimensional observable and time equivalence |
 | Backend | NumPy dense/sparse and real CuPy parity where supported |
+| Spectroscopy | exact-route agreement, explicit approximation report, grid-derived broadening, device-function application |
 
 Tolerance values must be justified by algorithm order, machine precision, and
 problem scale. Do not use a loose constant solely to make a test pass.
 
-## 12. Open physics/API decisions
+## 13. Open physics/API decisions
 
 These items require user input before behavior changes:
 

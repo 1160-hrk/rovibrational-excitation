@@ -23,6 +23,8 @@ class PhysicalConstants:
     H: ClassVar[float] = 6.62607015e-34  # Planck constant [J·s]
     HBAR: ClassVar[float] = 1.054571817e-34  # Reduced Planck constant [J·s]
     E: ClassVar[float] = 1.602176634e-19  # Elementary charge [C]
+    BOLTZMANN: ClassVar[float] = 1.380649e-23  # Boltzmann constant [J/K]
+    AVOGADRO: ClassVar[float] = 6.02214076e23  # Avogadro constant [1/mol]
 
     # Atomic units
     A0: ClassVar[float] = 5.29177210903e-11  # Bohr radius [m]

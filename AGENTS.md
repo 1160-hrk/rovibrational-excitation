@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-09
+Last verified: 2026-08-10
 Active refactor branch: `refactor/v0.3`
-Verified baseline commit: `6e154ec`
+Verified behavioral checkpoint: `7d14fda` plus D-023 spectroscopy changes
 
 ## Purpose
 
@@ -72,6 +72,11 @@ The authoritative details and formulas are in
 - Density matrices must be finite, square, Hermitian, positive semidefinite,
   and have positive real trace within the documented scale-aware tolerance.
 - Liouville propagation currently supports NumPy dense RK4 only.
+- Spectroscopy exact routes never prune response-relevant nonzero elements.
+  Approximation and automatic routing are separate explicit modes with required
+  controls and an observable calculation report.
+- Spectroscopy experimental conditions are required, and Doppler broadening is
+  derived from the actual uniform frequency-grid spacing.
 
 Changing any item above requires explicit user approval and a regression test.
 
@@ -113,14 +118,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current full test baseline at Numba CSR source commit `6e154ec`:
+Current full CPU test baseline after the D-023 spectroscopy checkpoint:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-432 passed, 10 GPU tests skipped
+505 passed, 10 GPU tests skipped (515 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -179,14 +184,15 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 and P1.1-P1.5 are complete for the CPU baseline. Ruff formatting and
-lint are clean. One spectroscopy archive remains explicit Phase 7 migration
-evidence. The next authorized roadmap work is:
+Phase 0, P1.1-P1.5, and the D-023 spectroscopy policy checkpoint are complete
+for the CPU baseline. Ruff formatting and lint are clean. One spectroscopy
+archive remains explicit Phase 7 migration evidence. The next authorized
+roadmap work is:
 
-1. Resolve O-007's silently ignored spectroscopy `sparse_threshold` contract.
-2. Make lint, type, coverage, build, and physics CI gates truthful in P1.6.
-3. Start typed propagation contracts only after Phase 1 acceptance is met.
-4. Perform target directory migration only after typed contracts are stable.
+1. Make lint, type, coverage, build, and physics CI gates truthful in P1.6.
+2. Start typed propagation contracts only after Phase 1 acceptance is met.
+3. Perform target directory migration only after typed contracts are stable.
+4. Obtain trusted spectroscopy spectra or sum rules before Phase 7 decomposition.
 
 Do not start the target directory migration before Phase 1 acceptance criteria
 are met.

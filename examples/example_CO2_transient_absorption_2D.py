@@ -433,7 +433,7 @@ conditions = ExperimentalConditions(
     pressure=PRESSURE_PA,
     optical_length=PATH_LENGTH_M,
     T2=T2_PS,
-    molecular_mass=44e-3/6.023e23  # CO2
+    molecular_mass=44e-3 / CONSTANTS.AVOGADRO,  # CO2
 )
 
 # AbsorbanceCalculatorの初期化

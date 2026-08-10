@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 495 passed, 10 skipped (505 collected) |
+| Pytest | 505 passed, 10 skipped (515 collected) |
 | Measured total coverage | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
@@ -53,13 +53,13 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 64% |
 | RK4 Schrödinger coverage report | 10% |
 
-The pytest and Ruff rows were verified on 2026-08-10 after P1.4. Coverage rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
+The pytest and Ruff rows were verified on 2026-08-10 after the spectroscopy policy checkpoint. Coverage rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
 | File | Physical lines | Main concern |
 |---|---:|---|
-| `spectroscopy/absorbance_calculator.py` | 898 | Multiple response/spectrum responsibilities, 11% coverage |
+| `spectroscopy/absorbance_calculator.py` | 913 | Multiple response/spectrum responsibilities, 11% coverage |
 | `simulation/runner.py` | 628 | Construction, execution, multiprocessing, output, error handling |
 | `core/nondimensional/converter.py` | 562 | Strict scaling, array conversion, and object preparation |
 | `core/propagation/algorithms/rk4/schrodinger.py` | 478 | Dense, sparse, CPU, GPU, validation paths in one module |
@@ -112,7 +112,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.1-P1.5 complete; CI truthfulness and spectroscopy ignored-option decision remain |
+| 1 | Repository and CI normalization | In progress — P1.1-P1.5 and spectroscopy policy checkpoint complete; P1.6 CI truthfulness remains |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |

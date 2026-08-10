@@ -12,6 +12,8 @@ AbsorbanceCalculator
     Main class for calculating absorbance spectra from density matrices
 ExperimentalConditions
     Dataclass for experimental conditions (temperature, pressure, etc.)
+SpectroscopyCalculationReport
+    Immutable report of the requested and executed numerical policy
 
 Functions
 ---------
@@ -24,6 +26,7 @@ Basic usage:
 
 >>> from rovibrational_excitation.spectroscopy import AbsorbanceCalculator, ExperimentalConditions
 >>> from rovibrational_excitation.core.basis import LinMolBasis
+>>> from rovibrational_excitation.core.units.constants import CONSTANTS
 >>>
 >>> # Create basis and other components
 >>> basis = LinMolBasis(V_max=5, J_max=10, use_M=True)
@@ -35,7 +38,8 @@ Basic usage:
 ...     temperature=300,  # K
 ...     pressure=1e5,     # Pa
 ...     optical_length=1e-3,  # m
-...     T2=500            # ps
+...     T2=500,           # ps
+...     molecular_mass=44e-3 / CONSTANTS.AVOGADRO  # kg
 ... )
 >>>
 >>> # Create calculator
@@ -49,7 +53,7 @@ Basic usage:
 >>>
 >>> # Calculate spectrum
 >>> wavenumber = np.arange(2000, 2500, 0.1)
->>> absorbance = calculator.calculate(rho, wavenumber)
+>>> absorbance = calculator.calculate(rho, wavenumber, method='loop')
 
 Advanced usage with 3D dipole components:
 
@@ -69,14 +73,16 @@ Memory-efficient calculation for large systems:
 >>> # Automatic optimization for large basis sets
 >>> absorbance = calculator.calculate(
 ...     rho, wavenumber,
-...     method='optimized',  # Automatically selects best method
-...     chunk_size=1000      # Controls memory usage
+...     method='auto',
+...     memory_budget_bytes=2 * 1024**3,
+...     chunk_size=1000
 ... )
 """
 
 from .absorbance_calculator import (
     AbsorbanceCalculator,
     ExperimentalConditions,
+    SpectroscopyCalculationReport,
     create_calculator_from_params,
 )
 
@@ -84,6 +90,7 @@ from .absorbance_calculator import (
 __all__ = [
     "AbsorbanceCalculator",
     "ExperimentalConditions",
+    "SpectroscopyCalculationReport",
     "create_calculator_from_params",
 ]
 

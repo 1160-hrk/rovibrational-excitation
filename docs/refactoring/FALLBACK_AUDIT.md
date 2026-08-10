@@ -24,6 +24,7 @@ recorded.
 | Energy centering | Centering could change the returned absolute wavefunction phase | Exact global phase is restored | test_strict_nondimensional_contracts.py |
 | Physical model inputs | duration and zero-valued constants could be omitted and silently defaulted | Model-specific constants, direct dipole mu0, vibrational potential type, units, and duration are required; explicit 0.0 remains valid | simulation and basis contract tests |
 | Nondimensional API | 25 exports exposed competing lambda strategies and removed heuristics | One strict conversion path plus neutral reporting; legacy modules and wrappers removed | strict nondimensional contract tests |
+| Spectroscopy policy | `optimized` silently chose paths, `sparse_threshold` was ignored, fixed response/Doppler cutoffs changed work, and requested device broadening was not applied | Explicit exact, approximate, and auto modes; required controls and execution report; grid-derived Doppler; requested device function applied | test_spectroscopy_reference.py |
 
 ## P1: fix before API stabilization
 
@@ -42,10 +43,11 @@ recorded.
 4. simulation/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
-5. spectroscopy/absorbance_calculator.py accepts and forwards
-   `sparse_threshold` but never applies it; internal response and method
-   selection use separate hard-coded thresholds. Remove the option or implement
-   one explicit, tested meaning after O-007 is resolved.
+5. spectroscopy accepts `axes="xyz"` and three-component polarization vectors,
+   but only the first two axes contribute to `mu_int` and `mu_det`; the ignored
+   third component still changes normalization. Define the complex detection
+   polarization conjugation convention, then implement all selected axes and
+   reject zero, nonfinite, or dimension-mismatched vectors.
 
 ## User decisions required before changing physics-facing defaults
 

@@ -520,6 +520,46 @@ Consequences:
 
 Implementation commit: `7d14fda`
 
+### D-023: Spectroscopy numerical policies are explicit
+
+Status: Accepted on 2026-08-10.
+
+Scope: spectroscopy response evaluation, broadening, and experimental inputs.
+
+Decision:
+
+- `ExperimentalConditions` requires positive finite temperature, pressure,
+  optical length, dephasing time, and molecular mass. None is invented.
+- Callers explicitly select `matrix`, `loop`, `2d`, `chunked`, `auto`, or
+  `approximate_sparse`. The former four are exact evaluation routes and do not
+  discard response-relevant nonzero matrix elements.
+- Sparse approximation is available only through `approximate_sparse`. Its
+  relative threshold is mandatory, scale-relative, and reported together with
+  the discarded commutator L2 fraction.
+- `auto` is opt-in, requires an explicit memory budget and chunk size, and
+  reports the method actually executed. `auto` with Doppler broadening is
+  rejected until the exact routes share one characterized broadening kernel;
+  memory pressure must not silently select different physics.
+- Doppler broadening is decided from the actual uniform frequency-grid spacing.
+  Fixed absolute skip thresholds are removed.
+- A requested device function must be recognized, fully parameterized, and
+  applied. Unsupported or inapplicable controls raise instead of being ignored.
+- Spectroscopy uses the authoritative constants layer, including exact SI
+  Boltzmann and Avogadro constants.
+
+Consequences:
+
+- the old `optimized` route and ignored `sparse_threshold` option are removed;
+- exact chunked response evaluation uses the same transition-frequency
+  orientation as the loop reference;
+- method-specific controls cannot leak into unrelated routes;
+- each calculation exposes a `SpectroscopyCalculationReport` describing its
+  requested and executed numerical policy;
+- focused tests compare realistic-dipole exact routes, validate every explicit
+  mode contract, and exercise grid-derived Doppler and device broadening.
+
+Implementation commit: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -592,20 +632,11 @@ and gradient tolerance.
 APIs. Before decomposition, define trusted spectra or sum rules for absorption,
 PFID, emission, thermal state handling, broadening, and FFT conventions.
 
-The P1.5 audit also found policy values with no recorded derivation:
-
-- public `sparse_threshold=1e-12` is forwarded into optimized methods but never
-  used;
-- sparse response selection instead uses a fixed `1e-15`;
-- automatic method selection uses 4 GiB and dimensions 500, 1000, and 1500;
-- chunk sizes default to 500 or 1000;
-- Doppler paths skip or apply work at `1e-10` rad/s and `0.01` cm^-1;
-- spectroscopy duplicates rounded physical constants instead of using the
-  authoritative constants layer.
-
-Before changing these, the user must decide which are accuracy contracts,
-performance heuristics, or removable options. Until then they are documented
-current behavior, not approved physical defaults.
+D-023 resolves the numerical-policy ambiguities found by the P1.5 audit:
+ignored options, fixed response cutoffs, automatic memory heuristics, fixed
+Doppler cutoffs, and duplicated constants are no longer accepted behavior.
+O-007 remains open only for independent scientific references and acceptable
+tolerances beyond the exact-route equivalence tests.
 
 ### O-008: Public v0.3 namespace
 

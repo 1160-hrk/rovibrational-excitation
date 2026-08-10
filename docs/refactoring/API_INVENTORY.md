@@ -131,7 +131,7 @@ simulation `build_model` registry supports only `linmol`, `twolevel`, and
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `optimization` | `run_local_optimization`, `run_krotov_optimization`, `run_grape_optimization`, `ALGO_REGISTRY` | typed functions under `optimization`; private registry | run functions target public in subpackage; registry internal |
-| `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage, exact facade pending O-007 |
+| `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical policy accepted by D-023, scientific references pending O-007 |
 
 `cli`, `simulation`, and `plots` have no explicit `__all__`. `cli/__init__.py`
 exists but is empty; `simulation` and `plots` are namespace packages.
