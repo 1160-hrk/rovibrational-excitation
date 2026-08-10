@@ -184,7 +184,7 @@ class AbsorbanceCalculator:
             self.mu_components[0] * self.pol_int[0]
             + self.mu_components[1] * self.pol_int[1]
         )
-        if type(self.mu_int) != np.ndarray:
+        if not isinstance(self.mu_int, np.ndarray):
             self.mu_int = self.mu_int.toarray()
         # print(f"mu_int sample values: {self.mu_int[np.where(self.mu_int!=0)][:5]}")
         # 検出偏光を考慮した双極子行列
@@ -192,7 +192,7 @@ class AbsorbanceCalculator:
             self.mu_components[0] * self.pol_det[0]
             + self.mu_components[1] * self.pol_det[1]
         )
-        if type(self.mu_det) != np.ndarray:
+        if not isinstance(self.mu_det, np.ndarray):
             self.mu_det = self.mu_det.toarray()
         # print(f"mu_det sample values: {self.mu_det[np.where(self.mu_det!=0)][:5]}")
 
@@ -405,8 +405,6 @@ class AbsorbanceCalculator:
         N_level = self.N_level
         N_freq = len(wavenumber)
 
-        # 基本のメモリ推定（複素数配列のサイズ）
-        memory_matrix = N_level * N_level * 16  # bytes for complex128
         memory_frequency = (
             N_freq * N_level * N_level * 16
         )  # for full response calculation
@@ -438,7 +436,6 @@ class AbsorbanceCalculator:
 
         # 応答行列を計算（疎行列最適化）
         mu_int_sparse = csr_matrix(self.mu_int)
-        mu_det_sparse = csr_matrix(self.mu_det)
         rho_sparse = csr_matrix(rho_masked)
 
         # コミュテータ [mu_int, rho] を疎行列で計算
@@ -499,11 +496,8 @@ class AbsorbanceCalculator:
         Smart memory-optimized calculation with automatic method selection
         """
         N_level = self.N_level
-        N_freq = len(wavenumber)
-
         # メモリ使用量を推定 (最悪ケース)
         memory_matrix_gb = (N_level * N_level * 16) / (1024**3)  # 密度行列等
-        memory_frequency_gb = (N_freq * 8) / (1024**3)  # 周波数配列
 
         if N_level < 500:
             # 小さなシステム: 高速な2D method
@@ -683,9 +677,6 @@ class AbsorbanceCalculator:
         """
         全体の応答にドップラー拡がりを適用（より正確な実装）
         """
-        # 波数をrad/sに変換
-        omega = 2 * np.pi * C * 1e2 * wavenumber
-
         # 平均遷移エネルギーを推定
         energy_diffs = []
         for i in range(self.N_level):

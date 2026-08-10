@@ -592,6 +592,21 @@ and gradient tolerance.
 APIs. Before decomposition, define trusted spectra or sum rules for absorption,
 PFID, emission, thermal state handling, broadening, and FFT conventions.
 
+The P1.5 audit also found policy values with no recorded derivation:
+
+- public `sparse_threshold=1e-12` is forwarded into optimized methods but never
+  used;
+- sparse response selection instead uses a fixed `1e-15`;
+- automatic method selection uses 4 GiB and dimensions 500, 1000, and 1500;
+- chunk sizes default to 500 or 1000;
+- Doppler paths skip or apply work at `1e-10` rad/s and `0.01` cm^-1;
+- spectroscopy duplicates rounded physical constants instead of using the
+  authoritative constants layer.
+
+Before changing these, the user must decide which are accuracy contracts,
+performance heuristics, or removable options. Until then they are documented
+current behavior, not approved physical defaults.
+
 ### O-008: Public v0.3 namespace
 
 The target packages are proposed, but the exact root re-exports remain open.

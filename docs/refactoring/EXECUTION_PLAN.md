@@ -409,12 +409,13 @@ tests.
 
 ### P1.5 Ruff lint normalization
 
-Status: In progress. On 2026-08-10 Ruff applied 59 safe fixes, leaving 16
-manual findings: ten ambiguous intensity names, four unused spectroscopy
-temporaries, and two exact-type comparisons. Import sorting exposed a latent
-cycle in `dipole.factory`; the factory now imports concrete submodules instead
-of importing back through `dipole.__init__`. The full suite passes 495 tests
-with 10 GPU skips after this correction.
+Status: Complete on 2026-08-10. Ruff applied 59 safe fixes, then the remaining
+ten intensity names, four unused spectroscopy temporaries, and two exact-type
+comparisons were resolved manually without changing formulas or method
+thresholds. Import sorting exposed and removed a latent `dipole.factory`
+package cycle. Ruff now reports zero findings, formatting is stable, the 32
+unit-conversion tests pass, and the full suite passes 495 tests with 10 GPU
+skips.
 
 First run safe fixes on a clean dedicated branch/commit, then review manual
 issues:

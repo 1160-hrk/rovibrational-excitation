@@ -167,7 +167,7 @@ Measured at `613ce93`:
 - Statement/branch coverage report: 47% total.
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
-- Current after the P1.5 safe pass: 0 format failures; 16 manual Ruff findings.
+- Current after P1.5: 0 format failures and 0 Ruff findings.
 - Optimization modules: 0% measured coverage.
 - Spectroscopy monolith: 11% measured coverage.
 - RK4 Schrödinger implementation: 10% measured line/branch report.
@@ -179,15 +179,14 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 and P1.1-P1.4 are complete for the CPU baseline. The P1.5 safe lint
-pass is complete and Ruff formatting remains clean. One spectroscopy archive
-remains explicit Phase 7 migration evidence. The next authorized roadmap work
-is:
+Phase 0 and P1.1-P1.5 are complete for the CPU baseline. Ruff formatting and
+lint are clean. One spectroscopy archive remains explicit Phase 7 migration
+evidence. The next authorized roadmap work is:
 
-1. Rename ten ambiguous intensity lambda parameters without changing formulas.
-2. Review four unused spectroscopy temporaries and two exact-type comparisons.
-3. Make lint, type, coverage, build, and physics CI gates truthful.
-4. Start typed propagation contracts only after Phase 1 acceptance is met.
+1. Resolve O-007's silently ignored spectroscopy `sparse_threshold` contract.
+2. Make lint, type, coverage, build, and physics CI gates truthful in P1.6.
+3. Start typed propagation contracts only after Phase 1 acceptance is met.
+4. Perform target directory migration only after typed contracts are stable.
 
 Do not start the target directory migration before Phase 1 acceptance criteria
 are met.

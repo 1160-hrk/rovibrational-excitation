@@ -117,16 +117,36 @@ class UnitConverter:
 
         # Intensity to field conversions (functions)
         self._intensity_to_field: dict[str, Callable] = {
-            "W/cm^2": lambda I: np.sqrt(2 * I * 1e4 * CONSTANTS.MU0 * CONSTANTS.C),
-            "W/cm2": lambda I: np.sqrt(2 * I * 1e4 * CONSTANTS.MU0 * CONSTANTS.C),
-            "W/m^2": lambda I: np.sqrt(2 * I * CONSTANTS.MU0 * CONSTANTS.C),
-            "W/m2": lambda I: np.sqrt(2 * I * CONSTANTS.MU0 * CONSTANTS.C),
-            "TW/cm^2": lambda I: np.sqrt(2 * I * 1e16 * CONSTANTS.MU0 * CONSTANTS.C),
-            "TW/cm2": lambda I: np.sqrt(2 * I * 1e16 * CONSTANTS.MU0 * CONSTANTS.C),
-            "GW/cm^2": lambda I: np.sqrt(2 * I * 1e13 * CONSTANTS.MU0 * CONSTANTS.C),
-            "GW/cm2": lambda I: np.sqrt(2 * I * 1e13 * CONSTANTS.MU0 * CONSTANTS.C),
-            "MW/cm^2": lambda I: np.sqrt(2 * I * 1e10 * CONSTANTS.MU0 * CONSTANTS.C),
-            "MW/cm2": lambda I: np.sqrt(2 * I * 1e10 * CONSTANTS.MU0 * CONSTANTS.C),
+            "W/cm^2": lambda intensity: np.sqrt(
+                2 * intensity * 1e4 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "W/cm2": lambda intensity: np.sqrt(
+                2 * intensity * 1e4 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "W/m^2": lambda intensity: np.sqrt(
+                2 * intensity * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "W/m2": lambda intensity: np.sqrt(
+                2 * intensity * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "TW/cm^2": lambda intensity: np.sqrt(
+                2 * intensity * 1e16 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "TW/cm2": lambda intensity: np.sqrt(
+                2 * intensity * 1e16 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "GW/cm^2": lambda intensity: np.sqrt(
+                2 * intensity * 1e13 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "GW/cm2": lambda intensity: np.sqrt(
+                2 * intensity * 1e13 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "MW/cm^2": lambda intensity: np.sqrt(
+                2 * intensity * 1e10 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
+            "MW/cm2": lambda intensity: np.sqrt(
+                2 * intensity * 1e10 * CONSTANTS.MU0 * CONSTANTS.C
+            ),
         }
 
     def convert_frequency(

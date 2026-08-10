@@ -42,6 +42,10 @@ recorded.
 4. simulation/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
+5. spectroscopy/absorbance_calculator.py accepts and forwards
+   `sparse_threshold` but never applies it; internal response and method
+   selection use separate hard-coded thresholds. Remove the option or implement
+   one explicit, tested meaning after O-007 is resolved.
 
 ## User decisions required before changing physics-facing defaults
 
