@@ -5,7 +5,8 @@ This module provides validation functions to ensure physical quantities
 are within reasonable ranges for molecular physics calculations.
 """
 
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Union
+
 import numpy as np
 
 from .constants import CONSTANTS
@@ -66,7 +67,7 @@ class UnitValidator:
 
     def validate_energy(
         self, value: Union[float, np.ndarray], unit: str, context: str = "molecular"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Validate energy value.
 
@@ -118,7 +119,7 @@ class UnitValidator:
 
     def validate_frequency(
         self, value: Union[float, np.ndarray], unit: str, context: str = "molecular"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Validate frequency value."""
         warnings = []
 
@@ -152,7 +153,7 @@ class UnitValidator:
 
     def validate_dipole_moment(
         self, value: Union[float, np.ndarray], unit: str, context: str = "molecular"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Validate dipole moment value."""
         warnings = []
 
@@ -186,7 +187,7 @@ class UnitValidator:
 
     def validate_electric_field(
         self, value: Union[float, np.ndarray], unit: str, context: str = "moderate"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Validate electric field value."""
         warnings = []
 
@@ -220,7 +221,7 @@ class UnitValidator:
 
     def validate_time(
         self, value: Union[float, np.ndarray], unit: str, context: str = "fast"
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Validate time value."""
         warnings = []
 
@@ -259,7 +260,7 @@ class UnitValidator:
         efield,
         expected_H0_units: str = "J",
         expected_dipole_units: str = "C*m",
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate units before propagation calculation.
 

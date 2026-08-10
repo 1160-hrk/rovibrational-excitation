@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 吸光度スペクトル計算モジュール
 
@@ -8,15 +7,14 @@
 """
 
 from dataclasses import dataclass
-from typing import Optional, Literal, Tuple, Union
+from typing import Literal
+
 import numpy as np
 from scipy import ndimage
-from scipy.special import wofz
 
 from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
 from rovibrational_excitation.dipole.base import DipoleMatrixBase
-
 
 # 物理定数
 H_DIRAC = 1.055e-34  # ディラック定数 [J*s]
@@ -85,10 +83,10 @@ class AbsorbanceCalculator:
         basis: BasisBase,
         hamiltonian: Hamiltonian,
         dipole_matrix: DipoleMatrixBase,
-        conditions: Optional[ExperimentalConditions] = None,
+        conditions: ExperimentalConditions | None = None,
         axes: str = "xy",
-        pol_int: Optional[np.ndarray] = None,
-        pol_det: Optional[np.ndarray] = None,
+        pol_int: np.ndarray | None = None,
+        pol_det: np.ndarray | None = None,
         use_v_mask: bool = True,
     ):
         self.basis = basis
@@ -850,10 +848,10 @@ def create_calculator_from_params(
     pressure: float = 3e4,
     optical_length: float = 1e-3,
     T2: float = 500,
-    molecular_mass: Optional[float] = None,
+    molecular_mass: float | None = None,
     axes: str = "xy",
-    pol_int: Optional[np.ndarray] = None,
-    pol_det: Optional[np.ndarray] = None,
+    pol_int: np.ndarray | None = None,
+    pol_det: np.ndarray | None = None,
 ) -> AbsorbanceCalculator:
     """
     パラメータから計算機を作成するヘルパー関数

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Spectroscopy Module
 ===================
@@ -80,7 +79,6 @@ from .absorbance_calculator import (
     ExperimentalConditions,
     create_calculator_from_params,
 )
-
 
 # Define what gets imported with "from spectroscopy import *"
 __all__ = [

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-from numba import complex128, int64, njit
 from sympy.physics.wigner import wigner_3j
 
 SQRT2 = np.sqrt(2.0)

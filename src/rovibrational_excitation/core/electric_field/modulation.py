@@ -6,10 +6,11 @@
 正弦波変調、任意変調、分散適用などを提供。
 """
 
+from typing import Union
+
 import numpy as np
 from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
-from typing import Union
 
 
 def apply_sinusoidal_mod(

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
+
 from rovibrational_excitation.core.units.converters import converter
 
 
@@ -65,7 +66,7 @@ class Hamiltonian:
         input_units: str,
         target_units: str = "J",
         basis_info: dict | None = None,
-    ) -> "Hamiltonian":
+    ) -> Hamiltonian:
         """
         Create a Hamiltonian object from a matrix with input units.
 

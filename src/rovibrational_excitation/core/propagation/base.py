@@ -6,7 +6,8 @@ should inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
+
 import numpy as np
 
 from ..units.validators import validator
@@ -126,7 +127,7 @@ class PropagatorBase(ABC):
 
     def prepare_units(
         self, H0: np.ndarray, dipole_matrix, efield
-    ) -> Tuple[np.ndarray, Any, Any]:
+    ) -> tuple[np.ndarray, Any, Any]:
         """
         Prepare quantities in appropriate units for calculation.
 

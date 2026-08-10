@@ -19,11 +19,11 @@ automatically selects the appropriate dipole matrix class based on the
 basis type.
 """
 
+from .factory import create_dipole_matrix
 from .linmol import LinMolDipoleMatrix
+from .symtop import SymTopDipoleMatrix
 from .twolevel import TwoLevelDipoleMatrix
 from .viblad import VibLadderDipoleMatrix
-from .symtop import SymTopDipoleMatrix
-from .factory import create_dipole_matrix
 
 __all__ = [
     "LinMolDipoleMatrix",

@@ -4,7 +4,9 @@ Unit conversion utilities for rovibrational excitation calculations.
 This module provides a clean, extensible system for unit conversions.
 """
 
-from typing import Dict, Union, Callable
+from collections.abc import Callable
+from typing import Union
+
 import numpy as np
 
 from .constants import CONSTANTS
@@ -114,7 +116,7 @@ class UnitConverter:
         }
 
         # Intensity to field conversions (functions)
-        self._intensity_to_field: Dict[str, Callable] = {
+        self._intensity_to_field: dict[str, Callable] = {
             "W/cm^2": lambda I: np.sqrt(2 * I * 1e4 * CONSTANTS.MU0 * CONSTANTS.C),
             "W/cm2": lambda I: np.sqrt(2 * I * 1e4 * CONSTANTS.MU0 * CONSTANTS.C),
             "W/m^2": lambda I: np.sqrt(2 * I * CONSTANTS.MU0 * CONSTANTS.C),

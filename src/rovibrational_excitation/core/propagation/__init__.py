@@ -6,10 +6,10 @@ and propagation algorithms.
 """
 
 from .base import PropagatorBase
-from .schrodinger import SchrodingerPropagator
+from .factory import PropagatorFactory
 from .liouville import LiouvillePropagator
 from .mixed_state import MixedStatePropagator
-from .factory import PropagatorFactory
+from .schrodinger import SchrodingerPropagator
 
 __all__ = [
     "PropagatorBase",

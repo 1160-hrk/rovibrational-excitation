@@ -3,9 +3,7 @@ Abstract base class for quantum basis sets.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING
-
-import numpy as np
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .hamiltonian import Hamiltonian
