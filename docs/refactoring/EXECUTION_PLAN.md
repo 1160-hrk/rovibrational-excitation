@@ -330,17 +330,14 @@ Acceptance:
 
 ### P1.2 Normalize test collection
 
-Status: In progress. P1.2-A completed on 2026-08-05. Useful abstract-basis and
-Hamiltonian assertions from the root validation script now run in
-`tests/unit/test_basis_primitives.py`. The approved root print scripts, two
-empty RK4 files, disabled old-API split test, and obsolete
-`validation/test_object_oriented_migration.py` were removed.
-`pytest --collect-only -q` finds 505 tests without warnings; 495 pass and
-10 GPU tests skip. The P1.2-B read-only audit now classifies every remaining
-`validation/` diagnostic and `tests/run_tests.py` in
-`VALIDATION_INVENTORY.md`. It records collected replacements and unresolved
-nondimensional scale-policy constants. Proposed deletions remain pending
-explicit user review.
+Status: Complete on 2026-08-10. P1.2-A migrated the useful root assertions
+and removed disabled, empty, and obsolete test scripts. P1.2-B compared every
+remaining standalone diagnostic with collected tests, recorded the evidence in
+`VALIDATION_INVENTORY.md`, and removed the approved scripts plus the redundant
+`tests/run_tests.py` wrapper. The retained `validation/README.md` redirects
+to authoritative pytest and benchmark locations. Ignored diagnostic PNG files
+were preserved. `pytest --collect-only -q` finds 505 tests without warnings;
+the full suite passes 495 tests with 10 GPU skips.
 
 - Convert useful assertions in root `test_basis_validation.py` to pytest.
 - Replace or delete print-based `test_new_api.py`.
@@ -362,9 +359,12 @@ Both commands complete with no collection warnings or hidden root test suite.
 
 ### P1.3 Classify legacy implementation files
 
-Status: In progress. On 2026-08-10, `core/nondimensional/impl.py` was removed
-after strict dimensional-equivalence tests identified the production path.
-The other listed legacy families remain pending their own evidence.
+Status: Complete on 2026-08-10. The competing nondimensional implementation
+was removed after strict dimensional-equivalence tests identified the
+production path. The analytic rotational `jm_old.py` implementation was
+removed after the independent Wigner-3j equivalence suite passed. Unused
+deprecated dipole builder wrappers and the redundant old-basis API demo were
+also removed; authoritative dipole classes and stateless builders remain.
 
 For each legacy file, identify unique logic and callers:
 
@@ -375,6 +375,12 @@ For each legacy file, identify unique logic and callers:
 
 If unique logic exists, add an equivalence test before removing it. If no caller
 or unique formula exists, delete it in a cleanup commit.
+
+The archived `absorbance_from_density_matrix.py` is intentionally retained as
+non-executable migration evidence until Phase 7. It contains legacy PFID,
+Doppler, and response formulas that must be characterized against
+`AbsorbanceCalculator` before removal. Its duplicated approximate constants
+and hard-coded thresholds are evidence to review, not accepted defaults.
 
 Acceptance:
 

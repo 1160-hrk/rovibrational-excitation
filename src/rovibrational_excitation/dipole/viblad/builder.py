@@ -1,19 +1,11 @@
-"""
-Vibrational ladder dipole: builder facade and compatibility shim.
+"""Stateless vibrational-ladder dipole builder.
 
-This module used to provide a stateful class implementation. As part of
-responsibility separation, the authoritative implementation now lives in
-``rovibrational_excitation.dipole.viblad.cache`` (DipoleMatrixBase-based).
-
-Here we provide:
-- a stateless ``build_mu(...)`` convenience that constructs μ_axis; and
-- a thin, deprecated wrapper class ``VibLadderDipoleMatrix`` that
-  delegates to the cache implementation for backwards compatibility.
+The authoritative stateful class lives in :mod:`.cache`; this module only
+provides the explicit one-shot :func:`build_mu` convenience.
 """
 
 from __future__ import annotations
 
-import warnings
 from typing import Literal
 
 from rovibrational_excitation.dipole.viblad.cache import (
@@ -47,21 +39,3 @@ def build_mu(
         backend=backend,
     )
     return obj.mu(axis)
-
-
-class VibLadderDipoleMatrix(_CacheVibLadderDipoleMatrix):
-    """Deprecated wrapper over the cache-based implementation.
-
-    Import ``VibLadderDipoleMatrix`` from ``rovibrational_excitation.dipole.viblad``
-    or from ``rovibrational_excitation.dipole`` instead.
-    """
-
-    def __init__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
-        warnings.warn(
-            "rovibrational_excitation.dipole.viblad.builder.VibLadderDipoleMatrix"
-            " is deprecated; please import from rovibrational_excitation.dipole.viblad"
-            " (cache) or rovibrational_excitation.dipole instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)

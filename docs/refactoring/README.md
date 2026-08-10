@@ -76,11 +76,12 @@ testability do.
 - P1.2-A removed the approved root print scripts, two empty RK4 files, the
   disabled old-API split test, and one obsolete migration validator after
   migrating or confirming overlap for their useful assertions.
-- P1.2-B classified `tests/run_tests.py` and every remaining `validation/`
-  diagnostic in `VALIDATION_INVENTORY.md`. The proposed deletions await
-  explicit review; no tracked script or ignored generated PNG was removed by
-  the audit.
-- `dipole/rot/jm_old.py` and old validation scripts remain tracked.
+- P1.2-B removed the approved standalone diagnostics and redundant pytest
+  wrapper after recording every collected replacement in
+  `VALIDATION_INVENTORY.md`; the ignored generated PNG files were preserved.
+- P1.3 removed `dipole/rot/jm_old.py` after Wigner-3j equivalence testing,
+  removed unused deprecated builder wrappers and the redundant old-basis demo,
+  and retained one spectroscopy archive as explicit Phase 7 migration evidence.
 - The competing nondimensional compatibility modules have been removed; the
   strict converter remains pending its target-package move.
 - CI runs Ruff and Black, while Ruff formatting is already configured.
@@ -111,7 +112,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.1 and P1.2-A complete; P1.2-B deletion proposal documented |
+| 1 | Repository and CI normalization | In progress — P1.1 through P1.3 complete; formatting, lint, and CI gates remain |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |

@@ -1,11 +1,11 @@
 # Legacy validation inventory
 
-Last audited: 2026-08-05
-Scope: P1.2-B read-only audit
+Last audited: 2026-08-10
+Scope: P1.2-B completed cleanup
 
 ## Purpose
 
-This document records the proposed disposition of the standalone
+This document records the completed disposition of the former standalone
 `validation/` scripts and `tests/run_tests.py`. It is migration evidence,
 not a source of accepted physical constants. Authoritative behavior lives in
 `PHYSICS_CONTRACTS.md` and collected pytest tests.
@@ -15,40 +15,40 @@ only in these scripts. They are not scientific gates: most use removed APIs,
 run at import time, print or plot without assertions, catch failures without a
 failing exit status, or contain invalid syntax.
 
-No deletion was performed by this audit. Deletion requires review of the
-explicit list below.
+The user approved the audited cleanup on 2026-08-10. The listed tracked
+diagnostics and wrapper were removed only after their collected replacements
+passed. Ignored generated PNG files were deliberately preserved.
 
-## Proposed disposition
+## Completed disposition
 
-| Path | Audit finding | Collected replacement or retained evidence | Proposal |
+| Path | Audit finding | Collected replacement or retained evidence | Disposition |
 |---|---|---|---|
-| `tests/run_tests.py` | subprocess wrapper around pytest; changes directory and hides the normal command | pytest configuration and commands in `tests/README.md` | delete |
-| `validation/check_memory_eigendecomposition.py` | RSS/tracemalloc demonstration with no threshold; constructs the superseded circular interaction by averaging a matrix with its adjoint | `benchmarks/run_split_operator.py` times public split setup including eigendecomposition; split dense-memory limitation is documented | delete |
-| `validation/core/check_core_basis.py` | prints basis size, bounds, and one index formula | basis unit tests and `tests/physics/test_linear_molecule_reference.py` | delete |
-| `validation/core/check_core_states.py` | only instantiates a state vector | `tests/test_states.py` and state contract tests | delete |
-| `validation/core/check_core_hamiltonian.py` | removed Hamiltonian import and a plot without assertions | basis/Hamiltonian tests and model physics references | delete |
-| `validation/core/check_core_electric_field.py` | large interactive field/spectrum plot without acceptance criteria | `tests/test_electric_field.py`; future visual examples belong under examples or visualization docs | delete |
-| `validation/core/check_core_propagator.py` | removed propagation API and plot-only LinMol run | propagator tests, solver invariants, and model references | delete |
-| `validation/core/check_core__rk4_schrodinger.py` | removed low-level API and Gaussian pulse plot without analytic comparison | two-level matrix-exponential reference and RK4 convergence tests | delete |
-| `validation/core/check_core__rk4_schrodinger_old.py` | duplicate obsolete diagnostic | same as preceding row | delete |
-| `validation/core/check_core__splitop_schrodinger.py` | removed low-level API and plot-only Rabi example | split invariants, Cartesian/helicity physics tests, and split benchmark | delete |
-| `validation/core/check_nondimensional_consistency.py` | old LinMol API; prints dimensional/nondimensional differences and saves a figure | LinMol and VibLadder dimensional/nondimensional physics references | delete |
-| `validation/core/check_nondimensional_consistency_twolevel.py` | old API; repeats parity plot and estimates pulse response from peak-field Rabi frequency without a valid analytic pulse reference | `tests/physics/test_two_level_reference.py` | delete |
-| `validation/core/debug_nondimensional_details.py` | old APIs; manually recomputes maximum energy span, off-diagonal dipole maximum, field maximum, and physical time | current scaling utilities plus dimensional/nondimensional reference tests; undecided scale-policy constants are listed below | delete |
-| `validation/core/investigate_propagator_time_issue.py` | old APIs; investigates the historical factor-of-two time-grid defect | `tests/physics/test_solver_invariants.py` fixes field/state spacing and returned time | delete |
-| `validation/core/analyze_energy_scale_problem.py` | exploratory printout; proposes arbitrary 1000 fs and 1 meV alternatives without a trusted scientific basis | the observed choices and unresolved constants are recorded below for Phase 4 | delete |
-| `validation/core/fix_nondimensional_energy_scale.py` | invalid indentation; proposed `min_energy_diff_ratio=1e-6` cannot change the selected maximum gap when the ratio is below one | current maximum-gap behavior is visible in `core/nondimensional/utils.py`; policy remains a Phase 4 review item | delete |
-| `validation/core/test_nondimensional_timestep_twolevel.py` | not collected; changes solver `dt` and step count without consistently resampling field stages, then ranks runtime with an arbitrary score | deterministic RK4 order and physical-time tests; future timestep policy needs an approved error target | delete |
-| `validation/dipole/check_cache.py` | cache timing and interactive matrix plots without assertions | cache identity tests in `tests/test_dipole_linmol.py` | delete |
-| `validation/dipole/check_dipole_builder.py` | harmonic/Morse plots; useful assertions are commented out; relies on former global Morse setup | builder, selection-rule, Morse-locality, and dense/sparse tests | delete |
-| `validation/dipole/check_sparse_dipole.py` | machine-dependent RSS diagnostic; uses the superseded averaged circular interaction and partial sparse eigenspectra | dense/sparse operator parity and explicit split benchmark/docs | delete |
-| `validation/dipole/test_unit_management.py` | print-based obsolete constructors; attempts Morse with zero anharmonicity | unit round trips and TwoLevel/VibLadder dipole tests; D-003 requires rejection | delete |
-| `validation/simulation/check_simulation_runner.py` | invokes one example and prints runtime without checking output; path depends on launch directory | runner unit, contract, and integration tests | delete |
+| `tests/run_tests.py` | subprocess wrapper around pytest; changes directory and hides the normal command | pytest configuration and commands in `tests/README.md` | removed |
+| `validation/check_memory_eigendecomposition.py` | RSS/tracemalloc demonstration with no threshold; constructs the superseded circular interaction by averaging a matrix with its adjoint | `benchmarks/run_split_operator.py` times public split setup including eigendecomposition; split dense-memory limitation is documented | removed |
+| `validation/core/check_core_basis.py` | prints basis size, bounds, and one index formula | basis unit tests and `tests/physics/test_linear_molecule_reference.py` | removed |
+| `validation/core/check_core_states.py` | only instantiates a state vector | `tests/test_states.py` and state contract tests | removed |
+| `validation/core/check_core_hamiltonian.py` | removed Hamiltonian import and a plot without assertions | basis/Hamiltonian tests and model physics references | removed |
+| `validation/core/check_core_electric_field.py` | large interactive field/spectrum plot without acceptance criteria | `tests/test_electric_field.py`; future visual examples belong under examples or visualization docs | removed |
+| `validation/core/check_core_propagator.py` | removed propagation API and plot-only LinMol run | propagator tests, solver invariants, and model references | removed |
+| `validation/core/check_core__rk4_schrodinger.py` | removed low-level API and Gaussian pulse plot without analytic comparison | two-level matrix-exponential reference and RK4 convergence tests | removed |
+| `validation/core/check_core__rk4_schrodinger_old.py` | duplicate obsolete diagnostic | same as preceding row | removed |
+| `validation/core/check_core__splitop_schrodinger.py` | removed low-level API and plot-only Rabi example | split invariants, Cartesian/helicity physics tests, and split benchmark | removed |
+| `validation/core/check_nondimensional_consistency.py` | old LinMol API; prints dimensional/nondimensional differences and saves a figure | LinMol and VibLadder dimensional/nondimensional physics references | removed |
+| `validation/core/check_nondimensional_consistency_twolevel.py` | old API; repeats parity plot and estimates pulse response from peak-field Rabi frequency without a valid analytic pulse reference | `tests/physics/test_two_level_reference.py` | removed |
+| `validation/core/debug_nondimensional_details.py` | old APIs; manually recomputes maximum energy span, off-diagonal dipole maximum, field maximum, and physical time | current scaling utilities plus dimensional/nondimensional reference tests; undecided scale-policy constants are listed below | removed |
+| `validation/core/investigate_propagator_time_issue.py` | old APIs; investigates the historical factor-of-two time-grid defect | `tests/physics/test_solver_invariants.py` fixes field/state spacing and returned time | removed |
+| `validation/core/analyze_energy_scale_problem.py` | exploratory printout; proposes arbitrary 1000 fs and 1 meV alternatives without a trusted scientific basis | the observed choices and unresolved constants are recorded below for Phase 4 | removed |
+| `validation/core/fix_nondimensional_energy_scale.py` | invalid indentation; proposed `min_energy_diff_ratio=1e-6` cannot change the selected maximum gap when the ratio is below one | current maximum-gap behavior is visible in `core/nondimensional/utils.py`; policy remains a Phase 4 review item | removed |
+| `validation/core/test_nondimensional_timestep_twolevel.py` | not collected; changes solver `dt` and step count without consistently resampling field stages, then ranks runtime with an arbitrary score | deterministic RK4 order and physical-time tests; future timestep policy needs an approved error target | removed |
+| `validation/dipole/check_cache.py` | cache timing and interactive matrix plots without assertions | cache identity tests in `tests/test_dipole_linmol.py` | removed |
+| `validation/dipole/check_dipole_builder.py` | harmonic/Morse plots; useful assertions are commented out; relies on former global Morse setup | builder, selection-rule, Morse-locality, and dense/sparse tests | removed |
+| `validation/dipole/check_sparse_dipole.py` | machine-dependent RSS diagnostic; uses the superseded averaged circular interaction and partial sparse eigenspectra | dense/sparse operator parity and explicit split benchmark/docs | removed |
+| `validation/dipole/test_unit_management.py` | print-based obsolete constructors; attempts Morse with zero anharmonicity | unit round trips and TwoLevel/VibLadder dipole tests; D-003 requires rejection | removed |
+| `validation/simulation/check_simulation_runner.py` | invokes one example and prints runtime without checking output; path depends on launch directory | runner unit, contract, and integration tests | removed |
 
-The tracked `validation/README.md` should be replaced with a short redirect to
-pytest, the benchmark suite, and this inventory. The ignored PNG files present
-in some working copies are generated outputs, not tracked reference assets.
-They should not be deleted without a separate explicit request.
+The retained `validation/README.md` now redirects to pytest, the benchmark
+suite, and this inventory. Ignored PNG files present in some working copies
+remain generated outputs, not tracked reference assets, and were not deleted.
 
 ## Why the suspicious formulas are not migrated as tests
 

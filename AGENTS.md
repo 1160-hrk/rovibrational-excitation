@@ -178,16 +178,15 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 is complete for the CPU baseline. P1.1 generated-artifact cleanup and
-P1.2-A root/disabled test normalization are complete. The next authorized
-roadmap work is P1.2-B and the remainder of Phase 1:
+Phase 0 and P1.1-P1.3 are complete for the CPU baseline. Standalone legacy
+diagnostics and superseded importable implementations have been removed after
+replacement checks. One spectroscopy archive remains explicit Phase 7
+migration evidence. The next authorized roadmap work is:
 
-1. Classify `tests/run_tests.py` and every remaining `validation/` diagnostic;
-   migrate unique formulas or reference values before deletion.
-2. Classify legacy implementations in P1.3.
-3. Apply repository-wide Ruff formatting in an isolated commit.
-4. Resolve Ruff findings, then make lint, type, coverage, build, and physics CI
-   gates truthful.
+1. Apply repository-wide Ruff formatting in an isolated commit.
+2. Resolve Ruff findings in dedicated commits.
+3. Make lint, type, coverage, build, and physics CI gates truthful.
+4. Start typed propagation contracts only after Phase 1 acceptance is met.
 
-Do not start the target directory migration before Phase 0 acceptance criteria
+Do not start the target directory migration before Phase 1 acceptance criteria
 are met.

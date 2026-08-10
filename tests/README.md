@@ -4,7 +4,7 @@
 
 ## Refactor status
 
-The current P1.2-A collection contains 459 tests: 449 pass and 10 GPU tests
+The completed P1.2 collection contains 505 tests: 495 pass and 10 GPU tests
 skip when CUDA is unavailable. Historical metrics and XFAIL descriptions in
 `TEST_CATALOG.md`, `TEST_STATUS_REPORT.md`, and `XFAIL_FIXES_REPORT.md` are
 retained only as migration evidence; they are not current status.
@@ -55,14 +55,15 @@ manual scripts. Their disposition is explicit so no scientific intent is lost.
 | `tests/test_splitop_advanced.py.disabled` | old API; silent Hermitian repair contradicts D-019; remaining intents are collected | removed in P1.2-A; CUDA parity remains explicitly unverified |
 | `tests/test_rk4_detailed.py` | empty | removed in P1.2-A |
 | `tests/test_rk4_schrodinger_detailed.py` | empty | removed in P1.2-A |
-| `tests/run_tests.py` | redundant subprocess wrapper around pytest | delete in Phase 1 |
-| `validation/core/test_nondimensional_timestep_twolevel.py` | stale imports plus plotting, but contains timestep/physical-time diagnostic intent | migrate deterministic convergence/time checks in P0.3/P0.6, then delete |
-| `validation/dipole/test_unit_management.py` | print-based checks using obsolete constructors; overlaps collected conversion/dipole tests | delete in Phase 1 after overlap check |
+| `tests/run_tests.py` | redundant subprocess wrapper around pytest | removed in P1.2-B |
+| `validation/core/test_nondimensional_timestep_twolevel.py` | invalid timestep comparison; valid time and convergence intent is collected in physics tests | removed in P1.2-B |
+| `validation/dipole/test_unit_management.py` | print-based obsolete constructors overlapping collected conversion/dipole tests | removed in P1.2-B |
 | `validation/test_object_oriented_migration.py` | imported nonexistent `ParameterConverter`; conversion checks overlap collected tests; compatibility premise contradicts D-001 | removed in P1.2-A after explicit approval |
 
-Other `validation/check_*.py` and debug scripts are diagnostic artifacts rather
-than pytest tests. Phase 1 must compare any unique formula or reference value
-before archiving or deleting them.
+The remaining `validation/check_*.py` and debug scripts were removed in
+P1.2-B after their formulas and reference intent were compared with collected
+physics, contract, integration, and performance tests. See
+`docs/refactoring/VALIDATION_INVENTORY.md` for the evidence.
 
 P1.2-A completed on 2026-08-05. `pytest --collect-only -q` collected 459
 tests without warnings or a hidden root suite. The migrated/overlapping focused

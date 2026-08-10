@@ -312,27 +312,27 @@ rovibrational_excitation/
 │       ├── manager.py       # execution management
 │       └── config.py        # configuration handling
 ├── tests/                   # unit tests (pytest)
-├── validation/              # physics validation scripts
-│   ├── core/                # core physics validation
-│   ├── dipole/              # dipole matrix validation
-│   └── simulation/          # integration validation
+├── validation/              # collected-validation policy redirect
+│   └── README.md
 ├── examples/                # usage examples
 └── docs/                    # documentation
 ```
 
-### Validation vs Testing
+### Validation and Testing
 
-- **`tests/`**: Unit tests for code correctness (fast, comprehensive)
-- **`validation/`**: Physics validation for scientific accuracy (slower, focused on physical laws)
+All scientific correctness checks are collected by pytest. Physics references
+live in `tests/physics/`, API and capability guarantees in
+`tests/contracts/`, and cross-component workflows in `tests/integration/`.
+Reproducible runtime and memory measurements live in `benchmarks/` and
+`tests/performance/`.
 
 ```bash
-# Run unit tests
-pytest tests/ -v
-
-# Run physics validation
-python validation/core/check_core_basis.py
-find validation/ -name "check_*.py" -exec python {} \;
+pytest -q
+pytest -m physics
 ```
+
+The retained `validation/README.md` is a policy redirect; standalone
+print/plot diagnostics are not correctness gates.
 
 ---
 

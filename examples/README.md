@@ -53,7 +53,10 @@ Quick mode is ideal for first runs and smoke tests.
 - example_CO2_transient_absorption_2D.py: 2D transient absorption map.
 
 ### Archives
-Older/heavier or experimental examples are kept under `examples/archives/`.
+`archives/absorbance_from_density_matrix.py` is non-executable migration
+evidence for the Phase 7 spectroscopy refactor. It is not a supported example;
+its formulas must be characterized against the current calculator before it is
+removed.
 
 ## Usage via Launcher
 

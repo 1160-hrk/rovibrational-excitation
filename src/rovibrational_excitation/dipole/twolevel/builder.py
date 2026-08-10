@@ -1,18 +1,11 @@
-"""
-Two-level dipole: builder facade and compatibility shim.
+"""Stateless two-level dipole builder.
 
-This module now defers the authoritative implementation to
-``rovibrational_excitation.dipole.twolevel.cache`` (DipoleMatrixBase-based).
-
-Provided here:
-- a stateless ``build_mu(...)`` convenience that constructs μ_axis; and
-- a thin, deprecated wrapper class ``TwoLevelDipoleMatrix`` that delegates to
-  the cache implementation for backwards compatibility with older imports.
+The authoritative stateful class lives in :mod:`.cache`; this module only
+provides the explicit one-shot :func:`build_mu` convenience.
 """
 
 from __future__ import annotations
 
-import warnings
 from typing import Literal
 
 from rovibrational_excitation.dipole.twolevel.cache import (
@@ -39,21 +32,3 @@ def build_mu(
         raise NotImplementedError("TwoLevel builder does not provide sparse matrices")
     obj = _CacheTwoLevelDipoleMatrix(basis=basis, mu0=mu0, backend=backend)
     return obj.mu(axis)
-
-
-class TwoLevelDipoleMatrix(_CacheTwoLevelDipoleMatrix):
-    """Deprecated wrapper over the cache-based implementation.
-
-    Prefer importing from ``rovibrational_excitation.dipole.twolevel``
-    or ``rovibrational_excitation.dipole`` instead of ``.twolevel.builder``.
-    """
-
-    def __init__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
-        warnings.warn(
-            "rovibrational_excitation.dipole.twolevel.builder.TwoLevelDipoleMatrix"
-            " is deprecated; please import from rovibrational_excitation.dipole.twolevel"
-            " (cache) or rovibrational_excitation.dipole.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
