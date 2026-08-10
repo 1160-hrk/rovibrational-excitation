@@ -11,13 +11,12 @@ expression and can be improved later.
 
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
+
+from rovibrational_excitation.core.units.converters import converter
 
 from .base import BasisBase
 from .hamiltonian import Hamiltonian
-from rovibrational_excitation.core.units.converters import converter
 
 
 class SymTopBasis(BasisBase):
@@ -29,7 +28,7 @@ class SymTopBasis(BasisBase):
         Maximum vibrational and rotational quantum numbers.
     use_M : bool, default True
         Whether to include space-fixed magnetic quantum number *M*.
-    omega, B, C, alpha, delta_omega : float, optional
+    omega, B, C, alpha, delta_omega : float
         Usual rovibrational spectroscopic parameters.  All are interpreted in
         *input_units*.
     input_units, output_units : str
@@ -45,8 +44,8 @@ class SymTopBasis(BasisBase):
         omega: float | None = None,
         B: float | None = None,
         C: float | None = None,
-        alpha: float = 0.0,
-        delta_omega: float = 0.0,
+        alpha: float | None = None,
+        delta_omega: float | None = None,
         input_units: str = "rad/fs",
         output_units: str = "J",
     ):
@@ -55,27 +54,37 @@ class SymTopBasis(BasisBase):
         self.input_units = input_units
         self.output_units = output_units
 
+        missing = [
+            name
+            for name, value in (
+                ("omega", omega),
+                ("B", B),
+                ("C", C),
+                ("alpha", alpha),
+                ("delta_omega", delta_omega),
+            )
+            if value is None
+        ]
+        if missing:
+            raise ValueError(
+                "Physical constants must be supplied explicitly: " + ", ".join(missing)
+            )
+
         # -------------------------------------------------------------
         # Unit conversion (identical logic to LinMolBasis)
         # -------------------------------------------------------------
         if input_units in converter.get_supported_units("frequency"):
             conv = converter.convert_frequency(1.0, input_units, "rad/fs")
-            self.omega_rad_pfs = omega * conv if omega is not None else 1.0
-            self.B_rad_pfs = B * conv if B is not None else 1.0
-            self.C_rad_pfs = C * conv if C is not None else 1.0
+            self.omega_rad_pfs = omega * conv
+            self.B_rad_pfs = B * conv
+            self.C_rad_pfs = C * conv
             self.alpha_rad_pfs = alpha * conv
             self.delta_omega_rad_pfs = delta_omega * conv
         elif input_units in converter.get_supported_units("energy"):
             econv = converter.convert_energy(1.0, input_units, "J")
-            self.omega_rad_pfs = (
-                omega * econv / Hamiltonian._HBAR * 1e-15 if omega is not None else 1.0
-            )
-            self.B_rad_pfs = (
-                B * econv / Hamiltonian._HBAR * 1e-15 if B is not None else 1.0
-            )
-            self.C_rad_pfs = (
-                C * econv / Hamiltonian._HBAR * 1e-15 if C is not None else 1.0
-            )
+            self.omega_rad_pfs = omega * econv / Hamiltonian._HBAR * 1e-15
+            self.B_rad_pfs = B * econv / Hamiltonian._HBAR * 1e-15
+            self.C_rad_pfs = C * econv / Hamiltonian._HBAR * 1e-15
             self.alpha_rad_pfs = alpha * econv / Hamiltonian._HBAR * 1e-15
             self.delta_omega_rad_pfs = delta_omega * econv / Hamiltonian._HBAR * 1e-15
         else:
@@ -137,7 +146,7 @@ class SymTopBasis(BasisBase):
         """
         vterm = self.V_array + 0.5
         jterm = self.J_array * (self.J_array + 1)
-        kterm = self.K_array ** 2
+        kterm = self.K_array**2
 
         energy_freq = self.omega_rad_pfs * vterm - self.delta_omega_rad_pfs * vterm**2
         energy_freq += (self.B_rad_pfs - self.alpha_rad_pfs * vterm) * jterm
@@ -165,4 +174,4 @@ class SymTopBasis(BasisBase):
     def __repr__(self):  # noqa: D401
         return (
             f"SymTopBasis(V_max={self.V_max}, J_max={self.J_max}, size={self.size()})"
-        ) 
+        )

@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Date: 2026-08-09
+Date: 2026-08-10
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -22,42 +22,32 @@ recorded.
 | Propagator kwargs | Misspelled or unsupported kwargs were silently ignored | Schrodinger, Liouville, and MixedState reject unknown options | contract solver tests |
 | Dipole backend | backend='cupy' could return NumPy when CuPy was absent | RuntimeError; unknown backend names also raise | test_solver_contracts.py |
 | Energy centering | Centering could change the returned absolute wavefunction phase | Exact global phase is restored | test_strict_nondimensional_contracts.py |
+| Physical model inputs | duration and zero-valued constants could be omitted and silently defaulted | Model-specific constants, direct dipole mu0, vibrational potential type, units, and duration are required; explicit 0.0 remains valid | simulation and basis contract tests |
+| Nondimensional API | 25 exports exposed competing lambda strategies and removed heuristics | One strict conversion path plus neutral reporting; legacy modules and wrappers removed | strict nondimensional contract tests |
 
 ## P1: fix before API stabilization
 
-1. core/nondimensional/analysis.py, strategies.py, and impl.py still export
-   obsolete timestep recommendations, empirical coupling boundaries, and
-   competing lambda-scaling strategies. The old scale methods now raise, but
-   the namespace and implementation remain misleading. Remove these exports
-   after retaining only tested equation verification and neutral reporting.
-2. core/units/validators.py catches broad exceptions and converts validation
+1. core/units/validators.py catches broad exceptions and converts validation
    failures to warnings. It also falls back from SI accessors to raw mu_axis
    attributes, which can bypass unit conversion. Split diagnostic warnings
    from strict propagation validation; strict mode must raise.
-3. optimization/local.py silently disables eigenvalue lookahead on any
+2. optimization/local.py silently disables eigenvalue lookahead on any
    exception and silently ignores target-weight indexing errors. These alter
    the optimization objective or update rule. Replace them with validated
    capability checks and explicit configuration errors after reference tests
    required by O-006 exist.
-4. simulation/optimize_runner.py supplies mu0=1e-30 C m when absent. Dipole
-   strength is physical input and should be required. Several target and
-   plotting defaults also need a typed optimization configuration.
-5. simulation/serialization.py interprets missing real or imaginary mapping
+3. simulation/optimize_runner.py now requires basis constants, dipole value and
+   unit, potential type, and Krotov pulse duration. Target and plotting options
+   still need a typed optimization configuration after O-006 reference tests.
+4. simulation/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
 
 ## User decisions required before changing physics-facing defaults
 
-1. simulation/runner.py defaults pulse duration to half of the simulation
-   window when neither duration nor pulse_duration is present. Decide whether
-   duration becomes required.
-2. linear and vibrational model builders default delta_omega, B, and alpha to
-   zero and potential_type to harmonic. Some zeros are physically meaningful,
-   but omission may also be accidental. Decide which parameters are mandatory
-   per model dataclass.
-3. initial_states defaults to the first basis state. Decide whether production
+1. initial_states defaults to the first basis state. Decide whether production
    simulation configuration must always state the initial condition.
-4. backend, algorithm, sparse/dense, and renorm currently have documented
+2. backend, algorithm, sparse/dense, and renorm currently have documented
    computational defaults. These do not change the model Hamiltonian, but the
    typed PropagationOptions design should decide whether configs must state
    them explicitly.

@@ -4,7 +4,7 @@
 基底クラスの型に応じて適切な双極子行列クラスを自動的に選択します。
 """
 
-from typing import Literal, Union, TYPE_CHECKING
+from typing import Literal, Union
 
 from rovibrational_excitation.core.basis import (
     BasisBase,
@@ -20,16 +20,19 @@ from rovibrational_excitation.dipole import (
     VibLadderDipoleMatrix,
 )
 
+
 def create_dipole_matrix(
     basis: BasisBase,
-    mu0: float = 1.0,
+    mu0: float,
     *,
-    potential_type: Literal["harmonic", "morse"] = "harmonic",
+    potential_type: Literal["harmonic", "morse"] | None = None,
     backend: Literal["numpy", "cupy"] = "numpy",
     dense: bool = True,
     units: Literal["C*m", "D", "ea0"] = "C*m",
     units_input: Literal["C*m", "D", "ea0"] = "C*m",
-) -> Union[LinMolDipoleMatrix, SymTopDipoleMatrix, TwoLevelDipoleMatrix, VibLadderDipoleMatrix]:
+) -> Union[
+    LinMolDipoleMatrix, SymTopDipoleMatrix, TwoLevelDipoleMatrix, VibLadderDipoleMatrix
+]:
     """
     基底クラスの型に応じて適切な双極子行列クラスを自動的に選択し、インスタンスを生成します。
 
@@ -37,10 +40,10 @@ def create_dipole_matrix(
     ----------
     basis : BasisBase
         量子基底クラスのインスタンス
-    mu0 : float, optional
+    mu0 : float
         双極子モーメントの大きさ（units_inputで指定した単位）
-    potential_type : {"harmonic", "morse"}, optional
-        振動ポテンシャルの種類（振動を含む系のみ）
+    potential_type : {"harmonic", "morse"}, required for vibrational models
+        振動ポテンシャルの種類。TwoLevelでは指定不可
     backend : {"numpy", "cupy"}, optional
         計算バックエンド
     dense : bool, optional
@@ -63,10 +66,13 @@ def create_dipole_matrix(
     >>> print(dipole.mu_x)  # x方向の双極子行列を取得
 
     >>> # 線形分子の例
-    >>> basis = LinMolBasis(V_max=2, J_max=10, omega=2350, input_units="cm^-1")
+    >>> basis = LinMolBasis(
+    ...     V_max=2, J_max=10, omega=2350, B=0.4,
+    ...     alpha=0.0, delta_omega=0.0, input_units="cm^-1",
+    ... )
     >>> dipole = create_dipole_matrix(
-    ...     basis, 
-    ...     mu0=1.0, 
+    ...     basis,
+    ...     mu0=1.0,
     ...     potential_type="morse",
     ...     backend="numpy",
     ...     dense=True
@@ -78,6 +84,14 @@ def create_dipole_matrix(
     TypeError
         未知の基底クラスが渡された場合
     """
+    vibrational_basis = isinstance(basis, (LinMolBasis, SymTopBasis, VibLadderBasis))
+    if vibrational_basis and potential_type is None:
+        raise TypeError(
+            "potential_type is required for vibrational dipole construction"
+        )
+    if isinstance(basis, TwoLevelBasis) and potential_type is not None:
+        raise ValueError("potential_type is not applicable to TwoLevelBasis")
+
     # 基底クラスの型に応じて適切な双極子行列クラスを選択
     if isinstance(basis, LinMolBasis):
         return LinMolDipoleMatrix(
@@ -124,4 +138,4 @@ def create_dipole_matrix(
             "- SymTopBasis（対称コマ分子）\n"
             "- TwoLevelBasis（二準位系）\n"
             "- VibLadderBasis（振動準位系）"
-        ) 
+        )

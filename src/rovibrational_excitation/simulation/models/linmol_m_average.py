@@ -48,8 +48,8 @@ class FixedMLinMolBasis(LinMolBasis):
         M: int,
         omega: float,
         B: float,
-        alpha: float = 0.0,
-        delta_omega: float = 0.0,
+        alpha: float,
+        delta_omega: float,
         input_units: str = "rad/fs",
         output_units: str = "J",
     ) -> None:
@@ -157,9 +157,9 @@ def build_m_average_blocks(params: dict[str, Any]) -> tuple[MBlockProblem, ...]:
             params["J_max"],
             M=abs_m,
             omega=params["omega_rad_phz"],
-            delta_omega=params.get("delta_omega_rad_phz", 0.0),
-            B=params.get("B_rad_phz", 0.0),
-            alpha=params.get("alpha_rad_phz", 0.0),
+            delta_omega=params["delta_omega_rad_phz"],
+            B=params["B_rad_phz"],
+            alpha=params["alpha_rad_phz"],
             output_units="J",
             input_units="rad/fs",
         )
@@ -171,7 +171,7 @@ def build_m_average_blocks(params: dict[str, Any]) -> tuple[MBlockProblem, ...]:
         dipole = LinMolDipoleMatrix(
             basis,
             mu0=params["mu0_Cm"],
-            potential_type=params.get("potential_type", "harmonic"),
+            potential_type=params["potential_type"],
             backend=params.get("backend", "numpy"),
             dense=dense,
         )

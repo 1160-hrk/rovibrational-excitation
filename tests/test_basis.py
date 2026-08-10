@@ -9,7 +9,9 @@ from rovibrational_excitation.core.basis import LinMolBasis
 
 
 def test_basis_generate_and_size():
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     # V=0,1; J=0,1; M=-J..J → (1+3)*2=8個
     assert basis.size() == 8
     # basis内容の形状
@@ -17,7 +19,9 @@ def test_basis_generate_and_size():
 
 
 def test_basis_get_index_and_state():
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     idx = basis.get_index([0, 1, 0])
     assert idx is not None
     state = basis.get_state(idx)
@@ -28,19 +32,25 @@ def test_basis_get_index_and_state():
 
 
 def test_basis_repr():
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     s = repr(basis)
     assert "LinMolBasis" in s
 
 
 def test_basis_border_indices():
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     inds_j = basis.get_border_indices_j()
     inds_v = basis.get_border_indices_v()
     assert isinstance(inds_j, np.ndarray)
     assert isinstance(inds_v, np.ndarray)
     # use_M=False時の例外
-    basis2 = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis2 = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     # get_border_indices_jは例外、get_border_indices_vは正常
     with pytest.raises(ValueError):
         basis2.get_border_indices_j()
@@ -51,7 +61,13 @@ def test_basis_border_indices():
 def test_linmol_initialization_parameters():
     """初期化パラメータのテスト"""
     basis = LinMolBasis(
-        V_max=2, J_max=2, use_M=True, omega_rad_pfs=2.0, delta_omega_rad_pfs=0.1
+        V_max=2,
+        J_max=2,
+        use_M=True,
+        omega_rad_pfs=2.0,
+        delta_omega_rad_pfs=0.1,
+        B=0.001,
+        alpha=0.0,
     )
 
     assert basis.V_max == 2
@@ -63,7 +79,9 @@ def test_linmol_initialization_parameters():
 
 def test_linmol_no_M_basis():
     """use_M=False時の基底テスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # サイズは(V_max+1)*(J_max+1) = 2*2 = 4
     assert basis.size() == 4
@@ -76,7 +94,9 @@ def test_linmol_no_M_basis():
 
 def test_linmol_with_M_basis():
     """use_M=True時の基底テスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # V=0,1; J=0,1; M=-J..J
     # V=0,J=0,M=0: 1個
@@ -90,12 +110,17 @@ def test_linmol_with_M_basis():
 
 def test_linmol_generate_H0():
     """ハミルトニアン生成の詳細テスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # デフォルトパラメータでのテスト（周波数単位で出力）
     H0 = basis.generate_H0(
-        omega_rad_pfs=1.0, B_rad_pfs=0.5, delta_omega_rad_pfs=0.0, alpha_rad_pfs=0.0,
-        units="rad/fs"  # 周波数単位で返す
+        omega_rad_pfs=1.0,
+        B_rad_pfs=0.5,
+        delta_omega_rad_pfs=0.0,
+        alpha_rad_pfs=0.0,
+        units="rad/fs",  # 周波数単位で返す
     )
 
     # 期待されるエネルギー（周波数単位）
@@ -112,11 +137,16 @@ def test_linmol_generate_H0():
 
 def test_linmol_generate_H0_anharmonic():
     """非調和性を含むハミルトニアンのテスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     H0 = basis.generate_H0(
-        omega_rad_pfs=1.0, delta_omega_rad_pfs=0.1, B_rad_pfs=0.0, alpha_rad_pfs=0.0,
-        units="rad/fs"  # 周波数単位で返す
+        omega_rad_pfs=1.0,
+        delta_omega_rad_pfs=0.1,
+        B_rad_pfs=0.0,
+        alpha_rad_pfs=0.0,
+        units="rad/fs",  # 周波数単位で返す
     )
 
     # 現行仕様: E = (ω+Δω)*(V+1/2) - (Δω/2)*(V+1/2)^2
@@ -131,11 +161,16 @@ def test_linmol_generate_H0_anharmonic():
 
 def test_linmol_generate_H0_vibrot_coupling():
     """振動-回転結合のテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     H0 = basis.generate_H0(
-        omega_rad_pfs=1.0, B_rad_pfs=0.5, delta_omega_rad_pfs=0.0, alpha_rad_pfs=0.1,
-        units="rad/fs"  # 周波数単位で返す
+        omega_rad_pfs=1.0,
+        B_rad_pfs=0.5,
+        delta_omega_rad_pfs=0.0,
+        alpha_rad_pfs=0.1,
+        units="rad/fs",  # 周波数単位で返す
     )
 
     # E = ω*(V+1/2) + (B - α*(V+1/2))*J*(J+1)
@@ -152,7 +187,9 @@ def test_linmol_generate_H0_vibrot_coupling():
 
 def test_linmol_hamiltonian_properties():
     """ハミルトニアンの性質テスト"""
-    basis = LinMolBasis(V_max=2, J_max=2, use_M=False)
+    basis = LinMolBasis(
+        V_max=2, J_max=2, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0()
 
     # Hamiltonianオブジェクトから行列を取得
@@ -170,7 +207,9 @@ def test_linmol_hamiltonian_properties():
 
 def test_linmol_get_index_various_inputs():
     """様々な入力形式でのget_indexテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # リスト入力
     idx1 = basis.get_index([0, 0, 0])
@@ -187,21 +226,29 @@ def test_linmol_get_index_various_inputs():
 def test_linmol_edge_cases():
     """エッジケースのテスト"""
     # 最小基底
-    basis_min = LinMolBasis(V_max=0, J_max=0, use_M=True)
+    basis_min = LinMolBasis(
+        V_max=0, J_max=0, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     assert basis_min.size() == 1
 
     # V_max=0, J_max=0の場合
-    basis_single = LinMolBasis(V_max=0, J_max=0, use_M=False)
+    basis_single = LinMolBasis(
+        V_max=0, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     assert basis_single.size() == 1
 
     # 大きなJ_maxの場合
-    basis_large_j = LinMolBasis(V_max=0, J_max=5, use_M=False)
+    basis_large_j = LinMolBasis(
+        V_max=0, J_max=5, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     assert basis_large_j.size() == 6  # J=0,1,2,3,4,5
 
 
 def test_linmol_arrays_consistency():
     """配列の一貫性テスト"""
-    basis = LinMolBasis(V_max=2, J_max=2, use_M=True)
+    basis = LinMolBasis(
+        V_max=2, J_max=2, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # V_array, J_arrayの長さが基底数と一致
     assert len(basis.V_array) == basis.size()
@@ -218,7 +265,9 @@ def test_linmol_arrays_consistency():
 
 def test_linmol_hamiltonian_units():
     """ハミルトニアンの単位変換テスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # 周波数単位でのハミルトニアン
     H0_freq = basis.generate_H0(omega_rad_pfs=1000.0, units="rad/fs")
@@ -233,13 +282,21 @@ def test_linmol_hamiltonian_units():
     # hbar ≈ 1.055e-34 J·s = 1.055e-19 J·fs なので、エネルギー値は非常に小さくなる
     assert H0_energy.units == "J"
     assert H0_freq.units == "rad/fs"
-    
+
     # 単位変換のテスト - 相対的な比較
     freq_eigenvals = H0_freq.eigenvalues
     energy_eigenvals = H0_energy.eigenvalues
-    
+
     # エネルギー差の比率が周波数差の比率と一致することを確認
-    freq_ratio = freq_eigenvals[1] / freq_eigenvals[0] if freq_eigenvals[0] != 0 else float('inf')
-    energy_ratio = energy_eigenvals[1] / energy_eigenvals[0] if energy_eigenvals[0] != 0 else float('inf')
-    
+    freq_ratio = (
+        freq_eigenvals[1] / freq_eigenvals[0]
+        if freq_eigenvals[0] != 0
+        else float("inf")
+    )
+    energy_ratio = (
+        energy_eigenvals[1] / energy_eigenvals[0]
+        if energy_eigenvals[0] != 0
+        else float("inf")
+    )
+
     np.testing.assert_almost_equal(freq_ratio, energy_ratio, decimal=10)

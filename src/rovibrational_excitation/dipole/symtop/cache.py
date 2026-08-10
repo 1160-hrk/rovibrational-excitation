@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 
-from rovibrational_excitation.dipole.base import DipoleMatrixBase, _xp, Array
-from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dipole.base import Array, DipoleMatrixBase
 
 try:
     import cupy as cp  # optional GPU backend
@@ -37,9 +36,9 @@ from rovibrational_excitation.dipole.symtop.builder import build_mu  # noqa: E40
 class SymTopDipoleMatrix(DipoleMatrixBase):
     """Dipole matrix container for symmetric-top molecules."""
 
-    basis: "SymTopBasis"
-    mu0: float = 1.0
-    potential_type: Literal["harmonic", "morse"] = "harmonic"
+    basis: SymTopBasis
+    mu0: float
+    potential_type: Literal["harmonic", "morse"]
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
     units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
@@ -64,5 +63,7 @@ class SymTopDipoleMatrix(DipoleMatrixBase):
 
     # ------------------------------------------------------------------
     def __post_init__(self):
+        if self.potential_type not in {"harmonic", "morse"}:
+            raise ValueError("potential_type must be harmonic or morse")
         # Convert mu0 if necessary (helper from DipoleMatrixBase)
-        self._convert_mu0_if_needed() 
+        self._convert_mu0_if_needed()

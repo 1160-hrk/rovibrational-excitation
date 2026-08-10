@@ -54,8 +54,8 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
     """
 
     basis: VibLadderBasis
-    mu0: float = 1.0
-    potential_type: Literal["harmonic", "morse"] = "harmonic"
+    mu0: float
+    potential_type: Literal["harmonic", "morse"]
     backend: Literal["numpy", "cupy"] = "numpy"
     units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
     units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
@@ -66,6 +66,8 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
     _morse_level_parameter: float | None = field(init=False, default=None, repr=False)
 
     def __post_init__(self):
+        if self.potential_type not in {"harmonic", "morse"}:
+            raise ValueError("potential_type must be harmonic or morse")
         # Potential-specific initialisation
         if self.potential_type == "morse":
             self._morse_level_parameter = omega01_domega_to_N(

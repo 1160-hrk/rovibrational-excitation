@@ -22,9 +22,15 @@ t_start, t_end, dt = -50.0, 50.0, 0.1
 # 物理パラメータ
 V_max, J_max = 3, 5
 omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
+delta_omega_rad_phz = 0.0
+B_rad_phz = 0.02
+alpha_rad_phz = 0.0
+potential_type = "harmonic"
+mu0_Cm = 1.0e-30
 
 # 電場パラメータ
 duration = [20.0, 30.0]  # スイープ対象
+carrier_freq = omega_rad_phz
 amplitude = 1e9
 polarization = [1.0, 0.0]  # 固定値
 
@@ -47,12 +53,11 @@ polarization = [1.0, 0.0]  # 固定値
 |-----------|---|------|------|------|-----|
 | `t_start` | `float` | ✅ | fs | 時間軸の開始時刻 | `-100.0` |
 | `t_end` | `float` | ✅ | fs | 時間軸の終了時刻 | `100.0` |
+| `dt` | `float` | ✅ | fs | 電場のサンプリング間隔 | `0.1` |
 
 `dt` は電場のサンプリング間隔です。RK4 / split-operator の1時間発展ステップは
 左端・中点・右端を使うため `2 * dt` 進みます。したがって
 `t_end - t_start` は `2 * dt` の整数倍でなければエラーになります。
-
-| `dt` | `float` | ✅ | fs | 時間刻み幅 | `0.1` |
 
 #### 1.3 量子系設定
 
@@ -75,15 +80,14 @@ polarization = [1.0, 0.0]  # 固定値
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `duration` | `float` | - | fs | パルス幅（FWHM） | `20.0` |
-
-| `t_center` | `float` | ✅ | fs | パルス中心時刻 | `0.0` |
-
-`duration` と旧名 `pulse_duration` のどちらも省略した場合は、`(t_end - t_start) / 2` を使用します。
-
+| `duration` | `float` | ✅ | fs | パルス幅（FWHM） | `20.0` |
+| `t_center` | `float` | ❌ | fs | パルス中心時刻（既定値 `0.0`） | `0.0` |
 | `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
 | `polarization` | `list` | ✅ | - | 偏光ベクトル [x, y] | `[1.0, 0.0]` |
+
+`duration` は必須です。旧名 `pulse_duration` は削除済みで、自動変換せず
+時間発展前に移行エラーになります。
 
 `polarization` は LinMol では物理的な偏光として使われます。TwoLevel と
 VibLadder は偏光自由度を持たないモデルなので、入力値は規格化・検証だけされ、
@@ -97,15 +101,24 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `omega_rad_phz` | `float` | ✅ | rad/fs | 0→1振動遷移角周波数 | `0.14847` |
-| `mu0_Cm` | `float` | ✅ | C·m | 双極子モーメント | `1e-30` |
-| `energy_gap` | `float` | 二準位系のみ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
+| `omega_rad_phz` | `float` | LinMol / VibLadder ✅ | rad/fs | 0→1振動遷移角周波数 | `0.14847` |
+| `delta_omega_rad_phz` | `float` | LinMol / VibLadder ✅ | rad/fs | 隣接遷移周波数の準位ごとの減少量 | `0.0` |
+| `B_rad_phz` | `float` | LinMol ✅ | rad/fs | 回転定数 | `0.02` |
+| `alpha_rad_phz` | `float` | LinMol ✅ | rad/fs | 振動-回転相互作用定数 | `0.0` |
+| `potential_type` | `str` | LinMol / VibLadder ✅ | - | `"harmonic"` または `"morse"` | `"harmonic"` |
+| `mu0_Cm` | `float` | 全モデル ✅ | C·m | 双極子モーメント | `1e-30` |
+| `energy_gap` | `float` | TwoLevel ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
+| `energy_gap_units` | `str` | TwoLevel ✅ | - | energy_gap の単位 | `"rad/fs"` |
+
+ゼロが正しい物理値である場合も `0.0` を明示してください。省略とゼロは区別され、
+基底クラスを直接生成する場合も LinMol、VibLadder、TwoLevel の物理定数は未指定だとエラーになります。
+双極子行列の直接生成では `mu0` が必須で、振動を含むモデルでは `potential_type` も必須です。
 
 #### 1.6 初期状態
 
 | パラメータ | 型 | 必須 | 説明 | 例 |
 |-----------|---|------|------|-----|
-| `initial_states` | `list[int]` | ✅ | 初期状態のインデックス | `[0]` |
+| `initial_states` | `list[int]` | ❌ | 初期状態のインデックス（現行既定値 `[0]`） | `[0]` |
 
 複数インデックスは、等振幅・同位相で正規化したコヒーレント重ね合わせとして扱います。インコヒーレント混合には `MixedStatePropagator` を使用します。空リストはエラーです。
 
@@ -130,14 +143,7 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 | `phase_rad_sin_mod` | `float` | `0.0` | 変調位相 | `np.pi/2` |
 | `type_mod_sin_mod` | `str` | `"phase"` | 変調タイプ | `"phase"` or `"amplitude"` |
 
-#### 2.3 ハミルトニアンパラメータ
-
-| パラメータ | 型 | デフォルト | 単位 | 説明 | 例 |
-|-----------|---|-----------|------|------|-----|
-| `delta_omega_rad_phz` | `float` | `0.0` | rad/fs | 隣接遷移周波数の準位ごとの減少量 | `0.001` |
-| `B_rad_phz` | `float` | `0.0` | rad/fs | 回転定数 | `0.02` |
-| `alpha_rad_phz` | `float` | `0.0` | rad/fs | 振動-回転相互作用定数 | `0.0001` |
-| `potential_type` | `str` | `"harmonic"` | - | ポテンシャル形式 | `"harmonic"` or `"morse"` |
+#### 2.3 ハミルトニアンの定義
 
 振動エネルギーは `omega_rad_phz` を0→1遷移角周波数として、`E_v = (omega + delta_omega)(v + 1/2) - (delta_omega / 2)(v + 1/2)^2` で定義します。
 
@@ -146,15 +152,13 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 #### 2.4 双極子行列設定
 
 | パラメータ | 型 | デフォルト | 説明 | 例 |
+|-----------|---|-----------|------|-----|
+| `backend` | `str` | `"numpy"` | 計算バックエンド | `"numpy"` or `"cupy"` |
+| `dense` | `bool` | `True` | 密行列を使用するか | `False` |
 
 `backend` は双極子行列生成と時間発展の両方に適用されます。CuPy 経路は密行列専用で、
 `backend = "cupy"` と `sparse = True`（または `dense = False`）の組合せは
 型不一致へ進む前にエラーになります。
-
-|-----------|---|-----------|------|-----|
-| `backend` | `str` | `"numpy"` | 計算バックエンド | `"numpy"` or `"cupy"` |
-
-| `dense` | `bool` | `True` | 密行列を使用するか | `False` |
 
 #### 2.5 伝播設定
 
@@ -166,12 +170,13 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 | `sparse` | `bool` | `not dense` | スパース演算を使うか | `True` |
 | `renorm` | `bool` | `False` | 各ステップで状態を再規格化するか | `True` |
 | `nondimensional` | `bool` | `False` | 無次元化して時間発展するか | `True` |
-| `auto_timestep` | `bool` | `False` | 無次元化時に互換な間引き幅を自動選択するか | `True` |
-| `target_accuracy` | `str` | `"standard"` | 自動刻みの精度設定 | `"high"`, `"standard"`, `"fast"` |
 | `validate_units` | `bool` | `True` | 物理単位を検証するか | `False` |
 | `verbose` | `bool` | `False` | 詳細な検証情報を表示するか | `True` |
 | `return_traj` | `bool` | `True` | 軌跡を返すか | `False` |
 | `sample_stride` | `int` | `1` | サンプリング間隔 | `10` |
+
+`auto_timestep` と `target_accuracy` は削除済みです。指定した場合は、
+入力時間格子を暗黙変更せずエラーになります。
 
 runner は保存結果との対応を保証するため、常に物理時間 `t_p` を生成します。
 `return_traj = False` の場合、`t_p` は `[t_end]`、population は `(1, n_states)` です。

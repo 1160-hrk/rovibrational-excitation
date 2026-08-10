@@ -15,16 +15,21 @@ spectroscopy    … 線形応答理論による分光計算 (吸収、PFID、放
 ------
 基本的な波束シミュレーション:
 >>> import rovibrational_excitation as rve
->>> basis = rve.LinMolBasis(V_max=2, J_max=4)
->>> dip   = rve.LinMolDipoleMatrix(basis)
->>> H0    = basis.generate_H0(omega_rad_phz=1000.0)  # New API (recommended)
+>>> basis = rve.LinMolBasis(
+...     V_max=2, J_max=4, omega=0.2, B=0.001,
+...     alpha=0.0, delta_omega=0.0,
+... )
+>>> dip = rve.LinMolDipoleMatrix(
+...     basis, mu0=1.0e-30, potential_type="harmonic"
+... )
+>>> H0 = basis.generate_H0()
 
 線形応答分光計算:
 >>> # Modern API (推奨)
 >>> calc = rve.LinearResponseCalculator()
 >>> calc.initialize(3, 10, spectroscopy_params=rve.SpectroscopyParameters())
 >>> spectrum = rve.calculate_absorption_spectrum(rho_thermal, calc)
->>> 
+>>>
 >>> # Legacy API (後方互換性)
 >>> rve.prepare_variables(Nv=3, Nj=10, T2=500)
 >>> spectrum = rve.absorbance_spectrum_for_loop(rho_thermal)
@@ -49,15 +54,13 @@ __all__: list[str] = [
     "Hamiltonian",
     "StateVector",
     "DensityMatrix",
-    "ElectricField", 
+    "ElectricField",
     "LinMolDipoleMatrix",
-    
-    
     # Spectroscopy public API (最小限)
     "AbsorbanceCalculator",
     "ExperimentalConditions",
     "create_calculator_from_params",
-    ]
+]
 
 # ------------------------------------------------------------------
 # 便利 re-export
@@ -67,11 +70,15 @@ __all__: list[str] = [
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
 from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
-from .core.basis import LinMolBasis, Hamiltonian, StateVector, DensityMatrix  # noqa: E402, F401
+from .core.basis import (  # noqa: E402, F401
+    DensityMatrix,
+    Hamiltonian,
+    LinMolBasis,
+    StateVector,
+)
 from .core.electric_field import ElectricField  # noqa: E402, F401
 
 # Note: procedural propagators have been removed from public API in favor of class-based propagators
-
 # dipole
 from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
 

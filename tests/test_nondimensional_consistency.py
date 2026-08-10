@@ -24,6 +24,7 @@ class TestNondimensionalConsistency:
             omega=cls.omega01,
             B=0.001,
             delta_omega=0.01,
+            alpha=0.0,
         )
         cls.H0 = cls.basis.generate_H0()
 

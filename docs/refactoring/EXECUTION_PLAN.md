@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-03
+Last updated: 2026-08-10
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -335,7 +335,7 @@ Hamiltonian assertions from the root validation script now run in
 `tests/unit/test_basis_primitives.py`. The approved root print scripts, two
 empty RK4 files, disabled old-API split test, and obsolete
 `validation/test_object_oriented_migration.py` were removed.
-`pytest --collect-only -q` finds 459 tests without warnings; 449 pass and
+`pytest --collect-only -q` finds 505 tests without warnings; 495 pass and
 10 GPU tests skip. The P1.2-B read-only audit now classifies every remaining
 `validation/` diagnostic and `tests/run_tests.py` in
 `VALIDATION_INVENTORY.md`. It records collected replacements and unresolved
@@ -362,10 +362,13 @@ Both commands complete with no collection warnings or hidden root test suite.
 
 ### P1.3 Classify legacy implementation files
 
+Status: In progress. On 2026-08-10, `core/nondimensional/impl.py` was removed
+after strict dimensional-equivalence tests identified the production path.
+The other listed legacy families remain pending their own evidence.
+
 For each legacy file, identify unique logic and callers:
 
 - `dipole/rot/jm_old.py`;
-- `core/nondimensional/impl.py`;
 - `validation/core/*old*.py`;
 - archived example scripts;
 - deprecated dipole wrapper builders.
@@ -538,6 +541,12 @@ centered eigenspectrum, active dipole operator norms, and peak field-vector
 magnitude. ZeroField and inactive scale provenance are explicit. Absolute
 Schrodinger phase is restored after centering. Heuristic auto-timestep and
 invented zero scales now raise.
+P4.2 completed on 2026-08-10 under D-022. The 25-name public scaling surface
+was reduced to strict transformation, scale metadata, exact conversions, and
+neutral reporting. `analysis.py`, `strategies.py`, `impl.py`, automatic
+timestep wrappers, heuristic strength verification, and demo factories were
+removed. Raw-array units and object coupling semantics are now required.
+
 
 The 2026-08-09 explicit-fallback audit also rejects removed and unknown solver
 options and prevents dipole CuPy requests from becoming NumPy arrays. Remaining
@@ -546,8 +555,6 @@ P1/P2 findings and physics-facing default decisions are in FALLBACK_AUDIT.md.
 Remaining Phase 4 work:
 
 - move the implemented policy into the target dynamics/scaling package;
-- delete or redesign legacy analysis.py, strategies.py, and impl.py APIs that
-  still describe obsolete scale strategies;
 - attach scale provenance to the unified PropagationResult rather than
   recomputing it in simulation/runner.py;
 - finish explicit quantity types and property-style unit round trips;
@@ -557,10 +564,8 @@ Tasks:
 - define explicit quantity/unit types or validated value-plus-unit dataclasses;
 - keep pure conversion functions in `core/units`;
 - move complete-problem scaling to `dynamics/scaling`;
-- consolidate `converter.py`, `analysis.py`, `strategies.py`, `scales.py`, and
-  `utils.py` by responsibility;
-- remove deprecated `impl.py`;
-- make scale choice and auto-timestep policy explicit;
+- move the consolidated converter, scales, reporting, and conversion helpers
+  without reintroducing competing policy;
 - serialize scales in results;
 - add property-style round-trip tests.
 

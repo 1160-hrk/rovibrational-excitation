@@ -53,8 +53,8 @@ from rovibrational_excitation.dipole.linmol.builder import build_mu
 @dataclass(slots=True)
 class LinMolDipoleMatrix(DipoleMatrixBase):
     basis: LinMolBasis
-    mu0: float = 1.0
-    potential_type: Literal["harmonic", "morse"] = "harmonic"
+    mu0: float
+    potential_type: Literal["harmonic", "morse"]
     backend: Literal["numpy", "cupy"] = "numpy"
     dense: bool = True
     units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
@@ -82,6 +82,8 @@ class LinMolDipoleMatrix(DipoleMatrixBase):
     # DipoleMatrixBase already provides unit conversion, stacking, persistence, __repr__
     # ------------------------------------------------------------------
     def __post_init__(self):
+        if self.potential_type not in {"harmonic", "morse"}:
+            raise ValueError("potential_type must be harmonic or morse")
         if not hasattr(self.basis, "M_array"):
             raise ValueError(
                 "LinMolDipoleMatrix requires an explicit M-resolved basis; "

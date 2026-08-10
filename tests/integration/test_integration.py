@@ -72,7 +72,9 @@ class MockDipole:
 def test_full_simulation_workflow():
     """完全なシミュレーションワークフローのテスト"""
     # 1. 基底セットアップ
-    basis = LinMolBasis(V_max=2, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=2, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # 2. ハミルトニアン生成
     H0 = basis.generate_H0(omega_rad_pfs=1.0, B_rad_pfs=0.1)
@@ -128,7 +130,9 @@ def test_full_simulation_workflow():
 def test_multi_level_excitation():
     """多準位励起のテスト"""
     # より大きなシステム
-    basis = LinMolBasis(V_max=3, J_max=2, use_M=False)
+    basis = LinMolBasis(
+        V_max=3, J_max=2, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0(omega_rad_pfs=1.0, B_rad_pfs=0.05)
     dipole = MockDipole(basis)
 
@@ -200,8 +204,10 @@ def test_different_basis_types():
     assert psi_2level.shape[1] == 2
 
     # VibLadderBasis
-    basis_vib = VibLadderBasis(V_max=2, omega=1.0, input_units="rad/fs")
-    dipole_vib = VibLadderDipoleMatrix(basis_vib, mu0=1e-30)
+    basis_vib = VibLadderBasis(
+        V_max=2, omega=1.0, input_units="rad/fs", delta_omega=0.0
+    )
+    dipole_vib = VibLadderDipoleMatrix(basis_vib, mu0=1e-30, potential_type="harmonic")
     H0_vib = basis_vib.generate_H0()
     psi0_vib = np.zeros(basis_vib.size(), dtype=complex)
     psi0_vib[0] = 1.0
@@ -217,9 +223,11 @@ def test_different_basis_types():
 # @pytest.mark.xfail(reason="AssertionError on rho comparison")
 def test_mixed_vs_pure_states():
     """混合状態と純粋状態の比較テスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0()
-    dipole = LinMolDipoleMatrix(basis, mu0=1e-30)
+    dipole = LinMolDipoleMatrix(basis, mu0=1e-30, potential_type="harmonic")
 
     tlist = np.linspace(-2, 2, 1001)
     efield = ElectricField(tlist)
@@ -347,7 +355,9 @@ def test_liouville_vs_schrodinger():
 
 def test_energy_conservation():
     """エネルギー保存のテスト（無電場）"""
-    basis = LinMolBasis(V_max=2, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=2, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0()
     dipole = MockDipole(basis)
 
@@ -446,7 +456,9 @@ def test_population_dynamics():
 
 def test_coherent_vs_incoherent():
     """コヒーレント vs インコヒーレントプロセスのテスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0()
     dipole = MockDipole(basis)
 
@@ -546,7 +558,9 @@ def test_field_strength_scaling():
 def test_basis_state_consistency():
     """基底間の状態の一貫性テスト"""
     # LinMolBasisで use_M=False
-    basis1 = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis1 = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # StateVectorとDensityMatrixの一貫性
     sv = StateVector(basis1)
@@ -565,7 +579,9 @@ def test_basis_state_consistency():
 
 def test_numerical_precision():
     """数値精度のテスト"""
-    basis = LinMolBasis(V_max=2, J_max=2, use_M=False)
+    basis = LinMolBasis(
+        V_max=2, J_max=2, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = basis.generate_H0()
     dipole = MockDipole(basis)
 

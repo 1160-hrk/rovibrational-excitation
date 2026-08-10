@@ -24,11 +24,27 @@ _COMMON_REQUIRED = {
     "carrier_freq",
     "amplitude",
     "polarization",
+    "duration",
 }
 _MODEL_REQUIRED = {
-    "linmol": {"V_max", "J_max", "omega_rad_phz", "mu0_Cm"},
-    "twolevel": {"energy_gap", "mu0_Cm"},
-    "vibladder": {"V_max", "omega_rad_phz", "mu0_Cm"},
+    "linmol": {
+        "V_max",
+        "J_max",
+        "omega_rad_phz",
+        "delta_omega_rad_phz",
+        "B_rad_phz",
+        "alpha_rad_phz",
+        "mu0_Cm",
+        "potential_type",
+    },
+    "twolevel": {"energy_gap", "energy_gap_units", "mu0_Cm"},
+    "vibladder": {
+        "V_max",
+        "omega_rad_phz",
+        "delta_omega_rad_phz",
+        "mu0_Cm",
+        "potential_type",
+    },
 }
 _FINITE_PARAMETERS = {
     "t_start",
@@ -37,7 +53,6 @@ _FINITE_PARAMETERS = {
     "carrier_freq",
     "amplitude",
     "duration",
-    "pulse_duration",
     "t_center",
     "gdd",
     "tod",
@@ -51,6 +66,30 @@ _FINITE_PARAMETERS = {
     "carrier_freq_sin_mod",
     "phase_rad_sin_mod",
 }
+
+
+def validate_model_parameters(params: Mapping[str, Any]) -> str:
+    """Validate model selection and physically defining model inputs."""
+    basis_type_raw = params.get("basis_type", "linmol")
+    if not isinstance(basis_type_raw, str):
+        raise SimulationConfigurationError("basis_type must be a string")
+    basis_type = basis_type_raw.lower()
+    if basis_type not in _MODEL_REQUIRED:
+        raise SimulationConfigurationError(f"Unknown basis_type: {basis_type}")
+
+    missing = sorted(_MODEL_REQUIRED[basis_type] - params.keys())
+    if missing:
+        raise SimulationConfigurationError(
+            "Missing required model parameters: " + ", ".join(missing)
+        )
+    if basis_type in {"linmol", "vibladder"} and params["potential_type"] not in {
+        "harmonic",
+        "morse",
+    }:
+        raise SimulationConfigurationError(
+            "potential_type must be 'harmonic' or 'morse'"
+        )
+    return basis_type
 
 
 def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
@@ -77,15 +116,13 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
         raise SimulationConfigurationError(
             f"{names} were removed; define dt explicitly and validate convergence"
         )
+    if "pulse_duration" in params:
+        raise SimulationConfigurationError(
+            "pulse_duration was removed; use the required parameter duration"
+        )
 
-    basis_type_raw = params.get("basis_type", "linmol")
-    if not isinstance(basis_type_raw, str):
-        raise SimulationConfigurationError("basis_type must be a string")
-    basis_type = basis_type_raw.lower()
-    if basis_type not in _MODEL_REQUIRED:
-        raise SimulationConfigurationError(f"Unknown basis_type: {basis_type}")
-
-    missing = sorted((_COMMON_REQUIRED | _MODEL_REQUIRED[basis_type]) - params.keys())
+    basis_type = validate_model_parameters(params)
+    missing = sorted(_COMMON_REQUIRED - params.keys())
     if missing:
         raise SimulationConfigurationError(
             "Missing required simulation parameters: " + ", ".join(missing)
@@ -99,8 +136,8 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
-    duration = params.get("duration", params.get("pulse_duration"))
-    if duration is not None and duration <= 0:
+    duration = params["duration"]
+    if duration <= 0:
         raise SimulationConfigurationError("duration must be positive")
 
     for key in ("V_max", "J_max"):

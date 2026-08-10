@@ -206,7 +206,7 @@ def build_mu(
     axis: Literal["x", "y", "z"],
     mu0: float,
     *,
-    potential_type: Literal["harmonic", "morse"] = "harmonic",
+    potential_type: Literal["harmonic", "morse"],
     backend: Literal["numpy", "cupy"] = "numpy",
     dense: bool = True,
 ):

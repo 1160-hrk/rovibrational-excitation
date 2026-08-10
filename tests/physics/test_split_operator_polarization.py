@@ -25,9 +25,11 @@ def _linmol_problem():
         B=0.05,
         input_units="rad/fs",
         output_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
     h0 = basis.generate_H0().matrix
-    dipole = LinMolDipoleMatrix(basis, mu0=1.0)
+    dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
     initial = np.zeros(basis.size(), dtype=np.complex128)
     initial[basis.get_index((0, 0, 0))] = 1.0
     return basis, h0, np.asarray(dipole.mu_x), np.asarray(dipole.mu_y), initial
@@ -149,9 +151,11 @@ def test_high_level_circular_modes_use_explicit_physics_contracts():
         B=0.05,
         input_units="rad/fs",
         output_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
     hamiltonian = basis.generate_H0()
-    dipole = LinMolDipoleMatrix(basis, mu0=1.0e-30)
+    dipole = LinMolDipoleMatrix(basis, mu0=1.0e-30, potential_type="harmonic")
     field = ElectricField(np.linspace(0.0, 0.2, 201))
     field.add_dispersed_Efield(
         _flat_envelope,

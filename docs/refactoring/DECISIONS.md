@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-01
+Last updated: 2026-08-10
 
 ## How to use this log
 
@@ -432,8 +432,8 @@ Consequences:
 - heuristic weak/intermediate/strong labels are not emitted without a
   model-specific accepted threshold;
 - scale values carry derived, explicit, or inactive provenance;
-- auto_timestep and legacy recommendation helpers raise with migration
-  guidance;
+- auto_timestep raises at propagation boundaries; obsolete recommendation
+  helpers are absent from the scaling API;
 - explicit time-array construction requires a positive step that divides the
   requested duration and never extends the endpoint;
 - tests/contracts/test_strict_nondimensional_contracts.py anchors scale,
@@ -472,6 +472,53 @@ Consequences:
 - physics-bearing configuration defaults require a separate user decision.
 
 Implementation commit: `4c33359`
+
+### D-022: Physical inputs and scaling semantics are explicit
+
+Status: Accepted
+Scope: basis and dipole construction, simulation configuration, nondimensionalization API
+
+Omitting a physical constant or pulse width must not be indistinguishable from
+intentionally choosing zero. Zero remains a valid physical value where the
+model permits it, but it must be written explicitly.
+
+The simulation contract requires:
+
+- every model: `mu0_Cm`;
+- LinMol: `V_max`, `J_max`, `omega_rad_phz`,
+  `delta_omega_rad_phz`, `B_rad_phz`, `alpha_rad_phz`, and
+  `potential_type`;
+- VibLadder: `V_max`, `omega_rad_phz`, `delta_omega_rad_phz`, and
+  `potential_type`;
+- TwoLevel: `energy_gap` and `energy_gap_units`;
+- every pulse-driven simulation: `duration`.
+
+The basis constructors enforce the corresponding constants when called
+directly, including `omega`, `B`, `C`, `alpha`, and `delta_omega` for
+the experimental SymTop basis. Direct dipole construction requires `mu0`;
+vibrational dipoles additionally require `potential_type`, while TwoLevel
+rejects that inapplicable option. `pulse_duration` is removed rather than
+aliased or converted. Krotov requires a positive finite `duration_initial`.
+
+Array-based nondimensionalization requires explicit Hamiltonian and time units.
+Object-based nondimensionalization requires the active coupling axes and
+scalar-versus-Cartesian coupling mode. There is one scaling representation:
+strict generator scaling from D-020. Competing lambda-absorption strategies,
+automatic timestep wrappers, heuristic verification, demo parameter factories,
+and compatibility re-export modules are deleted. `analyze_regime` remains a
+neutral report and does not assign universal strength thresholds.
+
+Consequences:
+
+- omitted values raise before model construction or propagation;
+- explicit `0.0` is preserved without replacement;
+- no half-window duration fallback or implicit harmonic-potential selection;
+- the public nondimensional namespace contains only strict transformation,
+  scale metadata, exact conversion helpers, and neutral reporting;
+- tests cover direct basis and dipole calls, simulation validation, and
+  dimensional equivalence.
+
+Implementation commit: pending
 
 ## Open decisions
 

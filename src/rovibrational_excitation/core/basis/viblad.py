@@ -32,9 +32,9 @@ class VibLadderBasis(BasisBase):
     ----------
     V_max : int
         最大振動量子数
-    omega : float, optional
+    omega : float
         0→1遷移角周波数（input_unitsで指定した単位）
-    delta_omega : float, optional
+    delta_omega : float
         隣接遷移周波数の準位ごとの減少量（input_unitsで指定した単位）
     input_units : str, optional
         入力パラメータの単位（"rad/fs", "cm^-1", "THz", "eV"など）
@@ -46,7 +46,7 @@ class VibLadderBasis(BasisBase):
         self,
         V_max: int,
         omega: float | None = None,
-        delta_omega: float = 0.0,
+        delta_omega: float | None = None,
         input_units: str = "rad/fs",
         output_units: str = "J",
     ):
@@ -57,9 +57,9 @@ class VibLadderBasis(BasisBase):
         ----------
         V_max : int
             Maximum vibrational quantum number.
-        omega : float, optional
+        omega : float
             Fundamental v=0 -> 1 transition angular frequency (in input_units).
-        delta_omega : float, optional
+        delta_omega : float
             Per-level decrease in adjacent transition frequency (in input_units).
         input_units : str, optional
             Units of input parameters.
@@ -69,20 +69,25 @@ class VibLadderBasis(BasisBase):
         self.V_max = V_max
         self.input_units = input_units
         self.output_units = output_units
+        if omega is None or delta_omega is None:
+            missing = [
+                name
+                for name, value in (("omega", omega), ("delta_omega", delta_omega))
+                if value is None
+            ]
+            raise ValueError(
+                "Physical constants must be supplied explicitly: " + ", ".join(missing)
+            )
 
         # 物理パラメータの単位変換と保存
         if input_units in converter.get_supported_units("frequency"):
             conv = converter.convert_frequency(1.0, input_units, "rad/fs")
-            self.omega_rad_pfs = omega * conv if omega is not None else 1.0
+            self.omega_rad_pfs = omega * conv
             self.delta_omega_rad_pfs = delta_omega * conv
         elif input_units in converter.get_supported_units("energy"):
             # エネルギー単位からrad/fsへの変換
             energy_conv = converter.convert_energy(1.0, input_units, "J")
-            self.omega_rad_pfs = (
-                omega * energy_conv / Hamiltonian._HBAR * 1e-15
-                if omega is not None
-                else 1.0
-            )
+            self.omega_rad_pfs = omega * energy_conv / Hamiltonian._HBAR * 1e-15
             self.delta_omega_rad_pfs = (
                 delta_omega * energy_conv / Hamiltonian._HBAR * 1e-15
             )

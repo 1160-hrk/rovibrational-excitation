@@ -7,7 +7,11 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import ElectricField, ZeroField, gaussian_fwhm
+from rovibrational_excitation.core.electric_field import (
+    ElectricField,
+    ZeroField,
+    gaussian_fwhm,
+)
 from rovibrational_excitation.core.nondimensional import (
     NondimensionalizationScales,
     analyze_regime,
@@ -27,13 +31,13 @@ def test_nondimensionalization_scales():
         t0=1e-15,  # s
         lambda_coupling=0.5,
     )
-    
+
     assert scales.E0 == 1e-20
     assert scales.mu0 == 1e-30
     assert scales.Efield0 == 1e8
     assert scales.t0 == 1e-15
     assert scales.lambda_coupling == 0.5
-    
+
     # repr test
     repr_str = repr(scales)
     assert "NondimensionalizationScales" in repr_str
@@ -54,16 +58,15 @@ def test_nondimensionalize_system_basic():
         amplitude=1e8,
         polarization=np.array([1.0, 0.0]),
     )
-    
+
     # ダミーのハミルトニアンと双極子行列
-    dim = 3
     # エネルギー単位（J）のハミルトニアン
     _HBAR = 1.054571817e-34
     H0_freq = np.diag([0.0, 0.1, 0.2])  # rad/fs
     H0 = H0_freq * _HBAR / 1e-15  # rad/fs → J
     mu_x = np.array([[0, 1e-30, 0], [1e-30, 0, 1e-30], [0, 1e-30, 0]])  # C·m
     mu_y = np.zeros_like(mu_x)
-    
+
     # 無次元化実行
     (
         H0_prime,
@@ -73,23 +76,24 @@ def test_nondimensionalize_system_basic():
         tlist_prime,
         dt_prime,
         scales,
-    ) = nondimensionalize_system(H0, mu_x, mu_y, efield,
-                                 H0_units="energy", time_units="fs")
-    
+    ) = nondimensionalize_system(
+        H0, mu_x, mu_y, efield, H0_units="energy", time_units="fs"
+    )
+
     # 形状チェック
     assert H0_prime.shape == H0.shape
     assert mu_x_prime.shape == mu_x.shape
     assert mu_y_prime.shape == mu_y.shape
     assert Efield_prime.shape == efield.get_Efield().shape
     assert len(tlist_prime) == len(tlist)
-    
+
     # スケールがポジティブ
     assert scales.E0 > 0
     assert scales.mu0 > 0
     assert scales.Efield0 > 0
     assert scales.t0 > 0
     assert scales.lambda_coupling >= 0
-    
+
     # 無次元化チェック（範囲が適切か）
     assert np.max(np.abs(H0_prime)) <= 1.1  # 多少の余裕
     assert np.max(np.abs(mu_x_prime)) <= 1.1
@@ -147,9 +151,9 @@ def test_get_physical_time():
     """無次元時間を物理時間に変換するテスト"""
     scales = NondimensionalizationScales(1e-20, 1e-30, 1e8, 1e-15, 0.5)
     tau = np.array([0, 1, 2, 3])  # 無次元時間
-    
+
     t_physical = get_physical_time(tau, scales)
-    
+
     # 単位変換チェック
     expected = tau * scales.t0 * 1e15  # s → fs
     np.testing.assert_array_almost_equal(t_physical, expected)
@@ -159,9 +163,9 @@ def test_dimensionalize_wavefunction():
     """波動関数の次元化テスト"""
     scales = NondimensionalizationScales(1e-20, 1e-30, 1e8, 1e-15, 0.5)
     psi_prime = np.array([1.0, 0.0, 0.0], dtype=complex)
-    
+
     psi = dimensionalize_wavefunction(psi_prime, scales)
-    
+
     # 正規化は保持される
     np.testing.assert_array_almost_equal(psi, psi_prime)
     assert np.abs(np.linalg.norm(psi) - 1.0) < 1e-12
@@ -170,8 +174,10 @@ def test_dimensionalize_wavefunction():
 def test_nondimensionalize_with_realistic_system():
     """現実的なシステムでの無次元化テスト"""
     # CO2の無次元振動子
-    basis = LinMolBasis(V_max=3, J_max=5, use_M=True)
-    
+    basis = LinMolBasis(
+        V_max=3, J_max=5, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
+
     # 時間軸
     tlist = np.linspace(-50, 50, 1001)
     efield = ElectricField(tlist)
@@ -183,13 +189,17 @@ def test_nondimensionalize_with_realistic_system():
         amplitude=1e9,
         polarization=np.array([1.0, 0.0]),
     )
-    
+
     # ハミルトニアン（エネルギー単位）
-    H0 = basis.generate_H0(omega_rad_phz=0.159, B_rad_phz=3.9e-5, return_energy_units=True)
-    
+    H0 = basis.generate_H0(
+        omega_rad_phz=0.159, B_rad_phz=3.9e-5, return_energy_units=True
+    )
+
     # 双極子行列
-    dip = LinMolDipoleMatrix(basis, mu0=0.3e-29, backend="numpy", dense=True)
-    
+    dip = LinMolDipoleMatrix(
+        basis, mu0=0.3e-29, backend="numpy", dense=True, potential_type="harmonic"
+    )
+
     # 無次元化
     (
         H0_prime,
@@ -199,22 +209,28 @@ def test_nondimensionalize_with_realistic_system():
         tlist_prime,
         dt_prime,
         scales,
-    ) = nondimensionalize_system(H0.get_matrix(units="J"), dip.mu_x, dip.mu_y, efield,
-                                 H0_units="energy", time_units="fs")
-    
+    ) = nondimensionalize_system(
+        H0.get_matrix(units="J"),
+        dip.mu_x,
+        dip.mu_y,
+        efield,
+        H0_units="energy",
+        time_units="fs",
+    )
+
     # 物理レジーム分析
     regime_info = analyze_regime(scales)
-    
+
     # 基本チェック
     assert H0_prime.shape == H0.shape
     assert len(tlist_prime) == len(tlist)
     assert regime_info["numerical_coupling_coefficient"] > 0
     assert regime_info["regime"] == "unclassified"
-    
+
     # エネルギースケールが妥当か（eV範囲）
     energy_eV = regime_info["energy_scale_eV"]
     assert 0.001 < energy_eV < 100  # meV ~ 100eV の範囲
-    
+
     # 時間スケールが妥当か（fs範囲）
     time_fs = regime_info["time_scale_fs"]
     assert 0.01 < time_fs < 10000  # 0.01fs ~ 10ps の範囲
@@ -232,17 +248,19 @@ def test_edge_cases():
     mu_y = np.zeros_like(mu_x)
 
     with pytest.raises(ValueError, match="ZeroField"):
-        nondimensionalize_system(h0, mu_x, mu_y, ambiguous_zero)
+        nondimensionalize_system(
+            h0, mu_x, mu_y, ambiguous_zero, H0_units="energy", time_units="fs"
+        )
 
     *_, field_prime, _, _, scales = nondimensionalize_system(
-        h0, mu_x, mu_y, zero_field
+        h0, mu_x, mu_y, zero_field, H0_units="energy", time_units="fs"
     )
     assert scales.Efield0 is None
     np.testing.assert_array_equal(field_prime, np.zeros((tlist.size, 2)))
 
     zero_dipole = np.zeros_like(mu_x)
     _, mu_x_prime, mu_y_prime, _, _, _, scales = nondimensionalize_system(
-        h0, zero_dipole, zero_dipole, zero_field
+        h0, zero_dipole, zero_dipole, zero_field, H0_units="energy", time_units="fs"
     )
     assert scales.mu0 is None
     np.testing.assert_array_equal(mu_x_prime, zero_dipole)
@@ -250,4 +268,4 @@ def test_edge_cases():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__]) 
+    pytest.main([__file__])

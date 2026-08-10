@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-01
+Last verified against source and tests: 2026-08-10
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -202,6 +202,40 @@ Implementation anchors:
 - core/nondimensional/scales.py: values and provenance;
 - core/propagation/schrodinger.py: global-phase restoration;
 - tests/contracts/test_strict_nondimensional_contracts.py: reference contracts.
+### 3.2 Explicit physical inputs
+
+Missing and zero are distinct. A physical zero is accepted only when supplied
+as `0.0`; no constructor or runner may invent a model constant or pulse width.
+
+Required simulation fields are model-specific:
+
+| Model | Required physical/model fields |
+|---|---|
+| LinMol | `V_max`, `J_max`, `omega_rad_phz`, `delta_omega_rad_phz`, `B_rad_phz`, `alpha_rad_phz`, `mu0_Cm`, `potential_type` |
+| VibLadder | `V_max`, `omega_rad_phz`, `delta_omega_rad_phz`, `mu0_Cm`, `potential_type` |
+| TwoLevel | `energy_gap`, `energy_gap_units`, `mu0_Cm` |
+
+Every simulation case also states `duration` explicitly. The removed
+`pulse_duration` name is rejected. Direct basis construction requires
+LinMol `omega`, `B`, `alpha`, and `delta_omega`; VibLadder `omega`
+and `delta_omega`; TwoLevel `energy_gap`; or SymTop `omega`, `B`, `C`,
+`alpha`, and `delta_omega`. Direct dipole construction requires `mu0`;
+LinMol, VibLadder, and SymTop dipoles also require `potential_type`. TwoLevel
+does not accept this inapplicable option. Krotov optimization requires a
+positive finite `duration_initial` before any model or field work begins.
+
+For raw-array nondimensionalization, `H0_units` and `time_units` are
+required keywords. For object-based nondimensionalization, `coupling_axes`
+and `scalar_coupling` are required. These values cannot be inferred from
+array shapes without changing the physical interpretation.
+
+Regression anchors:
+
+- `tests/test_basis_unified_units.py::test_basis_requires_physical_constants`;
+- `tests/contracts/test_physical_input_contracts.py`;
+- `tests/contracts/test_simulation_contracts.py`;
+- `tests/test_simulation_models.py`.
+
 ## 4. Initial-state semantics
 
 ### 4.1 Normal simulation runner: coherent superposition

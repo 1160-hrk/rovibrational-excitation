@@ -81,7 +81,7 @@ the stale validation scripts:
    ZeroField and inactive scale metadata express field-free intent.
 4. The absolute 1e-20 J gap threshold and duplicate
    from_physical_system implementation were removed from execution; the legacy
-   factory now raises migration guidance.
+   factory and its compatibility module were subsequently deleted under D-022.
 5. Weak/intermediate/strong boundaries 0.1 and 1.0 were removed from regime
    reporting. Numerical coefficient and physical coupling ratio are separate.
 6. Empirical auto-timestep selection was removed from propagation and

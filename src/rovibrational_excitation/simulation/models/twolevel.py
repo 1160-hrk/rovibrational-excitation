@@ -14,7 +14,7 @@ def build_twolevel(params: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
     """Build the existing two-level simulation components."""
     basis = TwoLevelBasis(
         energy_gap=params["energy_gap"],
-        input_units=params.get("energy_gap_units", "rad/fs"),
+        input_units=params["energy_gap_units"],
         output_units="J",
     )
     state = build_initial_state(basis, params.get("initial_states", [0]))

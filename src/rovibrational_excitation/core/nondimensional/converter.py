@@ -31,6 +31,7 @@ def _as_numpy(value: Any) -> np.ndarray:
         value = get()
     return np.asarray(value)
 
+
 def _validated_hermitian(matrix: np.ndarray, *, name: str) -> np.ndarray:
     """Validate a finite Hermitian matrix without modifying it."""
     value = np.asarray(matrix)
@@ -140,9 +141,9 @@ def nondimensionalize_system(
     mu_y: np.ndarray,
     efield: ElectricField,
     *,
+    H0_units: str,
+    time_units: str,
     dt: float | None = None,
-    H0_units: str = "energy",
-    time_units: str = "fs",
     hbar: float = _HBAR,
     energy_scale_J: float | None = None,
 ) -> tuple[
@@ -167,10 +168,10 @@ def nondimensionalize_system(
         電場オブジェクト
     dt : float, optional
         時間ステップ。Noneの場合はefield.dtを使用
-    H0_units : str, optional
-        H0の単位。"energy" (J) または "frequency" (rad/fs)。デフォルトは"energy"
-    time_units : str, optional
-        時間の単位。"fs" または "s"。デフォルトは"fs"
+    H0_units : str
+        H0の単位。"energy" (J) または "frequency" (rad/fs)。
+    time_units : str
+        時間の単位。"fs" または "s"。
     hbar : float
         プランク定数 [J·s]
     energy_scale_J : float, optional
@@ -347,9 +348,7 @@ def nondimensionalize_with_SI_base_units(
         mu_x_prime = np.asarray(mu_x) / scales.mu0
         mu_y_prime = np.asarray(mu_y) / scales.mu0
     Efield_prime = (
-        np.zeros_like(field)
-        if scales.Efield0 is None
-        else field / scales.Efield0
+        np.zeros_like(field) if scales.Efield0 is None else field / scales.Efield0
     )
     return (
         H0_prime,
@@ -393,10 +392,9 @@ def nondimensionalize_from_objects(
     dipole_matrix: DipoleMatrixBase,
     efield: ElectricField,
     *,
-    auto_timestep: bool | None = None,
+    coupling_axes: tuple[str, ...],
+    scalar_coupling: bool,
     verbose: bool = True,
-    coupling_axes: tuple[str, ...] | None = None,
-    scalar_coupling: bool = False,
     energy_scale_J: float | None = None,
 ) -> tuple[
     np.ndarray,
@@ -420,9 +418,10 @@ def nondimensionalize_from_objects(
         双極子行列オブジェクト（内部単位管理）
     efield : ElectricField
         電場オブジェクト
-    auto_timestep : bool, optional
-        Removed migration guard. Any supplied value raises instead of being
-        silently ignored or changing the grid.
+    coupling_axes : tuple[str, ...]
+        Active Cartesian dipole components.
+    scalar_coupling : bool
+        Whether the field is interpreted as one scalar waveform.
     verbose : bool, optional
         詳細出力の有無, デフォルト: True
 
@@ -432,13 +431,6 @@ def nondimensionalize_from_objects(
         (H0_prime, mu_x_prime, mu_y_prime, mu_z_prime, Efield_prime, tlist_prime,
          dt_prime, scales)
     """
-    if auto_timestep is not None:
-        raise ValueError(
-            "auto_timestep was removed because it changed the supplied field "
-            "grid using unvalidated heuristics; provide and convergence-test "
-            "the ElectricField grid explicitly"
-        )
-
     if verbose:
         print("🎯 Nondimensionalization from Hamiltonian and DipoleMatrix objects...")
 
@@ -456,8 +448,6 @@ def nondimensionalize_from_objects(
     mu_y_Cm = _as_numpy(dipole_matrix.get_mu_y_SI(dense=True))
     mu_z_Cm = _as_numpy(dipole_matrix.get_mu_z_SI(dense=True))
     dipoles_by_axis = {"x": mu_x_Cm, "y": mu_y_Cm, "z": mu_z_Cm}
-    if coupling_axes is None:
-        coupling_axes = ("x",)
     if not coupling_axes or any(axis not in dipoles_by_axis for axis in coupling_axes):
         raise ValueError("coupling_axes must contain only 'x', 'y', or 'z'")
     coupling_dipoles = np.stack(
@@ -506,9 +496,7 @@ def nondimensionalize_from_objects(
         assert scalar_field is not None
         field_amplitude_V_per_m = float(np.max(np.abs(scalar_field)))
     else:
-        field_amplitude_V_per_m = float(
-            np.max(np.linalg.norm(Efield_array, axis=1))
-        )
+        field_amplitude_V_per_m = float(np.max(np.linalg.norm(Efield_array, axis=1)))
 
     if verbose:
         print(f"📊 Electric field amplitude: {field_amplitude_V_per_m:.3e} V/m")
@@ -572,150 +560,3 @@ def nondimensionalize_from_objects(
         dt_prime,
         scales,
     )
-
-
-def auto_nondimensionalize(
-    hamiltonian: Hamiltonian,
-    dipole_matrix: DipoleMatrixBase,
-    efield: ElectricField,
-    *,
-    target_accuracy: str = "standard",
-    verbose: bool = True,
-    coupling_axes: tuple[str, ...] | None = None,
-    scalar_coupling: bool = False,
-) -> tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    float,
-    NondimensionalizationScales,
-]:
-    """
-    完全自動無次元化：最適な時間ステップを自動選択
-
-    Parameters
-    ----------
-    hamiltonian : Hamiltonian
-        ハミルトニアンオブジェクト
-    dipole_matrix : DipoleMatrixBase
-        双極子行列オブジェクト
-    efield : ElectricField
-        電場オブジェクト
-    target_accuracy : str, optional
-        目標精度 ("high", "standard", "fast"), デフォルト: "standard"
-    verbose : bool, optional
-        詳細出力の有無, デフォルト: True
-
-    Returns
-    -------
-    tuple
-        (H0_prime, mu_x_prime, mu_y_prime, mu_z_prime, Efield_prime, tlist_prime,
-         dt_prime, scales)
-    """
-    del hamiltonian, dipole_matrix, efield
-    del target_accuracy, verbose, coupling_axes, scalar_coupling
-    raise RuntimeError(
-        "auto_nondimensionalize() was removed because its heuristic changed "
-        "the supplied time grid; use nondimensionalize_from_objects() with an "
-        "explicit ElectricField grid and perform a convergence study"
-    )
-
-
-class NondimensionalConverter:
-    """高レベル無次元化インターフェース"""
-
-    @staticmethod
-    def nondimensionalize_system(
-        H0: np.ndarray,
-        mu_x: np.ndarray,
-        mu_y: np.ndarray,
-        efield: ElectricField,
-        **kwargs: Any,
-    ) -> tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        float,
-        NondimensionalizationScales,
-    ]:
-        """基本的な無次元化を実行"""
-        return nondimensionalize_system(H0, mu_x, mu_y, efield, **kwargs)
-
-    @staticmethod
-    def nondimensionalize_with_SI_base_units(
-        H0: np.ndarray,
-        mu_x: np.ndarray,
-        mu_y: np.ndarray,
-        efield: np.ndarray,
-        tlist: np.ndarray,
-        **kwargs: Any,
-    ) -> tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        float,
-        NondimensionalizationScales,
-    ]:
-        """SI基本単位での無次元化を実行"""
-        return nondimensionalize_with_SI_base_units(
-            H0, mu_x, mu_y, efield, tlist, **kwargs
-        )
-
-    @staticmethod
-    def nondimensionalize_from_objects(
-        hamiltonian: Hamiltonian,
-        dipole_matrix: DipoleMatrixBase,
-        efield: ElectricField,
-        **kwargs: Any,
-    ) -> tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        float,
-        NondimensionalizationScales,
-    ]:
-        """HamiltonianとDipoleMatrixBaseクラスから自動的にSI単位系に変換して無次元化を実行"""
-        return nondimensionalize_from_objects(
-            hamiltonian, dipole_matrix, efield, **kwargs
-        )
-
-    @staticmethod
-    def auto_nondimensionalize(
-        hamiltonian: Hamiltonian,
-        dipole_matrix: DipoleMatrixBase,
-        efield: ElectricField,
-        **kwargs: Any,
-    ) -> tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        float,
-        NondimensionalizationScales,
-    ]:
-        """完全自動無次元化：最適な時間ステップを自動選択"""
-        return auto_nondimensionalize(hamiltonian, dipole_matrix, efield, **kwargs)
-
-    @staticmethod
-    def create_dimensionless_time_array(
-        scales: NondimensionalizationScales,
-        duration_fs: float,
-        **kwargs: Any,
-    ) -> tuple[np.ndarray, float]:
-        """無次元化済みの時間配列を生成"""
-        return create_dimensionless_time_array(scales, duration_fs, **kwargs)

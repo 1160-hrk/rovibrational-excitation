@@ -189,6 +189,7 @@ def test_harmonic_transition_selection_rule_and_elements():
         omega=OMEGA01_RAD_PER_FS,
         input_units="rad/fs",
         output_units="rad/fs",
+        delta_omega=0.0,
     )
     matrix = VibLadderDipoleMatrix(
         basis,
@@ -225,7 +226,7 @@ def test_morse_rejects_zero_anharmonicity():
     )
 
     with pytest.raises(ValueError, match="delta_omega must be non-zero"):
-        VibLadderDipoleMatrix(basis, potential_type="morse")
+        VibLadderDipoleMatrix(basis, potential_type="morse", mu0=1.0)
 
 
 def test_morse_accepts_maximum_bound_level_and_rejects_next_level():
@@ -236,7 +237,7 @@ def test_morse_accepts_maximum_bound_level_and_rejects_next_level():
         delta_omega=0.1,
         input_units="rad/fs",
     )
-    accepted = VibLadderDipoleMatrix(accepted_basis, potential_type="morse")
+    accepted = VibLadderDipoleMatrix(accepted_basis, potential_type="morse", mu0=1.0)
     assert accepted.mu_z.shape == (10, 10)
 
     rejected_basis = VibLadderBasis(
@@ -246,7 +247,7 @@ def test_morse_accepts_maximum_bound_level_and_rejects_next_level():
         input_units="rad/fs",
     )
     with pytest.raises(ValueError, match="Morse limit 9"):
-        VibLadderDipoleMatrix(rejected_basis, potential_type="morse")
+        VibLadderDipoleMatrix(rejected_basis, potential_type="morse", mu0=1.0)
 
 
 def test_morse_parameters_do_not_leak_between_instances():
@@ -263,8 +264,8 @@ def test_morse_parameters_do_not_leak_between_instances():
         delta_omega=0.2,
         input_units="rad/fs",
     )
-    dipole_a = VibLadderDipoleMatrix(basis_a, potential_type="morse")
-    dipole_b = VibLadderDipoleMatrix(basis_b, potential_type="morse")
+    dipole_a = VibLadderDipoleMatrix(basis_a, potential_type="morse", mu0=1.0)
+    dipole_b = VibLadderDipoleMatrix(basis_b, potential_type="morse", mu0=1.0)
 
     matrix_b = dipole_b.mu_z
     matrix_a = dipole_a.mu_z

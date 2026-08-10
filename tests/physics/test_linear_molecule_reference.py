@@ -70,6 +70,8 @@ def test_state_index_round_trip_and_basis_size(use_m):
         omega=OMEGA_RAD_PER_FS,
         B=ROTATION_RAD_PER_FS,
         input_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
     expected_size = 3 * (16 if use_m else 4)
     assert basis.size() == expected_size
@@ -110,8 +112,10 @@ def test_cartesian_dipoles_are_hermitian_and_obey_selection_rules(axis):
         omega=OMEGA_RAD_PER_FS,
         B=ROTATION_RAD_PER_FS,
         input_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
-    matrix = LinMolDipoleMatrix(basis, mu0=1.0).mu(axis)
+    matrix = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic").mu(axis)
     np.testing.assert_allclose(matrix, matrix.conj().T, rtol=0.0, atol=2e-15)
 
     rows, columns = np.nonzero(np.abs(matrix) > 0.0)
@@ -134,9 +138,15 @@ def test_dense_and_sparse_dipoles_agree():
         omega=OMEGA_RAD_PER_FS,
         B=ROTATION_RAD_PER_FS,
         input_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
-    dense = LinMolDipoleMatrix(basis, mu0=DIPOLE_C_M, dense=True)
-    sparse = LinMolDipoleMatrix(basis, mu0=DIPOLE_C_M, dense=False)
+    dense = LinMolDipoleMatrix(
+        basis, mu0=DIPOLE_C_M, dense=True, potential_type="harmonic"
+    )
+    sparse = LinMolDipoleMatrix(
+        basis, mu0=DIPOLE_C_M, dense=False, potential_type="harmonic"
+    )
     for axis in "xyz":
         np.testing.assert_allclose(
             sparse.mu(axis).toarray(), dense.mu(axis), rtol=0.0, atol=0.0
@@ -151,9 +161,11 @@ def test_reduced_basis_cannot_be_silently_treated_as_m_zero_dipole():
         omega=OMEGA_RAD_PER_FS,
         B=ROTATION_RAD_PER_FS,
         input_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
     with pytest.raises(ValueError, match="M-averaged simulation workflow"):
-        LinMolDipoleMatrix(basis, mu0=DIPOLE_C_M)
+        LinMolDipoleMatrix(basis, mu0=DIPOLE_C_M, potential_type="harmonic")
 
 
 def _resolved_propagation(initial, polarization, *, sparse=False):
@@ -182,6 +194,7 @@ def _resolved_propagation(initial, polarization, *, sparse=False):
         basis,
         mu0=DIPOLE_C_M,
         dense=not sparse,
+        potential_type="harmonic",
     )
     trajectory = SchrodingerPropagator(validate_units=False, sparse=sparse).propagate(
         basis.generate_H0(),
@@ -203,6 +216,8 @@ def _resolved_initial_state(state):
         omega=OMEGA_RAD_PER_FS,
         B=ROTATION_RAD_PER_FS,
         input_units="rad/fs",
+        alpha=0.0,
+        delta_omega=0.0,
     )
     initial = np.zeros(basis.size(), dtype=np.complex128)
     initial[basis.get_index(state)] = 1.0
@@ -312,7 +327,7 @@ def _full_m_reference(params):
         input_units="rad/fs",
         output_units="J",
     )
-    dipole = LinMolDipoleMatrix(basis, mu0=params["mu0_Cm"])
+    dipole = LinMolDipoleMatrix(basis, mu0=params["mu0_Cm"], potential_type="harmonic")
     propagator = SchrodingerPropagator(validate_units=False)
     full_population = None
     initial_j = 1

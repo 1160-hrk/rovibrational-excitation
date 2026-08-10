@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-01
+Last verified: 2026-08-10
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 360 passed, 9 skipped |
+| Pytest | 495 passed, 10 skipped (505 collected) |
 | Measured total coverage | 47% |
 | Ruff findings | 1,143 |
 | Ruff auto-fixable findings | 925 |
@@ -53,19 +53,18 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 64% |
 | RK4 Schrödinger coverage report | 10% |
 
-The old README claim of 63% coverage is stale.
+The pytest row was verified on 2026-08-10. Coverage and repository-wide Ruff rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
 | File | Physical lines | Main concern |
 |---|---:|---|
 | `spectroscopy/absorbance_calculator.py` | 898 | Multiple response/spectrum responsibilities, 11% coverage |
-| `core/nondimensional/converter.py` | 799 | Conversion, timestep policy, coupling scaling, object preparation |
-| `simulation/runner.py` | 591 | Construction, execution, multiprocessing, output, error handling |
-| `core/propagation/algorithms/rk4/schrodinger.py` | 570 | Dense, sparse, CPU, GPU, validation paths in one module |
-| `core/electric_field/core.py` | 456 | Field state, pulse construction, polarization, unit conversion |
-| `core/nondimensional/analysis.py` | 445 | Low coverage and overlapping policy responsibilities |
-| `core/propagation/utils.py` | 426 | Backend, units, field mapping, nondimensional preparation |
+| `simulation/runner.py` | 628 | Construction, execution, multiprocessing, output, error handling |
+| `core/nondimensional/converter.py` | 562 | Strict scaling, array conversion, and object preparation |
+| `core/propagation/algorithms/rk4/schrodinger.py` | 478 | Dense, sparse, CPU, GPU, validation paths in one module |
+| `core/electric_field/core.py` | 478 | Field state, pulse construction, polarization, unit conversion |
+| `core/propagation/utils.py` | 416 | Backend, units, field mapping, nondimensional preparation |
 
 Line count alone does not require splitting; mixed responsibility and poor
 testability do.
@@ -82,7 +81,8 @@ testability do.
   explicit review; no tracked script or ignored generated PNG was removed by
   the audit.
 - `dipole/rot/jm_old.py` and old validation scripts remain tracked.
-- `core/nondimensional/impl.py` is deprecated but still present.
+- The competing nondimensional compatibility modules have been removed; the
+  strict converter remains pending its target-package move.
 - CI runs Ruff and Black, while Ruff formatting is already configured.
 - mypy and physics validation are allowed to fail.
 - Coverage upload does not enforce a minimum.
@@ -113,7 +113,7 @@ These commits are the starting point, not the final architecture.
 | 1 | Repository and CI normalization | In progress — P1.1 and P1.2-A complete; P1.2-B deletion proposal documented |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
-| 4 | Units and nondimensionalization | Pending |
+| 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |

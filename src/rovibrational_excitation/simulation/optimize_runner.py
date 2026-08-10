@@ -16,23 +16,23 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
 
 import yaml
 
 from rovibrational_excitation.core.basis import (
     LinMolBasis,
-    VibLadderBasis,
     SymTopBasis,
     TwoLevelBasis,
+    VibLadderBasis,
 )
-from rovibrational_excitation.optimization import ALGO_REGISTRY
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.optimization import ALGO_REGISTRY
 
 
 def _load_yaml(path: str) -> dict:
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
@@ -44,18 +44,18 @@ def _build_basis(system_cfg: dict):
             V_max=int(p["V_max"]),
             J_max=int(p["J_max"]),
             use_M=bool(p.get("use_M", True)),
-            omega=p.get("omega_cm"),
-            delta_omega=p.get("delta_omega_cm", 0.0),
-            B=p.get("B_cm"),
-            alpha=p.get("alpha_cm", 0.0),
+            omega=p["omega_cm"],
+            delta_omega=p["delta_omega_cm"],
+            B=p["B_cm"],
+            alpha=p["alpha_cm"],
             input_units=p.get("input_units", "cm^-1"),
             output_units=p.get("output_units", "rad/fs"),
         )
     if t == "viblad":
         return VibLadderBasis(
             V_max=int(p["V_max"]),
-            omega=p.get("omega_cm"),
-            delta_omega=p.get("delta_omega_cm", 0.0),
+            omega=p["omega_cm"],
+            delta_omega=p["delta_omega_cm"],
             input_units=p.get("input_units", "cm^-1"),
             output_units=p.get("output_units", "rad/fs"),
         )
@@ -63,17 +63,17 @@ def _build_basis(system_cfg: dict):
         return SymTopBasis(
             V_max=int(p["V_max"]),
             J_max=int(p["J_max"]),
-            omega=p.get("omega_cm"),
-            B=p.get("B_cm"),
-            C=p.get("C_cm"),
-            alpha=p.get("alpha_cm", 0.0),
-            delta_omega=p.get("delta_omega_cm", 0.0),
+            omega=p["omega_cm"],
+            B=p["B_cm"],
+            C=p["C_cm"],
+            alpha=p["alpha_cm"],
+            delta_omega=p["delta_omega_cm"],
             input_units=p.get("input_units", "cm^-1"),
             output_units=p.get("output_units", "rad/fs"),
         )
     if t == "twolevel":
         return TwoLevelBasis(
-            energy_gap=p.get("energy_gap_cm"),
+            energy_gap=p["energy_gap_cm"],
             input_units=p.get("input_units", "cm^-1"),
             output_units=p.get("output_units", "rad/fs"),
         )
@@ -82,21 +82,24 @@ def _build_basis(system_cfg: dict):
 
 def _build_dipole(basis, system_cfg: dict):
     p = dict(system_cfg.get("params", {}))
-    mu0 = float(p.get("mu0", 1.0e-30))
-    unit_dipole = str(p.get("unit_dipole", "C*m"))
+    mu0 = float(p["mu0"])
+    unit_dipole = str(p["unit_dipole"])
     if unit_dipole not in ("C*m", "D", "ea0"):
-        unit_dipole = "C*m"
-    potential_type = str(p.get("potential_type", "harmonic"))
-    if potential_type not in ("harmonic", "morse"):
-        potential_type = "harmonic"
+        raise ValueError("unit_dipole must be 'C*m', 'D', or 'ea0'")
+    dipole_options = {}
+    if not isinstance(basis, TwoLevelBasis):
+        potential_type = str(p["potential_type"])
+        if potential_type not in ("harmonic", "morse"):
+            raise ValueError("potential_type must be harmonic or morse")
+        dipole_options["potential_type"] = potential_type
     return create_dipole_matrix(
         basis,
         mu0=mu0,
-        potential_type=potential_type,
         backend="numpy",
         dense=False,
         units=unit_dipole,  # type: ignore[arg-type]
         units_input=unit_dipole,  # type: ignore[arg-type]
+        **dipole_options,
     )
 
 
@@ -114,14 +117,20 @@ def _format_system_label(system_cfg: dict) -> str:
     t = str(system_cfg.get("type", "")).lower()
     p = dict(system_cfg.get("params", {}))
     if t == "linmol":
-        v = p.get("V_max"); j = p.get("J_max"); use_m = p.get("use_M", True)
+        v = p.get("V_max")
+        j = p.get("J_max")
+        use_m = p.get("use_M", True)
         return f"linmol_V{v}_J{j}_M{int(bool(use_m))}"
     if t == "viblad":
-        v = p.get("V_max"); return f"viblad_V{v}"
+        v = p.get("V_max")
+        return f"viblad_V{v}"
     if t == "symtop":
-        v = p.get("V_max"); j = p.get("J_max"); return f"symtop_V{v}_J{j}"
+        v = p.get("V_max")
+        j = p.get("J_max")
+        return f"symtop_V{v}_J{j}"
     if t == "twolevel":
-        gap = p.get("energy_gap_cm"); return f"twolevel_gap{gap}cm" if gap is not None else "twolevel"
+        gap = p.get("energy_gap_cm")
+        return f"twolevel_gap{gap}cm" if gap is not None else "twolevel"
     return t or "system"
 
 
@@ -146,7 +155,7 @@ def run_from_config(
     *,
     out_dir: str | None = None,
     do_plot: bool = True,
-    **kwargs
+    **kwargs,
 ) -> dict:
     """
     Execute optimization from a YAML (or dict) config.
@@ -207,7 +216,14 @@ def run_from_config(
     # kwargsから追加パラメータを取得してparamsにマージ
     if kwargs:
         params.update(kwargs)
-    result = runner(basis=basis, hamiltonian=H0, dipole=dipole, states=states, time_cfg=time_cfg, params=params)
+    result = runner(
+        basis=basis,
+        hamiltonian=H0,
+        dipole=dipole,
+        states=states,
+        time_cfg=time_cfg,
+        params=params,
+    )
     elapsed = time.time() - t0
     print(f"{selected} elapsed: {elapsed:.2f} s")
 
@@ -215,18 +231,31 @@ def run_from_config(
     try:
         if do_plot:
             from rovibrational_excitation.plots.plot_all import plot_all  # lazy import
+
             efield_obj = result.get("efield")
             time_full = result.get("time")
             psi_traj = result.get("psi_traj")
             tlist = result.get("tlist") or time_full
             field_data = result.get("field_data")
             target_idx = result.get("target_idx", -1)
-            if efield_obj is not None and psi_traj is not None and field_data is not None and tlist is not None:
+            if (
+                efield_obj is not None
+                and psi_traj is not None
+                and field_data is not None
+                and tlist is not None
+            ):
                 omega_center_cm = cfg["system"].get("params", {}).get("omega_cm")
                 plot_cfg = cfg.get("plot", {})
                 plot_all(
                     basis=basis,
-                    optimizer_like=type("O", (), {"tlist": tlist, "target_idx": target_idx if target_idx is not None else -1})(),
+                    optimizer_like=type(
+                        "O",
+                        (),
+                        {
+                            "tlist": tlist,
+                            "target_idx": target_idx if target_idx is not None else -1,
+                        },
+                    )(),
                     efield=efield_obj,
                     psi_traj=psi_traj,
                     field_data=field_data,
@@ -249,5 +278,3 @@ def run_from_config(
         "out_dir": str(out_path),
         "elapsed_sec": elapsed,
     }
-
-

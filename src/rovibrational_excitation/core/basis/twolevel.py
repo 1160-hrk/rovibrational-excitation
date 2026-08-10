@@ -4,9 +4,10 @@ Two-level system basis.
 
 import numpy as np
 
+from rovibrational_excitation.core.units.converters import converter
+
 from .base import BasisBase
 from .hamiltonian import Hamiltonian
-from rovibrational_excitation.core.units.converters import converter
 
 
 class TwoLevelBasis(BasisBase):
@@ -14,10 +15,10 @@ class TwoLevelBasis(BasisBase):
     Two-level system basis: |0⟩ and |1⟩.
 
     Simple quantum system with ground state |0⟩ and excited state |1⟩.
-    
+
     Parameters
     ----------
-    energy_gap : float, optional
+    energy_gap : float
         エネルギーギャップ（input_unitsで指定した単位）
     input_units : str, optional
         入力パラメータの単位（"rad/fs", "cm^-1", "THz", "eV"など）
@@ -34,24 +35,26 @@ class TwoLevelBasis(BasisBase):
         """Initialize two-level basis with physical parameters."""
         self.input_units = input_units
         self.output_units = output_units
-        
+
         # エネルギーギャップの単位変換と保存
         if energy_gap is None:
-            self.gap_rad_pfs = 1.0  # デフォルト値
+            raise ValueError("Physical constant energy_gap must be supplied explicitly")
+
+        if input_units in converter.get_supported_units("frequency"):
+            self.gap_rad_pfs = energy_gap * converter.convert_frequency(
+                1.0, input_units, "rad/fs"
+            )
+        elif input_units in converter.get_supported_units("energy"):
+            # エネルギー単位からrad/fsへの変換
+            gap_J = converter.convert_energy(energy_gap, input_units, "J")
+            self.gap_rad_pfs = gap_J / Hamiltonian._HBAR * 1e-15
         else:
-            if input_units in converter.get_supported_units("frequency"):
-                self.gap_rad_pfs = energy_gap * converter.convert_frequency(1.0, input_units, "rad/fs")
-            elif input_units in converter.get_supported_units("energy"):
-                # エネルギー単位からrad/fsへの変換
-                gap_J = converter.convert_energy(energy_gap, input_units, "J")
-                self.gap_rad_pfs = gap_J / Hamiltonian._HBAR * 1e-15
-            else:
-                raise ValueError(
-                    f"Unsupported input_units '{input_units}'.\n"
-                    f"Supported frequency units: {list(converter.get_supported_units('frequency'))}\n"
-                    f"Supported energy units: {list(converter.get_supported_units('energy'))}"
-                )
-        
+            raise ValueError(
+                f"Unsupported input_units '{input_units}'.\n"
+                f"Supported frequency units: {list(converter.get_supported_units('frequency'))}\n"
+                f"Supported energy units: {list(converter.get_supported_units('energy'))}"
+            )
+
         self.basis = np.array([[0], [1]])  # |0⟩, |1⟩
         self.index_map = {(0,): 0, (1,): 1}
 
@@ -117,7 +120,7 @@ class TwoLevelBasis(BasisBase):
             2x2 diagonal Hamiltonian object with unit information.
         """
         H0_matrix = np.diag(np.array([0.0, self.gap_rad_pfs]))
-        
+
         basis_info = {
             "basis_type": "TwoLevel",
             "size": 2,
@@ -125,9 +128,9 @@ class TwoLevelBasis(BasisBase):
             "input_units": self.input_units,
             "output_units": self.output_units,
         }
-        
+
         hamiltonian = Hamiltonian(H0_matrix, "rad/fs", basis_info)
-        
+
         # Convert to requested units
         if self.output_units == "J":
             return hamiltonian.to_energy_units()
@@ -169,12 +172,14 @@ class TwoLevelBasis(BasisBase):
         else:
             if energy_gap_units is None:
                 energy_gap_units = self.input_units
-            
+
             unit_key = energy_gap_units
 
             # Decide whether provided unit is frequency or energy and convert to rad/fs
             if unit_key in converter.get_supported_units("frequency"):
-                gap_rad_pfs = energy_gap * converter.convert_frequency(1.0, unit_key, "rad/fs")
+                gap_rad_pfs = energy_gap * converter.convert_frequency(
+                    1.0, unit_key, "rad/fs"
+                )
             elif unit_key in converter.get_supported_units("energy"):
                 # Convert to Joule first, then to rad/fs using ℏ
                 gap_J = converter.convert_energy(energy_gap, unit_key, "J")

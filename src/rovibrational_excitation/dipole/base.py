@@ -10,9 +10,10 @@ matrix for the requested axis in *internal* units.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Literal, Union, Dict, Tuple
+from typing import Literal, Union
 
 import numpy as np
+
 from rovibrational_excitation.core.units.converters import converter
 
 try:
@@ -33,6 +34,7 @@ else:
 # Helper
 # -----------------------------------------------------------------------------
 
+
 def _xp(backend: str):
     """Return NumPy or CuPy module depending on backend string."""
     if backend == "numpy":
@@ -48,6 +50,7 @@ def _xp(backend: str):
 # Base class
 # -----------------------------------------------------------------------------
 
+
 class DipoleMatrixBase(ABC):
     """Mixin / abstract base that consolidates common dipole-matrix logic."""
 
@@ -59,7 +62,7 @@ class DipoleMatrixBase(ABC):
     units_input: Literal["C*m", "D", "ea0"]
 
     # Cache: key = (axis, dense)
-    _cache: Dict[Tuple[str, bool], Array]
+    _cache: dict[tuple[str, bool], Array]
 
     # ------------------------------------------------------------------
     # Initialisation helper
@@ -112,7 +115,9 @@ class DipoleMatrixBase(ABC):
     # ------------------------------------------------------------------
     # Unit conversion (shared)
     # ------------------------------------------------------------------
-    def get_mu_in_units(self, axis: str, target_units: str, *, dense: bool | None = None) -> Array:  # type: ignore[valid-type]
+    def get_mu_in_units(
+        self, axis: str, target_units: str, *, dense: bool | None = None
+    ) -> Array:  # type: ignore[valid-type]
         """Return dipole matrix converted to *target_units*."""
         mat = self.mu(axis, dense=dense)
         if self.units == target_units:
@@ -138,7 +143,9 @@ class DipoleMatrixBase(ABC):
 
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
-        cached = ", ".join(f"{ax}({'dense' if d else 'sparse'})" for (ax, d) in self._cache)
+        cached = ", ".join(
+            f"{ax}({'dense' if d else 'sparse'})" for (ax, d) in self._cache
+        )
         return (
             f"<{self.__class__.__name__} mu0={self.mu0} units='{self.units}' "
             f"backend='{self.backend}' cached=[{cached}]>"
@@ -154,6 +161,8 @@ class DipoleMatrixBase(ABC):
 
         with h5py.File(path, "w") as h5:
             h5.attrs.update(dict(mu0=self.mu0, backend=self.backend, dense=self.dense))
+            if hasattr(self, "potential_type"):
+                h5.attrs["potential_type"] = self.potential_type
             for (ax, dn), mat in self._cache.items():
                 g = h5.create_group(f"{ax}_{'dense' if dn else 'sparse'}")
                 if dn:
@@ -172,10 +181,17 @@ class DipoleMatrixBase(ABC):
         import scipy.sparse as sp
 
         with h5py.File(path, "r") as h5:
+            physical_options = {}
+            if "potential_type" in h5.attrs:
+                potential_type = h5.attrs["potential_type"]
+                if isinstance(potential_type, bytes):
+                    potential_type = potential_type.decode()
+                physical_options["potential_type"] = str(potential_type)
             obj = cls(
                 mu0=float(h5.attrs["mu0"]),
                 backend=h5.attrs["backend"],
                 dense=bool(h5.attrs["dense"]),
+                **physical_options,
                 **kwargs,  # e.g., basis=...
             )  # type: ignore[arg-type]
 
@@ -192,4 +208,4 @@ class DipoleMatrixBase(ABC):
                     dat = g["data"][...]
                     mat = sp.coo_matrix((dat, (row, col)), shape=shape).tocsr()
                     obj._cache[(ax, False)] = mat
-        return obj 
+        return obj

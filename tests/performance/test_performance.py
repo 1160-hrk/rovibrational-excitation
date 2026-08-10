@@ -13,7 +13,6 @@ from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
 
-
 pytestmark = pytest.mark.performance
 
 
@@ -29,21 +28,21 @@ class MockDipole:
         self.mu_y = np.zeros((dim, dim), dtype=np.complex128)
         self.mu_z = np.zeros((dim, dim), dtype=np.complex128)
         self.units = "C*m"  # SI単位を使用
-    
+
     def get_mu_in_units(self, axis: str, unit: str):
         src = {"x": self.mu_x, "y": self.mu_y, "z": self.mu_z}[axis]
         if unit in ("C*m", "C·m", "Cm"):
             return src
         return converter.convert_dipole_moment(src, "C*m", unit)
-    
+
     def get_mu_x_SI(self):
         """Get μ_x in SI units (C·m)."""
         return self.mu_x
-    
+
     def get_mu_y_SI(self):
         """Get μ_y in SI units (C·m)."""
         return self.mu_y
-    
+
     def get_mu_z_SI(self):
         """Get μ_z in SI units (C·m)."""
         return self.mu_z
@@ -53,7 +52,9 @@ class MockDipole:
 def test_large_system_performance():
     """大きなシステムでのパフォーマンステスト"""
     # 大きな基底
-    basis = LinMolBasis(V_max=5, J_max=5, use_M=False)
+    basis = LinMolBasis(
+        V_max=5, J_max=5, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dim = basis.size()  # 36次元
 
     H0 = basis.generate_H0()
@@ -77,7 +78,9 @@ def test_large_system_performance():
 
     # 実行時間測定
     start_time = time.time()
-    result = SchrodingerPropagator().propagate(H0, efield, dipole, psi0, return_traj=True)
+    result = SchrodingerPropagator().propagate(
+        H0, efield, dipole, psi0, return_traj=True
+    )
     end_time = time.time()
 
     execution_time = end_time - start_time
@@ -95,10 +98,7 @@ def test_very_large_system():
     """非常に大きなシステムでのスケーラビリティテスト"""
     # より大きな基底（使用注意：メモリとCPU集約的）
     omega = 5.0
-    basis = VibLadderBasis(
-        V_max=20,
-        omega = omega
-        )  # 21次元
+    basis = VibLadderBasis(V_max=20, omega=omega, delta_omega=0.0)  # 21次元
     dim = basis.size()
 
     H0 = basis.generate_H0()
@@ -111,7 +111,7 @@ def test_very_large_system():
         gaussian_fwhm,
         duration=20,
         t_center=0.0,
-        carrier_freq=omega/(2*np.pi),
+        carrier_freq=omega / (2 * np.pi),
         amplitude=1e9,
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
@@ -139,7 +139,9 @@ def test_very_large_system():
 
 def test_long_time_evolution():
     """長時間発展でのパフォーマンステスト"""
-    basis = LinMolBasis(V_max=3, J_max=3, use_M=False)
+    basis = LinMolBasis(
+        V_max=3, J_max=3, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dim = basis.size()
 
     H0 = basis.generate_H0()
@@ -162,7 +164,9 @@ def test_long_time_evolution():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = SchrodingerPropagator().propagate(H0, efield, dipole, psi0, return_traj=True)
+    result = SchrodingerPropagator().propagate(
+        H0, efield, dipole, psi0, return_traj=True
+    )
     end_time = time.time()
 
     execution_time = end_time - start_time
@@ -180,7 +184,9 @@ def test_long_time_evolution():
 def test_memory_efficiency():
     """メモリ効率のテスト"""
     # 中程度のシステム
-    basis = LinMolBasis(V_max=4, J_max=2, use_M=False)
+    basis = LinMolBasis(
+        V_max=4, J_max=2, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dim = basis.size()
 
     H0 = basis.generate_H0()
@@ -218,7 +224,9 @@ def test_memory_efficiency():
 
 def test_stride_performance():
     """ストライドによるパフォーマンス改善テスト"""
-    basis = LinMolBasis(V_max=3, J_max=3, use_M=False)
+    basis = LinMolBasis(
+        V_max=3, J_max=3, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dim = basis.size()
 
     H0 = basis.generate_H0()
@@ -266,13 +274,12 @@ def test_numerical_stability_large_system():
     # より小さなシステムで安定性を確保
     omega = 1.0
     basis = LinMolBasis(
-        V_max=4, J_max=2, use_M=True,
-        omega=omega
+        V_max=4, J_max=2, use_M=True, omega=omega, B=0.001, alpha=0.0, delta_omega=0.0
     )
     dim = basis.size()
 
     H0 = basis.generate_H0()
-    dipole = LinMolDipoleMatrix(basis, mu0=1e-30)
+    dipole = LinMolDipoleMatrix(basis, mu0=1e-30, potential_type="harmonic")
 
     # パルス電場設定
     t_list = np.linspace(-100, 100, 10001)
@@ -281,7 +288,7 @@ def test_numerical_stability_large_system():
         envelope_func=gaussian_fwhm,
         duration=20.0,
         t_center=0.0,
-        carrier_freq=omega/(2*np.pi),  # 弱い場で数値誤差を最小化
+        carrier_freq=omega / (2 * np.pi),  # 弱い場で数値誤差を最小化
         amplitude=1e8,  # 弱い相互作用
         polarization=np.array([1.0, 0.0]),
     )
@@ -289,7 +296,6 @@ def test_numerical_stability_large_system():
     psi0 = np.zeros(dim, dtype=np.complex128)
     psi0[0] = 1.0
 
-    
     result = SchrodingerPropagator().propagate(
         H0, Efield, dipole, psi0, return_traj=True, sample_stride=2
     )
@@ -297,8 +303,10 @@ def test_numerical_stability_large_system():
     norms = [np.linalg.norm(psi) for psi in result]
     for i, norm in enumerate(norms):
         if i > 0:  # 初期状態以外
-            assert np.isclose(norm, 1.0, atol=1e-6), f"時刻{i}でノルムが保存されていません: {norm}"
-    
+            assert np.isclose(norm, 1.0, atol=1e-6), (
+                f"時刻{i}でノルムが保存されていません: {norm}"
+            )
+
     # NaN値のチェック
     assert not np.any(np.isnan(result)), "NaN values found in trajectory"
 
@@ -307,7 +315,9 @@ def test_basis_generation_performance():
     """基底生成のパフォーマンステスト"""
     # 大きな基底の生成時間
     start_time = time.time()
-    basis_large = LinMolBasis(V_max=10, J_max=10, use_M=True)
+    basis_large = LinMolBasis(
+        V_max=10, J_max=10, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     generation_time = time.time() - start_time
 
     # 基底生成は高速であるべき
@@ -353,7 +363,9 @@ def test_electric_field_performance():
 @pytest.mark.slow
 def test_backend_performance_comparison():
     """バックエンド間のパフォーマンス比較"""
-    basis = LinMolBasis(V_max=3, J_max=3, use_M=False)
+    basis = LinMolBasis(
+        V_max=3, J_max=3, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dim = basis.size()
 
     H0 = basis.generate_H0()
@@ -376,7 +388,9 @@ def test_backend_performance_comparison():
 
     # NumPyバックエンド
     start_time = time.time()
-    result_numpy = SchrodingerPropagator(backend="numpy").propagate(H0, efield, dipole, psi0)
+    result_numpy = SchrodingerPropagator(backend="numpy").propagate(
+        H0, efield, dipole, psi0
+    )
     numpy_time = time.time() - start_time
 
     # 結果の一貫性確認

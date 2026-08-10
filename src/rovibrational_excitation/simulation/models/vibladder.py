@@ -15,14 +15,14 @@ def build_vibladder(params: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
     basis = VibLadderBasis(
         params["V_max"],
         omega=params["omega_rad_phz"],
-        delta_omega=params.get("delta_omega_rad_phz", 0.0),
+        delta_omega=params["delta_omega_rad_phz"],
     )
     state = build_initial_state(basis, params.get("initial_states", [0]))
     hamiltonian = basis.generate_H0()
     dipole = VibLadderDipoleMatrix(
         basis,
         mu0=params["mu0_Cm"],
-        potential_type=params.get("potential_type", "harmonic"),
+        potential_type=params["potential_type"],
         backend=params.get("backend", "numpy"),
     )
     return basis, state, hamiltonian, dipole

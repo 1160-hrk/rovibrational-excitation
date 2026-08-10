@@ -62,11 +62,13 @@ def _problem(j_max: int, steps: int, dt: float):
         use_M=True,
         omega=1.0,
         B=0.01,
+        alpha=0.0,
+        delta_omega=0.0,
         input_units="rad/fs",
         output_units="rad/fs",
     )
     h0 = np.asarray(basis.generate_H0().matrix)
-    dipole = LinMolDipoleMatrix(basis, mu0=1.0)
+    dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
     mu_x = np.asarray(dipole.mu_x)
     mu_y = np.asarray(dipole.mu_y)
     initial = np.zeros(basis.size(), dtype=np.complex128)

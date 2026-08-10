@@ -120,7 +120,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         ElectricField,
         gaussian_fwhm,
     )
-    from rovibrational_excitation.core.nondimensional.analysis import analyze_regime
+    from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
     from rovibrational_excitation.core.propagation.schrodinger import (
         SchrodingerPropagator,
     )
@@ -145,13 +145,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     E = ElectricField(tlist=t_E)
     E.add_dispersed_Efield(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
-        duration=params.get(
-            "duration",
-            params.get(
-                "pulse_duration",
-                (params["t_end"] - params["t_start"]) / 2,
-            ),
-        ),
+        duration=params["duration"],
         t_center=params.get("t_center", 0.0),
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],

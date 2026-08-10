@@ -10,7 +10,7 @@ from rovibrational_excitation.core.basis import TwoLevelBasis
 
 def test_twolevel_basic():
     """基本的な機能のテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     # サイズは常に2
     assert basis.size() == 2
@@ -22,7 +22,7 @@ def test_twolevel_basic():
 
 def test_twolevel_get_index():
     """インデックス取得のテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     # 整数での指定
     assert basis.get_index(0) == 0
@@ -43,7 +43,7 @@ def test_twolevel_get_index():
 
 def test_twolevel_get_index_errors():
     """get_indexのエラーケースのテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     # 無効な整数
     with pytest.raises(ValueError):
@@ -67,7 +67,7 @@ def test_twolevel_get_index_errors():
 
 def test_twolevel_get_state():
     """状態取得のテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     state0 = basis.get_state(0)
     state1 = basis.get_state(1)
@@ -78,7 +78,7 @@ def test_twolevel_get_state():
 
 def test_twolevel_get_state_errors():
     """get_stateのエラーケースのテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     with pytest.raises(ValueError):
         basis.get_state(2)
@@ -90,14 +90,16 @@ def test_twolevel_get_state_errors():
 def test_twolevel_generate_H0():
     """ハミルトニアン生成のテスト"""
     # デフォルトパラメータ（1.0 rad/fsのギャップ）
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
     H0 = basis.generate_H0()
-    
+
     # デフォルトではJ単位で出力
     assert H0.units == "J"
-    
+
     # 周波数単位で出力する場合
-    basis_freq = TwoLevelBasis(energy_gap=1.0, input_units="rad/fs", output_units="rad/fs")
+    basis_freq = TwoLevelBasis(
+        energy_gap=1.0, input_units="rad/fs", output_units="rad/fs"
+    )
     H0_freq = basis_freq.generate_H0()
     expected = np.diag([0.0, 1.0])
     np.testing.assert_array_equal(H0_freq.matrix, expected)
@@ -106,7 +108,7 @@ def test_twolevel_generate_H0():
 
 def test_twolevel_hamiltonian_properties():
     """ハミルトニアンの性質のテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
     H0 = basis.generate_H0()
 
     # Hamiltonianオブジェクトから行列を取得
@@ -124,7 +126,7 @@ def test_twolevel_hamiltonian_properties():
 
 def test_twolevel_repr():
     """文字列表現のテスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
     repr_str = repr(basis)
 
     assert "TwoLevelBasis" in repr_str
@@ -134,7 +136,7 @@ def test_twolevel_repr():
 
 def test_twolevel_index_map_consistency():
     """index_mapの一貫性テスト"""
-    basis = TwoLevelBasis()
+    basis = TwoLevelBasis(energy_gap=1.0)
 
     for i in range(basis.size()):
         state = basis.get_state(i)
@@ -144,8 +146,8 @@ def test_twolevel_index_map_consistency():
 
 def test_twolevel_multiple_instances():
     """複数インスタンスの独立性テスト"""
-    basis1 = TwoLevelBasis()
-    basis2 = TwoLevelBasis()
+    basis1 = TwoLevelBasis(energy_gap=1.0)
+    basis2 = TwoLevelBasis(energy_gap=1.0)
 
     # 同じ結果を返すこと
     assert basis1.size() == basis2.size()

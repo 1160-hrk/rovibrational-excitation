@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from ..validation import validate_model_parameters
 from .linmol import build_linmol
 from .twolevel import build_twolevel
 from .vibladder import build_vibladder
@@ -30,7 +31,7 @@ class ModelComponents:
 
 def build_model(params: dict[str, Any]) -> ModelComponents:
     """Build a configured model using the same dispatch as the existing runner."""
-    basis_type = params.get("basis_type", "linmol").lower()
+    basis_type = validate_model_parameters(params)
     builders = {
         "linmol": (build_linmol, CouplingSpec("cartesian")),
         "twolevel": (build_twolevel, CouplingSpec("scalar", axis="x")),

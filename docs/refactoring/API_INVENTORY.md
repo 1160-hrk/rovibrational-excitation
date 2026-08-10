@@ -1,6 +1,6 @@
 # API and entry-point inventory
 
-Last verified: 2026-07-31
+Last verified: 2026-08-10
 Scope: Phase 0 task P0.1
 Implementation baseline: `613ce93`
 
@@ -101,11 +101,12 @@ temporary.
 | `core.propagation.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
 | `core.propagation.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
 | `core.propagation.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
-| `core.nondimensional` | `NondimensionalizationScales`, `NondimensionalConverter`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `auto_nondimensionalize`, `create_dimensionless_time_array`, `NondimensionalAnalyzer`, `analyze_regime`, `verify_nondimensional_equation`, `optimize_timestep_for_coupling`, `calculate_nondimensionalization_scales_strict`, `LambdaScalingStrategy`, `EffectiveFieldStrategy`, `EffectiveDipoleStrategy`, `NondimensionalizedSystem`, `ExplicitLambdaSystem`, `create_effective_field_scaling`, `create_effective_dipole_scaling`, `create_unified_scaling_approach`, `recommend_lambda_strategy`, `convert_default_units_to_SI_base`, `dimensionalize_wavefunction`, `get_physical_time`, `create_SI_demo_parameters` | `dynamics.scaling` with one explicit scaling representation | temporary public; experimental/demo and duplicate strategy APIs delete after Phase 4 comparison |
+| `core.nondimensional` | `NondimensionalizationScales`, `ScaleValue`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `determine_SI_based_scales`, `create_dimensionless_time_array`, `analyze_regime`, `dimensionalize_wavefunction`, `get_physical_time` | `dynamics.scaling` with one explicit scaling representation | strict temporary public surface; move without adding competing strategies |
 
-The 25-name nondimensional surface exposes competing strategies and policy
-helpers. No individual deletion is authorized until dimensional-equivalence
-tests identify the actual production path.
+The former 25-name surface was reduced under D-022 after dimensional-equivalence
+and strict-generator tests identified the production path. Compatibility
+wrappers, competing lambda strategies, heuristic verification, auto-timestep,
+and demo factories are deleted rather than deprecated.
 
 ### 3.4 Models and dipoles
 

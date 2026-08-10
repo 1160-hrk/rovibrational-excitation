@@ -33,7 +33,9 @@ class TestVibLadderDipoleMatrix:
 
     def test_basic_initialization(self):
         """基本初期化テスト"""
-        basis = VibLadderBasis(V_max=3, omega=1.0, input_units="rad/fs")
+        basis = VibLadderBasis(
+            V_max=3, omega=1.0, input_units="rad/fs", delta_omega=0.0
+        )
         dipole = VibLadderDipoleMatrix(basis, mu0=2.0, potential_type="harmonic")
 
         assert dipole.mu0 == 2.0
@@ -43,21 +45,21 @@ class TestVibLadderDipoleMatrix:
     def test_invalid_basis_type(self):
         """現仕様: 基底タイプの厳密検証は行わない（例外は発生しない）"""
         try:
-            VibLadderDipoleMatrix("invalid_basis", mu0=1.0)
+            VibLadderDipoleMatrix("invalid_basis", mu0=1.0, potential_type="harmonic")
         except Exception as e:  # 現行仕様では例外を出さない想定
             pytest.fail(f"Unexpected exception raised: {e}")
 
     def test_invalid_potential_type(self):
-        """現仕様: potential_type の厳密検証は行わない（例外は発生しない）"""
-        basis = VibLadderBasis(V_max=2)
-        try:
-            VibLadderDipoleMatrix(basis, potential_type="invalid")
-        except Exception as e:
-            pytest.fail(f"Unexpected exception raised: {e}")
+        """Unknown potential names are rejected at construction."""
+        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0)
+        with pytest.raises(ValueError, match="potential_type"):
+            VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="invalid")
 
     def test_harmonic_z_component(self):
         """調和振動子z成分の詳細テスト"""
-        basis = VibLadderBasis(V_max=3, omega=1.0, input_units="rad/fs")
+        basis = VibLadderBasis(
+            V_max=3, omega=1.0, input_units="rad/fs", delta_omega=0.0
+        )
         dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_z = dipole.mu_z
@@ -114,8 +116,8 @@ class TestVibLadderDipoleMatrix:
 
     def test_x_y_components_zero(self):
         """x, y成分は純振動系では0"""
-        basis = VibLadderBasis(V_max=2)
-        dipole = VibLadderDipoleMatrix(basis, mu0=1.0)
+        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0)
+        dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y
@@ -126,8 +128,8 @@ class TestVibLadderDipoleMatrix:
 
     def test_caching_mechanism(self):
         """キャッシュ機構のテスト"""
-        basis = VibLadderBasis(V_max=2)
-        dipole = VibLadderDipoleMatrix(basis, mu0=1.0)
+        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0)
+        dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         # 初回アクセス
         mu_z_1 = dipole.mu_z
@@ -140,8 +142,8 @@ class TestVibLadderDipoleMatrix:
 
     def test_invalid_axis(self):
         """不正な軸指定でのエラー"""
-        basis = VibLadderBasis(V_max=2)
-        dipole = VibLadderDipoleMatrix(basis, mu0=1.0)
+        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0)
+        dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         with pytest.raises(ValueError, match="'x', 'y' or 'z'"):
             dipole.mu("invalid")
@@ -253,7 +255,7 @@ class TestMorseVibrationDetailed:
             V_max=10, omega=1.0, delta_omega=0.1, input_units="rad/fs"
         )
         with pytest.raises(ValueError, match="Morse limit 9"):
-            VibLadderDipoleMatrix(basis, potential_type="morse")
+            VibLadderDipoleMatrix(basis, potential_type="morse", mu0=1.0)
 
     def test_morse_high_v_behavior(self):
         """高振動数での非調和効果"""
@@ -274,7 +276,7 @@ class TestDipolePhysicalConsistency:
 
     def test_viblad_matrix_properties(self):
         """VibLadder行列の物理的性質"""
-        basis = VibLadderBasis(V_max=3)
+        basis = VibLadderBasis(V_max=3, omega=1.0, delta_omega=0.0)
         dipole = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_z = dipole.mu_z
@@ -295,9 +297,9 @@ class TestDipolePhysicalConsistency:
 
     def test_scaling_consistency(self):
         """スケーリングファクターの一貫性"""
-        basis = VibLadderBasis(V_max=2)
-        dipole1 = VibLadderDipoleMatrix(basis, mu0=1.0)
-        dipole2 = VibLadderDipoleMatrix(basis, mu0=2.0)
+        basis = VibLadderBasis(V_max=2, omega=1.0, delta_omega=0.0)
+        dipole1 = VibLadderDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
+        dipole2 = VibLadderDipoleMatrix(basis, mu0=2.0, potential_type="harmonic")
 
         mu_z1 = dipole1.mu_z
         mu_z2 = dipole2.mu_z
@@ -307,10 +309,10 @@ class TestDipolePhysicalConsistency:
 
     def test_different_potential_types(self):
         """異なるポテンシャルタイプでの行列形状一貫性"""
-        basis = VibLadderBasis(V_max=2, delta_omega=0.1)
+        basis = VibLadderBasis(V_max=2, delta_omega=0.1, omega=1.0)
 
-        dipole_harm = VibLadderDipoleMatrix(basis, potential_type="harmonic")
-        dipole_morse = VibLadderDipoleMatrix(basis, potential_type="morse")
+        dipole_harm = VibLadderDipoleMatrix(basis, potential_type="harmonic", mu0=1.0)
+        dipole_morse = VibLadderDipoleMatrix(basis, potential_type="morse", mu0=1.0)
 
         # 形状は同じ
         assert dipole_harm.mu_z.shape == dipole_morse.mu_z.shape

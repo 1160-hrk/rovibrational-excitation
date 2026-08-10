@@ -5,7 +5,10 @@ import pytest
 
 from rovibrational_excitation.core.basis import Hamiltonian
 from rovibrational_excitation.core.electric_field import ElectricField, ZeroField
-from rovibrational_excitation.core.nondimensional import nondimensionalize_system
+from rovibrational_excitation.core.nondimensional import (
+    nondimensionalize_from_objects,
+    nondimensionalize_system,
+)
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 
 HBAR = 1.054571817e-34
@@ -17,6 +20,18 @@ def _constant_field(values: np.ndarray) -> ElectricField:
     return field
 
 
+def test_array_api_requires_explicit_hamiltonian_and_time_units():
+    zero = np.zeros((2, 2))
+    field = ZeroField(np.linspace(0.0, 0.2, 5))
+    with pytest.raises(TypeError, match="H0_units"):
+        nondimensionalize_system(zero, zero, zero, field)
+
+
+def test_object_api_requires_explicit_coupling_semantics():
+    with pytest.raises(TypeError, match="coupling_axes"):
+        nondimensionalize_from_objects(None, None, None)
+
+
 def test_scaling_uses_centered_spectrum_and_complete_generator_reference():
     h0 = np.array([[3.0e-21, 4.0e-22], [4.0e-22, 8.0e-21]])
     mu_x = np.array([[0.0, 2.0e-30], [2.0e-30, 0.0]])
@@ -24,7 +39,7 @@ def test_scaling_uses_centered_spectrum_and_complete_generator_reference():
     field = _constant_field(np.tile([2.0e8, 0.0], (5, 1)))
 
     h0_prime, mu_x_prime, _, field_prime, _, _, scales = nondimensionalize_system(
-        h0, mu_x, mu_y, field
+        h0, mu_x, mu_y, field, H0_units="energy", time_units="fs"
     )
 
     eigenvalues = np.linalg.eigvalsh(h0)
@@ -52,7 +67,9 @@ def test_gapless_driven_system_uses_interaction_energy():
     mu_x = np.array([[0.0, 3.0e-30], [3.0e-30, 0.0]])
     field = _constant_field(np.tile([4.0e8, 0.0], (5, 1)))
 
-    *_, scales = nondimensionalize_system(h0, mu_x, np.zeros_like(mu_x), field)
+    *_, scales = nondimensionalize_system(
+        h0, mu_x, np.zeros_like(mu_x), field, H0_units="energy", time_units="fs"
+    )
 
     assert scales.free_energy_span == 0.0
     assert scales.E0 == pytest.approx(1.2e-21)
@@ -66,7 +83,9 @@ def test_regular_electric_field_that_is_identically_zero_is_rejected():
     mu = np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]])
 
     with pytest.raises(ValueError, match="ZeroField"):
-        nondimensionalize_system(h0, mu, np.zeros_like(mu), field)
+        nondimensionalize_system(
+            h0, mu, np.zeros_like(mu), field, H0_units="energy", time_units="fs"
+        )
 
 
 def test_explicit_zero_field_has_inactive_field_scale_and_zero_coupling():
@@ -75,7 +94,7 @@ def test_explicit_zero_field_has_inactive_field_scale_and_zero_coupling():
     mu = np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]])
 
     _, _, _, field_prime, _, _, scales = nondimensionalize_system(
-        h0, mu, np.zeros_like(mu), field
+        h0, mu, np.zeros_like(mu), field, H0_units="energy", time_units="fs"
     )
 
     assert scales.field_scale.value is None
@@ -91,7 +110,9 @@ def test_driven_problem_with_zero_coupling_operator_is_rejected():
     zero = np.zeros((2, 2))
 
     with pytest.raises(ValueError, match="coupling dipole"):
-        nondimensionalize_system(h0, zero, zero, field)
+        nondimensionalize_system(
+            h0, zero, zero, field, H0_units="energy", time_units="fs"
+        )
 
 
 def test_all_zero_generator_requires_high_level_trivial_evolution():
@@ -99,7 +120,9 @@ def test_all_zero_generator_requires_high_level_trivial_evolution():
     zero = np.zeros((2, 2))
 
     with pytest.raises(ValueError, match="no characteristic energy"):
-        nondimensionalize_system(zero, zero, zero, field)
+        nondimensionalize_system(
+            zero, zero, zero, field, H0_units="energy", time_units="fs"
+        )
 
 
 class _TwoLevelDipole:
@@ -169,6 +192,8 @@ def test_explicit_reference_energy_records_provenance():
         np.zeros_like(mu),
         field,
         energy_scale_J=7.0e-21,
+        H0_units="energy",
+        time_units="fs",
     )
 
     assert scales.E0 == pytest.approx(7.0e-21)
@@ -187,6 +212,8 @@ def test_nonhermitian_coupling_operator_is_rejected():
             nonhermitian_mu,
             np.zeros_like(nonhermitian_mu),
             field,
+            H0_units="energy",
+            time_units="fs",
         )
 
 

@@ -79,7 +79,9 @@ def test_schrodinger_propagation():
     tlist = np.linspace(0, 1, 3)
     ef = ElectricField(tlist)
     ef.Efield[:, 0] = 1.0
-    LinMolBasis(V_max=0, J_max=1, use_M=False)
+    LinMolBasis(
+        V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
     dip = DummyDipole()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
@@ -91,7 +93,9 @@ def test_mixed_state_propagation():
     tlist = np.linspace(0, 1, 3)
     ef = ElectricField(tlist)
     ef.Efield[:, 0] = 1.0
-    LinMolBasis(V_max=0, J_max=1, use_M=False)
+    LinMolBasis(
+        V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     H0 = Hamiltonian(
         np.diag([0.0, 1.0]), units="J"
     )  # mixed_state_propagationは内部でschrodinger_propagationを呼ぶためHamiltonianが必要

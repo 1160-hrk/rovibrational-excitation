@@ -25,7 +25,7 @@ class ScaleValue:
 class NondimensionalizationScales:
     """
     無次元化のスケールファクターを管理するクラス
-    
+
     Attributes
     ----------
     E0 : float
@@ -72,7 +72,9 @@ class NondimensionalizationScales:
             interaction_energy,
             physical_coupling_ratio,
         )
-        if any(value is not None and not np.isfinite(value) for value in optional_values):
+        if any(
+            value is not None and not np.isfinite(value) for value in optional_values
+        ):
             raise ValueError("optional scale metadata must be finite when active")
         # 値の検証
         if E0 <= 0:
@@ -94,9 +96,7 @@ class NondimensionalizationScales:
         self.energy_offset = energy_offset
         self.free_energy_span = E0 if free_energy_span is None else free_energy_span
         self.interaction_energy = (
-            E0 * lambda_coupling
-            if interaction_energy is None
-            else interaction_energy
+            E0 * lambda_coupling if interaction_energy is None else interaction_energy
         )
         self.physical_coupling_ratio = physical_coupling_ratio
         self.reference_energy = ScaleValue(E0, energy_source, energy_method)
@@ -148,7 +148,7 @@ class NondimensionalizationScales:
     def get_regime(self) -> str:
         """
         λに基づく物理レジーム判定
-        
+
         Returns
         -------
         str
@@ -159,31 +159,6 @@ class NondimensionalizationScales:
         if self.physical_coupling_ratio is None:
             return "gapless_driven"
         return "unclassified"
-
-    # Legacy heuristic APIs intentionally remain as explicit errors for callers
-    # that have not yet migrated to an explicit grid and convergence study.
-    def get_recommended_timestep_dimensionless(self, *args, **kwargs) -> float:
-        del args, kwargs
-        raise RuntimeError(
-            "heuristic timestep selection was removed; provide the "
-            "ElectricField grid explicitly and validate convergence"
-        )
-
-    get_recommended_timestep_fs = get_recommended_timestep_dimensionless
-    get_recommended_timestep = get_recommended_timestep_dimensionless
-
-    def analyze_timestep_requirements(self):
-        raise RuntimeError(
-            "heuristic timestep analysis was removed; use a convergence study"
-        )
-
-    @classmethod
-    def from_physical_system(cls, *args, **kwargs):
-        del cls, args, kwargs
-        raise RuntimeError(
-            "from_physical_system() was removed because it invented zero "
-            "dipole and zero-field scales; use determine_SI_based_scales()"
-        )
 
     # -----------------------------
     # サマリー表示
@@ -198,10 +173,7 @@ class NondimensionalizationScales:
         field = (
             "inactive"
             if self.Efield0 is None
-            else (
-                f"{self.get_field_scale_MV_cm():.3f} MV/cm "
-                f"({self.Efield0:.3e} V/m)"
-            )
+            else (f"{self.get_field_scale_MV_cm():.3f} MV/cm ({self.Efield0:.3e} V/m)")
         )
         return "\n".join(
             [

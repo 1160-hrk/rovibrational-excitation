@@ -219,6 +219,7 @@ def build_workloads(field_points: int = 4001) -> list[Workload]:
         lin_dipole = LinMolDipoleMatrix(
             lin_basis,
             mu0=1.0e-30,
+            potential_type="harmonic",
             dense=storage == "dense",
         )
         workloads.append(

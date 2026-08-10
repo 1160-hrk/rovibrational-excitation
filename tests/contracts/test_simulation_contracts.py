@@ -20,6 +20,7 @@ def _base_case(**overrides):
     case = {
         "basis_type": "twolevel",
         "energy_gap": 0.2,
+        "energy_gap_units": "rad/fs",
         "mu0_Cm": 3.0e-30,
         "t_start": -0.5,
         "t_end": 0.5,
@@ -59,6 +60,7 @@ def test_time_grid_rejects_span_that_solver_would_truncate():
             "V_max": 2,
             "omega_rad_phz": 0.2,
             "delta_omega_rad_phz": 0.0,
+            "potential_type": "harmonic",
         },
     ],
 )
@@ -97,6 +99,38 @@ def test_validation_rejects_missing_physical_parameter_before_building():
     del params["mu0_Cm"]
 
     with pytest.raises(SimulationConfigurationError, match="mu0_Cm"):
+        validate_simulation_case(params)
+
+
+def test_validation_rejects_missing_duration():
+    params = _base_case()
+    del params["duration"]
+
+    with pytest.raises(SimulationConfigurationError, match="duration"):
+        validate_simulation_case(params)
+
+
+def test_validation_rejects_unknown_potential_before_model_construction():
+    params = _base_case(
+        basis_type="vibladder",
+        V_max=2,
+        omega_rad_phz=0.2,
+        delta_omega_rad_phz=0.0,
+        potential_type="quadratic",
+    )
+
+    with pytest.raises(SimulationConfigurationError, match="potential_type"):
+        validate_simulation_case(params)
+
+
+def test_validation_rejects_removed_pulse_duration_alias():
+    params = _base_case(pulse_duration=0.3)
+    params.pop("duration")
+
+    with pytest.raises(
+        SimulationConfigurationError,
+        match="pulse_duration was removed",
+    ):
         validate_simulation_case(params)
 
 

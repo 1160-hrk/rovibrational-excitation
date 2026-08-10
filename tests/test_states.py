@@ -5,11 +5,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis, StateVector, DensityMatrix
+from rovibrational_excitation.core.basis import DensityMatrix, LinMolBasis, StateVector
 
 
 def test_statevector_basic():
-    basis = LinMolBasis(V_max=0, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv = StateVector(basis)
     # 初期状態はゼロ
     assert np.all(sv.data == 0)
@@ -31,7 +33,9 @@ def test_statevector_basic():
 
 
 def test_densitymatrix_basic():
-    basis = LinMolBasis(V_max=0, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv = StateVector(basis)
     sv.set_state([0, 0])
     dm = DensityMatrix(basis)
@@ -57,7 +61,9 @@ def test_densitymatrix_basic():
 
 def test_statevector_advanced():
     """StateVectorの高度なテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv = StateVector(basis)
 
     # 重ね合わせ状態の作成
@@ -86,13 +92,17 @@ def test_statevector_advanced():
 def test_statevector_different_basis():
     """異なる基底でのStateVectorテスト"""
     # use_M=True
-    basis_with_m = LinMolBasis(V_max=1, J_max=1, use_M=True)
+    basis_with_m = LinMolBasis(
+        V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv_with_m = StateVector(basis_with_m)
     sv_with_m.set_state([0, 0, 0])  # V=0, J=0, M=0
     assert np.isclose(sv_with_m.norm(), 1.0)
 
     # use_M=False
-    basis_no_m = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis_no_m = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv_no_m = StateVector(basis_no_m)
     sv_no_m.set_state([0, 0])  # V=0, J=0
     assert np.isclose(sv_no_m.norm(), 1.0)
@@ -103,7 +113,9 @@ def test_statevector_different_basis():
 
 def test_densitymatrix_advanced():
     """DensityMatrixの高度なテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     dm = DensityMatrix(basis)
 
     # 統計混合状態
@@ -120,7 +132,9 @@ def test_densitymatrix_advanced():
 
 def test_densitymatrix_from_pure_states():
     """純粋状態からの密度行列生成テスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)  # 2状態系
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )  # 2状態系
 
     # 基底状態
     sv1 = StateVector(basis)
@@ -154,7 +168,9 @@ def test_densitymatrix_from_pure_states():
 
 def test_densitymatrix_coherence():
     """密度行列のコヒーレンスのテスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # 位相付き重ね合わせ状態
     sv = StateVector(basis)
@@ -174,7 +190,9 @@ def test_densitymatrix_coherence():
 
 def test_state_operations():
     """状態操作のテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # 複数状態の重ね合わせ
     sv = StateVector(basis)
@@ -196,7 +214,9 @@ def test_state_operations():
 
 def test_density_matrix_mixed_states():
     """混合状態の密度行列テスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # 完全混合状態（最大エントロピー）
     dm_mixed = DensityMatrix(basis)
@@ -220,7 +240,9 @@ def test_density_matrix_mixed_states():
 
 def test_error_handling():
     """エラーハンドリングのテスト"""
-    basis = LinMolBasis(V_max=1, J_max=0, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=0, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     # StateVectorエラー
     sv = StateVector(basis)
@@ -235,7 +257,9 @@ def test_error_handling():
 
 def test_large_system():
     """大きなシステムでのテスト"""
-    basis = LinMolBasis(V_max=3, J_max=3, use_M=False)
+    basis = LinMolBasis(
+        V_max=3, J_max=3, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
 
     sv = StateVector(basis)
     dm = DensityMatrix(basis)
@@ -258,7 +282,9 @@ def test_large_system():
 
 def test_state_vector_complex_coefficients():
     """複素係数を持つ状態ベクトルのテスト"""
-    basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+    basis = LinMolBasis(
+        V_max=1, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+    )
     sv = StateVector(basis)
 
     # 複素係数で状態を手動設定

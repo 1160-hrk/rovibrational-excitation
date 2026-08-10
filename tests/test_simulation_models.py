@@ -27,6 +27,7 @@ from rovibrational_excitation.simulation.runner import _run_one
                 "V_max": 2,
                 "omega_rad_phz": 1.0,
                 "delta_omega_rad_phz": 0.01,
+                "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
             },
             3,
@@ -40,6 +41,8 @@ from rovibrational_excitation.simulation.runner import _run_one
                 "omega_rad_phz": 1.0,
                 "delta_omega_rad_phz": 0.01,
                 "B_rad_phz": 0.001,
+                "alpha_rad_phz": 0.0,
+                "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
             },
             8,
@@ -63,6 +66,7 @@ def test_linmol_rejects_morse_with_zero_anharmonicity():
         "use_M": True,
         "omega_rad_phz": 1.0,
         "delta_omega_rad_phz": 0.0,
+        "alpha_rad_phz": 0.0,
         "B_rad_phz": 0.001,
         "mu0_Cm": 1e-30,
         "potential_type": "morse",
@@ -79,6 +83,7 @@ def test_build_model_constructs_coherent_superposition():
             "energy_gap": 1.0,
             "mu0_Cm": 1e-30,
             "initial_states": [0, 1],
+            "energy_gap_units": "rad/fs",
         }
     )
 
@@ -89,20 +94,28 @@ def test_build_model_constructs_coherent_superposition():
 @pytest.mark.parametrize(
     ("params", "missing"),
     [
-        ({"basis_type": "twolevel", "mu0_Cm": 1e-30}, "energy_gap"),
-        ({"basis_type": "twolevel", "energy_gap": 1.0}, "mu0_Cm"),
+        (
+            {"basis_type": "twolevel", "energy_gap_units": "rad/fs", "mu0_Cm": 1e-30},
+            "energy_gap",
+        ),
+        (
+            {"basis_type": "twolevel", "energy_gap": 1.0, "energy_gap_units": "rad/fs"},
+            "mu0_Cm",
+        ),
         (
             {
                 "basis_type": "vibladder",
                 "V_max": 1,
                 "omega_rad_phz": 1.0,
+                "delta_omega_rad_phz": 0.0,
+                "potential_type": "harmonic",
             },
             "mu0_Cm",
         ),
     ],
 )
 def test_build_model_requires_physical_scale_parameters(params, missing):
-    with pytest.raises(KeyError, match=missing):
+    with pytest.raises(ValueError, match=missing):
         build_model(params)
 
 
@@ -112,7 +125,7 @@ def test_build_model_rejects_unknown_basis_type():
 
 
 def test_build_model_preserves_missing_parameter_error():
-    with pytest.raises(KeyError, match="V_max"):
+    with pytest.raises(ValueError, match="V_max"):
         build_model({"basis_type": "linmol"})
 
 
@@ -131,6 +144,7 @@ def test_build_model_preserves_missing_parameter_error():
             "omega_rad_phz": 1.0,
             "delta_omega_rad_phz": 0.0,
             "mu0_Cm": 1e-30,
+            "potential_type": "harmonic",
         },
         {
             "basis_type": "linmol",
@@ -142,6 +156,7 @@ def test_build_model_preserves_missing_parameter_error():
             "B_rad_phz": 0.0,
             "alpha_rad_phz": 0.0,
             "mu0_Cm": 1e-30,
+            "potential_type": "harmonic",
         },
     ],
 )
@@ -184,10 +199,12 @@ def test_runner_uses_interval_duration_and_one_backend(
         "basis_type": "twolevel",
         "energy_gap": 1.0,
         "mu0_Cm": 1e-30,
+        "energy_gap_units": "rad/fs",
         "t_start": 2.0,
         "t_end": 6.0,
         "dt": 1.0,
         "carrier_freq": 1.0,
+        "duration": 2.0,
         "amplitude": 0.0,
         "polarization": [1.0, 0.0],
         "phase_rad": 0.37,

@@ -4,11 +4,11 @@ from typing import Any, TypedDict
 
 import numpy as np
 
-from rovibrational_excitation.core.electric_field import ElectricField
+from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
-from rovibrational_excitation.core.electric_field import gaussian_fwhm
 from rovibrational_excitation.core.units.converters import converter
+
 from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
 
 DEFAULT_PARAMS = {
@@ -17,7 +17,6 @@ DEFAULT_PARAMS = {
     "lambda_a": 1.0e-20,
     "target_fidelity": 1.0,
     "control_axes": "xy",
-    "duration_initial": 200.0,
     "carrier_freq_initial": 2300,
     "unit_carrier_freq": "cm^-1",
     "amplitude_initial": 1.0e9,
@@ -27,6 +26,7 @@ DEFAULT_PARAMS = {
     "const_polarisation": False,
     "propagator_func": None,
 }
+
 
 class RunResult(TypedDict, total=False):
     efield: ElectricField
@@ -48,7 +48,21 @@ def _rk4_consistent_tlist(time_total: float, dt: float) -> np.ndarray:
     return np.linspace(0.0, time_total, required_field_steps)
 
 
-def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict) -> RunResult:
+def run_krotov_optimization(
+    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+) -> RunResult:
+    duration_raw = params.get("duration_initial")
+    try:
+        duration_initial = float(duration_raw)
+    except (TypeError, ValueError):
+        raise ValueError("duration_initial must be finite and positive") from None
+    if (
+        isinstance(duration_raw, bool)
+        or not np.isfinite(duration_initial)
+        or duration_initial <= 0
+    ):
+        raise ValueError("duration_initial must be finite and positive")
+
     initial_state = tuple(states["initial"])  # (v,J,...) expected
     target_state = tuple(states["target"]) if states.get("target") is not None else None
 
@@ -62,9 +76,13 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
     sample_stride = int(time_cfg.get("sample_stride", 1))
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
-    convergence_tol = float(params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"]))
+    convergence_tol = float(
+        params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"])
+    )
     lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
-    target_fidelity = float(params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"]))
+    target_fidelity = float(
+        params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"])
+    )
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
     # Build time list consistent with RK4 propagator
@@ -72,7 +90,9 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
     n_field_steps = len(tlist)
 
     # Propagator
-    propagator = SchrodingerPropagator(backend="numpy", validate_units=True, renorm=True)
+    propagator = SchrodingerPropagator(
+        backend="numpy", validate_units=True, renorm=True
+    )
 
     # States
     psi_initial = np.zeros(basis.size(), dtype=complex)
@@ -84,9 +104,12 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
     mu_x_si = dipole.get_mu_x_SI()
     mu_y_si = dipole.get_mu_y_SI()
     mu_z_si = dipole.get_mu_z_SI()
-    if hasattr(mu_x_si, 'toarray'): mu_x_si = mu_x_si.toarray()
-    if hasattr(mu_y_si, 'toarray'): mu_y_si = mu_y_si.toarray()
-    if hasattr(mu_z_si, 'toarray'): mu_z_si = mu_z_si.toarray()
+    if hasattr(mu_x_si, "toarray"):
+        mu_x_si = mu_x_si.toarray()
+    if hasattr(mu_y_si, "toarray"):
+        mu_y_si = mu_y_si.toarray()
+    if hasattr(mu_z_si, "toarray"):
+        mu_z_si = mu_z_si.toarray()
     mu_x_prime = cm_to_rad_phz(mu_x_si)
     mu_y_prime = cm_to_rad_phz(mu_y_si)
     mu_z_prime = cm_to_rad_phz(mu_z_si)
@@ -98,18 +121,23 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
     control_axes = params.get("control_axes", DEFAULT_PARAMS["control_axes"])
     mu_a_prime = mu_map[control_axes[0]]
     mu_b_prime = mu_map[control_axes[1]]
-    
 
     # Initial field (gaussian)
     Efield_test = ElectricField(tlist=tlist)
-    carrier_freq = params.get("carrier_freq_initial", DEFAULT_PARAMS["carrier_freq_initial"])
-    unit_carrier_freq = params.get("unit_carrier_freq", DEFAULT_PARAMS["unit_carrier_freq"])
-    carrier_freq_phz = converter.convert_frequency(carrier_freq, unit_carrier_freq, "PHz") # PHz
+    carrier_freq = params.get(
+        "carrier_freq_initial", DEFAULT_PARAMS["carrier_freq_initial"]
+    )
+    unit_carrier_freq = params.get(
+        "unit_carrier_freq", DEFAULT_PARAMS["unit_carrier_freq"]
+    )
+    carrier_freq_phz = converter.convert_frequency(
+        carrier_freq, unit_carrier_freq, "PHz"
+    )  # PHz
     Efield_test.add_dispersed_Efield(
         envelope_func=gaussian_fwhm,
-        duration=params.get("duration_initial", time_total / 2),
+        duration=duration_initial,
         t_center=params.get("t_center_initial", time_total / 2),
-        carrier_freq=float(carrier_freq_phz), # PHz
+        carrier_freq=float(carrier_freq_phz),  # PHz
         duration_units="fs",
         t_center_units="fs",
         carrier_freq_units="PHz",
@@ -120,7 +148,9 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
         tod=params.get("tod_initial", DEFAULT_PARAMS["tod_initial"]),
         gdd_units="fs^2",
         tod_units="fs^3",
-        const_polarisation=params.get("const_polarisation", DEFAULT_PARAMS["const_polarisation"]),
+        const_polarisation=params.get(
+            "const_polarisation", DEFAULT_PARAMS["const_polarisation"]
+        ),
     )
     field_data = params.get("efield_initial", Efield_test.get_Efield_SI())
 
@@ -174,7 +204,9 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
         )
         return result[0], result[1]
 
-    def backward(ef_data: np.ndarray, psi_traj: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def backward(
+        ef_data: np.ndarray, psi_traj: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         psi_final = psi_traj[-1]
         overlap = np.vdot(psi_target, psi_final)
         chi_T = overlap * psi_target
@@ -261,4 +293,3 @@ def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any
         field_data=field_data,
         target_idx=target_idx,
     )
-
