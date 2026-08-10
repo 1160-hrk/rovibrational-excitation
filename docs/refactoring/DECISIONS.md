@@ -518,7 +518,7 @@ Consequences:
 - tests cover direct basis and dipole calls, simulation validation, and
   dimensional equivalence.
 
-Implementation commit: pending
+Implementation commit: `7d14fda`
 
 ## Open decisions
 

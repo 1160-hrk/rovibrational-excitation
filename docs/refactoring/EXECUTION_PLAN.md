@@ -541,8 +541,8 @@ centered eigenspectrum, active dipole operator norms, and peak field-vector
 magnitude. ZeroField and inactive scale provenance are explicit. Absolute
 Schrodinger phase is restored after centering. Heuristic auto-timestep and
 invented zero scales now raise.
-P4.2 completed on 2026-08-10 under D-022. The 25-name public scaling surface
-was reduced to strict transformation, scale metadata, exact conversions, and
+P4.2 completed on 2026-08-10 under D-022 (`7d14fda`). The 25-name public
+scaling surface was reduced to strict transformation, scale metadata, exact conversions, and
 neutral reporting. `analysis.py`, `strategies.py`, `impl.py`, automatic
 timestep wrappers, heuristic strength verification, and demo factories were
 removed. Raw-array units and object coupling semantics are now required.

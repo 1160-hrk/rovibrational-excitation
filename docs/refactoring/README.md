@@ -102,6 +102,7 @@ been compared with the replacement.
 | `3b081e1` | Added the reproducible, non-blocking Phase 0 benchmark recorder |
 | `6e154ec` | Replaced the Python/SciPy sparse RK4 loop with explicit Numba CSR propagation |
 | `93ee9eb` | Made Cartesian and helicity-projected split interactions explicit and physically tested |
+| `7d14fda` | Required physical inputs and consolidated strict nondimensionalization |
 
 These commits are the starting point, not the final architecture.
 
