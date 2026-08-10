@@ -210,9 +210,7 @@ class SchrodingerPropagator(PropagatorBase):
         if coupling_mode == "scalar" and "axes" in kwargs:
             raise ValueError("axes is not applicable to scalar coupling")
         if coupling_mode == "cartesian" and "coupling_axis" in kwargs:
-            raise ValueError(
-                "coupling_axis is not applicable to Cartesian coupling"
-            )
+            raise ValueError("coupling_axis is not applicable to Cartesian coupling")
         if algorithm != "split_operator" and "split_interaction" in kwargs:
             raise ValueError(
                 "split_interaction is applicable only to algorithm='split_operator'"
@@ -259,9 +257,7 @@ class SchrodingerPropagator(PropagatorBase):
         # Select and run algorithm
         # Priority: kwargs propagator_func > instance custom_propagator > built-in algorithms
         active_propagator = (
-            propagator_func
-            if propagator_func is not None
-            else self.custom_propagator
+            propagator_func if propagator_func is not None else self.custom_propagator
         )
 
         if active_propagator is not None:

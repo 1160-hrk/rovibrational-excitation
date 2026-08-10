@@ -44,7 +44,7 @@ def _hl_perp(j: int, m: int, dm: int) -> float:
     """
     num = (j + dm * m + 1) * (j + dm * m + 2)
     den = (2 * j + 1) * (2 * j + 3)
-    return num / (4*den)
+    return num / (4 * den)
 
 
 @njit(cache=True)
@@ -117,7 +117,7 @@ def tdm_jm_y(J1, M1, J2, M2):
 # --------------------------------------------------------------------
 @njit(complex128(int64, int64, int64, int64), cache=True)
 def tdm_jm_z(J1, M1, J2, M2):
-    if M1 != M2:                # ΔM ≠ 0 → forbidden
+    if M1 != M2:  # ΔM ≠ 0 → forbidden
         return 0.0 + 0.0j
 
     dJ = J2 - J1

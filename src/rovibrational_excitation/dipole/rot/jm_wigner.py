@@ -56,7 +56,7 @@ def _tdm_spherical(J1: int, M1: int, J2: int, M2: int, q: int):
     """
 
     # Overall phase / reduced-element factor
-    pref = (-1) ** M2 * np.sqrt((2*J1 + 1)*(2*J2 + 1))
+    pref = (-1) ** M2 * np.sqrt((2 * J1 + 1) * (2 * J2 + 1))
 
     # First 3j: M-coupling
     three_j_m = _w3j(J1, 1, J2, M1, q, -M2)
@@ -99,7 +99,7 @@ tdm_jm_dict_wigner = {
     "x": tdm_jm_x_wigner,
     "y": tdm_jm_y_wigner,
     "z": tdm_jm_z_wigner,
-} 
+}
 
 if __name__ == "__main__":
     j1 = 0

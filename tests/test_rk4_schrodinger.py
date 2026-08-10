@@ -5,7 +5,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
+from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
 
 
 def make_simple_case():

@@ -17,6 +17,7 @@ DEFAULT_PARAMS = {
     "propagator_func": None,
 }
 
+
 class RunResult(TypedDict, total=False):
     efield: ElectricField
     time: np.ndarray
@@ -33,7 +34,9 @@ def _rk4_consistent_tlist(time_total: float, dt: float) -> np.ndarray:
     return np.linspace(0.0, time_total, required_field_steps)
 
 
-def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict) -> RunResult:
+def run_grape_optimization(
+    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+) -> RunResult:
     initial_state = tuple(states["initial"])  # (v,J,...) expected
     target_state = tuple(states["target"]) if states.get("target") is not None else None
 
@@ -47,30 +50,41 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     sample_stride = int(time_cfg.get("sample_stride", 1))
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
-    convergence_tol = float(params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"]))
+    convergence_tol = float(
+        params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"])
+    )
     learning_rate = float(params.get("learning_rate", DEFAULT_PARAMS["learning_rate"]))
     lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
-    target_fidelity = float(params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"]))
+    target_fidelity = float(
+        params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"])
+    )
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
     tlist = _rk4_consistent_tlist(time_total, dt)
     n_field_steps = len(tlist)
 
-    propagator = SchrodingerPropagator(backend="numpy", validate_units=True, renorm=True)
+    propagator = SchrodingerPropagator(
+        backend="numpy", validate_units=True, renorm=True
+    )
 
     psi_initial = np.zeros(basis.size(), dtype=complex)
     psi_initial[initial_idx] = 1.0
     psi_target = np.zeros(basis.size(), dtype=complex)
     psi_target[target_idx] = 1.0
 
-    mu_x_si = dipole.get_mu_x_SI(); mu_y_si = dipole.get_mu_y_SI()
-    if hasattr(mu_x_si, 'toarray'): mu_x_si = mu_x_si.toarray()
-    if hasattr(mu_y_si, 'toarray'): mu_y_si = mu_y_si.toarray()
+    mu_x_si = dipole.get_mu_x_SI()
+    mu_y_si = dipole.get_mu_y_SI()
+    if hasattr(mu_x_si, "toarray"):
+        mu_x_si = mu_x_si.toarray()
+    if hasattr(mu_y_si, "toarray"):
+        mu_y_si = mu_y_si.toarray()
     mu_x_prime = cm_to_rad_phz(mu_x_si)
     mu_y_prime = cm_to_rad_phz(mu_y_si)
 
     field_data = np.zeros((n_field_steps, 2), dtype=float)
 
-    def forward(ef_data: np.ndarray, initial_state_vec: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def forward(
+        ef_data: np.ndarray, initial_state_vec: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField(tlist=tlist)
         ef.add_arbitrary_Efield(ef_data)
         result = propagator.propagate(
@@ -138,5 +152,3 @@ def run_grape_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
         field_data=field_data,
         target_idx=target_idx,
     )
-
-

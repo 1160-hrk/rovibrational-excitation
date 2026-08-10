@@ -9,7 +9,9 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
+from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
 
 
 def setup_system():
@@ -52,9 +54,7 @@ class TestRK4Basic:
 
         # 空の電場配列でValueErrorが発生することを確認
         with pytest.raises(ValueError):
-            rk4_schrodinger(
-                H0, mu_x, mu_y, np.array([]), np.array([]), psi0, dt=0.1
-            )
+            rk4_schrodinger(H0, mu_x, mu_y, np.array([]), np.array([]), psi0, dt=0.1)
 
 
 if __name__ == "__main__":

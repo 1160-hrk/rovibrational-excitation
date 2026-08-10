@@ -2,4 +2,4 @@
 
 from .cache import SymTopDipoleMatrix  # noqa: F401
 
-__all__ = ["SymTopDipoleMatrix"] 
+__all__ = ["SymTopDipoleMatrix"]

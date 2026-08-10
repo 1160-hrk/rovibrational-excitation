@@ -16,7 +16,7 @@ ArrayLike = Union[np.ndarray, float]
 def gaussian(x: ArrayLike, xc: float, sigma: float) -> ArrayLike:
     """
     ガウシアン関数
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -25,7 +25,7 @@ def gaussian(x: ArrayLike, xc: float, sigma: float) -> ArrayLike:
         中心位置
     sigma : float
         標準偏差
-        
+
     Returns
     -------
     ArrayLike
@@ -37,7 +37,7 @@ def gaussian(x: ArrayLike, xc: float, sigma: float) -> ArrayLike:
 def lorentzian(x: ArrayLike, xc: float, gamma: float) -> ArrayLike:
     """
     ローレンツィアン関数
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -46,7 +46,7 @@ def lorentzian(x: ArrayLike, xc: float, gamma: float) -> ArrayLike:
         中心位置
     gamma : float
         半値半幅
-        
+
     Returns
     -------
     ArrayLike
@@ -58,7 +58,7 @@ def lorentzian(x: ArrayLike, xc: float, gamma: float) -> ArrayLike:
 def voigt(x: ArrayLike, xc: float, sigma: float, gamma: float) -> ArrayLike:
     """
     フォークト関数（ガウシアンとローレンツィアンの畳み込み）
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -69,7 +69,7 @@ def voigt(x: ArrayLike, xc: float, sigma: float, gamma: float) -> ArrayLike:
         ガウシアン成分の標準偏差
     gamma : float
         ローレンツィアン成分の半値半幅
-        
+
     Returns
     -------
     ArrayLike
@@ -82,7 +82,7 @@ def voigt(x: ArrayLike, xc: float, sigma: float, gamma: float) -> ArrayLike:
 def gaussian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
     """
     FWHM指定のガウシアン関数
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -91,7 +91,7 @@ def gaussian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
         中心位置
     fwhm : float
         半値全幅（FWHM）
-        
+
     Returns
     -------
     ArrayLike
@@ -104,7 +104,7 @@ def gaussian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
 def lorentzian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
     """
     FWHM指定のローレンツィアン関数
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -113,7 +113,7 @@ def lorentzian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
         中心位置
     fwhm : float
         半値全幅（FWHM）
-        
+
     Returns
     -------
     ArrayLike
@@ -126,7 +126,7 @@ def lorentzian_fwhm(x: ArrayLike, xc: float, fwhm: float) -> ArrayLike:
 def voigt_fwhm(x: ArrayLike, xc: float, fwhm_g: float, fwhm_l: float) -> ArrayLike:
     """
     FWHM指定のフォークト関数
-    
+
     Parameters
     ----------
     x : ArrayLike
@@ -137,7 +137,7 @@ def voigt_fwhm(x: ArrayLike, xc: float, fwhm_g: float, fwhm_l: float) -> ArrayLi
         ガウシアン成分のFWHM
     fwhm_l : float
         ローレンツィアン成分のFWHM
-        
+
     Returns
     -------
     ArrayLike
@@ -145,4 +145,4 @@ def voigt_fwhm(x: ArrayLike, xc: float, fwhm_g: float, fwhm_l: float) -> ArrayLi
     """
     sigma = fwhm_g / (2 * np.sqrt(2 * np.log(2)))
     gamma = fwhm_l / 2
-    return voigt(x, xc, sigma, gamma) 
+    return voigt(x, xc, sigma, gamma)

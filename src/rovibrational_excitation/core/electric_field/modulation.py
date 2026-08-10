@@ -13,17 +13,17 @@ from typing import Union
 
 
 def apply_sinusoidal_mod(
-    tlist: np.ndarray, 
-    Efield: np.ndarray, 
-    center_freq: float, 
-    amplitude: float, 
-    carrier_freq: float, 
-    phase_rad: float = 0.0, 
-    type_mod: str = "phase"
+    tlist: np.ndarray,
+    Efield: np.ndarray,
+    center_freq: float,
+    amplitude: float,
+    carrier_freq: float,
+    phase_rad: float = 0.0,
+    type_mod: str = "phase",
 ) -> np.ndarray:
     """
     正弦波変調を適用
-    
+
     Parameters
     ----------
     tlist : np.ndarray
@@ -40,7 +40,7 @@ def apply_sinusoidal_mod(
         位相（rad）, デフォルト: 0.0
     type_mod : str, optional
         "phase" または "amplitude", デフォルト: "phase"
-        
+
     Returns
     -------
     np.ndarray
@@ -62,11 +62,11 @@ def apply_sinusoidal_mod(
 
 
 def apply_dispersion(
-    tlist: np.ndarray, 
-    Efield: np.ndarray, 
-    center_freq: float, 
-    gdd: float = 0.0, 
-    tod: float = 0.0
+    tlist: np.ndarray,
+    Efield: np.ndarray,
+    center_freq: float,
+    gdd: float = 0.0,
+    tod: float = 0.0,
 ) -> np.ndarray:
     """
     GDDとTODを複素電場に適用
@@ -75,7 +75,7 @@ def apply_dispersion(
     ----------
     tlist : np.ndarray
         時間配列
-    Efield : np.ndarray 
+    Efield : np.ndarray
         電場配列（実数または複素数）
     center_freq : float
         中心周波数
@@ -152,7 +152,7 @@ def get_mod_spectrum_from_bin_setting(
 ) -> np.ndarray:
     """
     ビン設定から変調スペクトルを生成
-    
+
     Parameters
     ----------
     initial_freq : float
@@ -163,7 +163,7 @@ def get_mod_spectrum_from_bin_setting(
         変調値
     tlist : np.ndarray
         時間配列
-        
+
     Returns
     -------
     np.ndarray
@@ -195,14 +195,14 @@ def get_mod_spectrum_from_bin_setting(
 def _select_window(name: str, length: int) -> np.ndarray:
     """
     窓関数を選択
-    
+
     Parameters
     ----------
     name : str
         窓関数名
     length : int
         長さ
-        
+
     Returns
     -------
     np.ndarray
@@ -219,11 +219,11 @@ def _select_window(name: str, length: int) -> np.ndarray:
 
 
 def _remove_linear_phase(
-    freq_p: np.ndarray, 
-    phase_p: np.ndarray, 
-    center_freq: Union[float, None] = None, 
-    width_fit: Union[float, None] = None, 
-    return_t0: bool = False
+    freq_p: np.ndarray,
+    phase_p: np.ndarray,
+    center_freq: Union[float, None] = None,
+    width_fit: Union[float, None] = None,
+    return_t0: bool = False,
 ) -> Union[np.ndarray, tuple[np.ndarray, float]]:
     """
     フーリエスペクトルの位相から線形成分を除去して返す。
@@ -240,7 +240,7 @@ def _remove_linear_phase(
         フィッティング幅
     return_t0 : bool, optional
         時間シフトを返すかどうか
-        
+
     Returns
     -------
     Union[np.ndarray, tuple[np.ndarray, float]]
@@ -268,4 +268,4 @@ def _remove_linear_phase(
         t0 = -a / (2 * np.pi)
         return phase_corr, t0
     else:
-        return phase_corr 
+        return phase_corr

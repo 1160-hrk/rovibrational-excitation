@@ -51,4 +51,4 @@ def test_jm_wigner_equivalence(J_max):
                     assert np.allclose(val_a, val_b, atol=tol, rtol=0), (
                         f"Mismatch in μz for J1={J1},M1={M1}→J2={J2},M2={M2}: "
                         f"analytic={val_a}, wigner={val_b}"
-                    ) 
+                    )

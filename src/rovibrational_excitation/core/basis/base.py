@@ -69,7 +69,7 @@ class BasisBase(ABC):
     def generate_H0(self) -> "Hamiltonian":
         """
         Generate the free Hamiltonian for this basis.
-        
+
         Uses the physical parameters stored in the basis instance.
 
         Returns
@@ -82,14 +82,14 @@ class BasisBase(ABC):
     def generate_H0_with_params(self, **kwargs) -> "Hamiltonian":
         """
         Generate Hamiltonian with temporary parameter override.
-        
+
         This method allows backward compatibility and temporary parameter changes.
-        
+
         Parameters
         ----------
         **kwargs
             Temporary parameters to override instance values.
-            
+
         Returns
         -------
         Hamiltonian

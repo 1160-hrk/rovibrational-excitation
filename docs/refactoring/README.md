@@ -45,15 +45,15 @@ physics changes are detected by tests.
 |---|---:|
 | Pytest | 495 passed, 10 skipped (505 collected) |
 | Measured total coverage | 47% |
-| Ruff findings | 1,143 |
-| Ruff auto-fixable findings | 925 |
-| Files failing Ruff format check | 63 |
+| Ruff findings | 76 |
+| Ruff safely auto-fixable findings | 53 |
+| Files failing Ruff format check | 0 |
 | Optimization coverage | 0% |
 | Spectroscopy coverage | 11% |
 | `simulation/runner.py` coverage | 64% |
 | RK4 Schrödinger coverage report | 10% |
 
-The pytest row was verified on 2026-08-10. Coverage and repository-wide Ruff rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
+The pytest and Ruff rows were verified on 2026-08-10 after P1.4. Coverage rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
@@ -112,7 +112,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.1 through P1.3 complete; formatting, lint, and CI gates remain |
+| 1 | Repository and CI normalization | In progress — P1.1 through P1.4 complete; 76 lint findings and CI gates remain |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |

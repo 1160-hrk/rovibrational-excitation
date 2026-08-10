@@ -107,7 +107,9 @@ def build_alpha_mask(
         else:
             wts_arr = np.asarray(list(weights), dtype=float)
             if wts_arr.size != nb:
-                raise ValueError("weights length must match bands length for combine='sum'")
+                raise ValueError(
+                    "weights length must match bands length for combine='sum'"
+                )
             wts = wts_arr
         for c, s, w in zip(centers_phz, sigmas_phz, wts):
             acc += float(w) * np.exp(-0.5 * ((freq - c) / s) ** 2)
@@ -165,4 +167,3 @@ def solve_update_in_frequency(source: np.ndarray, alpha_mask: np.ndarray) -> np.
         u = np.fft.irfft(U_hat, n=N)
         out[:, k] = np.real(u)
     return out.reshape(source.shape)
-

@@ -391,6 +391,11 @@ Acceptance:
 
 ### P1.4 Repository-wide formatting commit
 
+Status: Complete on 2026-08-10. Ruff reformatted 33 files under `src/` and
+`tests/`; a second format check changed zero files. The full suite passed 495
+tests with 10 GPU skips. No source, test, API, or physics behavior was edited
+manually in this commit.
+
 Run only after a clean worktree:
 
 ~~~bash

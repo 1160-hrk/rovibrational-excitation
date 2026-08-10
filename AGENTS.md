@@ -166,7 +166,8 @@ Measured at `613ce93`:
 - Full tests: 360 passed, 9 skipped.
 - Statement/branch coverage report: 47% total.
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
-- Ruff formatter: 63 files would be reformatted.
+- Ruff formatter baseline: 63 files would be reformatted.
+- Current after P1.4: 0 format failures; 76 Ruff findings, 53 safely fixable.
 - Optimization modules: 0% measured coverage.
 - Spectroscopy monolith: 11% measured coverage.
 - RK4 Schrödinger implementation: 10% measured line/branch report.
@@ -178,13 +179,13 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0 and P1.1-P1.3 are complete for the CPU baseline. Standalone legacy
-diagnostics and superseded importable implementations have been removed after
-replacement checks. One spectroscopy archive remains explicit Phase 7
+Phase 0 and P1.1-P1.4 are complete for the CPU baseline. Standalone legacy
+diagnostics and superseded importable implementations have been removed, and
+Ruff formatting is clean. One spectroscopy archive remains explicit Phase 7
 migration evidence. The next authorized roadmap work is:
 
-1. Apply repository-wide Ruff formatting in an isolated commit.
-2. Resolve Ruff findings in dedicated commits.
+1. Resolve the 53 safely fixable Ruff findings in a dedicated commit.
+2. Resolve the 23 manual Ruff findings without hiding physical meaning.
 3. Make lint, type, coverage, build, and physics CI gates truthful.
 4. Start typed propagation contracts only after Phase 1 acceptance is met.
 

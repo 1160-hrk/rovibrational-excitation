@@ -11,4 +11,4 @@ __all__ = [
     "rk4_lvne_traj",
     "rk4_schrodinger",
     "splitop_schrodinger",
-] 
+]

@@ -21,7 +21,6 @@ DEFAULT_PARAMS = {
     "shape_floor": 1e-2,
     "lookahead_enable": False,
     "lookahead_fraction": 0.5,
-
     "eval_mode": "weights",
     "weight_mode": "by_v",
     "weight_v_power": 2.0,
@@ -30,12 +29,11 @@ DEFAULT_PARAMS = {
     "weight_reverse": False,
     "use_one_hot_target_in_weights": False,
     "drive_abs_min": 1e-18,
-
     "custom_weights": None,
     "custom_weights_dict": None,
-    
     "propagator_func": None,
 }
+
 
 class RunResult(TypedDict, total=False):
     efield: ElectricField
@@ -47,7 +45,9 @@ class RunResult(TypedDict, total=False):
     target_idx: int
 
 
-def _build_segments_and_tlist(time_total: float, dt: float, seg_steps: int | None, seg_fs: float | None):
+def _build_segments_and_tlist(
+    time_total: float, dt: float, seg_steps: int | None, seg_fs: float | None
+):
     if seg_steps is not None and seg_steps > 0:
         steps = int((seg_steps // 2) * 2)
     elif seg_fs is not None and seg_fs > 0:
@@ -61,9 +61,17 @@ def _build_segments_and_tlist(time_total: float, dt: float, seg_steps: int | Non
     return segments, tlist
 
 
-def _build_weights_for_basis(basis, *, mode: str, normalize: bool, custom: np.ndarray | None,
-                             custom_dict: dict | None, v_power: float, one_hot_target_idx: int | None,
-                             reverse: bool) -> np.ndarray:
+def _build_weights_for_basis(
+    basis,
+    *,
+    mode: str,
+    normalize: bool,
+    custom: np.ndarray | None,
+    custom_dict: dict | None,
+    v_power: float,
+    one_hot_target_idx: int | None,
+    reverse: bool,
+) -> np.ndarray:
     dim = basis.size()
     if one_hot_target_idx is not None:
         w = np.zeros(dim, dtype=float)
@@ -97,11 +105,13 @@ def _build_weights_for_basis(basis, *, mode: str, normalize: bool, custom: np.nd
             w = 1.0 - w
         else:
             wmax = float(np.max(w))
-            w = (wmax - w)
+            w = wmax - w
     return w
 
 
-def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict) -> RunResult:
+def run_local_optimization(
+    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+) -> RunResult:
     initial_state = tuple(states["initial"])
     target_state = tuple(states["target"]) if states.get("target") is not None else None
 
@@ -117,7 +127,9 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     segments, tlist = _build_segments_and_tlist(time_total, dt, seg_steps, seg_fs)
     n_steps = len(tlist)
 
-    propagator = SchrodingerPropagator(backend="numpy", validate_units=True, renorm=True)
+    propagator = SchrodingerPropagator(
+        backend="numpy", validate_units=True, renorm=True
+    )
 
     psi_initial = np.zeros(basis.size(), dtype=complex)
     psi_initial[initial_idx] = 1.0
@@ -125,38 +137,72 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     if target_idx is not None:
         psi_target[target_idx] = 1.0
 
-    mu_x_si = dipole.get_mu_x_SI(); mu_y_si = dipole.get_mu_y_SI(); mu_z_si = dipole.get_mu_z_SI()
-    if hasattr(mu_x_si, 'toarray'): mu_x_si = mu_x_si.toarray()
-    if hasattr(mu_y_si, 'toarray'): mu_y_si = mu_y_si.toarray()
-    if hasattr(mu_z_si, 'toarray'): mu_z_si = mu_z_si.toarray()
-    mu_x_p = cm_to_rad_phz(mu_x_si); mu_y_p = cm_to_rad_phz(mu_y_si); mu_z_p = cm_to_rad_phz(mu_z_si)
+    mu_x_si = dipole.get_mu_x_SI()
+    mu_y_si = dipole.get_mu_y_SI()
+    mu_z_si = dipole.get_mu_z_SI()
+    if hasattr(mu_x_si, "toarray"):
+        mu_x_si = mu_x_si.toarray()
+    if hasattr(mu_y_si, "toarray"):
+        mu_y_si = mu_y_si.toarray()
+    if hasattr(mu_z_si, "toarray"):
+        mu_z_si = mu_z_si.toarray()
+    mu_x_p = cm_to_rad_phz(mu_x_si)
+    mu_y_p = cm_to_rad_phz(mu_y_si)
+    mu_z_p = cm_to_rad_phz(mu_z_si)
 
-    control_axes = str(params.get("control_axes", DEFAULT_PARAMS["control_axes"])).lower()
-    if len(control_axes) != 2 or any(c not in 'xyz' for c in control_axes):
-        control_axes = 'xy'
-    mu_map = {'x': mu_x_p, 'y': mu_y_p, 'z': mu_z_p}
+    control_axes = str(
+        params.get("control_axes", DEFAULT_PARAMS["control_axes"])
+    ).lower()
+    if len(control_axes) != 2 or any(c not in "xyz" for c in control_axes):
+        control_axes = "xy"
+    mu_map = {"x": mu_x_p, "y": mu_y_p, "z": mu_z_p}
     mu_eff_x = mu_map[control_axes[0]]
     mu_eff_y = mu_map[control_axes[1]]
 
     gain = float(params.get("gain", DEFAULT_PARAMS["gain"]))
     field_max = float(params.get("field_max", DEFAULT_PARAMS["field_max"]))
-    use_sin2_shape = bool(params.get("use_sin2_shape", DEFAULT_PARAMS["use_sin2_shape"]))
-    seed_amplitude = float(params.get("seed_amplitude", DEFAULT_PARAMS["seed_amplitude"]))
-    seed_max_segments = int(params.get("seed_max_segments", DEFAULT_PARAMS["seed_max_segments"]))
+    use_sin2_shape = bool(
+        params.get("use_sin2_shape", DEFAULT_PARAMS["use_sin2_shape"])
+    )
+    seed_amplitude = float(
+        params.get("seed_amplitude", DEFAULT_PARAMS["seed_amplitude"])
+    )
+    seed_max_segments = int(
+        params.get("seed_max_segments", DEFAULT_PARAMS["seed_max_segments"])
+    )
     c_abs_min = float(params.get("c_abs_min", DEFAULT_PARAMS["c_abs_min"]))
     shape_floor = float(params.get("shape_floor", DEFAULT_PARAMS["shape_floor"]))
-    lookahead_enable = bool(params.get("lookahead_enable", DEFAULT_PARAMS["lookahead_enable"]))
-    lookahead_fraction = float(params.get("lookahead_fraction", DEFAULT_PARAMS["lookahead_fraction"]))
+    lookahead_enable = bool(
+        params.get("lookahead_enable", DEFAULT_PARAMS["lookahead_enable"])
+    )
+    lookahead_fraction = float(
+        params.get("lookahead_fraction", DEFAULT_PARAMS["lookahead_fraction"])
+    )
 
     eval_mode = str(params.get("eval_mode", DEFAULT_PARAMS["eval_mode"])).lower()
     weight_mode = str(params.get("weight_mode", DEFAULT_PARAMS["weight_mode"])).lower()
-    weight_v_power = float(params.get("weight_v_power", DEFAULT_PARAMS["weight_v_power"]))
-    weight_target_factor = float(params.get("weight_target_factor", DEFAULT_PARAMS["weight_target_factor"]))
-    normalize_weights = bool(params.get("normalize_weights", DEFAULT_PARAMS["normalize_weights"]))
-    weight_reverse = bool(params.get("weight_reverse", DEFAULT_PARAMS["weight_reverse"]))
+    weight_v_power = float(
+        params.get("weight_v_power", DEFAULT_PARAMS["weight_v_power"])
+    )
+    weight_target_factor = float(
+        params.get("weight_target_factor", DEFAULT_PARAMS["weight_target_factor"])
+    )
+    normalize_weights = bool(
+        params.get("normalize_weights", DEFAULT_PARAMS["normalize_weights"])
+    )
+    weight_reverse = bool(
+        params.get("weight_reverse", DEFAULT_PARAMS["weight_reverse"])
+    )
     custom_weights = params.get("custom_weights", DEFAULT_PARAMS["custom_weights"])
-    custom_weights_dict = params.get("custom_weights_dict", DEFAULT_PARAMS["custom_weights_dict"])
-    use_one_hot_target_in_weights = bool(params.get("use_one_hot_target_in_weights", DEFAULT_PARAMS["use_one_hot_target_in_weights"]))
+    custom_weights_dict = params.get(
+        "custom_weights_dict", DEFAULT_PARAMS["custom_weights_dict"]
+    )
+    use_one_hot_target_in_weights = bool(
+        params.get(
+            "use_one_hot_target_in_weights",
+            DEFAULT_PARAMS["use_one_hot_target_in_weights"],
+        )
+    )
     drive_abs_min = float(params.get("drive_abs_min", DEFAULT_PARAMS["drive_abs_min"]))
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
@@ -182,8 +228,12 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             basis,
             mode=base_mode,
             normalize=normalize_weights,
-            custom=np.asarray(custom_weights, dtype=float) if custom_weights is not None else None,
-            custom_dict=dict(custom_weights_dict) if custom_weights_dict is not None else None,
+            custom=np.asarray(custom_weights, dtype=float)
+            if custom_weights is not None
+            else None,
+            custom_dict=dict(custom_weights_dict)
+            if custom_weights_dict is not None
+            else None,
             v_power=weight_v_power,
             one_hot_target_idx=one_hot_idx,
             reverse=reverse_flag,
@@ -200,13 +250,18 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     def shape_function(t: np.ndarray, T: float) -> np.ndarray:
         return np.sin(np.pi * t / T) ** 2
 
-    for (start, end) in segments_arr:
+    for start, end in segments_arr:
         mid = (start + end) // 2
         S = shape_function(tlist, tlist[-1])[mid] if use_sin2_shape else 1.0
         S_eff = max(S, shape_floor) if use_sin2_shape else 1.0
 
         psi_ref = psi_curr
-        if lookahead_enable and lookahead_fraction > 0 and eigenvalues is not None and end - start >= 1:
+        if (
+            lookahead_enable
+            and lookahead_fraction > 0
+            and eigenvalues is not None
+            and end - start >= 1
+        ):
             tau = lookahead_fraction * float(tlist[end - 1] - tlist[start])
             if tau > 0:
                 phase = np.exp(-1j * eigenvalues * tau)
@@ -223,21 +278,41 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
             im_y = float(np.imag(term_y))
             ex = float(gain * S * im_x)
             ey = float(gain * S * im_y)
-            if (abs(im_x) < drive_abs_min and abs(im_y) < drive_abs_min and seed_left > 0):
+            if (
+                abs(im_x) < drive_abs_min
+                and abs(im_y) < drive_abs_min
+                and seed_left > 0
+            ):
                 ex = seed_amplitude * S_eff
                 ey = seed_amplitude * S_eff
                 seed_left -= 1
         else:
             c = complex(np.vdot(psi_target, psi_ref)) if target_idx is not None else 0.0
-            d_x = complex(np.vdot(psi_target, (-mu_eff_x @ psi_ref))) if target_idx is not None else 0.0
-            d_y = complex(np.vdot(psi_target, (-mu_eff_y @ psi_ref))) if target_idx is not None else 0.0
+            d_x = (
+                complex(np.vdot(psi_target, (-mu_eff_x @ psi_ref)))
+                if target_idx is not None
+                else 0.0
+            )
+            d_y = (
+                complex(np.vdot(psi_target, (-mu_eff_y @ psi_ref)))
+                if target_idx is not None
+                else 0.0
+            )
             val_x = float(np.imag(np.conj(c) * d_x))
             val_y = float(np.imag(np.conj(c) * d_y))
             ex = float(gain * S * val_x)
             ey = float(gain * S * val_y)
             if abs(c) < c_abs_min and seed_left > 0:
-                sx = 1.0 if (abs(d_x) == 0.0) else (1.0 if (np.real(d_x) >= 0.0) else -1.0)
-                sy = 1.0 if (abs(d_y) == 0.0) else (1.0 if (np.real(d_y) >= 0.0) else -1.0)
+                sx = (
+                    1.0
+                    if (abs(d_x) == 0.0)
+                    else (1.0 if (np.real(d_x) >= 0.0) else -1.0)
+                )
+                sy = (
+                    1.0
+                    if (abs(d_y) == 0.0)
+                    else (1.0 if (np.real(d_y) >= 0.0) else -1.0)
+                )
                 ex = sx * seed_amplitude * S_eff
                 ey = sy * seed_amplitude * S_eff
                 seed_left -= 1
@@ -245,11 +320,11 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
         ex = float(np.clip(ex, -field_max, field_max))
         ey = float(np.clip(ey, -field_max, field_max))
 
-        full_field[start + 1:end + 1, 0] = ex
-        full_field[start + 1:end + 1, 1] = ey
+        full_field[start + 1 : end + 1, 0] = ex
+        full_field[start + 1 : end + 1, 1] = ey
 
-        ef_seg = ElectricField(tlist=tlist[start:end + 1])
-        ef_seg.add_arbitrary_Efield(full_field[start:end + 1, :])
+        ef_seg = ElectricField(tlist=tlist[start : end + 1])
+        ef_seg.add_arbitrary_Efield(full_field[start : end + 1, :])
         result = propagator.propagate(
             hamiltonian=hamiltonian,
             efield=ef_seg,
@@ -294,7 +369,11 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
     # optional: running cost J_a ~ ∫ S|E|^2 dt with λ=1/gain for display
     try:
         field_penalty = 1.0 / max(gain, 1e-30)
-        S_run = np.sin(np.pi * tlist / tlist[-1]) ** 2 if use_sin2_shape else np.ones_like(tlist)
+        S_run = (
+            np.sin(np.pi * tlist / tlist[-1]) ** 2
+            if use_sin2_shape
+            else np.ones_like(tlist)
+        )
         E2 = full_field[:, 0] ** 2 + full_field[:, 1] ** 2
         dt_field = float(tlist[1] - tlist[0])
         running_cost = float(field_penalty) * float(np.sum(S_run * E2) * dt_field)
@@ -310,5 +389,3 @@ def run_local_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any]
         field_data=full_field,
         target_idx=target_idx if target_idx is not None else -1,
     )
-
-

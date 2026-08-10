@@ -135,9 +135,7 @@ class LiouvillePropagator(PropagatorBase):
         if coupling_mode == "scalar" and "axes" in kwargs:
             raise ValueError("axes is not applicable to scalar coupling")
         if coupling_mode == "cartesian" and "coupling_axis" in kwargs:
-            raise ValueError(
-                "coupling_axis is not applicable to Cartesian coupling"
-            )
+            raise ValueError("coupling_axis is not applicable to Cartesian coupling")
         if kwargs.get("dt") is not None:
             raise ValueError(
                 "dt override is unsupported; construct ElectricField with the desired grid"

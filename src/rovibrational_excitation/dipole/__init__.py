@@ -11,7 +11,7 @@ for different quantum systems:
 
 All classes support automatic unit conversion between:
 - C·m (SI units)
-- D (Debye)  
+- D (Debye)
 - ea0 (atomic units)
 
 The package also provides a factory function `create_dipole_matrix` that
@@ -27,8 +27,8 @@ from .factory import create_dipole_matrix
 
 __all__ = [
     "LinMolDipoleMatrix",
-    "TwoLevelDipoleMatrix", 
+    "TwoLevelDipoleMatrix",
     "VibLadderDipoleMatrix",
     "SymTopDipoleMatrix",
     "create_dipole_matrix",
-] 
+]
