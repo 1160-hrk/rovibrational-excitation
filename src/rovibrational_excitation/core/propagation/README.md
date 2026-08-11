@@ -26,21 +26,21 @@ from rovibrational_excitation.core.propagation import SchrodingerPropagator
 
 # プロパゲータの初期化
 propagator = SchrodingerPropagator(
-    algorithm="rk4",         # "rk4" または "split_operator"
-    backend="numpy",         # "numpy" または "cupy"
-    sparse=False,           # スパース行列を使用するかどうか
-    validate_units=True,    # 物理単位の検証を行うかどうか
+    algorithm="rk4",  # "rk4" または "split_operator"
+    backend="numpy",  # "numpy" または "cupy"
+    sparse=False,  # スパース行列を使用するかどうか
+    validate_units=True,  # 物理単位の検証を行うかどうか
 )
 
 # 時間発展の計算
 final_state = propagator.propagate(
-    hamiltonian=H0,          # ハミルトニアンオブジェクト
-    efield=efield,           # 電場オブジェクト
-    dipole_matrix=dipole,    # 双極子モーメント行列オブジェクト
-    psi0=initial_state,      # 初期状態
-    axes="xy",               # 偏光軸の指定
-    return_traj=True,        # 軌跡を返すかどうか
-    sample_stride=1,         # サンプリング間隔
+    hamiltonian=H0,  # ハミルトニアンオブジェクト
+    efield=efield,  # 電場オブジェクト
+    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
+    psi0=initial_state,  # 初期状態
+    axes="xy",  # 偏光軸の指定
+    return_traj=True,  # 軌跡を返すかどうか
+    sample_stride=1,  # サンプリング間隔
 )
 ```
 
@@ -51,18 +51,18 @@ from rovibrational_excitation.core.propagation import LiouvillePropagator
 
 # プロパゲータの初期化
 propagator = LiouvillePropagator(
-    backend="numpy",         # "numpy" または "cupy"
-    validate_units=True,     # 物理単位の検証を行うかどうか
+    backend="numpy",  # "numpy" または "cupy"
+    validate_units=True,  # 物理単位の検証を行うかどうか
 )
 
 # 時間発展の計算
 final_state = propagator.propagate(
-    hamiltonian=H0,          # ハミルトニアンオブジェクト
-    efield=efield,           # 電場オブジェクト
-    dipole_matrix=dipole,    # 双極子モーメント行列オブジェクト
-    initial_state=rho0,      # 初期密度行列
-    axes="xy",               # 偏光軸の指定
-    return_traj=True,        # 軌跡を返すかどうか
+    hamiltonian=H0,  # ハミルトニアンオブジェクト
+    efield=efield,  # 電場オブジェクト
+    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
+    initial_state=rho0,  # 初期密度行列
+    axes="xy",  # 偏光軸の指定
+    return_traj=True,  # 軌跡を返すかどうか
 )
 ```
 
@@ -73,19 +73,19 @@ from rovibrational_excitation.core.propagation import MixedStatePropagator
 
 # プロパゲータの初期化
 propagator = MixedStatePropagator(
-    algorithm="rk4",         # "rk4" または "split_operator"
-    backend="numpy",         # "numpy" または "cupy"
-    sparse=False,           # スパース行列を使用するかどうか
-    validate_units=True,    # 物理単位の検証を行うかどうか
+    algorithm="rk4",  # "rk4" または "split_operator"
+    backend="numpy",  # "numpy" または "cupy"
+    sparse=False,  # スパース行列を使用するかどうか
+    validate_units=True,  # 物理単位の検証を行うかどうか
 )
 
 # 時間発展の計算
 final_states = propagator.propagate(
-    hamiltonian=H0,          # ハミルトニアンオブジェクト
-    efield=efield,           # 電場オブジェクト
-    dipole_matrix=dipole,    # 双極子モーメント行列オブジェクト
-    initial_state=psi0_list, # 初期状態のリスト
-    return_traj=True,        # 軌跡を返すかどうか
+    hamiltonian=H0,  # ハミルトニアンオブジェクト
+    efield=efield,  # 電場オブジェクト
+    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
+    initial_state=psi0_list,  # 初期状態のリスト
+    return_traj=True,  # 軌跡を返すかどうか
 )
 ```
 
@@ -128,7 +128,7 @@ propagator = RK4Propagator(
     backend="numpy",
     sparse=False,
     validate_units=True,
-    adaptive=True,           # 適応的時間ステップ制御を有効化
+    adaptive=True,  # 適応的時間ステップ制御を有効化
 )
 
 # 時間発展の計算（誤差制御付き）
@@ -137,7 +137,7 @@ final_state = propagator.propagate_with_error_control(
     efield=efield,
     dipole_matrix=dipole,
     psi0=initial_state,
-    tolerance=1e-6,          # 許容誤差
+    tolerance=1e-6,  # 許容誤差
 )
 ```
 

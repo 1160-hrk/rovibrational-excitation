@@ -21,13 +21,16 @@ basisモジュールは以下の基底クラスを提供します：
 ```python
 def size(self) -> int:
     """基底の次元数を返す"""
-    
+
+
 def get_index(self, state) -> int:
     """量子数から基底のインデックスを取得"""
-    
+
+
 def get_state(self, index: int):
     """インデックスから量子数を取得"""
-    
+
+
 def generate_H0(self) -> Hamiltonian:
     """自由ハミルトニアンを生成"""
 ```
@@ -58,12 +61,12 @@ from rovibrational_excitation.core.basis import LinMolBasis
 
 # CO2分子のパラメータ（cm^-1単位）
 basis = LinMolBasis(
-    V_max=2,          # 最大振動量子数
-    J_max=10,         # 最大回転量子数
-    omega=2350,       # ν3モードの振動周波数
-    B=0.39,           # 回転定数
-    alpha=0.0042,     # 振動回転相互作用定数
-    input_units="cm^-1"
+    V_max=2,  # 最大振動量子数
+    J_max=10,  # 最大回転量子数
+    omega=2350,  # ν3モードの振動周波数
+    B=0.39,  # 回転定数
+    alpha=0.0042,  # 振動回転相互作用定数
+    input_units="cm^-1",
 )
 
 # 基底の大きさを確認
@@ -84,10 +87,10 @@ from rovibrational_excitation.core.basis import VibLadderBasis, DensityMatrix
 
 # 非調和振動子
 basis = VibLadderBasis(
-    V_max=5,              # 最大振動量子数
-    omega=500,            # 振動周波数
-    delta_omega=5,        # 非調和性パラメータ
-    input_units="cm^-1"
+    V_max=5,  # 最大振動量子数
+    omega=500,  # 振動周波数
+    delta_omega=5,  # 非調和性パラメータ
+    input_units="cm^-1",
 )
 
 # 混合状態を作成
@@ -110,12 +113,12 @@ from rovibrational_excitation.core.basis import SymTopBasis
 
 # メチルフルオライド（CH3F）のような対称コマ分子
 basis = SymTopBasis(
-    V_max=1,          # 最大振動量子数
-    J_max=5,          # 最大回転量子数
-    omega=1000,       # 代表的な振動モード
-    B=1.0,           # 回転定数B
-    C=0.8,           # 回転定数C
-    input_units="cm^-1"
+    V_max=1,  # 最大振動量子数
+    J_max=5,  # 最大回転量子数
+    omega=1000,  # 代表的な振動モード
+    B=1.0,  # 回転定数B
+    C=0.8,  # 回転定数C
+    input_units="cm^-1",
 )
 
 # ハミルトニアンを生成

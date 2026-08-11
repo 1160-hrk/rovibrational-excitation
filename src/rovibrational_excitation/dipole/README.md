@@ -29,7 +29,7 @@ dipole_linmol = create_dipole_matrix(
     potential_type="morse",  # 振動を含む系のみ指定可能
     backend="numpy",
     dense=True,
-    units_input="D"  # 入力値の単位（デバイ）
+    units_input="D",  # 入力値の単位（デバイ）
 )
 
 # 二準位系の例
@@ -37,7 +37,7 @@ basis_twolevel = TwoLevelBasis(energy_gap=2.35, input_units="eV")
 dipole_twolevel = create_dipole_matrix(
     basis_twolevel,
     mu0=0.5,
-    units_input="D"  # potential_typeは不要（二準位系）
+    units_input="D",  # potential_typeは不要（二準位系）
 )
 
 # 双極子行列の取得
@@ -61,23 +61,23 @@ from rovibrational_excitation.dipole import SymTopDipoleMatrix
 
 # 基底の作成（V_max=2, J_max=2, K_max=2の場合）
 basis = SymTopBasis(
-    V_max=2, 
+    V_max=2,
     J_max=2,
     omega=1.0,  # 振動周波数
     delta_omega=0.0,  # 非調和性
-    B = 0.01,
-    C = 0.005,
+    B=0.01,
+    C=0.005,
 )
 
 # 双極子行列の生成
 dipole = SymTopDipoleMatrix(
     basis,
-    mu0=1.0,              # 双極子モーメントの大きさ
+    mu0=1.0,  # 双極子モーメントの大きさ
     potential_type="harmonic",  # または "morse"
-    backend="numpy",      # 現在はnumpyのみサポート
-    dense=True,           # または False で疎行列形式
-    units="C*m",         # 内部保存単位（"C*m", "D", "ea0"）
-    units_input="D"      # 入力値の単位
+    backend="numpy",  # 現在はnumpyのみサポート
+    dense=True,  # または False で疎行列形式
+    units="C*m",  # 内部保存単位（"C*m", "D", "ea0"）
+    units_input="D",  # 入力値の単位
 )
 
 # 双極子行列要素の取得
@@ -102,23 +102,23 @@ basis = LinMolBasis(V_max=2, J_max=1)
 # 双極子行列の生成（調和ポテンシャル、CPU計算）
 dipole = LinMolDipoleMatrix(
     basis,
-    mu0=1.0,              # 双極子モーメントの大きさ
+    mu0=1.0,  # 双極子モーメントの大きさ
     potential_type="harmonic",
-    backend="numpy",      # または "cupy" でGPU計算
-    dense=True,           # または False で疎行列形式
-    units="C*m",           # 内部保存単位（"C*m", "D", "ea0"）
-    units_input="D"      # 入力値の単位
+    backend="numpy",  # または "cupy" でGPU計算
+    dense=True,  # または False で疎行列形式
+    units="C*m",  # 内部保存単位（"C*m", "D", "ea0"）
+    units_input="D",  # 入力値の単位
 )
 
 # 双極子行列要素の取得
-mu_x = dipole.mu_x       # x成分
-mu_y = dipole.mu_y       # y成分
-mu_z = dipole.mu_z       # z成分
+mu_x = dipole.mu_x  # x成分
+mu_y = dipole.mu_y  # y成分
+mu_z = dipole.mu_z  # z成分
 
 # 単位変換
-mu_x_SI = dipole.get_mu_x_SI()                # SI単位（C·m）
-mu_x_debye = dipole.get_mu_in_units("x", "D") # デバイ単位
-mu_x_atomic = dipole.get_mu_in_units("x", "ea0") # 原子単位
+mu_x_SI = dipole.get_mu_x_SI()  # SI単位（C·m）
+mu_x_debye = dipole.get_mu_in_units("x", "D")  # デバイ単位
+mu_x_atomic = dipole.get_mu_in_units("x", "ea0")  # 原子単位
 
 # 全成分の一括取得
 mu_xyz = dipole.stacked("xyz")  # 3次元配列として取得
@@ -134,12 +134,7 @@ from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 basis = TwoLevelBasis()
 
 # 双極子行列の生成
-dipole = TwoLevelDipoleMatrix(
-    basis,
-    mu0=1.0,
-    backend="numpy",
-    units="C*m"
-)
+dipole = TwoLevelDipoleMatrix(basis, mu0=1.0, backend="numpy", units="C*m")
 
 # Pauli行列に基づく双極子行列
 mu_x = dipole.mu_x  # σx型（|0⟩⟨1| + |1⟩⟨0|）
@@ -156,8 +151,8 @@ from rovibrational_excitation.dipole import VibLadderDipoleMatrix
 # 基底の作成（3準位系）
 basis = VibLadderBasis(
     V_max=2,
-    omega_rad_pfs=1.0,    # 振動周波数
-    delta_omega_rad_pfs=0.0  # 非調和性
+    omega_rad_pfs=1.0,  # 振動周波数
+    delta_omega_rad_pfs=0.0,  # 非調和性
 )
 
 # 双極子行列の生成
@@ -165,7 +160,7 @@ dipole = VibLadderDipoleMatrix(
     basis,
     mu0=1.0,
     potential_type="harmonic",  # または "morse"
-    backend="numpy"
+    backend="numpy",
 )
 
 # z方向のみ非ゼロの遷移
@@ -179,7 +174,7 @@ mu_z = dipole.mu_z  # ΔV = ±1 の遷移のみ許容
 dipole_sparse = LinMolDipoleMatrix(
     basis,
     mu0=1.0,
-    dense=False  # CSR形式の疎行列を使用
+    dense=False,  # CSR形式の疎行列を使用
 )
 
 # GPU計算の活用
@@ -187,7 +182,7 @@ dipole_gpu = LinMolDipoleMatrix(
     basis,
     mu0=1.0,
     backend="cupy",  # GPU上で計算
-    dense=True
+    dense=True,
 )
 ```
 
