@@ -7,6 +7,9 @@ import numpy as np
 from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
+from rovibrational_excitation.optimization.timegrid import (
+    LocalOptimizerLegacyGridV1,
+)
 
 DEFAULT_PARAMS = {
     "control_axes": "xy",
@@ -125,6 +128,7 @@ def run_local_optimization(
     seg_steps = params.get("segment_size_steps", DEFAULT_PARAMS["segment_size_steps"])
     seg_fs = params.get("segment_size_fs", DEFAULT_PARAMS["segment_size_fs"])
     segments, tlist = _build_segments_and_tlist(time_total, dt, seg_steps, seg_fs)
+    time_grid = LocalOptimizerLegacyGridV1(segments=segments, tlist=tlist)
     n_steps = len(tlist)
 
     propagator = SchrodingerPropagator(
@@ -206,7 +210,7 @@ def run_local_optimization(
     drive_abs_min = float(params.get("drive_abs_min", DEFAULT_PARAMS["drive_abs_min"]))
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
-    segments_arr = segments
+    segments_arr = time_grid.segments
     full_field = np.zeros((n_steps, 2), dtype=float)
 
     psi_curr = psi_initial.copy()
@@ -251,7 +255,7 @@ def run_local_optimization(
         return np.sin(np.pi * t / T) ** 2
 
     for start, end in segments_arr:
-        mid = (start + end) // 2
+        mid = time_grid.segment_mid_index(start, end)
         S = shape_function(tlist, tlist[-1])[mid] if use_sin2_shape else 1.0
         S_eff = max(S, shape_floor) if use_sin2_shape else 1.0
 
@@ -320,11 +324,13 @@ def run_local_optimization(
         ex = float(np.clip(ex, -field_max, field_max))
         ey = float(np.clip(ey, -field_max, field_max))
 
-        full_field[start + 1 : end + 1, 0] = ex
-        full_field[start + 1 : end + 1, 1] = ey
+        field_write_slice = time_grid.field_write_slice(start, end)
+        full_field[field_write_slice, 0] = ex
+        full_field[field_write_slice, 1] = ey
 
-        ef_seg = ElectricField(tlist=tlist[start : end + 1])
-        ef_seg.add_arbitrary_Efield(full_field[start : end + 1, :])
+        segment_slice = time_grid.segment_propagation_slice(start, end)
+        ef_seg = ElectricField(tlist=tlist[segment_slice])
+        ef_seg.add_arbitrary_Efield(full_field[segment_slice, :])
         result = propagator.propagate(
             hamiltonian=hamiltonian,
             efield=ef_seg,
@@ -344,9 +350,16 @@ def run_local_optimization(
     ef_total = ElectricField(tlist=tlist)
     ef_total.add_arbitrary_Efield(full_field)
 
+    full_rk4_slice = time_grid.full_rk4_slice
+    if time_grid.full_rk4_times_fs.size == tlist.size:
+        ef_full_propagation = ef_total
+    else:
+        ef_full_propagation = ElectricField(tlist=tlist[full_rk4_slice])
+        ef_full_propagation.add_arbitrary_Efield(full_field[full_rk4_slice, :])
+
     result_full = propagator.propagate(
         hamiltonian=hamiltonian,
-        efield=ef_total,
+        efield=ef_full_propagation,
         dipole_matrix=dipole,
         initial_state=psi_initial,
         axes=control_axes,

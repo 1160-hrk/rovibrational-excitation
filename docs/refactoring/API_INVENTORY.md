@@ -184,10 +184,14 @@ policy and must become errors when the typed config is introduced. They are
 documented here only; P0.1 does not change calculation behavior.
 
 The P2.1 audit found that GRAPE/Krotov currently interpret configured `dt_fs`
-as a propagation interval and synthesize a half-spaced field grid, while the
-local optimizer rounds the span to even-sized segments. These semantics must be
-characterized under O-006 before those workflows migrate to `TimeGrid`; P2.1-a
-therefore changes only the normal simulation and validation path.
+as a propagation interval and synthesize a half-spaced field grid. Those
+semantics remain under O-006. The local optimizer instead retains the versioned
+`LocalOptimizerLegacyGridV1` contract accepted in D-027: its existing
+`np.arange` storage array, shared-boundary ownership, segment slices, and
+floor-based RK4 consumption are not reconstructed through canonical `TimeGrid`.
+Only the final RK4 view is restricted to the odd prefix that the legacy kernel
+already consumed. Normal and optimization workflows may still share typed
+propagation and result boundaries without sharing time-array construction.
 
 The runner catches every plotting exception and returns a nominally successful
 optimization. Phase 7 must distinguish an optimization result from optional

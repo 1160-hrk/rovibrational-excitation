@@ -133,7 +133,7 @@ These commits are the starting point, not the final architecture.
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
-| 2 | Typed propagation contracts | In progress — P2.1-a core/simulation complete; optimization migration pending |
+| 2 | Typed propagation contracts | In progress — P2.1-a core/simulation and D-027 local endpoint contract complete; GRAPE/Krotov migration pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |

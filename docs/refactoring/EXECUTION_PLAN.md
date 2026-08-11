@@ -581,8 +581,9 @@ Implementation status:
 - P2.1-a is complete for the normal simulation path: the frozen `TimeGrid`,
   legacy adapter, validation, and `ElectricField.from_time_grid` are tested;
   every remote required gate passed in Actions run #53.
-- P2.1-b remains for optimization. Its differing timestep and segment-rounding
-  semantics require characterization under O-006 before migration.
+- P2.1-b-local now uses the explicit `LocalOptimizerLegacyGridV1` boundary.
+  Its builder, segment indices, storage tail, and legacy RK4 consumption are
+  frozen by D-027. GRAPE and Krotov time semantics remain pending under O-006.
 
 ### P2.1 Introduce TimeGrid
 
@@ -592,7 +593,10 @@ Implementation status:
   separately.
 - Add dimensional and nondimensional time tests.
 
-Do not remove old calls until all workflows use TimeGrid.
+Do not remove old calls until each workflow either uses `TimeGrid` directly or
+has an accepted, characterized adapter. Under D-027 the local optimizer keeps
+its versioned storage layout and exposes only its legacy-consumed odd prefix to
+the solver boundary.
 
 ### P2.2 Introduce explicit state kinds
 

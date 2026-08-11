@@ -238,6 +238,14 @@ rather than accepting all values independently. It owns a defensive,
 read-only copy of `field_times_fs` so a frozen instance cannot be mutated
 through an external NumPy reference.
 
+`TimeGrid` is the solver-facing canonical grid. D-027 defines one explicit
+pre-solver exception: local optimization retains
+`LocalOptimizerLegacyGridV1` for control-field storage and segment indexing.
+That layout is never rebuilt or endpoint-repaired by `TimeGrid`; it exposes the
+odd prefix historically consumed by RK4 when constructing the solver input.
+The returned optimization field and cost still use the complete legacy storage
+array.
+
 ### 5.2 CouplingSpec
 
 ~~~python

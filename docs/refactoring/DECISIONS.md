@@ -686,7 +686,8 @@ Phase 2.
 
 Consequences:
 
-- `TimeGrid` is the only timestep source and never rounds or extends a span;
+- canonical simulation uses `TimeGrid`, which never rounds or extends a span;
+- optimization-specific layouts remain explicit when their characterized semantics differ;
 - typed solver construction rejects unsupported combinations before matrix
   allocation;
 - configuration and result metadata are reproducible without relying on
@@ -697,7 +698,63 @@ Consequences:
 Implementation checkpoints:
 
 - P2.1-a `TimeGrid` core and normal simulation migration: `53bfb2c`.
-- P2.1-b optimization time-grid migration: pending O-006 characterization.
+- P2.1-b-local endpoint migration: implemented in the working tree under D-027;
+  GRAPE and Krotov time semantics remain pending O-006 characterization.
+
+### D-027: Local optimizer preserves its versioned legacy time layout
+
+Status: Accepted on 2026-08-11.
+
+Scope: `optimization/local.py`, local-optimizer time arrays, segment indices,
+and the final RK4 field view.
+
+Observed behavior:
+
+- `_build_segments_and_tlist` gives positive `segment_size_steps` precedence,
+  floors the selected segment length to an even number, evaluates
+  `ceil(time_total / dt / steps)` in the existing order, and builds `tlist`
+  with the existing `np.arange` expression. None of these expressions may be
+  algebraically rewritten.
+- A segment writes its new field to `[start + 1:end + 1]` but propagates over
+  `[start:end + 1]`. Therefore the shared `start` sample belongs to the
+  preceding segment. The first sample remains the pre-existing zero value.
+- The midpoint is `(start + end) // 2`; lookahead ends at `end - 1`; the shape
+  horizon and running-cost grid use the unsliced `tlist`, including its tail.
+- Floating-point `np.arange` behavior is part of the contract. With the
+  repository settings `dt=0.1` fs and `segment_size_fs=0.5` fs, `total=6000`
+  fs produces 60003 samples ending at 6000.200000000001 fs and two samples
+  after the last segment. `total=200000` fs produces 2000002 samples ending at
+  200000.1 fs and one sample after the last segment.
+- The legacy dense RK4 kernel used `(field_length - 1) // 2` steps. It consumed
+  all samples for odd lengths and ignored only the final sample for even
+  lengths.
+
+Decision:
+
+- Local optimization uses `LocalOptimizerLegacyGridV1`, not canonical
+  `TimeGrid`. The versioned type wraps the arrays returned by the unchanged
+  builder and exposes the existing write, propagation, and midpoint indices.
+- The returned `tlist`, full electric field, shape horizon, and running cost
+  retain the complete legacy storage arrays. Only the final RK4 call receives
+  the odd prefix `0:2 * ((len(tlist) - 1) // 2) + 1`. This exactly reproduces
+  the samples consumed by the legacy floor-based RK4 loop while satisfying the
+  current explicit odd-length solver contract.
+- Normal simulation and local optimization may share typed propagation,
+  execution-policy, result, unit, and persistence boundaries. They must not
+  share a constructor that rebuilds or repairs the local optimizer time array.
+- Endpoint completion, `linspace` replacement, rounding cleanup, slice
+  normalization, and automatic fallback are forbidden for this legacy policy
+  without a new user-approved decision and new reference data.
+
+Verification:
+
+- exact-array tests cover both one- and two-tail-sample `np.arange` cases;
+- spy tests capture segment and full-propagation arrays at the solver boundary;
+- a dense numerical test proves bitwise equality between an even-length legacy
+  kernel call and the validated odd-prefix call, including an extreme ignored
+  final sample.
+
+Implementation: working tree; commit pending.
 
 ## Open decisions
 
@@ -736,10 +793,13 @@ User input and reference data are needed to define:
 
 ### O-006: Optimization reference behavior
 
-GRAPE, Krotov, local optimization, and spectral constraints currently have 0%
-measured automated coverage. Before refactoring, the user must identify one
-trusted reference problem per supported algorithm and the acceptable objective
-and gradient tolerance.
+D-027 resolves the local optimizer time-array, segment-index, shared-boundary,
+and legacy RK4-consumption contracts with exact and bitwise-equivalence tests.
+It does not establish an independent scientific objective reference. Before
+algorithmic refactoring, the user must still identify one trusted reference
+problem per supported optimizer and acceptable objective and gradient
+tolerances. GRAPE, Krotov, and spectral-constraint time semantics also remain
+to be characterized.
 
 ### O-007: Spectroscopy reference behavior
 
