@@ -3,6 +3,7 @@
 Last verified: 2026-08-11
 Active refactor branch: `refactor/v0.3`
 Verified behavioral checkpoint: `e4102d0`
+Latest infrastructure checkpoint: `82c8d76`
 
 ## Purpose
 

@@ -480,6 +480,8 @@ Do not mark P1.6 or Phase 1 complete until the committed workflow passes on
 GitHub for Python 3.10, 3.11, 3.12, and 3.13 and `Required CI gates` is verified
 as a protected required check.
 
+Implementation commit: `82c8d76`.
+
 Update workflows:
 
 - use Ruff formatter and linter; remove redundant Black;

@@ -107,6 +107,7 @@ been compared with the replacement.
 | `93ee9eb` | Made Cartesian and helicity-projected split interactions explicit and physically tested |
 | `7d14fda` | Required physical inputs and consolidated strict nondimensionalization |
 | `e4102d0` | Made spectroscopy conditions, exact/approximate/auto routes, broadening, and execution reports explicit |
+| `82c8d76` | Enforced mandatory quality, physics, coverage, build, and wheel-import CI gates locally |
 
 These commits are the starting point, not the final architecture.
 
