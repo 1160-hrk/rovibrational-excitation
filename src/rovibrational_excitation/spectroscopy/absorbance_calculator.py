@@ -89,11 +89,13 @@ class AbsorbanceCalculator:
     conditions : ExperimentalConditions
         Explicit experimental conditions
     axes : str, default 'xy'
-        使用する双極子成分 ('x', 'y', 'z', 'xy', 'xz', 'yz', 'xyz'等)
+        使用する双極子成分と偏光ベクトルの成分順序
+        ('x', 'y', 'z', 'xy', 'xz', 'yz', 'xyz'等)
     pol_int : np.ndarray, optional
-        相互作用光の偏光ベクトル [Ex, Ey, Ez]
+        相互作用光の偏光ket。成分数は ``len(axes)`` と一致させる。
     pol_det : np.ndarray, optional
-        検出光の偏光ベクトル（Noneの場合pol_intと同じ）
+        検出光の偏光ket。Noneの場合はpol_intと同じ物理偏光を使い、
+        検出演算子では自動的に複素共役する。
 
     Examples
     --------
@@ -126,17 +128,16 @@ class AbsorbanceCalculator:
         self.axes = axes.lower()
         self._validate_axes()
 
-        # 偏光ベクトルの設定（3次元）
+        # Polarization components follow the explicit order in ``axes``.
         if pol_int is None:
-            # デフォルト: x偏光
-            pol_int = np.array([1.0, 0.0])
-        else:
-            pol_int = np.asarray(pol_int)
-
-        self.pol_int = pol_int / np.linalg.norm(pol_int)
-        self.pol_det = pol_det if pol_det is not None else self.pol_int.copy()
-
-        self.pol_det = self.pol_det / np.linalg.norm(self.pol_det)
+            pol_int = np.zeros(len(self.axes), dtype=np.complex128)
+            pol_int[0] = 1.0
+        self.pol_int = self._normalize_polarization(pol_int, name="pol_int")
+        detection_polarization = self.pol_int if pol_det is None else pol_det
+        self.pol_det = self._normalize_polarization(
+            detection_polarization,
+            name="pol_det",
+        )
 
         self.use_v_mask = use_v_mask
         # 計算用の内部変数を初期化
@@ -146,12 +147,35 @@ class AbsorbanceCalculator:
         self._last_discarded_commutator_l2_fraction = 0.0
 
     def _validate_axes(self):
-        """軸指定の検証"""
-        valid_chars = set("xyz")
-        if not all(c in valid_chars for c in self.axes):
+        """Validate a nonempty, unique Cartesian component order."""
+        if not self.axes or len(self.axes) > 3:
+            raise ValueError("axes must contain between one and three components")
+        if any(component not in "xyz" for component in self.axes):
             raise ValueError(
                 f"Invalid axes '{self.axes}'. Must contain only 'x', 'y', 'z'."
             )
+        if len(set(self.axes)) != len(self.axes):
+            raise ValueError("axes must not contain duplicate components")
+
+    def _normalize_polarization(
+        self,
+        polarization: np.ndarray,
+        *,
+        name: str,
+    ) -> np.ndarray:
+        """Return a finite normalized Jones vector in the ``axes`` basis."""
+        vector = np.asarray(polarization, dtype=np.complex128)
+        expected_shape = (len(self.axes),)
+        if vector.shape != expected_shape:
+            raise ValueError(
+                f"{name} must have shape {expected_shape} matching axes='{self.axes}'"
+            )
+        if not np.all(np.isfinite(vector.real)) or not np.all(np.isfinite(vector.imag)):
+            raise ValueError(f"{name} must contain only finite values")
+        norm = float(np.linalg.norm(vector))
+        if not np.isfinite(norm) or norm == 0.0:
+            raise ValueError(f"{name} must have a finite nonzero norm")
+        return vector / norm
 
     def _setup_matrices(self):
         """内部行列の準備"""
@@ -189,45 +213,41 @@ class AbsorbanceCalculator:
             self.rho_mask = np.ones((self.N_level, self.N_level))
 
     def _setup_dipole_matrices(self):
-        """双極子行列の設定（3次元対応）"""
-        # 各軸の双極子成分を取得
-        self.mu_components = {}
-        mu_dict = {
-            "x": self.dipole_matrix.get_mu_x_SI(),
-            "y": self.dipole_matrix.get_mu_y_SI(),
-            "z": self.dipole_matrix.get_mu_z_SI(),
+        """Build interaction and analyzer-projected dipole operators."""
+        getters = {
+            "x": self.dipole_matrix.get_mu_x_SI,
+            "y": self.dipole_matrix.get_mu_y_SI,
+            "z": self.dipole_matrix.get_mu_z_SI,
         }
-        self.mu_components[0] = (
-            mu_dict[self.axes[0]]
-            if self.axes[0] in mu_dict
-            else np.zeros((self.N_level, self.N_level))
-        )
-        self.mu_components[1] = (
-            mu_dict[self.axes[1]]
-            if len(self.axes) > 1 and self.axes[1] in mu_dict
-            else np.zeros((self.N_level, self.N_level))
-        )
-        # print("mu_components[0]", self.mu_components[0])
-        # print("mu_components[1]", self.mu_components[1])
-        # 偏光を考慮した双極子行列
-        self.mu_int = (
-            self.mu_components[0] * self.pol_int[0]
-            + self.mu_components[1] * self.pol_int[1]
-        )
-        if not isinstance(self.mu_int, np.ndarray):
-            self.mu_int = self.mu_int.toarray()
-        # print(f"mu_int sample values: {self.mu_int[np.where(self.mu_int!=0)][:5]}")
-        # 検出偏光を考慮した双極子行列
-        self.mu_det = (
-            self.mu_components[0] * self.pol_det[0]
-            + self.mu_components[1] * self.pol_det[1]
-        )
-        if not isinstance(self.mu_det, np.ndarray):
-            self.mu_det = self.mu_det.toarray()
-        # print(f"mu_det sample values: {self.mu_det[np.where(self.mu_det!=0)][:5]}")
+        self.mu_components: dict[str, np.ndarray] = {}
+        for axis in self.axes:
+            matrix = getters[axis]()
+            if not isinstance(matrix, np.ndarray):
+                matrix = matrix.toarray()
+            component = np.asarray(matrix, dtype=np.complex128)
+            expected_shape = (self.N_level, self.N_level)
+            if component.shape != expected_shape:
+                raise ValueError(
+                    f"mu_{axis} must have shape {expected_shape}, got {component.shape}"
+                )
+            self.mu_components[axis] = component
 
-        # Detection support determines which response entries contribute.
-        self.ind_nonzero = np.array(np.where(self.mu_det != 0))
+        self.mu_int = np.zeros(
+            (self.N_level, self.N_level),
+            dtype=np.complex128,
+        )
+        self.mu_det = np.zeros_like(self.mu_int)
+        for coefficient, axis in zip(self.pol_int, self.axes):
+            self.mu_int += coefficient * self.mu_components[axis]
+        for coefficient, axis in zip(self.pol_det.conj(), self.axes):
+            self.mu_det += coefficient * self.mu_components[axis]
+
+        # A scale-relative roundoff threshold removes only numerical zero noise;
+        # it never compares physical SI dipoles against an absolute cutoff.
+        support_scale = float(np.max(np.abs(self.mu_det)))
+        support_threshold = np.finfo(np.float64).eps * support_scale
+        self._mu_det_support = np.abs(self.mu_det) > support_threshold
+        self.ind_nonzero = np.array(np.where(self._mu_det_support))
 
     def prepare_2d_calculation(self, wavenumber: np.ndarray):
         """
@@ -299,7 +319,7 @@ class AbsorbanceCalculator:
         relative_threshold: float | None,
     ) -> tuple[np.ndarray, np.ndarray]:
         response_relevant = ~np.eye(self.N_level, dtype=bool)
-        response_relevant &= self.mu_det.T != 0.0
+        response_relevant &= self._mu_det_support.T
         nonzero = response_relevant & (commutator != 0.0)
 
         if relative_threshold is None or not np.any(nonzero):
@@ -391,14 +411,14 @@ class AbsorbanceCalculator:
                     "memory_budget_bytes is required and must be a positive integer "
                     "for auto"
                 )
-            if apply_doppler:
-                raise ValueError(
-                    "auto with Doppler broadening is not available until all exact "
-                    "methods share one characterized broadening kernel; choose an "
-                    "explicit method"
-                )
         elif memory_budget_bytes is not None:
             raise ValueError("memory_budget_bytes is applicable only to auto")
+
+        if apply_doppler and method not in {"matrix", "loop"}:
+            raise ValueError(
+                "Doppler broadening currently requires matrix or loop so every "
+                "transition uses its own Doppler width"
+            )
 
         if apply_device_function:
             if (
@@ -437,15 +457,10 @@ class AbsorbanceCalculator:
                 rho_array,
                 wavenumber_array,
                 chunk_size=chunk_size,
-                apply_doppler=apply_doppler,
                 relative_threshold=relative_threshold,
             )
         elif executed_method == "2d":
-            spectrum = self._calculate_2d(
-                rho_array,
-                wavenumber_array,
-                apply_doppler,
-            )
+            spectrum = self._calculate_2d(rho_array, wavenumber_array)
         elif executed_method == "matrix":
             spectrum = self._calculate_matrix(
                 rho_array,
@@ -479,9 +494,7 @@ class AbsorbanceCalculator:
         )
         return spectrum
 
-    def _calculate_2d(
-        self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
-    ) -> np.ndarray:
+    def _calculate_2d(self, rho: np.ndarray, wavenumber: np.ndarray) -> np.ndarray:
         """2D配列を使った高速計算"""
         # 事前準備がされていない、または波数が異なる場合は準備
         if not self._prepared_2d or not np.array_equal(
@@ -506,12 +519,6 @@ class AbsorbanceCalculator:
         # 2D演算で応答を計算
         resp_lin_per_mole_2d = self._one_over_denominator * intensity_factors
         resp_lin_per_mole = np.sum(resp_lin_per_mole_2d, axis=1)
-
-        if apply_doppler:
-            # ドップラー拡がりを適用
-            resp_lin_per_mole = self._apply_doppler_broadening_full(
-                wavenumber, resp_lin_per_mole
-            )
 
         # 吸光度への変換
         omega = self._omega_2d[:, 0]
@@ -587,7 +594,6 @@ class AbsorbanceCalculator:
         rho: np.ndarray,
         wavenumber: np.ndarray,
         chunk_size: int,
-        apply_doppler: bool = False,
         relative_threshold: float | None = None,
     ) -> np.ndarray:
         """
@@ -642,14 +648,8 @@ class AbsorbanceCalculator:
 
             response[start_idx:end_idx] = response_chunk
 
-        # 吸光度に変換
         omega = 2 * np.pi * C * wavenumber * 100
-        absorbance = self._response_to_absorbance(omega, response)
-
-        if apply_doppler:
-            absorbance = self._apply_doppler_broadening_full(wavenumber, absorbance)
-
-        return absorbance
+        return self._response_to_absorbance(omega, response)
 
     def _response_to_absorbance(
         self, omega: np.ndarray, response: np.ndarray
@@ -657,7 +657,7 @@ class AbsorbanceCalculator:
         """線形応答を吸光度に変換 [mOD]"""
         dens_num = self.conditions.number_density
 
-        result = np.sqrt(1 + response / EPS * dens_num / 3)
+        result = np.sqrt(1 + response / EPS * dens_num)
         absorbance = (
             2 * self.conditions.optical_length * omega / C * result.imag  # type: ignore
         )
@@ -700,38 +700,6 @@ class AbsorbanceCalculator:
         return self._filter_complex_gaussian(
             response,
             sigma_doppler / spacing,
-        )
-
-    def _apply_doppler_broadening_full(
-        self,
-        wavenumber: np.ndarray,
-        response: np.ndarray,
-    ) -> np.ndarray:
-        """Apply aggregate Doppler broadening resolved on the wavenumber grid."""
-        spacing = self._uniform_grid_spacing(wavenumber, name="wavenumber")
-        energy_diffs = []
-        for i in range(self.N_level):
-            for j in range(i + 1, self.N_level):
-                diff = abs(self.energy_array[i] - self.energy_array[j])
-                if diff > 0.0:
-                    energy_diffs.append(diff)
-
-        if not energy_diffs:
-            return response
-
-        mean_omega = float(np.mean(energy_diffs)) / H_DIRAC
-        sigma_doppler_wn = (
-            mean_omega
-            / (2 * np.pi * C * 1e2)
-            * np.sqrt(
-                KB
-                * self.conditions.temperature
-                / (self.conditions.molecular_mass * C**2)
-            )
-        )
-        return self._filter_complex_gaussian(
-            response,
-            sigma_doppler_wn / spacing,
         )
 
     def calculate_radiation_spectrum(

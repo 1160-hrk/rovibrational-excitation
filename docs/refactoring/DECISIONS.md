@@ -560,6 +560,51 @@ Consequences:
 
 Implementation commit: `e4102d0`
 
+
+### D-024: Spectroscopy polarization is a Jones bra-ket contraction
+
+Status: Accepted on 2026-08-11.
+
+Scope: absorption polarization, Cartesian component selection, susceptibility
+conversion, and Doppler capability.
+
+Decision:
+
+- `axes` is a nonempty unique ordered subset of `xyz`; `pol_int` and `pol_det`
+  are finite nonzero Jones kets with exactly `len(axes)` components in that
+  order.
+- Interaction uses `mu_int = sum_a e_int[a] mu_a`. Detection is the analyzer
+  bra and uses `mu_det = sum_a conj(e_det[a]) mu_a`. `pol_det=None` means the
+  same physical polarization ket, not the same un-conjugated coefficients.
+- Every selected Cartesian component contributes. A third component may not be
+  accepted and then ignored.
+- Detection support removes only scale-relative machine-roundoff noise at
+  `eps * max(abs(mu_det))`; physical SI dipoles are never compared with an
+  absolute cutoff.
+- The projected molecular polarizability is converted with
+  `chi = number_density * response / epsilon_0`. There is no unconditional
+  extra factor of `1/3`; rotational/orientational averaging belongs in the
+  state and dipole model that define `response`.
+- Doppler broadening is public only for `matrix` and `loop`, where every
+  transition uses its own center-frequency width. `2d`, `chunked`,
+  `approximate_sparse`, and `auto` raise instead of using a mean width or
+  convolving absorbance after susceptibility conversion.
+
+Consequences:
+
+- absorption is invariant under a global Jones-vector phase;
+- opposite helicities select opposite delta-M channels, an M-symmetric state
+  has equal helicity spectra, and reversing M orientation reverses circular
+  dichroism;
+- real linear-polarization results retain their previous contraction;
+- exact three-axis input is supported and malformed vectors fail before matrix
+  construction;
+- the obsolete aggregate-Doppler implementation is deleted.
+
+Physics anchor: `tests/physics/test_spectroscopy_reference.py`.
+
+Implementation commit: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -682,6 +727,23 @@ and runner helpers from the root. Exact model class names should be accepted
 only after the Phase 2 typed contracts show whether a separate `*Parameters`
 object is useful or redundant. See `API_INVENTORY.md` for every current name's
 disposition.
+
+
+### O-009: Vibrational-coherence mask in spectroscopy
+
+`use_v_mask=True` currently zeros density-matrix elements with
+`abs(delta_v) >= 2` before the probe commutator. This is a physical
+approximation, not an implementation optimization, and it is presently the
+default.
+
+Recommended resolution: make the unmasked response the exact default and move
+the mask to an explicitly named approximate mode that reports the discarded
+density-matrix norm. Retaining the current implicit default would make an
+otherwise exact response route silently depend on a reduced-coherence model.
+
+Do not change this physics-facing default until the user confirms whether
+`abs(delta_v) >= 2` coherences are intentionally excluded in production
+spectra.
 
 ## Decision template
 

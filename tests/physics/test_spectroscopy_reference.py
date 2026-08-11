@@ -348,32 +348,6 @@ def test_device_function_is_applied_only_when_explicit(two_level_case, monkeypat
         )
 
 
-def test_doppler_uses_grid_resolution_without_fixed_cutoff(
-    two_level_case,
-    monkeypatch,
-):
-    calculator, _rho, wavenumber = two_level_case
-    calculator.conditions.molecular_mass = 1.0e-15
-    response = np.linspace(0.0, 1.0, len(wavenumber)).astype(np.complex128)
-    sigma_values = []
-
-    def fake_gaussian(values, sigma, mode):
-        assert mode == "reflect"
-        sigma_values.append(sigma)
-        return values.copy()
-
-    monkeypatch.setattr(
-        "rovibrational_excitation.spectroscopy.absorbance_calculator.ndimage.gaussian_filter1d",
-        fake_gaussian,
-    )
-
-    calculator._apply_doppler_broadening_full(wavenumber, response)
-
-    assert len(sigma_values) == 2
-    assert 0.0 < sigma_values[0] < 0.01 / np.diff(wavenumber)[0]
-    assert sigma_values[0] == sigma_values[1]
-
-
 def test_doppler_rejects_nonuniform_grid(two_level_case):
     calculator, rho, _wavenumber = two_level_case
 
@@ -393,3 +367,229 @@ def test_spectroscopy_uses_authoritative_constants(two_level_case):
         CONSTANTS.BOLTZMANN * calculator.conditions.temperature
     )
     assert calculator.conditions.number_density == expected_density
+
+
+class _DegenerateCircularHamiltonian:
+    def get_eigenvalues(self, units):
+        assert units == "J"
+        return np.array([0.0, 1.0e-20, 1.0e-20])
+
+
+class _DegenerateCircularDipole:
+    def __init__(self):
+        amplitude = 1.0e-30 / np.sqrt(2.0)
+        self._x = np.array(
+            [
+                [0.0, amplitude, amplitude],
+                [amplitude, 0.0, 0.0],
+                [amplitude, 0.0, 0.0],
+            ],
+            dtype=np.complex128,
+        )
+        self._y = np.array(
+            [
+                [0.0, -1j * amplitude, 1j * amplitude],
+                [1j * amplitude, 0.0, 0.0],
+                [-1j * amplitude, 0.0, 0.0],
+            ],
+            dtype=np.complex128,
+        )
+        self._z = np.zeros((3, 3), dtype=np.complex128)
+        self._z[0, 2] = 2.0e-30
+        self._z[2, 0] = 2.0e-30
+
+    def get_mu_x_SI(self):
+        return self._x.copy()
+
+    def get_mu_y_SI(self):
+        return self._y.copy()
+
+    def get_mu_z_SI(self):
+        return self._z.copy()
+
+
+def _spectroscopy_conditions():
+    return ExperimentalConditions(
+        temperature=300.0,
+        pressure=3.0e4,
+        optical_length=1.0e-3,
+        T2=500.0,
+        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
+    )
+
+
+def _circular_calculator(polarization, *, axes="xy", pol_det=None):
+    return AbsorbanceCalculator(
+        _ThreeLevelBasis(),
+        _DegenerateCircularHamiltonian(),
+        _DegenerateCircularDipole(),
+        _spectroscopy_conditions(),
+        axes=axes,
+        pol_int=polarization,
+        pol_det=pol_det,
+        use_v_mask=False,
+    )
+
+
+def test_circular_detection_is_adjoint_and_global_phase_invariant():
+    polarization = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+    reference = _circular_calculator(polarization)
+    phase_shifted = _circular_calculator(polarization * np.exp(0.73j))
+    rho = np.diag([1.0, 0.0, 0.0]).astype(np.complex128)
+    wavenumber = np.linspace(450.0, 550.0, 101)
+
+    np.testing.assert_allclose(reference.mu_det, reference.mu_int.conj().T)
+    for method, options in (
+        ("loop", {}),
+        ("matrix", {}),
+        ("2d", {}),
+        ("chunked", {"chunk_size": 17}),
+    ):
+        np.testing.assert_allclose(
+            phase_shifted.calculate(rho, wavenumber, method=method, **options),
+            reference.calculate(rho, wavenumber, method=method, **options),
+            rtol=2.0e-14,
+            atol=2.0e-14,
+            err_msg=method,
+        )
+
+
+def test_circular_helicity_selection_and_m_symmetric_response():
+    plus = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+    minus = plus.conj()
+    plus_calculator = _circular_calculator(plus)
+    minus_calculator = _circular_calculator(minus)
+    rho = np.diag([1.0, 0.0, 0.0]).astype(np.complex128)
+    wavenumber = np.linspace(450.0, 550.0, 101)
+
+    assert abs(plus_calculator.mu_int[0, 1]) > 0.0
+    assert abs(plus_calculator.mu_int[0, 2]) < 1.0e-45
+    assert abs(minus_calculator.mu_int[0, 1]) < 1.0e-45
+    assert abs(minus_calculator.mu_int[0, 2]) > 0.0
+    np.testing.assert_allclose(
+        plus_calculator.calculate(rho, wavenumber, method="loop"),
+        minus_calculator.calculate(rho, wavenumber, method="loop"),
+        rtol=2.0e-14,
+        atol=2.0e-14,
+    )
+
+
+def test_reversing_m_orientation_reverses_circular_dichroism():
+    plus = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+    minus = plus.conj()
+    wavenumber = np.linspace(450.0, 550.0, 101)
+    oriented = np.diag([0.8, 0.2, 0.0]).astype(np.complex128)
+    reversed_orientation = np.diag([0.8, 0.0, 0.2]).astype(np.complex128)
+
+    difference = _circular_calculator(plus).calculate(
+        oriented, wavenumber, method="loop"
+    ) - _circular_calculator(minus).calculate(oriented, wavenumber, method="loop")
+    reversed_difference = _circular_calculator(plus).calculate(
+        reversed_orientation, wavenumber, method="loop"
+    ) - _circular_calculator(minus).calculate(
+        reversed_orientation, wavenumber, method="loop"
+    )
+
+    assert np.max(np.abs(difference)) > 1.0
+    np.testing.assert_allclose(
+        reversed_difference,
+        -difference,
+        rtol=2.0e-14,
+        atol=2.0e-14,
+    )
+
+
+def test_linear_polarization_is_unchanged_and_third_axis_contributes():
+    linear = _circular_calculator(np.array([3.0, 4.0]))
+    expected_linear = (
+        3.0 * linear.mu_components["x"] + 4.0 * linear.mu_components["y"]
+    ) / 5.0
+    np.testing.assert_allclose(linear.mu_int, expected_linear)
+    np.testing.assert_allclose(linear.mu_det, expected_linear)
+
+    z_polarized = _circular_calculator(
+        np.array([0.0, 0.0, 1.0]),
+        axes="xyz",
+    )
+    np.testing.assert_allclose(z_polarized.mu_int, z_polarized.mu_components["z"])
+    np.testing.assert_allclose(z_polarized.mu_det, z_polarized.mu_components["z"])
+
+
+def test_polarization_vectors_are_strictly_validated():
+    for axes in ("", "xx", "xyzz"):
+        with pytest.raises(ValueError):
+            _circular_calculator(np.array([1.0, 0.0]), axes=axes)
+
+    for invalid in (
+        np.array([1.0, 0.0]),
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, np.nan, 0.0]),
+    ):
+        with pytest.raises(ValueError):
+            _circular_calculator(invalid, axes="xyz")
+
+    with pytest.raises(ValueError, match="pol_det.*shape"):
+        _circular_calculator(
+            np.array([1.0, 0.0]),
+            pol_det=[1.0, 0.0, 0.0],
+        )
+
+
+def test_response_conversion_has_no_implicit_orientational_third():
+    calculator = _circular_calculator(np.array([1.0, 0.0]))
+    omega = np.array([1.2e14])
+    density = calculator.conditions.number_density
+    response = np.array([1.0j * CONSTANTS.EPSILON0 / density * 1.0e-4])
+    refractive_index = np.sqrt(1.0 + response * density / CONSTANTS.EPSILON0)
+    expected = (
+        2.0
+        * calculator.conditions.optical_length
+        * omega
+        / CONSTANTS.C
+        * refractive_index.imag
+        * np.log10(np.exp(1.0))
+        * 1000.0
+    )
+
+    np.testing.assert_allclose(
+        calculator._response_to_absorbance(omega, response),
+        expected,
+        rtol=2.0e-14,
+        atol=2.0e-14,
+    )
+
+
+@pytest.mark.parametrize(
+    ("method", "options"),
+    [
+        ("2d", {}),
+        ("chunked", {"chunk_size": 5}),
+        (
+            "approximate_sparse",
+            {"chunk_size": 5, "relative_threshold": 0.1},
+        ),
+        ("auto", {"chunk_size": 5, "memory_budget_bytes": 10**6}),
+    ],
+)
+def test_doppler_rejects_routes_without_transition_specific_widths(
+    two_level_case,
+    method,
+    options,
+):
+    calculator, rho, wavenumber = two_level_case
+    with pytest.raises(ValueError, match="Doppler broadening currently requires"):
+        calculator.calculate(
+            rho,
+            wavenumber,
+            method=method,
+            apply_doppler=True,
+            **options,
+        )
+
+
+def test_matrix_and_loop_share_transition_specific_doppler(two_level_case):
+    calculator, rho, wavenumber = two_level_case
+    loop = calculator.calculate(rho, wavenumber, method="loop", apply_doppler=True)
+    matrix = calculator.calculate(rho, wavenumber, method="matrix", apply_doppler=True)
+
+    np.testing.assert_allclose(matrix, loop, rtol=2.0e-14, atol=2.0e-14)

@@ -452,6 +452,33 @@ This checkpoint resolves the numerical-policy portion of O-007. Trusted
 experimental spectra, sum rules, and FFT/broadening reference conventions
 remain Phase 7 prerequisites before decomposing the spectroscopy monolith.
 
+### P1.5-B Spectroscopy polarization-response checkpoint
+
+Status: Implemented and locally validated on 2026-08-11. D-024 fixes the
+complex Jones contraction: interaction uses ket coefficients and detection
+uses the conjugate analyzer coefficients. The response is now invariant under
+a global Jones-vector phase, all one to three selected Cartesian axes
+contribute, and malformed or zero polarization vectors fail before matrix
+construction.
+
+The unconditional post-projection `1/3` susceptibility factor was removed;
+orientation averaging is no longer silently applied twice to an M-resolved
+state. Doppler broadening is limited to `matrix` and `loop`, which share
+transition-specific widths. The mean-transition `2d` broadening and
+post-absorbance `chunked` convolution were deleted rather than retained as
+nominally exact alternatives.
+
+The 20 focused reference tests cover global-phase invariance, helicity
+selection, equal left/right response for an M-symmetric state, sign reversal
+under M-orientation reversal, linear-polarization regression, third-axis
+participation, strict vector validation, susceptibility conversion,
+transition-specific Doppler parity, and unsupported-route errors.
+
+`use_v_mask=True` remains unchanged pending O-009 because suppressing
+`abs(delta_v) >= 2` coherences is a physical approximation whose intended
+production meaning requires user confirmation.
+
+
 ### P1.6 CI truthfulness
 
 Status: Complete on 2026-08-11. The duplicate test workflow was removed and one

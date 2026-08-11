@@ -85,6 +85,12 @@ testability do.
   and retained one spectroscopy archive as explicit Phase 7 migration evidence.
 - The competing nondimensional compatibility modules have been removed; the
   strict converter remains pending its target-package move.
+- P1.5-B corrected spectroscopy Jones-bra detection, enabled every selected
+  Cartesian component, removed the implicit post-projection orientational
+  `1/3`, and restricted Doppler broadening to the two transition-specific
+  routes. Global phase, helicity, M symmetry/orientation, linear regression,
+  three-axis input, susceptibility scaling, and failure contracts are anchored
+  by 20 focused tests. The vibrational-coherence mask remains open as O-009.
 - P1.6 consolidated duplicate CI workflows and validated mandatory Ruff, limited
   mypy, Python 3.10-3.13 pytest, physics/contracts, 47% branch coverage, build,
   and clean-wheel import gates locally and in GitHub Actions run #47.
