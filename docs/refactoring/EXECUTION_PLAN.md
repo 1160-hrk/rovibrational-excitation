@@ -498,7 +498,7 @@ cross-V removal, exact-route parity after selection, explicit-mode failures,
 observable pump-probe/unfiltered differences, density validation, and a
 nonzero PFID/radiation regression. The complete suite collects 535 tests:
 525 pass and the same 10 GPU tests skip. Ruff, formatting, and the named strict
-mypy modules are clean.
+mypy modules are clean. Implementation commit: `874b1c4`.
 
 ### P1.6 CI truthfulness
 

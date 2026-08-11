@@ -122,6 +122,7 @@ been compared with the replacement.
 | `d5c56fc` | Enabled pre-PR refactor-branch and explicit manual CI execution |
 | `62e6bfd` | Pinned Ruff and passed every remote required gate in Actions run #47 |
 | `834f8ef` | Corrected complex spectroscopy polarization and passed Actions run #49 |
+| `874b1c4` | Made pump-probe V-pathway selection explicit and kept post-probe radiation unfiltered |
 
 These commits are the starting point, not the final architecture.
 

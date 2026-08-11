@@ -644,7 +644,7 @@ Consequences:
 
 Physics anchor: `tests/physics/test_spectroscopy_reference.py`.
 
-Implementation commit: pending.
+Implementation commit: `874b1c4`.
 
 ## Open decisions
 
