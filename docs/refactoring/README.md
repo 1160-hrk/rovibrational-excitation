@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-10
+Last verified: 2026-08-11
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,17 +43,18 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 505 passed, 10 skipped (515 collected) |
-| Measured total coverage | 47% |
+| Pytest | 509 passed, 10 skipped (519 collected) |
+| Measured branch coverage | 59% |
+| Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
 | Files failing Ruff format check | 0 |
-| Optimization coverage | 0% |
-| Spectroscopy coverage | 11% |
-| `simulation/runner.py` coverage | 64% |
-| RK4 Schrödinger coverage report | 10% |
+| Optimization module coverage | 7-16% |
+| Spectroscopy coverage | 81% |
+| `simulation/runner.py` coverage | 66% |
+| RK4 Schrödinger coverage report | 20% |
 
-The pytest and Ruff rows were verified on 2026-08-10 after the spectroscopy policy checkpoint. Coverage rows remain the measured `613ce93` baseline and have not been re-measured in this bounded change. The old README claim of 63% coverage is stale.
+The pytest, Ruff, and branch-coverage rows were verified locally on 2026-08-11 after the P1.6 implementation. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
@@ -84,9 +85,10 @@ testability do.
   and retained one spectroscopy archive as explicit Phase 7 migration evidence.
 - The competing nondimensional compatibility modules have been removed; the
   strict converter remains pending its target-package move.
-- CI runs Ruff and Black, while Ruff formatting is already configured.
-- mypy and physics validation are allowed to fail.
-- Coverage upload does not enforce a minimum.
+- P1.6 consolidated duplicate CI workflows and locally validated mandatory Ruff,
+  limited mypy, Python 3.10-3.13 pytest, physics/contracts, 47% branch coverage,
+  build, and clean-wheel import gates. Remote GitHub matrix execution and branch
+  protection remain required before Phase 1 is complete.
 - Several README examples reference removed or moved APIs.
 
 Each item must be classified as migrate, replace, archive outside the package,
@@ -113,7 +115,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.1-P1.5 and spectroscopy policy checkpoint complete; P1.6 CI truthfulness remains |
+| 1 | Repository and CI normalization | In progress — P1.6 implemented and locally validated; GitHub matrix and required-check verification remain |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |

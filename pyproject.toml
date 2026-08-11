@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ version = "0.2.10"
 description = "Rovibrational wave-packet simulation toolkit"
 readme = "README.md"
 authors = [{name = "Hiroki Tsusaka", email = "tsusaka4research@gmail.com"}]
-license = {text = "MIT"} 
+license = "MIT"
 requires-python = ">=3.10"
 
 classifiers = [
@@ -17,7 +17,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11", 
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -30,6 +29,7 @@ dependencies = [
     "scipy>=1.10", 
     "numba>=0.59",
     "pandas",
+    "sympy",
     "tqdm",
     "PyYAML>=6",
 ]
@@ -42,7 +42,15 @@ rve-optimize = "rovibrational_excitation.cli.optimize:main"
 gpu = ["cupy-cuda12x"]
 io = ["h5py>=3.8"]
 plot = ["matplotlib>=3.7"]
-dev = ["pytest", "build", "twine", "ruff", "black", "mypy", "coverage"]
+dev = [
+    "pytest>=7",
+    "coverage>=7",
+    "ruff>=0.1",
+    "mypy>=1",
+    "build>=0.10",
+    "twine>=4",
+    "tomli>=2; python_version < '3.11'",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -82,6 +90,7 @@ omit = [
 ]
 
 [tool.coverage.report]
+fail_under = 47
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -97,6 +106,18 @@ exclude_lines = [
 ignore_errors = true
 show_missing = true
 skip_covered = false
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_configs = true
+files = [
+    "src/rovibrational_excitation/core/nondimensional/scales.py",
+    "src/rovibrational_excitation/core/units/constants.py",
+    "src/rovibrational_excitation/simulation/timegrid.py",
+]
 
 [tool.ruff]
 target-version = "py310"

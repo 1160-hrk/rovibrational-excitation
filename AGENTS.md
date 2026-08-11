@@ -1,6 +1,6 @@
 # Codex repository instructions
 
-Last verified: 2026-08-10
+Last verified: 2026-08-11
 Active refactor branch: `refactor/v0.3`
 Verified behavioral checkpoint: `e4102d0`
 
@@ -118,14 +118,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current full CPU test baseline after the D-023 spectroscopy checkpoint:
+Current local CPU baseline after the P1.6 CI implementation:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-505 passed, 10 GPU tests skipped (515 collected)
+509 passed, 10 GPU tests skipped (519 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -149,8 +149,8 @@ are not created:
 
 ~~~bash
 coverage run --data-file=/tmp/rve-coverage \
-  --source=src/rovibrational_excitation -m pytest -q
-coverage report --data-file=/tmp/rve-coverage --show-missing
+  --source=src/rovibrational_excitation --branch -m pytest -q
+coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
 ~~~
 
 For release-facing phases also run:
@@ -172,10 +172,11 @@ Measured at `613ce93`:
 - Statement/branch coverage report: 47% total.
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
-- Current after P1.5: 0 format failures and 0 Ruff findings.
-- Optimization modules: 0% measured coverage.
-- Spectroscopy monolith: 11% measured coverage.
-- RK4 Schrödinger implementation: 10% measured line/branch report.
+- Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
+- Current branch coverage: 59%; the initial mandatory CI floor is 47%.
+- Optimization modules: 7-16% measured coverage.
+- Spectroscopy monolith: 81% measured coverage.
+- RK4 Schrödinger implementation: 20% measured line/branch coverage.
 - README claims 63% coverage and contains removed APIs; it is not authoritative.
 
 Targets are defined phase-by-phase in
@@ -184,13 +185,13 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0, P1.1-P1.5, and the D-023 spectroscopy policy checkpoint are complete
-for the CPU baseline. Ruff formatting and lint are clean. One spectroscopy
-archive remains explicit Phase 7 migration evidence. The next authorized
-roadmap work is:
+Phase 0, P1.1-P1.5, and the D-023 spectroscopy policy checkpoint are complete.
+P1.6 is implemented and locally validated, but Phase 1 remains open until the
+GitHub Python 3.10-3.13 matrix and required aggregate gate pass. The next work is:
 
-1. Make lint, type, coverage, build, and physics CI gates truthful in P1.6.
-2. Start typed propagation contracts only after Phase 1 acceptance is met.
+1. Push `refactor/v0.3`, inspect every CI job, and require `Required CI gates`
+   in GitHub branch protection after user authorization.
+2. Start typed propagation contracts only after that Phase 1 acceptance check.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain trusted spectroscopy spectra or sum rules before Phase 7 decomposition.
 

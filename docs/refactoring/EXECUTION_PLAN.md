@@ -454,6 +454,32 @@ remain Phase 7 prerequisites before decomposing the spectroscopy monolith.
 
 ### P1.6 CI truthfulness
 
+Status: Implemented and locally validated on 2026-08-11; remote acceptance is
+pending. The duplicate test workflow was removed and one CI workflow now has
+mandatory Ruff, a Python 3.10-3.13 full-test matrix, an independent
+`tests/physics tests/contracts` job, branch coverage, distribution build, and
+clean-wheel import jobs. A final aggregate job rejects a failed, skipped, or
+cancelled prerequisite so branch protection has one stable required check.
+
+The initial branch-coverage floor is the accepted Phase 0 value of 47%; the
+current local measurement is 59%. Mypy is mandatory in strict mode only for
+three named typed modules, while imported legacy modules are followed silently;
+expanding that list is an explicit ratchet instead of a repository-wide
+allowed failure. Test XML, coverage reports, distributions, and committed
+benchmark summaries are uploaded as artifacts. GPU skips remain explicitly
+unverified rather than being reported as backend validation.
+
+Local evidence: the full suite passes 509 tests with 10 GPU skips (519
+collected); the independent physics/contracts job passes 167 tests with one GPU
+skip; Ruff and the named mypy set are clean; sdist/wheel pass Twine; and the
+wheel installs, imports, and passes `pip check` in a fresh environment. The
+SPDX MIT metadata and required `sympy` runtime dependency were also corrected
+when the clean build exposed the obsolete license form and undeclared import.
+
+Do not mark P1.6 or Phase 1 complete until the committed workflow passes on
+GitHub for Python 3.10, 3.11, 3.12, and 3.13 and `Required CI gates` is verified
+as a protected required check.
+
 Update workflows:
 
 - use Ruff formatter and linter; remove redundant Black;
