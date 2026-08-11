@@ -498,7 +498,10 @@ cross-V removal, exact-route parity after selection, explicit-mode failures,
 observable pump-probe/unfiltered differences, density validation, and a
 nonzero PFID/radiation regression. The complete suite collects 535 tests:
 525 pass and the same 10 GPU tests skip. Ruff, formatting, and the named strict
-mypy modules are clean. Implementation commit: `874b1c4`.
+mypy modules are clean. GitHub Actions run #51 passes Ruff/mypy, Python
+3.10-3.13, physics/contracts, branch coverage, build/clean-wheel import, and
+the protected aggregate `Required CI gates` job. Implementation commit:
+`874b1c4`.
 
 ### P1.6 CI truthfulness
 
