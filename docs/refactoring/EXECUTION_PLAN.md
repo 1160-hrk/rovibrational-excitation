@@ -579,7 +579,8 @@ introduced.
 Implementation status:
 
 - P2.1-a is complete for the normal simulation path: the frozen `TimeGrid`,
-  legacy adapter, validation, and `ElectricField.from_time_grid` are tested.
+  legacy adapter, validation, and `ElectricField.from_time_grid` are tested;
+  every remote required gate passed in Actions run #53.
 - P2.1-b remains for optimization. Its differing timestep and segment-rounding
   semantics require characterization under O-006 before migration.
 

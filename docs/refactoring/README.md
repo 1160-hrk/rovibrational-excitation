@@ -123,6 +123,7 @@ been compared with the replacement.
 | `62e6bfd` | Pinned Ruff and passed every remote required gate in Actions run #47 |
 | `834f8ef` | Corrected complex spectroscopy polarization and passed Actions run #49 |
 | `874b1c4` | Made pump-probe V-pathway selection explicit and passed Actions run #51 |
+| `53bfb2c` | Introduced the typed TimeGrid for normal simulation and passed Actions run #53 |
 
 These commits are the starting point, not the final architecture.
 
