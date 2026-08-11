@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ## How to use this log
 
@@ -646,51 +646,77 @@ Physics anchor: `tests/physics/test_spectroscopy_reference.py`.
 
 Implementation commit: `874b1c4`.
 
+### D-026: Phase 2 propagation contracts are explicit and endpoint-complete
+
+Status: Accepted on 2026-08-11.
+
+Scope: typed propagation inputs, execution policy, trajectory results, density
+trace, incoherent split propagation, renormalization, and backend ownership.
+
+Decision:
+
+- Typed propagation always requires an explicit initial state. Configuration
+  may not silently choose the first basis state.
+- Algorithm, array backend, and dense/CSR storage are explicit typed choices.
+  No factory infers an algorithm from polarization or matrix sparsity.
+- A typed trajectory always includes the exact final state. If
+  `sample_stride` does not divide the propagation-step count, the endpoint is
+  appended and the final output interval is shorter; integration steps and
+  field sampling are unchanged.
+- Direct typed `DensityState` input requires trace one within the existing
+  scale-aware tolerance. It is never automatically normalized or repaired.
+- `IncoherentEnsemble` supports split-operator propagation by independently
+  propagating its pure components and summing density operators with the
+  already accepted normalized weights. Split propagation of a density matrix
+  remains unsupported.
+- Renormalization remains an explicit production policy. The caller must
+  choose no renormalization or per-step renormalization; it is never silently
+  enabled, and the chosen policy is recorded in the result.
+- Result state arrays remain native to the selected backend. Host conversion
+  occurs only through an explicit `PropagationResult.to_numpy()` boundary;
+  persistence performs that conversion at the I/O boundary.
+
+Transition rule:
+
+Legacy low-level kernels retain their characterized array shapes and regular
+stride storage until all high-level callers use the typed facade. Endpoint
+completion, trace-one enforcement, and unified result construction are applied
+at the new typed boundary so the hot numerical loops do not change during
+Phase 2.
+
+Consequences:
+
+- `TimeGrid` is the only timestep source and never rounds or extends a span;
+- typed solver construction rejects unsupported combinations before matrix
+  allocation;
+- configuration and result metadata are reproducible without relying on
+  undocumented defaults;
+- existing numerical kernels remain reference implementations during the
+  contract migration.
+
+Implementation commits: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
 
-Current behavior records the initial state and every divisible stride. The
-final state is absent when `n_steps % sample_stride != 0`.
-
-User decision needed:
-
-- preserve this exact regular-grid behavior; or
-- always append the endpoint, making the final interval shorter.
-
-Do not change until decided.
+Resolved by D-026 on 2026-08-11. Typed trajectories always append the endpoint;
+legacy low-level kernels remain unchanged during migration.
 
 ### O-002: Trace policy for direct Liouville input
 
-Current behavior validates positive real trace but does not require trace one
-and does not normalize direct Liouville input. Explicit density input through
-`MixedStatePropagator` is normalized.
-
-User decision needed:
-
-- require trace one;
-- normalize automatically;
-- permit positive scaled density operators.
+Resolved by D-026 on 2026-08-11. Typed `DensityState` requires trace one and
+does not normalize or repair its input.
 
 ### O-003: Split operator for incoherent ensembles
 
-Direct `MixedStatePropagator(algorithm="split_operator")` can propagate an
-ensemble of pure states, but `PropagatorFactory` rejects split operator for
-`state_type="mixed"`.
-
-User decision needed: expose this capability or intentionally restrict the
-factory to RK4 mixtures.
+Resolved by D-026 on 2026-08-11. Typed incoherent pure-state ensembles expose
+split propagation; density-matrix split propagation remains unsupported.
 
 ### O-004: Renormalization role
 
-Current wavefunction solver default is `renorm=False`. Renormalization can hide
-integration error but may be useful for long calculations.
-
-User decision needed before API stabilization:
-
-- retain as an explicit production option;
-- restrict it to diagnostics;
-- remove it and require timestep correction instead.
+Resolved by D-026 on 2026-08-11. Renormalization remains an explicit production
+policy and is never silently enabled.
 
 ### O-005: SymTop production scope
 

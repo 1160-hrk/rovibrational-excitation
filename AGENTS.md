@@ -2,8 +2,8 @@
 
 Last verified: 2026-08-11
 Active refactor branch: `refactor/v0.3`
-Verified behavioral checkpoint: `e4102d0`
-Latest infrastructure checkpoint: `82c8d76`
+Verified behavioral checkpoint: `874b1c4`
+Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
 
@@ -61,6 +61,12 @@ The authoritative details and formulas are in
 - The electric-field sampling interval is half of one propagation step:
   `propagation_dt = 2 * field_dt`.
 - An RK4 field grid contains `2 * n_steps + 1` points.
+- Typed trajectories always include the exact endpoint; if stride does not
+  divide the step count, only the final output interval is shorter.
+- Typed propagation requires an explicit initial state, algorithm, backend,
+  dense/CSR storage, and renormalization policy.
+- Typed density input requires trace one and is never repaired automatically.
+- Result arrays remain backend-native until explicit `to_numpy()` conversion.
 - Multiple `initial_states` in the normal simulation runner form an
   equal-amplitude, equal-phase coherent superposition and are normalized.
 - Incoherent mixtures use `MixedStatePropagator`. Ensemble vector norms encode
@@ -119,14 +125,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P1.6 CI implementation:
+Current local CPU baseline after the P1.5-C pathway implementation:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-509 passed, 10 GPU tests skipped (519 collected)
+525 passed, 10 GPU tests skipped (535 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -186,15 +192,13 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0, P1.1-P1.5, and the D-023 spectroscopy policy checkpoint are complete.
-P1.6 is implemented and locally validated, but Phase 1 remains open until the
-GitHub Python 3.10-3.13 matrix and required aggregate gate pass. The next work is:
+Phase 0 and Phase 1 are complete, including remote required gates and branch
+protection. D-026 is accepted and Phase 2 typed propagation contracts are in
+progress. The next work is:
 
-1. Push `refactor/v0.3`, inspect every CI job, and require `Required CI gates`
-   in GitHub branch protection after user authorization.
-2. Start typed propagation contracts only after that Phase 1 acceptance check.
+1. Implement P2.1 `TimeGrid` behind characterized legacy adapters.
+2. Continue through explicit state, execution, problem/options, and result
+   contracts without changing low-level numerical kernels.
 3. Perform target directory migration only after typed contracts are stable.
-4. Obtain trusted spectroscopy spectra or sum rules before Phase 7 decomposition.
-
-Do not start the target directory migration before Phase 1 acceptance criteria
-are met.
+4. Obtain trusted optimization and spectroscopy references before Phase 7
+   decomposition.

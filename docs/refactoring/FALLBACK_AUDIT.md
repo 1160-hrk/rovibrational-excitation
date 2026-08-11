@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Date: 2026-08-10
+Date: 2026-08-11
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -27,6 +27,7 @@ recorded.
 | Spectroscopy policy | `optimized` silently chose paths, `sparse_threshold` was ignored, fixed response/Doppler cutoffs changed work, and requested device broadening was not applied | Explicit exact, approximate, and auto modes; required controls and execution report; grid-derived Doppler; requested device function applied | test_spectroscopy_reference.py |
 | Spectroscopy polarization | Complex detection reused ket coefficients, `xyz` ignored its third component, and malformed vectors could normalize silently | Jones-bra detection conjugates coefficients; every ordered axis contributes; dimensions, finiteness, uniqueness, and nonzero norm are required | test_spectroscopy_reference.py |
 | Spectroscopy pathway | `use_v_mask=True` silently kept `abs(delta_v) < 2` and missing V labels fell back to no mask | Required `pump_probe` (`V_i == V_j`) or `unfiltered`; discarded norm is reported; missing V labels raise; radiation/PFID remains unfiltered | test_spectroscopy_reference.py |
+| Typed propagation defaults | Initial state and computational mode could be selected by defaults or inferred from input | D-026 requires an explicit initial state, algorithm, backend, dense/CSR storage, and renormalization policy | Phase 2 contract tests |
 
 ## P1: fix before API stabilization
 
@@ -46,14 +47,12 @@ recorded.
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
 
-## User decisions required before changing physics-facing defaults
+## Resolved Phase 2 decisions
 
-1. initial_states defaults to the first basis state. Decide whether production
-   simulation configuration must always state the initial condition.
-2. backend, algorithm, sparse/dense, and renorm currently have documented
-   computational defaults. These do not change the model Hamiltonian, but the
-   typed PropagationOptions design should decide whether configs must state
-   them explicitly.
+D-026 requires typed production configuration to state the initial condition,
+backend, algorithm, dense/CSR storage, and renormalization policy explicitly.
+Legacy defaults remain only as characterized migration adapters and must not be
+copied into the final public typed API.
 
 ## P2: cleanup and observability
 

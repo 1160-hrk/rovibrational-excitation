@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-10
+Last verified against source and tests: 2026-08-11
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -113,7 +113,7 @@ The configured span must satisfy:
 
 Invalid, non-finite, zero, or negative time steps must fail before propagation.
 
-Current return-time behavior:
+Legacy low-level return-time behavior:
 
 - Full trajectory starts at `t_start`.
 - With `sample_stride = s`, adjacent returned states are separated by
@@ -123,10 +123,12 @@ Current return-time behavior:
 - Dimensional and nondimensional paths must return the same physical time axis
   in femtoseconds.
 
-Current stride behavior records the initial state and states at steps divisible
-by the stride. If `n_steps` is not divisible by the stride, the endpoint is not
-included in a trajectory. Whether to always append the endpoint is still an
-open design decision; do not change it without user approval.
+Legacy low-level kernels record the initial state and states at steps divisible
+by the stride. If `n_steps` is not divisible by the stride, their regular
+trajectory omits the endpoint. The typed propagation boundary always appends
+the exact endpoint in that case, producing one shorter final output interval
+without changing any integration step or field sample. Low-level shapes remain
+characterized during the Phase 2 migration.
 
 Primary implementation anchors:
 
@@ -272,19 +274,24 @@ zero-norm vectors is an error. All vectors must have the same dimension.
 This design allows callers to encode a desired raw weight `w_i` as
 `sqrt(w_i) * normalized_psi_i`.
 
-### 4.3 Explicit density matrix through MixedStatePropagator
+### 4.3 Explicit density matrix
 
-An explicit square matrix passed to `MixedStatePropagator` is validated and
-then normalized by its positive real trace before Liouville propagation.
+The typed `DensityState` boundary requires trace one within the scale-aware
+tolerance in Section 5. It never normalizes, clips, symmetrizes, or otherwise
+repairs caller input.
 
-Direct `LiouvillePropagator` input is validated but is not currently normalized
-to trace one. Requiring unit trace in the direct API is an open decision.
+During migration, an explicit square matrix passed through the legacy
+`MixedStatePropagator` adapter is still normalized by its positive real trace,
+while direct legacy `LiouvillePropagator` input is validated without trace
+normalization. These transitional behaviors are not the final typed contract.
 
 ### 4.4 Solver renormalization
 
-Wavefunction renormalization is opt-in. The default is `renorm=False`.
-Refactoring must not silently enable it, because it can hide integration error.
-If enabled, its threshold and behavior must remain visible in solver options.
+Wavefunction renormalization is an explicit production policy. Typed options
+must require the caller to select disabled or per-step renormalization and must
+record that selection in the result. It must never be silently enabled because
+it can hide integration error. Legacy low-level calls retain their
+`renorm=False` default during migration.
 
 ## 5. Density-matrix validation
 
@@ -597,9 +604,10 @@ Additional constraints:
 - Split operator requires diagonal `H0`.
 - Liouville accepts only `backend="numpy"` and `algorithm="rk4"`.
 - Unsupported sparse/backend combinations must raise before conversion.
-- `PropagatorFactory` currently rejects split operator for `state_type="mixed"`
-  even though direct ensemble propagation can delegate to it. This discrepancy
-  is an open API decision.
+- The typed incoherent-ensemble route supports split operator by propagating
+  each pure component independently and summing the resulting projectors with
+  normalized weights. Split propagation of an explicit density matrix remains
+  unsupported. The legacy factory rejection is transitional.
 - A backend name must govern both dipole construction and time propagation for
   a simulation case to avoid cross-backend array mismatches.
 - Low-level pure-state propagation returns shape `(saved_times, dimension)`.
@@ -669,9 +677,8 @@ It fixes the following deterministic problems and tolerances:
 - Invalid RK4 backends, CuPy Liouville, and factory split-operator mixed
   states raise explicit capability errors.
 
-The endpoint, mixed split-operator factory, and renormalization checks
-characterize O-001, O-003, and O-004 respectively; they do not resolve those
-open API decisions.
+The low-level endpoint, mixed split-operator factory, and renormalization checks
+remain characterization anchors while D-026 is applied at the typed boundary.
 
 ## 10. Spectroscopy evaluation contract
 
@@ -815,16 +822,9 @@ problem scale. Do not use a loose constant solely to make a test pass.
 
 ## 13. Open physics/API decisions
 
-These items require user input before behavior changes:
+The first four Phase 2 propagation questions were resolved by D-026. These
+items still require user input before behavior changes:
 
-1. Whether trajectories must always append the final state when stride does
-   not divide the number of propagation steps.
-2. Whether direct Liouville input must have trace one, should be normalized, or
-   may remain a positive scaled density operator.
-3. Whether `PropagatorFactory` should support split operator for incoherent
-   pure-state ensembles.
-4. Whether renormalization should remain an exposed solver option or be
-   restricted to diagnostics.
-5. The intended production status and validated physics scope of SymTop.
-6. Reference problems and acceptable tolerances for optimization and
+1. The intended production status and validated physics scope of SymTop.
+2. Reference problems and acceptable tolerances for optimization and
    spectroscopy, which currently have insufficient automated coverage.

@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -570,6 +570,12 @@ Acceptance:
 
 Goal: replace implicit `**kwargs` and variable return types before moving
 packages.
+
+Status: in progress. D-026 fixes the typed endpoint, initial-state, density
+trace, incoherent split, renormalization, execution-policy, and backend-native
+result contracts. P2.1 is the first implementation checkpoint; legacy kernels
+remain unchanged while typed boundaries are introduced.
+
 
 ### P2.1 Introduce TimeGrid
 

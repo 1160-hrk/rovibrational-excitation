@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Working target; structural details remain revisable before Phase 3
-Last updated: 2026-07-31
+Last updated: 2026-08-11
 
 ## 1. Design goals
 
@@ -234,7 +234,9 @@ Invariants:
 - first and last values are the configured endpoints.
 
 The constructor should derive redundant fields and reject inconsistent input
-rather than accepting all values independently.
+rather than accepting all values independently. It owns a defensive,
+read-only copy of `field_times_fs` so a frozen instance cannot be mutated
+through an external NumPy reference.
 
 ### 5.2 CouplingSpec
 
@@ -302,7 +304,9 @@ class PropagationOptions:
 ~~~
 
 There is one execution policy per calculation. Dipole construction and solver
-selection receive the same policy.
+selection receive the same policy. Backend, matrix storage, and algorithm are
+required explicit choices; they are never inferred from polarization, matrix
+type, or optional dependency availability.
 
 Do not encode the field grid with a separate solver `dt` option. The time grid
 is the source of truth.
@@ -322,7 +326,12 @@ class PropagationResult:
 
 The return type no longer changes between raw array and tuple based on
 `return_time_*` flags. A final-state result still contains a one-element time
-array.
+array. A trajectory always includes the configured endpoint, appending it after
+the regular stride samples when necessary without altering integration.
+
+`state` remains native to the selected array backend. The explicit
+`PropagationResult.to_numpy()` method creates a host result; storage invokes
+that conversion only at the I/O boundary.
 
 Metadata should include:
 
