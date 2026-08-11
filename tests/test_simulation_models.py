@@ -221,7 +221,8 @@ def test_runner_uses_interval_duration_and_one_backend(
 
     _run_one(params)
 
-    field = electric_field_cls.return_value
+    field = electric_field_cls.from_time_grid.return_value
+    electric_field_cls.from_time_grid.assert_called_once()
     assert field.add_dispersed_Efield.call_args.kwargs["duration"] == 2.0
     assert field.add_dispersed_Efield.call_args.kwargs["phase_rad"] == 0.37
     propagator_cls.assert_called_once_with(

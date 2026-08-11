@@ -125,8 +125,8 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         SchrodingerPropagator,
     )
     from rovibrational_excitation.core.propagation.utils import validate_axes
+    from rovibrational_excitation.core.time import TimeGrid
 
-    from .timegrid import build_time_grid
     from .validation import validate_simulation_case
 
     # --- Electric field 共通 ---
@@ -141,8 +141,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         )
 
         polarization = canonicalize_fixed_linear_polarization(polarization)
-    t_E = build_time_grid(params["t_start"], params["t_end"], params["dt"])
-    E = ElectricField(tlist=t_E)
+    time_grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    t_E = time_grid.field_times_fs
+    E = ElectricField.from_time_grid(time_grid)
     E.add_dispersed_Efield(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
         duration=params["duration"],

@@ -8,11 +8,14 @@
 """
 
 import inspect
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
+
+if TYPE_CHECKING:
+    from ..time import TimeGrid
 
 from rovibrational_excitation.core.units.converters import converter
 
@@ -72,6 +75,19 @@ class ElectricField:
         self.add_history = []
         self._constant_pol: Union[np.ndarray, None, bool] = None
         self._scalar_field: np.ndarray | None = None
+
+    @classmethod
+    def from_time_grid(
+        cls,
+        time_grid: "TimeGrid",
+        field_units: str = "V/m",
+    ) -> "ElectricField":
+        """Construct an electric field from the canonical femtosecond grid."""
+        return cls(
+            time_grid.field_times_fs,
+            time_units="fs",
+            field_units=field_units,
+        )
 
     # ------------------------------------------------------------------
     # Unit conversion helpers

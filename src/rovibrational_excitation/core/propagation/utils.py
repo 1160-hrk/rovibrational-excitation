@@ -12,6 +12,7 @@ import scipy.sparse
 from ...dipole.base import DipoleMatrixBase
 from ..basis.hamiltonian import Hamiltonian
 from ..electric_field import ElectricField
+from ..time import FIELD_INTERVALS_PER_PROPAGATION_STEP
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -23,10 +24,6 @@ else:
 # Physical constants
 DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
-# The field grid contains the left endpoint, midpoint, and right endpoint
-# needed by one RK4 step. Therefore one propagation step spans two field
-# grid intervals. Split-operator uses the same midpoint-sampled grid.
-FIELD_INTERVALS_PER_PROPAGATION_STEP = 2
 
 # Optional CuPy support
 try:

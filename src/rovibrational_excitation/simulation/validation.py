@@ -8,9 +8,9 @@ from typing import Any
 import numpy as np
 
 from rovibrational_excitation.core.propagation.utils import validate_axes
+from rovibrational_excitation.core.time import TimeGrid
 
 from .serialization import deserialize_polarization
-from .timegrid import build_time_grid
 
 
 class SimulationConfigurationError(ValueError):
@@ -132,7 +132,7 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
         _require_finite_scalar(params, key)
 
     try:
-        build_time_grid(params["t_start"], params["t_end"], params["dt"])
+        TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 

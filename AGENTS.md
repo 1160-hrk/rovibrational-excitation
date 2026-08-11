@@ -125,14 +125,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P1.5-C pathway implementation:
+Current local CPU baseline after the P2.1-a TimeGrid implementation:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-525 passed, 10 GPU tests skipped (535 collected)
+548 passed, 10 GPU tests skipped (558 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -196,9 +196,11 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Implement P2.1 `TimeGrid` behind characterized legacy adapters.
-2. Continue through explicit state, execution, problem/options, and result
-   contracts without changing low-level numerical kernels.
+1. Characterize the GRAPE, Krotov, and local-optimizer timestep semantics before
+   P2.1-b migration; do not change their rounding behavior without O-006
+   evidence and user approval.
+2. Continue with P2.2 explicit state kinds after the time-grid boundary is
+   accepted, without changing low-level numerical kernels.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain trusted optimization and spectroscopy references before Phase 7
    decomposition.

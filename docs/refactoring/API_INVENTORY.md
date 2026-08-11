@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-10
+Last verified: 2026-08-11
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: `e4102d0`
+Latest API checkpoint: P2.1-a (this change)
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -81,6 +81,7 @@ not treated as intentional API.
 |---|---|---|---|
 | `core.basis` | `BasisBase`, `Hamiltonian`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic types to `core`; model bases to their `models.*` owners | temporary public |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `converter`, `UnitValidator`, `validator`, `ParameterProcessor`, `parameter_processor` | immutable constants and explicit conversion services under `core.units`; typed config handles parameter conversion | classes temporary public; singleton objects internal and delete |
+| `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 
 `core` itself has no `__init__.py`, so it has no explicit public contract today.
 
@@ -89,6 +90,10 @@ not treated as intentional API.
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `core.electric_field` | `ElectricField`, `gaussian`, `lorentzian`, `voigt`, `gaussian_fwhm`, `lorentzian_fwhm`, `voigt_fwhm`, `apply_sinusoidal_mod`, `apply_dispersion`, `get_mod_spectrum_from_bin_setting` | `fields` | target public subpackage; only `ElectricField`, `gaussian`, and `gaussian_fwhm` proposed at root |
+
+`ElectricField.from_time_grid` is the canonical typed constructor. Its legacy
+array constructor remains available for kernels, optimization code, and tests
+that have not yet migrated.
 
 The modulation helpers remain public under `fields` only if Phase 4/5 tests
 establish their units and sampling contracts. Until then their stability is
@@ -160,7 +165,8 @@ versioned so historical calculations remain interpretable.
 5. `validate_simulation_case` runs only after expansion.
 6. `build_model` dispatches through a local dictionary and returns
    `ModelComponents` plus scalar/Cartesian coupling metadata.
-7. `runner._run_one` constructs the field and propagator, then writes an
+7. `runner._run_one` constructs one immutable `TimeGrid`, constructs the
+   `ElectricField` from it, then constructs the propagator and writes an
    unversioned NPZ/JSON result.
 
 This entire route is temporary. Python-file execution, heuristic conversion,
@@ -176,6 +182,12 @@ example). It silently changes an unknown dipole unit to `C*m` and an unknown
 potential type to `harmonic`. These fallbacks violate the explicit-validation
 policy and must become errors when the typed config is introduced. They are
 documented here only; P0.1 does not change calculation behavior.
+
+The P2.1 audit found that GRAPE/Krotov currently interpret configured `dt_fs`
+as a propagation interval and synthesize a half-spaced field grid, while the
+local optimizer rounds the span to even-sized segments. These semantics must be
+characterized under O-006 before those workflows migrate to `TimeGrid`; P2.1-a
+therefore changes only the normal simulation and validation path.
 
 The runner catches every plotting exception and returns a nominally successful
 optimization. Phase 7 must distinguish an optimization result from optional

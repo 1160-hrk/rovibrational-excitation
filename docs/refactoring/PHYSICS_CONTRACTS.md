@@ -132,7 +132,8 @@ characterized during the Phase 2 migration.
 
 Primary implementation anchors:
 
-- `simulation/timegrid.py`
+- `core/time.py` (canonical typed grid)
+- `simulation/timegrid.py` (legacy writable-array adapter)
 - `core/propagation/utils.py`
 - `core/propagation/schrodinger.py`
 - `core/propagation/liouville.py`

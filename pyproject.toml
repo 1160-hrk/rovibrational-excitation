@@ -115,6 +115,7 @@ follow_imports = "silent"
 warn_unused_configs = true
 files = [
     "src/rovibrational_excitation/core/nondimensional/scales.py",
+    "src/rovibrational_excitation/core/time.py",
     "src/rovibrational_excitation/core/units/constants.py",
     "src/rovibrational_excitation/simulation/timegrid.py",
 ]

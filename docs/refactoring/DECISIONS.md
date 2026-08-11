@@ -694,7 +694,10 @@ Consequences:
 - existing numerical kernels remain reference implementations during the
   contract migration.
 
-Implementation commits: pending.
+Implementation checkpoints:
+
+- P2.1-a `TimeGrid` core and normal simulation migration: this change.
+- P2.1-b optimization time-grid migration: pending O-006 characterization.
 
 ## Open decisions
 

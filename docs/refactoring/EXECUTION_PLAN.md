@@ -573,9 +573,15 @@ packages.
 
 Status: in progress. D-026 fixes the typed endpoint, initial-state, density
 trace, incoherent split, renormalization, execution-policy, and backend-native
-result contracts. P2.1 is the first implementation checkpoint; legacy kernels
-remain unchanged while typed boundaries are introduced.
+result contracts. Legacy kernels remain unchanged while typed boundaries are
+introduced.
 
+Implementation status:
+
+- P2.1-a is complete for the normal simulation path: the frozen `TimeGrid`,
+  legacy adapter, validation, and `ElectricField.from_time_grid` are tested.
+- P2.1-b remains for optimization. Its differing timestep and segment-rounding
+  semantics require characterization under O-006 before migration.
 
 ### P2.1 Introduce TimeGrid
 
