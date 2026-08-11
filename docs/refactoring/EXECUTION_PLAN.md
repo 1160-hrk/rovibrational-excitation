@@ -454,7 +454,7 @@ remain Phase 7 prerequisites before decomposing the spectroscopy monolith.
 
 ### P1.5-B Spectroscopy polarization-response checkpoint
 
-Status: Implemented and locally validated on 2026-08-11. D-024 fixes the
+Status: Complete on 2026-08-11. D-024 fixes the
 complex Jones contraction: interaction uses ket coefficients and detection
 uses the conjugate analyzer coefficients. The response is now invariant under
 a global Jones-vector phase, all one to three selected Cartesian axes
@@ -474,10 +474,13 @@ under M-orientation reversal, linear-polarization regression, third-axis
 participation, strict vector validation, susceptibility conversion,
 transition-specific Doppler parity, and unsupported-route errors.
 
+The complete local suite passes 519 tests with 10 GPU skips. GitHub Actions run
+#49 passes Ruff/mypy, Python 3.10-3.13, physics/contracts, branch coverage,
+build/clean-wheel import, and the protected aggregate `Required CI gates` job.
+
 `use_v_mask=True` remains unchanged pending O-009 because suppressing
 `abs(delta_v) >= 2` coherences is a physical approximation whose intended
 production meaning requires user confirmation.
-
 
 ### P1.6 CI truthfulness
 
