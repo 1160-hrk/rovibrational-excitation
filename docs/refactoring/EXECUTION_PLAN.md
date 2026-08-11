@@ -454,8 +454,8 @@ remain Phase 7 prerequisites before decomposing the spectroscopy monolith.
 
 ### P1.6 CI truthfulness
 
-Status: Implemented and locally validated on 2026-08-11; remote acceptance is
-pending. The duplicate test workflow was removed and one CI workflow now has
+Status: Complete on 2026-08-11. The duplicate test workflow was removed and one
+CI workflow now has
 mandatory Ruff, a Python 3.10-3.13 full-test matrix, an independent
 `tests/physics tests/contracts` job, branch coverage, distribution build, and
 clean-wheel import jobs. A final aggregate job rejects a failed, skipped, or
@@ -479,11 +479,13 @@ wheel installs, imports, and passes `pip check` in a fresh environment. The
 SPDX MIT metadata and required `sympy` runtime dependency were also corrected
 when the clean build exposed the obsolete license form and undeclared import.
 
-Do not mark P1.6 or Phase 1 complete until the committed workflow passes on
-GitHub for Python 3.10, 3.11, 3.12, and 3.13 and `Required CI gates` is verified
-as a protected required check.
+Remote evidence: GitHub Actions run #47 passed Ruff/mypy, Python 3.10, 3.11,
+3.12, and 3.13, physics/contracts, branch coverage, build/clean-wheel import,
+and the aggregate `Required CI gates` job. The `main` branch protection rule
+requires that app-bound check with strict synchronization, applies to the
+administrator, and rejects force pushes and branch deletion.
 
-Implementation commit: `82c8d76`.
+Implementation commits: `82c8d76`, `d5c56fc`, and `62e6bfd`.
 
 Update workflows:
 

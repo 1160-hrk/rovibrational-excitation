@@ -85,11 +85,12 @@ testability do.
   and retained one spectroscopy archive as explicit Phase 7 migration evidence.
 - The competing nondimensional compatibility modules have been removed; the
   strict converter remains pending its target-package move.
-- P1.6 consolidated duplicate CI workflows and locally validated mandatory Ruff,
-  limited mypy, Python 3.10-3.13 pytest, physics/contracts, 47% branch coverage,
-  build, and clean-wheel import gates. Refactor-branch pushes and explicit manual
-  runs execute that same policy. Remote GitHub matrix execution and branch
-  protection remain required before Phase 1 is complete.
+- P1.6 consolidated duplicate CI workflows and validated mandatory Ruff, limited
+  mypy, Python 3.10-3.13 pytest, physics/contracts, 47% branch coverage, build,
+  and clean-wheel import gates locally and in GitHub Actions run #47.
+  Refactor-branch pushes and explicit manual runs execute that same policy;
+  `main` requires the aggregate `Required CI gates` check with strict branch
+  synchronization and administrator enforcement.
 - Several README examples reference removed or moved APIs.
 
 Each item must be classified as migrate, replace, archive outside the package,
@@ -109,6 +110,8 @@ been compared with the replacement.
 | `7d14fda` | Required physical inputs and consolidated strict nondimensionalization |
 | `e4102d0` | Made spectroscopy conditions, exact/approximate/auto routes, broadening, and execution reports explicit |
 | `82c8d76` | Enforced mandatory quality, physics, coverage, build, and wheel-import CI gates locally |
+| `d5c56fc` | Enabled pre-PR refactor-branch and explicit manual CI execution |
+| `62e6bfd` | Pinned Ruff and passed every remote required gate in Actions run #47 |
 
 These commits are the starting point, not the final architecture.
 
@@ -117,7 +120,7 @@ These commits are the starting point, not the final architecture.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
-| 1 | Repository and CI normalization | In progress — P1.6 implemented and locally validated; GitHub matrix and required-check verification remain |
+| 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Pending |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
