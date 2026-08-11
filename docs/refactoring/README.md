@@ -87,7 +87,8 @@ testability do.
   strict converter remains pending its target-package move.
 - P1.6 consolidated duplicate CI workflows and locally validated mandatory Ruff,
   limited mypy, Python 3.10-3.13 pytest, physics/contracts, 47% branch coverage,
-  build, and clean-wheel import gates. Remote GitHub matrix execution and branch
+  build, and clean-wheel import gates. Refactor-branch pushes and explicit manual
+  runs execute that same policy. Remote GitHub matrix execution and branch
   protection remain required before Phase 1 is complete.
 - Several README examples reference removed or moved APIs.
 

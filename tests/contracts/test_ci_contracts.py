@@ -28,6 +28,13 @@ def test_one_workflow_enforces_declared_python_and_physics_matrix():
     jobs = workflow["jobs"]
 
     assert not (ROOT / ".github" / "workflows" / "tests.yml").exists()
+    assert workflow["on"]["push"]["branches"] == [
+        "main",
+        "develop",
+        "refactor/**",
+    ]
+    assert workflow["on"]["pull_request"]["branches"] == ["main", "develop"]
+    assert workflow["on"]["workflow_dispatch"] == {}
     assert jobs["test"]["strategy"]["matrix"]["python-version"] == [
         "3.10",
         "3.11",

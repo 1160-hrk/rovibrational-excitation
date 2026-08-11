@@ -460,6 +460,9 @@ mandatory Ruff, a Python 3.10-3.13 full-test matrix, an independent
 `tests/physics tests/contracts` job, branch coverage, distribution build, and
 clean-wheel import jobs. A final aggregate job rejects a failed, skipped, or
 cancelled prerequisite so branch protection has one stable required check.
+Pushes to `refactor/**` run the same gates before a pull request is opened, and
+`workflow_dispatch` provides an explicit rerun path; neither route changes the
+numerical test policy.
 
 The initial branch-coverage floor is the accepted Phase 0 value of 47%; the
 current local measurement is 59%. Mypy is mandatory in strict mode only for
