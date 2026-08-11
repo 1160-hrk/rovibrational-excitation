@@ -48,6 +48,7 @@ Basic usage:
 ...     hamiltonian=H0,
 ...     dipole_matrix=dipole_matrix,
 ...     conditions=conditions,
+...     phase_matching='pump_probe',
 ...     axes='xy'
 ... )
 >>>
@@ -63,6 +64,7 @@ Advanced usage with 3D dipole components:
 ...     hamiltonian=H0,
 ...     dipole_matrix=dipole_matrix,
 ...     conditions=conditions,
+...     phase_matching='pump_probe',
 ...     axes='xyz',
 ...     pol_int=np.array([1, 0, 0]),    # x-polarized interaction
 ...     pol_det=np.array([0, 1, 0])     # y-polarized detection

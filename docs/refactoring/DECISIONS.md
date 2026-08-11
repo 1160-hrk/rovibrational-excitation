@@ -605,6 +605,47 @@ Physics anchor: `tests/physics/test_spectroscopy_reference.py`.
 
 Implementation commit: `834f8ef`.
 
+### D-025: Pump-probe pathway selection uses equal-vibrational-order blocks
+
+Status: Accepted on 2026-08-11.
+
+Scope: pre-probe absorption density, phase-matching proxy, and PFID/radiation.
+
+Decision:
+
+- Every `AbsorbanceCalculator` construction requires an explicit
+  `phase_matching` mode. The accepted modes are `pump_probe` and `unfiltered`;
+  there is no default or automatic fallback.
+- For the current pump-probe workflow, vibrational quantum number is the
+  pathway proxy because it records the net optical absorption/emission order.
+  `pump_probe` applies `V_i == V_j` to the density matrix immediately before
+  the probe commutator.
+- Equal-V blocks are retained in full. Populations and coherences among
+  different rotational or M states with the same V remain; only cross-V
+  density elements are discarded.
+- `pump_probe` requires `basis.V_array` with one entry per Hamiltonian level.
+  Missing or malformed labels raise instead of silently selecting all entries.
+- `unfiltered` passes the complete pre-probe density matrix to the response.
+- The calculation report records the selected mode and the discarded density
+  Frobenius-norm fraction. This selection is a physical pathway choice, not a
+  sparse or performance approximation.
+- Radiation and PFID consume the already post-probe density matrix directly.
+  They do not apply the pre-probe equal-V selection, because the radiating
+  optical coherence is generally cross-V.
+
+Consequences:
+
+- the ambiguous `use_v_mask` flag and its `abs(delta_v) < 2` rule are removed;
+- every exact numerical route receives the same already-selected density;
+- pump-probe and unfiltered spectra are observably distinct when cross-V
+  coherence is present;
+- current pump-probe selection is documented as a V-label proxy, not as a
+  universal wave-vector phase-matching engine.
+
+Physics anchor: `tests/physics/test_spectroscopy_reference.py`.
+
+Implementation commit: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -731,19 +772,10 @@ disposition.
 
 ### O-009: Vibrational-coherence mask in spectroscopy
 
-`use_v_mask=True` currently zeros density-matrix elements with
-`abs(delta_v) >= 2` before the probe commutator. This is a physical
-approximation, not an implementation optimization, and it is presently the
-default.
-
-Recommended resolution: make the unmasked response the exact default and move
-the mask to an explicitly named approximate mode that reports the discarded
-density-matrix norm. Retaining the current implicit default would make an
-otherwise exact response route silently depend on a reduced-coherence model.
-
-Do not change this physics-facing default until the user confirms whether
-`abs(delta_v) >= 2` coherences are intentionally excluded in production
-spectra.
+Resolved by D-025 on 2026-08-11. The old implicit `abs(delta_v) < 2` mask was
+replaced by required `pump_probe` (`V_i == V_j`) and `unfiltered` modes. The
+selected mode and discarded density norm are observable, and post-probe
+radiation/PFID is not filtered.
 
 ## Decision template
 

@@ -26,6 +26,7 @@ recorded.
 | Nondimensional API | 25 exports exposed competing lambda strategies and removed heuristics | One strict conversion path plus neutral reporting; legacy modules and wrappers removed | strict nondimensional contract tests |
 | Spectroscopy policy | `optimized` silently chose paths, `sparse_threshold` was ignored, fixed response/Doppler cutoffs changed work, and requested device broadening was not applied | Explicit exact, approximate, and auto modes; required controls and execution report; grid-derived Doppler; requested device function applied | test_spectroscopy_reference.py |
 | Spectroscopy polarization | Complex detection reused ket coefficients, `xyz` ignored its third component, and malformed vectors could normalize silently | Jones-bra detection conjugates coefficients; every ordered axis contributes; dimensions, finiteness, uniqueness, and nonzero norm are required | test_spectroscopy_reference.py |
+| Spectroscopy pathway | `use_v_mask=True` silently kept `abs(delta_v) < 2` and missing V labels fell back to no mask | Required `pump_probe` (`V_i == V_j`) or `unfiltered`; discarded norm is reported; missing V labels raise; radiation/PFID remains unfiltered | test_spectroscopy_reference.py |
 
 ## P1: fix before API stabilization
 

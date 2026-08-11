@@ -478,9 +478,27 @@ The complete local suite passes 519 tests with 10 GPU skips. GitHub Actions run
 #49 passes Ruff/mypy, Python 3.10-3.13, physics/contracts, branch coverage,
 build/clean-wheel import, and the protected aggregate `Required CI gates` job.
 
-`use_v_mask=True` remains unchanged pending O-009 because suppressing
-`abs(delta_v) >= 2` coherences is a physical approximation whose intended
-production meaning requires user confirmation.
+### P1.5-C Pump-probe pathway-selection checkpoint
+
+Status: Complete on 2026-08-11 under D-025. Every calculator now requires
+`phase_matching="pump_probe"` or `"unfiltered"`. Pump-probe selection retains
+exactly the pre-probe `V_i == V_j` blocks, including all same-V rotational and
+M coherences, because V represents the current workflow's net vibrational
+absorption/emission order. A basis without correctly shaped V labels raises;
+there is no implicit fallback.
+
+The selection is applied once before dispatch to `matrix`, `loop`, `2d`, or
+`chunked`, so numerical route choice cannot change it. Reports expose the mode
+and discarded density Frobenius-norm fraction. Radiation and PFID bypass this
+pre-probe selection and retain post-probe cross-V optical coherence.
+
+The old `use_v_mask` and `abs(delta_v) < 2` behavior are deleted. The focused
+spectroscopy suite now has 26 passing tests, including same-V retention,
+cross-V removal, exact-route parity after selection, explicit-mode failures,
+observable pump-probe/unfiltered differences, density validation, and a
+nonzero PFID/radiation regression. The complete suite collects 535 tests:
+525 pass and the same 10 GPU tests skip. Ruff, formatting, and the named strict
+mypy modules are clean.
 
 ### P1.6 CI truthfulness
 

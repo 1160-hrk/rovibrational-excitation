@@ -697,6 +697,42 @@ applied after polarization projection. Any isotropic orientational average must
 already be represented by the density matrix and lab-frame dipole operators,
 or be selected later through an explicit approximation policy.
 
+The pre-probe pathway is always explicit:
+
+~~~text
+phase_matching = "pump_probe":
+    P_ij = 1 when V_i == V_j, otherwise 0
+    rho_selected = P * rho_pre_probe
+
+phase_matching = "unfiltered":
+    P_ij = 1 for every i, j
+    rho_selected = rho_pre_probe
+~~~
+
+For the present pump-probe workflow, V labels the net vibrational absorption
+and emission order and is therefore the selected phase-matching proxy. This
+retains the complete equal-V blocks: rotational and M coherences with
+`V_i == V_j` survive. It removes cross-V density entries before the probe
+commutator. `pump_probe` requires a valid `basis.V_array`; absence or shape
+mismatch raises, and no unfiltered fallback is permitted.
+
+The reported discarded-density fraction uses the Frobenius norm:
+
+~~~text
+f_discarded = ||(1 - P) * rho_pre_probe||_F / ||rho_pre_probe||_F
+~~~
+
+It is defined as zero for an all-zero density matrix. This fraction describes
+a physical pathway selection and is independent of the later commutator
+threshold used only by `approximate_sparse`.
+
+The selection applies only to absorption through `calculate`, whose input is
+the density immediately before the probe interaction. `calculate_radiation_spectrum`
+and `calculate_pfid_spectrum` instead consume a post-probe density directly and
+must retain cross-V optical coherence; applying `P` there would erase the
+radiating signal. This V-based contract is specific to the current pump-probe
+workflow and is not a general wave-vector bookkeeping implementation.
+
 For an angular-frequency grid, transition-specific Doppler broadening uses
 
 ~~~text
@@ -728,10 +764,12 @@ The response calculation policy is:
 
 `SpectroscopyCalculationReport` is the observable record of requested and
 executed method, estimated allocation, explicit memory/threshold controls,
-discarded fraction, and device-function application. Exact-route agreement and
-contract failures are anchored by
-`tests/physics/test_spectroscopy_reference.py`. Independent experimental spectra
-or sum rules remain required before decomposing the full spectroscopy module.
+discarded commutator fraction, explicit phase-matching mode, discarded
+pre-probe density fraction, and device-function application. Exact-route
+agreement, pathway selection, and contract failures are anchored by
+`tests/physics/test_spectroscopy_reference.py`. Independent experimental
+spectra or sum rules remain required before decomposing the full spectroscopy
+module.
 
 ## 11. Input validation principles
 

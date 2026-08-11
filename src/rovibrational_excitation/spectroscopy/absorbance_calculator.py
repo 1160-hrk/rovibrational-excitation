@@ -34,6 +34,8 @@ class SpectroscopyCalculationReport:
     memory_budget_bytes: int | None
     relative_threshold: float | None
     discarded_commutator_l2_fraction: float
+    phase_matching: str
+    discarded_density_l2_fraction: float
     device_function_applied: bool
 
 
@@ -88,6 +90,10 @@ class AbsorbanceCalculator:
         双極子行列オブジェクト（SI単位）
     conditions : ExperimentalConditions
         Explicit experimental conditions
+    phase_matching : {'unfiltered', 'pump_probe'}
+        Probe interaction前の密度行列に適用する位相整合経路。pump_probeは
+        ``V_i == V_j`` のブロックを選ぶ。この選別は吸収計算前だけに
+        適用され、post-probeの放射/PFID密度には適用されない。
     axes : str, default 'xy'
         使用する双極子成分と偏光ベクトルの成分順序
         ('x', 'y', 'z', 'xy', 'xz', 'yz', 'xyz'等)
@@ -103,7 +109,8 @@ class AbsorbanceCalculator:
     >>> H0 = basis.generate_H0()
     >>> dipole = LinMolDipoleMatrix(basis=basis, mu0=1.0e-30)
     >>> calculator = AbsorbanceCalculator(
-    ...     basis, H0, dipole, conditions, axes='xyz'
+    ...     basis, H0, dipole, conditions,
+    ...     phase_matching='pump_probe', axes='xyz'
     ... )
     >>> absorbance = calculator.calculate(rho, wavenumber, method='loop')
     """
@@ -114,14 +121,18 @@ class AbsorbanceCalculator:
         hamiltonian: Hamiltonian,
         dipole_matrix: DipoleMatrixBase,
         conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
         axes: str = "xy",
         pol_int: np.ndarray | None = None,
         pol_det: np.ndarray | None = None,
-        use_v_mask: bool = True,
     ):
         self.basis = basis
         self.hamiltonian = hamiltonian
         self.dipole_matrix = dipole_matrix
+        self.phase_matching = phase_matching
+        if phase_matching not in {"unfiltered", "pump_probe"}:
+            raise ValueError("phase_matching must be 'unfiltered' or 'pump_probe'")
         self.conditions = conditions
 
         # 軸の検証と設定
@@ -139,12 +150,12 @@ class AbsorbanceCalculator:
             name="pol_det",
         )
 
-        self.use_v_mask = use_v_mask
         # 計算用の内部変数を初期化
         self._setup_matrices()
         self._prepared_2d = False
         self._last_calculation_report: SpectroscopyCalculationReport | None = None
         self._last_discarded_commutator_l2_fraction = 0.0
+        self._last_discarded_density_l2_fraction = 0.0
 
     def _validate_axes(self):
         """Validate a nonempty, unique Cartesian component order."""
@@ -190,27 +201,62 @@ class AbsorbanceCalculator:
             energy_vstack - energy_vstack.T
         ) / H_DIRAC - 1j * gamma_coh
 
-        # 振動準位差マスクを作成
-        if self.use_v_mask:
-            self._create_v_mask()
-        else:
-            self.rho_mask = np.ones((self.N_level, self.N_level))
+        self._setup_phase_matching_mask()
 
         # 遷移双極子行列を取得
         self._setup_dipole_matrices()
 
-    def _create_v_mask(self):
-        """振動準位差に基づくマスクを作成"""
-        # BasisがV配列を持っている場合
+    def _setup_phase_matching_mask(self) -> None:
+        """Build the selected pre-probe density-matrix pathway mask."""
+        if self.phase_matching == "unfiltered":
+            self._phase_matching_mask = np.ones(
+                (self.N_level, self.N_level),
+                dtype=bool,
+            )
+            return
+
         v_array = getattr(self.basis, "V_array", None)
-        if v_array is not None:
-            v_i = v_array.reshape(-1, 1)
-            v_j = v_array.reshape(1, -1)
-            # v差が1以内の要素のみを許可
-            self.rho_mask = (np.abs(v_i - v_j) < 2).astype(float)
-        else:
-            # V配列がない場合は全要素を許可
-            self.rho_mask = np.ones((self.N_level, self.N_level))
+        if v_array is None:
+            raise ValueError("phase_matching='pump_probe' requires basis.V_array")
+        try:
+            vibrational_levels = np.asarray(v_array, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "basis.V_array must contain finite vibrational quantum numbers"
+            ) from exc
+        if vibrational_levels.shape != (self.N_level,):
+            raise ValueError(f"basis.V_array must have shape ({self.N_level},)")
+        if not np.all(np.isfinite(vibrational_levels)):
+            raise ValueError(
+                "basis.V_array must contain finite vibrational quantum numbers"
+            )
+        self._phase_matching_mask = (
+            vibrational_levels[:, np.newaxis] == vibrational_levels[np.newaxis, :]
+        )
+
+    def _validate_density_matrix(self, rho: np.ndarray) -> np.ndarray:
+        """Return a finite complex density matrix with the basis shape."""
+        rho_array = np.asarray(rho, dtype=np.complex128)
+        expected_shape = (self.N_level, self.N_level)
+        if rho_array.shape != expected_shape:
+            raise ValueError(
+                f"rho must have shape {expected_shape}, got {rho_array.shape}"
+            )
+        if not np.all(np.isfinite(rho_array.real)) or not np.all(
+            np.isfinite(rho_array.imag)
+        ):
+            raise ValueError("rho must contain only finite values")
+        return rho_array
+
+    def _select_pre_probe_density(self, rho: np.ndarray) -> np.ndarray:
+        """Apply the explicit pre-probe pathway selection and record its loss."""
+        selected = np.where(self._phase_matching_mask, rho, 0.0)
+        total_norm = float(np.linalg.norm(rho))
+        discarded_norm = float(np.linalg.norm(rho[~self._phase_matching_mask]))
+        self._last_discarded_density_l2_fraction = (
+            discarded_norm / total_norm if total_norm > 0.0 else 0.0
+        )
+        return selected
 
     def _setup_dipole_matrices(self):
         """Build interaction and analyzer-projected dipole operators."""
@@ -435,7 +481,7 @@ class AbsorbanceCalculator:
                 "device_resolution is applicable only when apply_device_function=True"
             )
 
-        rho_array = np.asarray(rho, dtype=np.complex128)
+        rho_array = self._select_pre_probe_density(self._validate_density_matrix(rho))
         wavenumber_array = np.asarray(wavenumber, dtype=float)
         if apply_doppler or apply_device_function:
             self._uniform_grid_spacing(wavenumber_array, name="wavenumber")
@@ -490,6 +536,8 @@ class AbsorbanceCalculator:
             discarded_commutator_l2_fraction=(
                 self._last_discarded_commutator_l2_fraction
             ),
+            phase_matching=self.phase_matching,
+            discarded_density_l2_fraction=(self._last_discarded_density_l2_fraction),
             device_function_applied=apply_device_function,
         )
         return spectrum
@@ -502,11 +550,8 @@ class AbsorbanceCalculator:
         ):
             self.prepare_2d_calculation(wavenumber)
 
-        # マスクを適用
-        rho_masked = rho * self.rho_mask
-
         # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
+        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
 
         # 強度因子を計算
         intensity_factors = np.zeros(self.ind_nonzero.shape[1], dtype=np.complex128)
@@ -530,11 +575,8 @@ class AbsorbanceCalculator:
         """行列演算による計算"""
         omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
 
-        # マスクを適用
-        rho_masked = rho * self.rho_mask
-
         # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
+        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
 
         # 各遷移に対する応答を計算
         responses = []
@@ -566,8 +608,7 @@ class AbsorbanceCalculator:
         """ループによる計算（メモリ効率重視）"""
         omega = 2 * np.pi * C * 1e2 * wavenumber
 
-        rho_masked = rho * self.rho_mask
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
+        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
 
         resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
 
@@ -601,12 +642,9 @@ class AbsorbanceCalculator:
         """
         from scipy.sparse import csr_matrix
 
-        # 密度行列にマスクを適用
-        rho_masked = rho * self.rho_mask
-
         # 応答行列を計算（疎行列最適化）
         mu_int_sparse = csr_matrix(self.mu_int)
-        rho_sparse = csr_matrix(rho_masked)
+        rho_sparse = csr_matrix(rho)
 
         # コミュテータ [mu_int, rho] を疎行列で計算
         rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
@@ -722,9 +760,10 @@ class AbsorbanceCalculator:
         np.ndarray
             放射スペクトル [mOD]
         """
-        omega = 2 * np.pi * C * 1e2 * wavenumber
+        rho_array = self._validate_density_matrix(rho)
+        wavenumber_array = np.asarray(wavenumber, dtype=float)
+        omega = 2 * np.pi * C * 1e2 * wavenumber_array
 
-        rho_masked = rho * self.rho_mask
         resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
 
         for trans in self.ind_nonzero.T:
@@ -732,7 +771,7 @@ class AbsorbanceCalculator:
             # 放射の場合は順序が逆
             resp_lin_per_mole += -(
                 self.mu_det[j, i]
-                * rho_masked[i, j]
+                * rho_array[i, j]
                 / (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
             )
 
@@ -827,6 +866,7 @@ def create_calculator_from_params(
     optical_length: float,
     T2: float,
     molecular_mass: float,
+    phase_matching: Literal["unfiltered", "pump_probe"],
     axes: str = "xy",
     pol_int: np.ndarray | None = None,
     pol_det: np.ndarray | None = None,
@@ -852,6 +892,8 @@ def create_calculator_from_params(
         コヒーレンス緩和時間 [ps]
     molecular_mass : float
         分子質量 [kg]
+    phase_matching : {'unfiltered', 'pump_probe'}
+        Probe interaction前の密度行列に適用する位相整合経路
     axes : str
         使用する軸
     pol_int, pol_det : np.ndarray, optional
@@ -875,6 +917,7 @@ def create_calculator_from_params(
         hamiltonian=hamiltonian,
         dipole_matrix=dipole_matrix,
         conditions=conditions,
+        phase_matching=phase_matching,
         axes=axes,
         pol_int=pol_int,
         pol_det=pol_det,

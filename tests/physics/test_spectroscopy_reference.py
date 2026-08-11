@@ -35,10 +35,10 @@ def two_level_case():
         hamiltonian,
         dipole,
         conditions,
+        phase_matching="unfiltered",
         axes="xy",
         pol_int=np.array([1.0, 0.0]),
         pol_det=np.array([1.0, 0.0]),
-        use_v_mask=False,
     )
     rho = np.diag([1.0, 0.0]).astype(np.complex128)
     wavenumber = np.linspace(400.0, 600.0, 17)
@@ -158,6 +158,14 @@ class _ThreeLevelBasis:
     V_array = np.array([0, 1, 2])
 
 
+class _SameVBlockBasis:
+    V_array = np.array([0, 0, 1])
+
+
+class _BasisWithoutV:
+    pass
+
+
 class _ThreeLevelHamiltonian:
     def get_eigenvalues(self, units):
         assert units == "J"
@@ -227,10 +235,10 @@ def test_exact_methods_enumerate_detection_transition_support():
         _ThreeLevelHamiltonian(),
         _OrthogonalTransitionDipole(),
         conditions,
+        phase_matching="unfiltered",
         axes="xy",
         pol_int=np.array([1.0, 0.0]),
         pol_det=np.array([0.0, 1.0]),
-        use_v_mask=False,
     )
     state = np.array([1.0, 0.0, 1.0], dtype=np.complex128) / np.sqrt(2.0)
     rho = np.outer(state, state.conj())
@@ -265,10 +273,10 @@ def test_approximate_sparse_requires_relative_threshold_and_reports_discarding()
         _ThreeLevelHamiltonian(),
         _ThreeLevelDipole(),
         conditions,
+        phase_matching="unfiltered",
         axes="xy",
         pol_int=np.array([1.0, 0.0]),
         pol_det=np.array([1.0, 0.0]),
-        use_v_mask=False,
     )
     rho = np.diag([1.0, 0.5, 0.0]).astype(np.complex128)
     wavenumber = np.linspace(400.0, 1200.0, 19)
@@ -424,10 +432,10 @@ def _circular_calculator(polarization, *, axes="xy", pol_det=None):
         _DegenerateCircularHamiltonian(),
         _DegenerateCircularDipole(),
         _spectroscopy_conditions(),
+        phase_matching="unfiltered",
         axes=axes,
         pol_int=polarization,
         pol_det=pol_det,
-        use_v_mask=False,
     )
 
 
@@ -593,3 +601,136 @@ def test_matrix_and_loop_share_transition_specific_doppler(two_level_case):
     matrix = calculator.calculate(rho, wavenumber, method="matrix", apply_doppler=True)
 
     np.testing.assert_allclose(matrix, loop, rtol=2.0e-14, atol=2.0e-14)
+
+
+def _pathway_calculator(basis, phase_matching):
+    return AbsorbanceCalculator(
+        basis,
+        _ThreeLevelHamiltonian(),
+        _ThreeLevelDipole(),
+        _spectroscopy_conditions(),
+        phase_matching=phase_matching,
+        axes="x",
+        pol_int=np.array([1.0]),
+        pol_det=np.array([1.0]),
+    )
+
+
+def test_pump_probe_selects_same_v_blocks_and_reports_discarded_norm():
+    calculator = _pathway_calculator(_SameVBlockBasis(), "pump_probe")
+    state = np.array([1.0, 2.0, 3.0j], dtype=np.complex128) / np.sqrt(14.0)
+    rho = np.outer(state, state.conj())
+    selected = calculator._select_pre_probe_density(rho)
+    expected_mask = np.equal.outer(
+        _SameVBlockBasis.V_array,
+        _SameVBlockBasis.V_array,
+    )
+
+    np.testing.assert_allclose(selected, np.where(expected_mask, rho, 0.0))
+    assert selected[0, 1] == rho[0, 1]  # same-V J/M-like coherence survives
+    assert selected[0, 2] == 0.0  # cross-V optical-order coherence is removed
+
+    wavenumber = np.linspace(400.0, 1200.0, 19)
+    loop = calculator.calculate(rho, wavenumber, method="loop")
+    for method, options in (
+        ("matrix", {}),
+        ("2d", {}),
+        ("chunked", {"chunk_size": 7}),
+    ):
+        np.testing.assert_allclose(
+            calculator.calculate(rho, wavenumber, method=method, **options),
+            loop,
+            rtol=2.0e-14,
+            atol=2.0e-14,
+            err_msg=method,
+        )
+
+    report = calculator.last_calculation_report
+    discarded = np.where(expected_mask, 0.0, rho)
+    expected_fraction = np.linalg.norm(discarded) / np.linalg.norm(rho)
+    assert report.phase_matching == "pump_probe"
+    assert report.discarded_density_l2_fraction == pytest.approx(expected_fraction)
+
+    calculator.calculate(np.zeros_like(rho), wavenumber, method="loop")
+    assert calculator.last_calculation_report.discarded_density_l2_fraction == 0.0
+
+
+def test_unfiltered_and_pump_probe_pathways_are_observably_distinct():
+    state = np.array([1.0, 2.0, 3.0j], dtype=np.complex128) / np.sqrt(14.0)
+    rho = np.outer(state, state.conj())
+    wavenumber = np.linspace(400.0, 1200.0, 101)
+    unfiltered = _pathway_calculator(_SameVBlockBasis(), "unfiltered")
+    pump_probe = _pathway_calculator(_SameVBlockBasis(), "pump_probe")
+
+    unfiltered_spectrum = unfiltered.calculate(rho, wavenumber, method="loop")
+    selected_spectrum = pump_probe.calculate(rho, wavenumber, method="loop")
+
+    assert np.max(np.abs(unfiltered_spectrum - selected_spectrum)) > 1.0e-6
+    assert unfiltered.last_calculation_report.phase_matching == "unfiltered"
+    assert unfiltered.last_calculation_report.discarded_density_l2_fraction == 0.0
+
+
+def test_phase_matching_mode_is_required_and_never_falls_back():
+    args = (
+        _ThreeLevelBasis(),
+        _ThreeLevelHamiltonian(),
+        _ThreeLevelDipole(),
+        _spectroscopy_conditions(),
+    )
+    with pytest.raises(TypeError, match="phase_matching"):
+        AbsorbanceCalculator(*args)
+    with pytest.raises(ValueError, match="phase_matching must be"):
+        AbsorbanceCalculator(*args, phase_matching="automatic")
+    with pytest.raises(ValueError, match="requires basis.V_array"):
+        _pathway_calculator(_BasisWithoutV(), "pump_probe")
+    malformed_shape = _SameVBlockBasis()
+    malformed_shape.V_array = np.array([0, 1])
+    with pytest.raises(ValueError, match="V_array must have shape"):
+        _pathway_calculator(malformed_shape, "pump_probe")
+    nonfinite_labels = _SameVBlockBasis()
+    nonfinite_labels.V_array = np.array([0.0, np.nan, 1.0])
+    with pytest.raises(
+        ValueError,
+        match="finite vibrational quantum numbers",
+    ):
+        _pathway_calculator(nonfinite_labels, "pump_probe")
+
+
+@pytest.mark.parametrize(
+    "invalid_rho",
+    [
+        np.zeros((2, 2), dtype=np.complex128),
+        np.full((3, 3), np.nan, dtype=np.complex128),
+    ],
+)
+def test_density_matrix_is_strictly_validated(invalid_rho):
+    calculator = _pathway_calculator(_ThreeLevelBasis(), "unfiltered")
+    with pytest.raises(ValueError, match="rho must"):
+        calculator.calculate(
+            invalid_rho,
+            np.linspace(400.0, 1200.0, 19),
+            method="loop",
+        )
+
+
+def test_radiation_and_pfid_keep_post_probe_optical_coherence():
+    calculator = _pathway_calculator(_ThreeLevelBasis(), "pump_probe")
+    rho_after_probe = np.zeros((3, 3), dtype=np.complex128)
+    rho_after_probe[1, 0] = 1.0
+    wavenumber = np.linspace(450.0, 550.0, 101)
+
+    # The same cross-V entry is excluded only from the pre-probe absorption input.
+    absorption = calculator.calculate(
+        rho_after_probe,
+        wavenumber,
+        method="loop",
+    )
+    radiation = calculator.calculate_radiation_spectrum(
+        rho_after_probe,
+        wavenumber,
+    )
+    pfid = calculator.calculate_pfid_spectrum(rho_after_probe, wavenumber)
+
+    np.testing.assert_allclose(absorption, 0.0)
+    assert np.max(np.abs(radiation)) > 1.0e-6
+    np.testing.assert_allclose(pfid, radiation)

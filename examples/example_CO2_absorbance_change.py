@@ -410,6 +410,7 @@ calculator = AbsorbanceCalculator(
     hamiltonian=H0,
     dipole_matrix=dipole_matrix,
     conditions=conditions,
+    phase_matching="pump_probe",
     axes=AXES,
     pol_int=INTERACTION_POL,
     pol_det=DETECTION_POL
