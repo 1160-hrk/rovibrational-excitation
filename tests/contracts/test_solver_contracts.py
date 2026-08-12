@@ -4,7 +4,15 @@ import numpy as np
 import pytest
 
 import rovibrational_excitation.dipole.base as dipole_base
-from rovibrational_excitation.core.propagation import PropagatorFactory
+from rovibrational_excitation.core.execution import (
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
+)
+from rovibrational_excitation.core.propagation import (
+    LiouvillePropagator,
+    PropagatorFactory,
+)
 from rovibrational_excitation.core.propagation.algorithms.rk4 import (
     schrodinger as rk4_module,
 )
@@ -13,6 +21,10 @@ from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import
 )
 from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
+)
+from rovibrational_excitation.core.propagation.capabilities import (
+    PropagationAlgorithm,
+    StatePath,
 )
 
 
@@ -118,29 +130,72 @@ def test_cupy_final_only_keeps_low_level_row_shape(monkeypatch):
     np.testing.assert_array_equal(result, expected)
 
 
-def test_factory_returns_configured_split_operator():
+def test_factory_returns_explicitly_configured_split_operator():
     solver = PropagatorFactory.create_propagator(
-        state_type="pure",
-        algorithm="split_operator",
+        state_path=StatePath.PURE,
+        algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+        execution_policy=ExecutionPolicy(
+            backend=ArrayBackend.NUMPY, storage=MatrixStorage.CSR
+        ),
+        renorm=False,
     )
 
     assert solver.algorithm == "split_operator"
+    assert solver.sparse is True
     assert solver.get_algorithm_name() == "Schrödinger-split_operator"
 
 
-def test_factory_automatic_selection_is_observable():
-    split_solver = PropagatorFactory.create_propagator(
-        state_type="pure", const_polarization=True
+def test_factory_requires_typed_explicit_choices():
+    with pytest.raises(TypeError):
+        PropagatorFactory.create_propagator()
+
+    with pytest.raises(TypeError, match="StatePath"):
+        PropagatorFactory.create_propagator(
+            state_path="pure",
+            algorithm=PropagationAlgorithm.RK4,
+            execution_policy=ExecutionPolicy(
+                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+            ),
+            renorm=False,
+        )
+
+
+def test_factory_rejects_removed_automatic_selection_inputs():
+    with pytest.raises(TypeError, match="const_polarization"):
+        PropagatorFactory.create_propagator(
+            state_path=StatePath.PURE,
+            algorithm=PropagationAlgorithm.RK4,
+            execution_policy=ExecutionPolicy(
+                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+            ),
+            renorm=False,
+            const_polarization=True,
+        )
+
+
+def test_factory_dispatches_explicit_density_path():
+    solver = PropagatorFactory.create_propagator(
+        state_path=StatePath.DENSITY,
+        algorithm=PropagationAlgorithm.RK4,
+        execution_policy=ExecutionPolicy(
+            backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+        ),
+        renorm=False,
     )
-    rk4_solver = PropagatorFactory.create_propagator(state_type="pure")
 
-    assert split_solver.algorithm == "split_operator"
-    assert rk4_solver.algorithm == "rk4"
+    assert isinstance(solver, LiouvillePropagator)
 
 
-def test_factory_rejects_unknown_algorithm():
-    with pytest.raises(ValueError, match="algorithm"):
-        PropagatorFactory.create_propagator(algorithm="split-operator")
+def test_factory_rejects_renormalization_for_density_path():
+    with pytest.raises(ValueError, match="renorm is not applicable"):
+        PropagatorFactory.create_propagator(
+            state_path=StatePath.DENSITY,
+            algorithm=PropagationAlgorithm.RK4,
+            execution_policy=ExecutionPolicy(
+                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+            ),
+            renorm=True,
+        )
 
 
 def test_dipole_backend_does_not_fall_back_from_cupy(monkeypatch):

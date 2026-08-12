@@ -212,17 +212,16 @@ visualization failure.
 | `simulation.models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |
-| `core.propagation.PropagatorFactory.create_propagator` | state type, backend, algorithm, polarization/sparsity heuristic | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | temporary public, then delete |
+| `core.propagation.PropagatorFactory.create_propagator` | required typed state path, algorithm, execution policy, and renorm | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete in P2.4 |
 | `optimization.ALGO_REGISTRY` | `local`, `krotov`, `grape` | package and example optimization runners | private typed optimization dispatch | internal |
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
 | `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | simulation config and tests | typed schema conversion at boundary | internal singleton, then delete |
 | `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found | typed constructors owned by operator/field or config boundary | delete after confirming no external workflow |
 | `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | one explicit field constructor contract | temporary public method; consolidate in Phase 4 |
 
-The current `PropagatorFactory` automatically prefers split-operator for a
-pure state with constant polarization. The v0.3 contract must not retain that
-heuristic silently: the selected solver is explicit and validated against the
-problem capabilities.
+`PropagatorFactory` no longer inspects polarization or sparsity. It requires
+typed state path, algorithm, execution policy, and renormalization choices and
+validates them against the shared capability registry before construction.
 
 ## 6. Examples and documentation callers
 

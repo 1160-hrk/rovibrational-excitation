@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 641 passed, 10 skipped (651 collected) |
+| Pytest | 643 passed, 10 skipped (653 collected) |
 | Measured branch coverage | 66% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -135,7 +135,7 @@ These commits are the starting point, not the final architecture.
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
-| 2 | Typed propagation contracts | In progress — P2.1 complete; P2.2 complete; P2.3-b normal-runner policy wiring and scalar-model NumPy CSR complete; old factory auto-selection remains for P2.3-c |
+| 2 | Typed propagation contracts | In progress — P2.1 complete; P2.2 complete; P2.3 complete — normal runner and typed factory use one explicit execution policy with no automatic algorithm selection |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |

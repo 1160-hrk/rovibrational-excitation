@@ -638,6 +638,8 @@ Additional constraints:
   unsupported. The legacy factory rejection is transitional.
 - A backend name must govern both dipole construction and time propagation for
   a simulation case to avoid cross-backend array mismatches.
+- `PropagatorFactory` requires typed state path, algorithm, execution policy,
+  and renormalization choice; it never selects from polarization or sparsity.
 - Low-level pure-state propagation returns shape `(saved_times, dimension)`.
   This includes final-only output, whose shape is `(1, dimension)`, on both
   NumPy and CuPy paths. Higher-level final-only APIs may remove that leading

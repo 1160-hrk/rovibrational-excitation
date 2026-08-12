@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-12
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-034 (P2.3-b)
+Verified behavioral contract: D-035 (P2.3-c)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -132,7 +132,7 @@ pytest -q
 ~~~
 
 ~~~text
-641 passed, 10 GPU tests skipped (651 collected)
+643 passed, 10 GPU tests skipped (653 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -196,10 +196,9 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Complete P2.3-c by removing the old propagator-factory automatic algorithm
-   selection and making production solver construction consume typed execution
-   choices without changing low-level numerical kernels.
-2. Continue P2.4 with typed propagation options after factory defaults are gone.
+1. Continue P2.4 with typed `PropagationOptions`; remove solver `**kwargs` and
+   conditional return shapes through tested migration adapters.
+2. Introduce `PropagationProblem` only after options are stable.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain independent optimization objective/gradient and spectroscopy
    references before Phase 7 decomposition.

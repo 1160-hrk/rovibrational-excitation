@@ -955,10 +955,9 @@ Decision:
 - `dense` and `sparse` properties exist only as legacy adapter projections from
   the single storage choice.
 
-P2.3-b removed normal-runner dual-boolean inference and passes one
-policy to dipole construction and propagation. The old factory automatic
-algorithm selection remains a known transitional violation for P2.3-c and must
-not be reused by the typed facade.
+P2.3-b removed normal-runner dual-boolean inference and passes one policy to
+dipole construction and propagation. D-035 replaces the old factory automatic
+algorithm selection with required typed choices and capability preflight.
 
 Implementation anchors: `core/execution.py`,
 `core/propagation/capabilities.py`, and
@@ -1004,6 +1003,42 @@ Implementation anchors: `simulation/validation.py`, `simulation/runner.py`,
 `dipole/viblad/cache.py`,
 `tests/contracts/test_simulation_execution_wiring.py`, and
 `tests/physics/test_linear_molecule_reference.py`.
+
+Implementation commit: pending.
+
+### D-035: Propagator factory dispatch is explicit and typed
+
+Status: Accepted on 2026-08-12 as the P2.3-c completion of D-026.
+
+Scope: `core.propagation.PropagatorFactory` dispatch only.
+
+Decision:
+
+- factory construction requires keyword-only `StatePath`,
+  `PropagationAlgorithm`, `ExecutionPolicy`, and `renorm`;
+- raw strings, omitted choices, and the removed `const_polarization` and
+  `dipole_matrix` heuristic inputs raise;
+- the shared capability registry runs before any propagator constructor;
+- pure state dispatch returns `SchrodingerPropagator`, incoherent ensemble
+  dispatch returns `MixedStatePropagator`, and density dispatch returns
+  `LiouvillePropagator`;
+- incoherent ensemble plus split operator is accepted as required by D-026;
+- density propagation rejects `renorm=True` because typed density input is never
+  repaired or normalized.
+
+Consequences:
+
+- polarization, sparsity inspection, array shape, and optional dependency
+  availability never choose an algorithm;
+- backend and sparse constructor flags are temporary projections of the one
+  execution policy;
+- numerical kernels and all optimizer propagation calls are unchanged;
+- the factory remains a temporary public migration facade until P2.4 replaces
+  it with typed `PropagationOptions`.
+
+Implementation anchors: `core/propagation/factory.py`,
+`tests/contracts/test_solver_contracts.py`, and
+`tests/physics/test_solver_invariants.py`.
 
 Implementation commit: pending.
 

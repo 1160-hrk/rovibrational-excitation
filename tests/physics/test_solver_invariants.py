@@ -17,6 +17,11 @@ import pytest
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField
+from rovibrational_excitation.core.execution import (
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
+)
 from rovibrational_excitation.core.propagation import (
     LiouvillePropagator,
     PropagatorFactory,
@@ -33,6 +38,10 @@ from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodi
 )
 from rovibrational_excitation.core.propagation.algorithms.validation import (
     validate_density_matrix_properties,
+)
+from rovibrational_excitation.core.propagation.capabilities import (
+    PropagationAlgorithm,
+    StatePath,
 )
 from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 
@@ -365,9 +374,13 @@ def test_unsupported_solver_capabilities_raise_explicitly():
         rk4_schrodinger(h0, dipole, dipole, field, field, initial, 0.1, backend="jax")
     with pytest.raises(ValueError, match="only backend='numpy'"):
         LiouvillePropagator(backend="cupy", validate_units=False)
-    with pytest.raises(ValueError, match="only supports pure states"):
-        PropagatorFactory.create_propagator(
-            state_type="mixed",
-            algorithm="split_operator",
-            validate_units=False,
-        )
+    ensemble_solver = PropagatorFactory.create_propagator(
+        state_path=StatePath.INCOHERENT_ENSEMBLE,
+        algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+        execution_policy=ExecutionPolicy(
+            backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+        ),
+        renorm=False,
+        validate_units=False,
+    )
+    assert ensemble_solver.algorithm == "split_operator"
