@@ -123,9 +123,10 @@ superposition. They are not an incoherent population sum.
 Status: Accepted
 Scope: `MixedStatePropagator`
 
-An ensemble of state vectors is propagated independently. Vector norm squared
-provides each raw statistical weight. Weights are normalized to sum to one
-before density operators are summed.
+An `IncoherentEnsemble` is propagated component by component. Vector norm
+squared provides each raw statistical weight. Weights are normalized to sum to
+one before density operators are summed. Raw list input is rejected at the
+propagator boundary.
 
 No coherent cross terms are introduced.
 
@@ -192,9 +193,8 @@ Status: Accepted
 Scope: Density matrix validation
 
 Validation may accept roundoff-scale deviations but does not clip
-eigenvalues, symmetrize, or project a matrix. Mixed-state explicit density input
-continues to perform its documented positive trace normalization after
-validation.
+eigenvalues, symmetrize, project, or normalize a matrix. `DensityState` requires
+trace one, and mixed-state propagation passes the validated matrix unchanged.
 
 ### D-014: Refactoring is staged, not a big-bang rewrite
 
@@ -869,8 +869,9 @@ Decision:
   within the same scale-aware tolerance. It never normalizes, clips,
   symmetrizes, or projects input.
 - Typed constructors never distinguish state kind from list membership or array
-  shape. The existing array/list inference remains only in legacy propagator
-  adapters until their P2.2 migration.
+  shape. As of P2.2-b, `MixedStatePropagator` also rejects raw list and array
+  input; direct Schrodinger and Liouville arrays remain single-kind legacy
+  boundaries until their own migration.
 - P2.2-a types are canonical NumPy host values. They do not advertise native
   CuPy ownership; backend transfer and capability validation belong to P2.3.
 
@@ -880,6 +881,28 @@ and is now reused for unit-norm roundoff.
 
 Implementation anchors: `core/states.py` and
 `tests/contracts/test_state_kind_contracts.py`.
+
+### D-031: Mixed-state propagation dispatches only by explicit state kind
+
+Status: Accepted on 2026-08-12 as the P2.2-b implementation of D-026.
+
+Scope: `MixedStatePropagator.propagate` initial-state boundary.
+
+Decision:
+
+- accepted inputs are exactly `IncoherentEnsemble | DensityState`;
+- raw iterables and raw square arrays raise `TypeError`;
+- ensemble components and normalized weights are unwrapped immediately before
+  the unchanged Schrodinger propagation path;
+- the validated trace-one density matrix is passed unchanged to the existing
+  Liouville propagation path;
+- RK4/split and dense/sparse capability rules are unchanged.
+
+This removes semantic inference and the legacy density trace normalization. It
+does not change either numerical time-development kernel.
+
+Implementation anchors: `core/propagation/mixed_state.py` and
+`tests/contracts/test_mixed_state_kind_dispatch.py`.
 
 ## Open decisions
 

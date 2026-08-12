@@ -22,6 +22,7 @@ from rovibrational_excitation.core.propagation import (
     MixedStatePropagator,
     SchrodingerPropagator,
 )
+from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole import (
     LinMolDipoleMatrix,
@@ -254,7 +255,7 @@ def test_mixed_vs_pure_states():
     )
 
     # 同じ純粋状態を混合状態として伝播
-    psi0s = [psi0]
+    psi0s = IncoherentEnsemble([psi0])
     rho_traj = MixedStatePropagator().propagate(
         H0, efield, dipole, psi0s, return_traj=True
     )
@@ -487,10 +488,12 @@ def test_coherent_vs_incoherent():
         psi_coherent_final = result_coherent[0]
 
     # インコヒーレント状態（統計混合）
-    psi0s = [
-        np.array([1.0, 0.0], dtype=np.complex128),
-        np.array([0.0, 1.0], dtype=np.complex128),
-    ]
+    psi0s = IncoherentEnsemble(
+        [
+            np.array([1.0, 0.0], dtype=np.complex128),
+            np.array([0.0, 1.0], dtype=np.complex128),
+        ]
+    )
     result_incoherent = MixedStatePropagator().propagate(
         H0, efield, dipole, psi0s, return_traj=False
     )

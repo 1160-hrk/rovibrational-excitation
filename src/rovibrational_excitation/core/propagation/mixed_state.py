@@ -2,61 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import Literal
 
 import numpy as np
 
+from ..states import DensityState, IncoherentEnsemble
 from ..units.validators import validator
-from .algorithms.validation import validate_density_matrix_properties
 from .base import PropagatorBase
 from .schrodinger import SchrodingerPropagator
 from .utils import get_backend
-
-
-def _normalized_ensemble(
-    initial_states: Iterable[np.ndarray],
-) -> tuple[list[np.ndarray], np.ndarray]:
-    """Normalize state vectors and their norm-squared statistical weights."""
-    raw_states = list(initial_states)
-    if not raw_states:
-        raise ValueError("initial_state ensemble must not be empty")
-
-    states: list[np.ndarray] = []
-    raw_weights: list[float] = []
-    dimension: int | None = None
-    for index, state in enumerate(raw_states):
-        state_array = np.asarray(state, dtype=np.complex128).reshape(-1)
-        if dimension is None:
-            dimension = state_array.size
-        elif state_array.size != dimension:
-            raise ValueError(
-                "all initial states must have the same dimension; "
-                f"state 0 has {dimension}, state {index} has {state_array.size}"
-            )
-
-        weight = float(np.vdot(state_array, state_array).real)
-        if not np.isfinite(weight):
-            raise ValueError("initial-state weights must be finite")
-        if weight == 0.0:
-            continue
-        states.append(state_array / np.sqrt(weight))
-        raw_weights.append(weight)
-
-    if not raw_weights:
-        raise ValueError("at least one initial state must have non-zero norm")
-
-    weights = np.asarray(raw_weights, dtype=float)
-    weights /= weights.sum()
-    return states, weights
-
-
-def _normalized_density_matrix(initial_state: np.ndarray) -> np.ndarray:
-    """Validate and normalize an explicitly supplied density matrix."""
-    density = np.asarray(initial_state, dtype=np.complex128)
-    validate_density_matrix_properties(density)
-    trace = np.trace(density)
-    return density / trace.real
 
 
 class MixedStatePropagator(PropagatorBase):
@@ -95,16 +49,15 @@ class MixedStatePropagator(PropagatorBase):
         hamiltonian,
         efield,
         dipole_matrix,
-        initial_state: np.ndarray | Iterable[np.ndarray],
+        initial_state: DensityState | IncoherentEnsemble,
         **kwargs,
     ) -> np.ndarray | tuple:
-        """Propagate a density matrix or an ensemble of pure states.
+        """Propagate an explicitly typed density state or incoherent ensemble.
 
-        For an ensemble, each input vector contributes a raw statistical weight
-        ``w_i = ||psi_i||^2``. The weights are normalized to sum to one and each
-        vector is normalized before propagation. Unit-norm vectors therefore
-        form an equal mixture; arbitrary weights can be encoded as
-        ``sqrt(w_i) * psi_i``.
+        ``IncoherentEnsemble`` owns normalized components and statistical
+        weights. ``DensityState`` owns a validated trace-one density matrix.
+        This boundary never infers a state kind from array shape and never
+        repairs or renormalizes typed input.
         """
         removed_timestep_options = {
             key for key in ("auto_timestep", "target_accuracy") if key in kwargs
@@ -142,6 +95,11 @@ class MixedStatePropagator(PropagatorBase):
                 "MixedStatePropagator constructor"
             )
 
+        if not isinstance(initial_state, (DensityState, IncoherentEnsemble)):
+            raise TypeError(
+                "initial_state must be an IncoherentEnsemble or DensityState"
+            )
+
         return_time_rho = kwargs.get("return_time_rho", False)
         verbose = kwargs.get("verbose", False)
 
@@ -154,11 +112,7 @@ class MixedStatePropagator(PropagatorBase):
                 if verbose:
                     self.print_validation_warnings()
 
-        if (
-            isinstance(initial_state, np.ndarray)
-            and initial_state.ndim == 2
-            and initial_state.shape[0] == initial_state.shape[1]
-        ):
+        if isinstance(initial_state, DensityState):
             from .liouville import LiouvillePropagator
 
             if self.algorithm != "rk4":
@@ -172,12 +126,14 @@ class MixedStatePropagator(PropagatorBase):
                 backend=self.backend,
                 validate_units=False,
             )
-            density = _normalized_density_matrix(initial_state)
             return liouville_prop.propagate(
-                hamiltonian, efield, dipole_matrix, density, **kwargs
+                hamiltonian,
+                efield,
+                dipole_matrix,
+                initial_state.matrix,
+                **kwargs,
             )
 
-        states, weights = _normalized_ensemble(initial_state)
         xp = get_backend(self.backend)
         rho_out = None
         time_psi = None
@@ -189,12 +145,12 @@ class MixedStatePropagator(PropagatorBase):
         propagation_kwargs.setdefault("sparse", self.sparse)
         propagation_kwargs["verbose"] = False
 
-        for psi0, weight in zip(states, weights):
+        for state, weight in zip(initial_state.states, initial_state.weights):
             result = self._schrodinger_prop.propagate(
                 hamiltonian,
                 efield,
                 dipole_matrix,
-                psi0,
+                state.amplitudes,
                 **propagation_kwargs,
             )
 

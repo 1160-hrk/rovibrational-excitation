@@ -271,8 +271,8 @@ performed explicitly before typed construction.
 
 ### 4.3 Incoherent ensemble
 
-An incoherent mixture uses `MixedStatePropagator` with an iterable of state
-vectors.
+An incoherent mixture constructs an `IncoherentEnsemble` from an iterable
+of state vectors and passes that explicit type to `MixedStatePropagator`.
 
 For each vector `psi_i`:
 
@@ -295,10 +295,9 @@ The typed `DensityState` boundary requires trace one within the scale-aware
 tolerance in Section 5. It never normalizes, clips, symmetrizes, or otherwise
 repairs caller input.
 
-During migration, an explicit square matrix passed through the legacy
-`MixedStatePropagator` adapter is still normalized by its positive real trace,
-while direct legacy `LiouvillePropagator` input is validated without trace
-normalization. These transitional behaviors are not the final typed contract.
+`MixedStatePropagator` accepts this explicit type and passes its stored matrix
+to `LiouvillePropagator` unchanged. A raw square array is rejected; array shape
+is never used to infer the state kind.
 
 ### 4.5 Solver renormalization
 
@@ -344,8 +343,8 @@ implementation must not silently:
 - replace the trace;
 - otherwise modify the matrix.
 
-`MixedStatePropagator` performs its separately documented positive trace
-normalization only after validation.
+`DensityState` additionally requires trace one at construction.
+`MixedStatePropagator` performs no subsequent normalization or repair.
 
 Primary implementation:
 `core/propagation/algorithms/validation.py`.
@@ -537,9 +536,8 @@ rho_incoherent = sum_i w_i |psi_i><psi_i|
 ~~~
 
 These are not interchangeable. A function or runner must state which
-semantics it uses in its name, type, or required options. No generic list input
-may silently switch meaning based only on array shape except the currently
-documented explicit square density-matrix dispatch in `MixedStatePropagator`.
+semantics it uses in its name, type, or required options. No generic list or array input may silently switch meaning based on
+shape. `MixedStatePropagator` requires `IncoherentEnsemble` or `DensityState`.
 
 ### 8.1 LinMol fixed-linear M average
 

@@ -612,9 +612,11 @@ Add distinct input types:
 
 P2.2-a is complete: immutable NumPy-host value types validate normalized pure
 states, norm-encoded incoherent ensembles, and trace-one density states without
-repair. Remove final public reliance on list/square-array inference by migrating
-one solver boundary at a time. Temporary adapters may live at the old boundary
-during this phase.
+repair. P2.2-b is complete: `MixedStatePropagator` requires
+`IncoherentEnsemble | DensityState`, dispatches by type, and unwraps immediately
+before the unchanged Schrodinger or Liouville solver. Raw list and square-array
+inputs are rejected. Migrate the remaining single-kind solver boundaries one at
+a time; temporary adapters may remain only where explicitly documented.
 
 ### P2.3 Introduce ExecutionPolicy and capabilities
 

@@ -13,6 +13,7 @@ from rovibrational_excitation.core.propagation import (
     SchrodingerPropagator,
 )
 from rovibrational_excitation.core.propagation.utils import get_backend
+from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
 from tests.mock_objects import MockDipole, MockEfield
 
@@ -100,10 +101,12 @@ def test_mixed_state_propagation():
         np.diag([0.0, 1.0]), units="J"
     )  # mixed_state_propagationは内部でschrodinger_propagationを呼ぶためHamiltonianが必要
     dip = DummyDipole()
-    psi0s = [
-        np.array([1.0, 0.0], dtype=np.complex128),
-        np.array([0.0, 1.0], dtype=np.complex128),
-    ]
+    psi0s = IncoherentEnsemble(
+        [
+            np.array([1.0, 0.0], dtype=np.complex128),
+            np.array([0.0, 1.0], dtype=np.complex128),
+        ]
+    )
     result = MixedStatePropagator().propagate(H0, ef, dip, psi0s)
     assert result.shape[-1] == 2 or result[1].shape[-1] == 2
 
@@ -281,10 +284,12 @@ def test_mixed_state_propagation_detailed():
 
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="rad/fs")
     dip = DummyDipoleOffDiag(mu_scale=1e-30)
-    psi0s = [
-        np.array([1.0, 0.0], dtype=np.complex128),
-        np.array([0.0, 1.0], dtype=np.complex128),
-    ]
+    psi0s = IncoherentEnsemble(
+        [
+            np.array([1.0, 0.0], dtype=np.complex128),
+            np.array([0.0, 1.0], dtype=np.complex128),
+        ]
+    )
 
     # 軌跡あり
     result_traj = MixedStatePropagator().propagate(H0, ef, dip, psi0s, return_traj=True)
@@ -313,10 +318,12 @@ def test_mixed_state_propagation_with_time():
 
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="rad/fs")
     dip = DummyDipoleOffDiag(mu_scale=1e-30)
-    psi0s = [
-        np.array([1.0, 0.0], dtype=np.complex128),
-        np.array([0.0, 1.0], dtype=np.complex128),
-    ]
+    psi0s = IncoherentEnsemble(
+        [
+            np.array([1.0, 0.0], dtype=np.complex128),
+            np.array([0.0, 1.0], dtype=np.complex128),
+        ]
+    )
 
     time_rho, rho_traj = MixedStatePropagator().propagate(
         H0, ef, dip, psi0s, return_traj=True, return_time_rho=True
@@ -419,10 +426,12 @@ def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
         "propagate",
         return_initial_state,
     )
-    states = [
-        2.0 * np.array([1.0, 0.0], dtype=np.complex128),
-        np.array([0.0, 1.0], dtype=np.complex128),
-    ]
+    states = IncoherentEnsemble(
+        [
+            2.0 * np.array([1.0, 0.0], dtype=np.complex128),
+            np.array([0.0, 1.0], dtype=np.complex128),
+        ]
+    )
 
     density = propagator.propagate(
         None,
@@ -448,7 +457,7 @@ def test_mixed_state_ignores_zero_weight_components(monkeypatch):
         None,
         None,
         None,
-        [np.array([1.0, 0.0]), np.zeros(2)],
+        IncoherentEnsemble([np.array([1.0, 0.0]), np.zeros(2)]),
         return_traj=False,
     )
 

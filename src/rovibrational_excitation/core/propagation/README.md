@@ -70,6 +70,7 @@ final_state = propagator.propagate(
 
 ```python
 from rovibrational_excitation.core.propagation import MixedStatePropagator
+from rovibrational_excitation.core.states import IncoherentEnsemble
 
 # プロパゲータの初期化
 propagator = MixedStatePropagator(
@@ -79,12 +80,15 @@ propagator = MixedStatePropagator(
     validate_units=True,  # 物理単位の検証を行うかどうか
 )
 
+# 状態ベクトルのノルム二乗を統計重みとして明示的に構築
+initial_ensemble = IncoherentEnsemble(psi0_list)
+
 # 時間発展の計算
 final_states = propagator.propagate(
     hamiltonian=H0,  # ハミルトニアンオブジェクト
     efield=efield,  # 電場オブジェクト
     dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    initial_state=psi0_list,  # 初期状態のリスト
+    initial_state=initial_ensemble,  # 明示的なインコヒーレント混合
     return_traj=True,  # 軌跡を返すかどうか
 )
 ```

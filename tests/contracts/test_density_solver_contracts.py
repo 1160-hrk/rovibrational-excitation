@@ -19,6 +19,7 @@ from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import
 from rovibrational_excitation.core.propagation.algorithms.validation import (
     validate_density_matrix_properties,
 )
+from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
 
 
 def _low_level_problem(field_size=5):
@@ -150,7 +151,7 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
         return np.array([3.0]), np.asarray(args[3])
 
     solver._schrodinger_prop.propagate = fake_propagate
-    states = [np.array([1.0, 0.0]), np.array([0.0, 1.0])]
+    states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
     time, rho = solver.propagate(
         object(),
@@ -182,7 +183,7 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
 @pytest.mark.parametrize("option", ["auto_timestep", "target_accuracy"])
 def test_mixed_state_rejects_removed_timestep_options(option):
     solver = MixedStatePropagator(validate_units=False)
-    states = [np.array([1.0, 0.0]), np.array([0.0, 1.0])]
+    states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
     with pytest.raises(ValueError, match=rf"{option}.*removed"):
         solver.propagate(
@@ -222,7 +223,7 @@ def test_mixed_state_rejects_unsupported_options_for_explicit_density(
     solver = MixedStatePropagator(validate_units=False, **constructor_kwargs)
 
     with pytest.raises(ValueError, match=message):
-        solver.propagate(object(), object(), object(), np.eye(2))
+        solver.propagate(object(), object(), object(), DensityState(np.eye(2) / 2.0))
 
 
 def test_liouville_matches_schrodinger_for_a_pure_state():
@@ -303,7 +304,7 @@ def test_mixed_state_rejects_unknown_propagation_option():
             None,
             None,
             None,
-            [np.array([1.0, 0.0])],
+            IncoherentEnsemble([np.array([1.0, 0.0])]),
             typo=True,
         )
 
@@ -330,6 +331,6 @@ def test_mixed_state_rejects_conflicting_algorithm_override():
             None,
             None,
             None,
-            [np.array([1.0, 0.0])],
+            IncoherentEnsemble([np.array([1.0, 0.0])]),
             algorithm="split_operator",
         )
