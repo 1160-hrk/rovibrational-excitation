@@ -139,3 +139,23 @@ whereas `cartesian` evolves the exact real Cartesian Hamiltonian.
 These timings were collected on CPython 3.12.12, Linux aarch64, NumPy 2.3.5,
 SciPy 1.17.0, and Numba 0.63.1. CUDA was not available, so GPU parity remains
 unverified.
+
+## Four-level Krotov V=0 to V=3 reference
+
+The deterministic end-to-end optimization reference is generated with:
+
+~~~bash
+python benchmarks/run_krotov_v3_reference.py
+~~~
+
+It uses `configs/reference_krotov_viblad_v3.yaml`: four harmonic vibrational
+levels, a 0.3 D transition dipole, a 500 fs interval, a 0.05 fs field spacing,
+and 1000 Krotov iterations. The JSON artifact records scalar checks and source
+provenance. The compressed NPZ stores the optimized field and a separately
+propagated complete trajectory.
+
+The reference reaches a final V=3 population of approximately
+`0.9999999931`; the independent propagation is exactly equal to the optimizer’s
+final forward trajectory in the recorded environment. This is a regression
+anchor for the current end-to-end calculation. It is not an independent proof
+of the Krotov objective or update equation, which remains open under O-006.

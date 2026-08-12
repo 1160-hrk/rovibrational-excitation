@@ -1,0 +1,42 @@
+system:
+  type: viblad
+  params:
+    V_max: 3
+    omega_cm: 2349.1
+    delta_omega_cm: 25.0
+    input_units: "cm^-1"
+    output_units: "rad/fs"
+    mu0: 0.3
+    unit_dipole: "D"
+    potential_type: harmonic
+states:
+  initial: [0]
+  target: [3]
+time:
+  total_fs: 500.0
+  field_dt_fs: 0.05
+  output_stride: 1
+algorithm:
+  selected: krotov
+algorithms:
+  krotov:
+    max_iter: 1000
+    convergence_tol: 1.0e-18
+    lambda_a: 1.0e-20
+    target_fidelity: 1.0
+    control_axes: "zx"
+    carrier_freq_initial: 2300.0
+    unit_carrier_freq: "cm^-1"
+    amplitude_initial: 1.0e+9
+    pol_initial: [1.0, 0.0]
+    duration_initial: 200.0
+    t_center_initial: 250.0
+    gdd_initial: 0.0
+    tod_initial: 0.0
+    const_polarisation: false
+plot:
+  save_fig: false
+  spectrum: false
+  spectrogram: false
+output:
+  dir: "benchmarks/results"

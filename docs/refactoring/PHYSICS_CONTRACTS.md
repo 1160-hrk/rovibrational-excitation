@@ -723,6 +723,13 @@ Reference anchors are
 `tests/contracts/test_optimization_time_grid_contracts.py`, and
 `tests/contracts/test_optimization_solver_time_contracts.py`.
 
+The stored four-level Krotov regression workload is defined by
+`configs/reference_krotov_viblad_v3.yaml` and
+`benchmarks/krotov-v0-v3-v0.3.{json,npz}`. It records the current numerical
+ability to transfer V=0 population to V=3 and verifies the optimized field with
+a separate final forward propagation. It is a characterization reference, not
+an independent derivation or validation of the Krotov update equation.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature
