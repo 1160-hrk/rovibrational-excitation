@@ -610,8 +610,11 @@ Add distinct input types:
 - `IncoherentEnsemble`;
 - `DensityState`.
 
-Remove final public reliance on list/square-array inference. Temporary adapters
-may live at the old boundary during this phase.
+P2.2-a is complete: immutable NumPy-host value types validate normalized pure
+states, norm-encoded incoherent ensembles, and trace-one density states without
+repair. Remove final public reliance on list/square-array inference by migrating
+one solver boundary at a time. Temporary adapters may live at the old boundary
+during this phase.
 
 ### P2.3 Introduce ExecutionPolicy and capabilities
 

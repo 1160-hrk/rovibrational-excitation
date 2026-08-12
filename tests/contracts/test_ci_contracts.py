@@ -74,6 +74,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
     assert mypy["files"] == [
         "src/rovibrational_excitation/core/nondimensional/scales.py",
         "src/rovibrational_excitation/core/time.py",
+        "src/rovibrational_excitation/core/states.py",
         "src/rovibrational_excitation/core/units/constants.py",
         "src/rovibrational_excitation/simulation/timegrid.py",
     ]

@@ -848,6 +848,39 @@ Implementation anchors: `tests/contracts/test_optimization_time_grid_contracts.p
 `tests/contracts/test_optimization_solver_time_contracts.py`, and
 `tests/physics/test_optimization_time_reference.py`.
 
+### D-030: Typed state kinds validate without inference or repair
+
+Status: Accepted on 2026-08-12 as the P2.2-a implementation of D-026.
+
+Scope: immutable typed initial-state values before solver dispatch.
+
+Decision:
+
+- `PureState` owns a defensive read-only complex128 vector. It requires a
+  finite, nonempty, one-dimensional input whose norm squared differs from one
+  by no more than `100 * n * eps`. It never silently normalizes input.
+- `IncoherentEnsemble` takes the already accepted norm-encoded raw vectors. It
+  skips exact zero-norm vectors, normalizes each retained component, and
+  normalizes their norm-squared statistical weights. It rejects empty,
+  dimensionally inconsistent, non-finite, and overflowing inputs. Its density
+  operator contains no coherent cross terms.
+- `DensityState` owns a defensive read-only complex128 matrix. It applies the
+  existing physical density validation and additionally requires trace one
+  within the same scale-aware tolerance. It never normalizes, clips,
+  symmetrizes, or projects input.
+- Typed constructors never distinguish state kind from list membership or array
+  shape. The existing array/list inference remains only in legacy propagator
+  adapters until their P2.2 migration.
+- P2.2-a types are canonical NumPy host values. They do not advertise native
+  CuPy ownership; backend transfer and capability validation belong to P2.3.
+
+The shared factor 100 is not a new fitting parameter. It is the named existing
+`NUMERICAL_VALIDATION_EPSILON_FACTOR` used for LAPACK-scale density validation,
+and is now reused for unit-norm roundoff.
+
+Implementation anchors: `core/states.py` and
+`tests/contracts/test_state_kind_contracts.py`.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

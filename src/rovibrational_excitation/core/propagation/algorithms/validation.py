@@ -103,29 +103,38 @@ def validate_wavefunction_problem(
     return dim
 
 
-_DENSITY_MATRIX_EPSILON_FACTOR = 100.0
+NUMERICAL_VALIDATION_EPSILON_FACTOR = 100.0
 
 
-def _density_matrix_tolerance(density: np.ndarray) -> float:
+def density_matrix_tolerance(density: np.ndarray) -> float:
     """Return a scale-aware tolerance for Hermitian eigenvalue calculations."""
     dimension = max(1, density.shape[0])
     spectral_scale = float(np.linalg.norm(density, ord=2))
     machine_epsilon = np.finfo(density.real.dtype).eps
     # LAPACK errors scale as O(n * eps * ||A||). The factor leaves margin for
     # roundoff accumulated while constructing a density matrix.
-    return _DENSITY_MATRIX_EPSILON_FACTOR * dimension * machine_epsilon * spectral_scale
+    return (
+        NUMERICAL_VALIDATION_EPSILON_FACTOR
+        * dimension
+        * machine_epsilon
+        * spectral_scale
+    )
 
 
 def validate_density_matrix_properties(rho: Any) -> None:
     """Reject non-Hermitian, non-positive, or numerically invalid density matrices."""
     density_source = rho.toarray() if sp.issparse(rho) else rho
     density = np.asarray(density_source, dtype=np.complex128)
-    if density.ndim != 2 or density.shape[0] != density.shape[1]:
-        raise ValueError("density matrix must be square")
+    if (
+        density.ndim != 2
+        or density.shape[0] != density.shape[1]
+        or density.shape[0] < 1
+    ):
+        raise ValueError("density matrix must be a nonempty square matrix")
     if not np.all(np.isfinite(density)):
         raise ValueError("density matrix must contain only finite values")
 
-    tolerance = _density_matrix_tolerance(density)
+    tolerance = density_matrix_tolerance(density)
     trace = np.trace(density)
     if abs(trace.imag) > tolerance:
         raise ValueError("density-matrix trace must be real within numerical tolerance")

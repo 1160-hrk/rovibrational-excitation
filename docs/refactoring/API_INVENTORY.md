@@ -82,6 +82,7 @@ not treated as intentional API.
 | `core.basis` | `BasisBase`, `Hamiltonian`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic types to `core`; model bases to their `models.*` owners | temporary public |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `converter`, `UnitValidator`, `validator`, `ParameterProcessor`, `parameter_processor` | immutable constants and explicit conversion services under `core.units`; typed config handles parameter conversion | classes temporary public; singleton objects internal and delete |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
+| `core.states` | `PureState`, `IncoherentEnsemble`, `DensityState` | explicit immutable initial-state kinds | target public module; solver adapters pending P2.2 |
 
 `core` itself has no `__init__.py`, so it has no explicit public contract today.
 

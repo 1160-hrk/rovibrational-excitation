@@ -262,7 +262,14 @@ An empty list is an error.
 This behavior is intentionally coherent. It must not be converted to a
 population sum.
 
-### 4.2 Incoherent ensemble
+### 4.2 Typed pure state
+
+`PureState` requires a finite, nonempty, one-dimensional complex vector with
+norm one within `100 * n * eps_float64`. It stores an exact defensive copy and
+does not normalize caller input. Normalization requested by a workflow must be
+performed explicitly before typed construction.
+
+### 4.3 Incoherent ensemble
 
 An incoherent mixture uses `MixedStatePropagator` with an iterable of state
 vectors.
@@ -282,7 +289,7 @@ zero-norm vectors is an error. All vectors must have the same dimension.
 This design allows callers to encode a desired raw weight `w_i` as
 `sqrt(w_i) * normalized_psi_i`.
 
-### 4.3 Explicit density matrix
+### 4.4 Explicit density matrix
 
 The typed `DensityState` boundary requires trace one within the scale-aware
 tolerance in Section 5. It never normalizes, clips, symmetrizes, or otherwise
@@ -293,7 +300,7 @@ During migration, an explicit square matrix passed through the legacy
 while direct legacy `LiouvillePropagator` input is validated without trace
 normalization. These transitional behaviors are not the final typed contract.
 
-### 4.4 Solver renormalization
+### 4.5 Solver renormalization
 
 Wavefunction renormalization is an explicit production policy. Typed options
 must require the caller to select disabled or per-step renormalization and must

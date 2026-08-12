@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-12
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-029 (P2.1-b)
+Verified behavioral contract: D-030 (P2.2-a)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -132,7 +132,7 @@ pytest -q
 ~~~
 
 ~~~text
-576 passed, 10 GPU tests skipped (586 collected)
+593 passed, 10 GPU tests skipped (603 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -196,9 +196,8 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Continue with P2.2 explicit state kinds without changing low-level
-   numerical kernels. P2.1 time construction is complete under D-027 through
-   D-029.
+1. Continue P2.2 by migrating solver boundaries to the D-030 state kinds,
+   without changing low-level numerical kernels or retaining shape inference.
 2. Continue P2.3 execution-policy capability work after state-kind boundaries
    are stable.
 3. Perform target directory migration only after typed contracts are stable.
