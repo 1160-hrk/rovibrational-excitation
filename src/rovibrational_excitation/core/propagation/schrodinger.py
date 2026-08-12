@@ -13,6 +13,7 @@ import numpy as np
 from ..units.constants import CONSTANTS
 from ..units.validators import validator
 from .base import PropagatorBase
+from .direction import PropagationDirection
 from .utils import (
     HAS_CUPY,
     ensure_sparse_matrix,
@@ -156,6 +157,9 @@ class SchrodingerPropagator(PropagatorBase):
                 Use sparse matrix operations
             - propagator_func : callable, optional
                 Override propagation function for this call only
+            - direction : PropagationDirection, default FORWARD
+                Explicit RK4 integration direction. BACKWARD reverses field
+                samples and applies a negative propagation interval.
 
         Returns
         -------
@@ -190,6 +194,7 @@ class SchrodingerPropagator(PropagatorBase):
             "split_interaction",
             "propagator_func",
             "renorm",
+            "direction",
         }
         unknown_options = sorted(set(kwargs) - allowed_options)
         if unknown_options:
@@ -204,6 +209,9 @@ class SchrodingerPropagator(PropagatorBase):
         split_interaction = kwargs.get("split_interaction", self.split_interaction)
         propagator_func = kwargs.get("propagator_func", None)
         renorm = kwargs.get("renorm", self.renorm)
+        direction = kwargs.get("direction", PropagationDirection.FORWARD)
+        if not isinstance(direction, PropagationDirection):
+            raise TypeError("direction must be a PropagationDirection")
 
         if propagator_func is not None and not callable(propagator_func):
             raise TypeError("propagator_func must be callable or None")
@@ -225,6 +233,12 @@ class SchrodingerPropagator(PropagatorBase):
             )
         if self.backend == "cupy" and sparse:
             raise ValueError("sparse=True is not supported by the CuPy propagator")
+        if direction is PropagationDirection.BACKWARD and algorithm != "rk4":
+            raise ValueError("backward propagation currently supports RK4 only")
+        if direction is PropagationDirection.BACKWARD and nondimensional:
+            raise ValueError(
+                "backward propagation currently supports dimensional mode only"
+            )
 
         if self.validate_units:
             warnings = validator.validate_propagation_units(
@@ -247,6 +261,11 @@ class SchrodingerPropagator(PropagatorBase):
                 coupling_axis=coupling_axis,
             )
         )
+
+        if direction is PropagationDirection.BACKWARD:
+            Ex = Ex[::-1]
+            Ey = Ey[::-1]
+            dt_calc = direction.sign * dt_calc
 
         # Handle sparse matrices if requested
         if sparse:
@@ -347,12 +366,18 @@ class SchrodingerPropagator(PropagatorBase):
                 step_fs = dt_calc * sample_stride
                 if scales_calc is not None:
                     step_fs *= scales_calc.t0 * 1e15
-                t = (
-                    efield.tlist[0]
-                    + np.arange(0, len(cast(Sized, psi)), dtype=np.float64) * step_fs
-                )
+                sample_indices = np.arange(0, len(cast(Sized, psi)), dtype=np.float64)
+                if direction is PropagationDirection.BACKWARD:
+                    t = efield.tlist[-1] - sample_indices * abs(step_fs)
+                else:
+                    t = efield.tlist[0] + sample_indices * step_fs
             else:
-                t = np.array([efield.tlist[-1]], dtype=np.float64)
+                endpoint = (
+                    efield.tlist[0]
+                    if direction is PropagationDirection.BACKWARD
+                    else efield.tlist[-1]
+                )
+                t = np.array([endpoint], dtype=np.float64)
             return t, psi
 
         return psi

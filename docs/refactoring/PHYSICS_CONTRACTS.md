@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-11
+Last verified against source and tests: 2026-08-12
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -129,6 +129,13 @@ trajectory omits the endpoint. The typed propagation boundary always appends
 the exact endpoint in that case, producing one shorter final output interval
 without changing any integration step or field sample. Low-level shapes remain
 characterized during the Phase 2 migration.
+
+Backward dimensional RK4 is an explicit direction, not a decreasing public
+field grid. `PropagationDirection.BACKWARD` reverses the field samples, sends
+`-propagation_dt` to the unchanged RK4 kernel, and reports state times from
+`t_end` toward `t_start`. Strings and numeric signs are rejected. Backward
+split-operator and nondimensional modes are unsupported until independently
+characterized and must raise.
 
 Primary implementation anchors:
 

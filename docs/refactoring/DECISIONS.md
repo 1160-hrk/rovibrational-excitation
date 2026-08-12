@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-11
+Last updated: 2026-08-12
 
 ## How to use this log
 
@@ -753,6 +753,39 @@ Verification:
 - a dense numerical test proves bitwise equality between an even-length legacy
   kernel call and the validated odd-prefix call, including an extreme ignored
   final sample.
+
+Implementation: working tree; commit pending.
+
+### D-028: Backward RK4 direction is explicit
+
+Status: Accepted on 2026-08-12.
+
+Scope: Schrödinger RK4 and Krotov costate propagation.
+
+Krotov originally constructed a decreasing `ElectricField`, reversed the
+control samples, and obtained a negative propagation interval from that
+container. This worked before commit `7ce9419`, when `ElectricField` accepted
+decreasing arrays. Strict field validation correctly made public field grids
+increasing, but left the Krotov reverse call without a migration path.
+
+Decision:
+
+- `ElectricField` remains strictly increasing; decreasing public time arrays
+  stay invalid.
+- `PropagationDirection.BACKWARD` is the only accepted backward request. A
+  string or sign is rejected rather than interpreted.
+- Dimensional RK4 backward propagation reverses both Cartesian field sample
+  arrays and multiplies the positive propagation interval by minus one before
+  entering the unchanged kernel. Its returned physical times run from the
+  configured final endpoint toward the initial endpoint.
+- Backward split-operator and nondimensional propagation raise until they have
+  independent numerical references. No fallback to forward propagation is
+  permitted.
+- Krotov must use this direction instead of constructing a decreasing
+  `ElectricField`.
+
+The reference test compares the complete trajectory with the legacy reversed
+field and negative-dt RK4 call using exact array equality.
 
 Implementation: working tree; commit pending.
 
