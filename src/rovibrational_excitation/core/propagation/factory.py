@@ -5,7 +5,7 @@ This module provides the PropagatorFactory class for creating appropriate
 propagator instances based on system characteristics and requirements.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from .base import PropagatorBase
 from .liouville import LiouvillePropagator
@@ -29,9 +29,9 @@ class PropagatorFactory:
         backend: Literal["numpy", "cupy"] = "numpy",
         algorithm: Literal["rk4", "split_operator"] | None = None,
         const_polarization: bool = False,
-        dipole_matrix=None,
+        dipole_matrix: Any = None,
         validate_units: bool = True,
-    ) -> PropagatorBase:
+    ) -> PropagatorBase[Any]:
         """
         Create appropriate propagator instance.
 

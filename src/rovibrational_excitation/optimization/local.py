@@ -339,7 +339,7 @@ def run_local_optimization(
         segment_slice = time_grid.segment_propagation_slice(start, end)
         ef_seg = ElectricField(tlist=tlist[segment_slice])
         ef_seg.add_arbitrary_Efield(full_field[segment_slice, :])
-        result = propagator.propagate(
+        result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef_seg,
             dipole_matrix=dipole,
@@ -365,7 +365,7 @@ def run_local_optimization(
         ef_full_propagation = ElectricField(tlist=tlist[full_rk4_slice])
         ef_full_propagation.add_arbitrary_Efield(full_field[full_rk4_slice, :])
 
-    result_full = propagator.propagate(
+    result_full = propagator._propagate_array(
         hamiltonian=hamiltonian,
         efield=ef_full_propagation,
         dipole_matrix=dipole,

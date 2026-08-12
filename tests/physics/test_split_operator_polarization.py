@@ -169,19 +169,19 @@ def test_high_level_circular_modes_use_explicit_physics_contracts():
     initial = np.zeros(basis.size(), dtype=np.complex128)
     initial[basis.get_index((0, 0, 0))] = 1.0
 
-    rk4_final = SchrodingerPropagator(algorithm="rk4", validate_units=False).propagate(
-        hamiltonian, field, dipole, initial, return_traj=False
-    )
+    rk4_final = SchrodingerPropagator(
+        algorithm="rk4", validate_units=False
+    )._propagate_array(hamiltonian, field, dipole, initial, return_traj=False)
     cartesian_final = SchrodingerPropagator(
         algorithm="split_operator",
         split_interaction="cartesian",
         validate_units=False,
-    ).propagate(hamiltonian, field, dipole, initial, return_traj=False)
+    )._propagate_array(hamiltonian, field, dipole, initial, return_traj=False)
     projected_final = SchrodingerPropagator(
         algorithm="split_operator",
         split_interaction="helicity_projected",
         validate_units=False,
-    ).propagate(hamiltonian, field, dipole, initial, return_traj=False)
+    )._propagate_array(hamiltonian, field, dipole, initial, return_traj=False)
 
     np.testing.assert_allclose(cartesian_final, rk4_final, rtol=0.0, atol=1.0e-10)
     excited_plus = basis.get_index((1, 1, 1))

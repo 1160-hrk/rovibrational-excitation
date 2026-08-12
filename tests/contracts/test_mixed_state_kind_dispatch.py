@@ -36,7 +36,7 @@ def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch
 
     monkeypatch.setattr(
         solver._schrodinger_prop,
-        "propagate",
+        "_propagate_array",
         lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
     )
 
@@ -54,7 +54,7 @@ def test_mixed_state_unwraps_density_without_repair(monkeypatch):
         captured["matrix"] = args[3]
         return args[3]
 
-    monkeypatch.setattr(LiouvillePropagator, "propagate", fake_propagate)
+    monkeypatch.setattr(LiouvillePropagator, "_propagate_array", fake_propagate)
 
     result = MixedStatePropagator(validate_units=False).propagate(
         None,

@@ -12,9 +12,8 @@
   - RK4法（4次のルンゲ・クッタ法）
   - Split-operator法
 - 高度な最適化機能
-  - スパース行列対応（非ゼロ成分の比率が5%以下または行列の次元が50を超える時に有効）
+  - `sparse=True` による明示的なCSR行列計算
   - NumPy/CuPyバックエンドの切り替え（GPU計算対応）
-  - 適応的時間ステップ制御（RK4法のみ）
 - 物理単位の自動検証機能
 
 ## 基本的な使い方
@@ -23,6 +22,7 @@
 
 ```python
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.core.states import PureState
 
 # プロパゲータの初期化
 propagator = SchrodingerPropagator(
@@ -32,12 +32,14 @@ propagator = SchrodingerPropagator(
     validate_units=True,  # 物理単位の検証を行うかどうか
 )
 
+initial_pure_state = PureState(initial_state)
+
 # 時間発展の計算
 final_state = propagator.propagate(
     hamiltonian=H0,  # ハミルトニアンオブジェクト
     efield=efield,  # 電場オブジェクト
     dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    psi0=initial_state,  # 初期状態
+    initial_state=initial_pure_state,  # 規格化済み純粋状態
     axes="xy",  # 偏光軸の指定
     return_traj=True,  # 軌跡を返すかどうか
     sample_stride=1,  # サンプリング間隔
@@ -48,19 +50,23 @@ final_state = propagator.propagate(
 
 ```python
 from rovibrational_excitation.core.propagation import LiouvillePropagator
+from rovibrational_excitation.core.states import DensityState
 
 # プロパゲータの初期化
 propagator = LiouvillePropagator(
-    backend="numpy",  # "numpy" または "cupy"
+    backend="numpy",  # Liouville は現在 "numpy" のみ
     validate_units=True,  # 物理単位の検証を行うかどうか
 )
+
+# トレース1の物理的密度行列を明示的に構築
+initial_density_state = DensityState(rho0)
 
 # 時間発展の計算
 final_state = propagator.propagate(
     hamiltonian=H0,  # ハミルトニアンオブジェクト
     efield=efield,  # 電場オブジェクト
     dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    initial_state=rho0,  # 初期密度行列
+    initial_state=initial_density_state,  # 明示的な密度状態
     axes="xy",  # 偏光軸の指定
     return_traj=True,  # 軌跡を返すかどうか
 )

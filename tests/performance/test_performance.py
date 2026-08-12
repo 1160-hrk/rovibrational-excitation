@@ -78,7 +78,7 @@ def test_large_system_performance():
 
     # 実行時間測定
     start_time = time.time()
-    result = SchrodingerPropagator().propagate(
+    result = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=True
     )
     end_time = time.time()
@@ -121,7 +121,7 @@ def test_very_large_system():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = SchrodingerPropagator(renorm=True).propagate(
+    result = SchrodingerPropagator(renorm=True)._propagate_array(
         H0, efield, dipole, psi0, return_traj=False
     )
     end_time = time.time()
@@ -164,7 +164,7 @@ def test_long_time_evolution():
     psi0[0] = 1.0
 
     start_time = time.time()
-    result = SchrodingerPropagator().propagate(
+    result = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=True
     )
     end_time = time.time()
@@ -208,10 +208,10 @@ def test_memory_efficiency():
     psi0[0] = 1.0
 
     # 軌跡ありとなしでのメモリ使用量比較
-    result_no_traj = SchrodingerPropagator().propagate(
+    result_no_traj = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=False
     )
-    result_with_traj = SchrodingerPropagator().propagate(
+    result_with_traj = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=True
     )
 
@@ -249,14 +249,14 @@ def test_stride_performance():
 
     # stride=1
     start_time = time.time()
-    result_stride1 = SchrodingerPropagator().propagate(
+    result_stride1 = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=True, sample_stride=1
     )
     time.time() - start_time
 
     # stride=10
     start_time = time.time()
-    result_stride10 = SchrodingerPropagator().propagate(
+    result_stride10 = SchrodingerPropagator()._propagate_array(
         H0, efield, dipole, psi0, return_traj=True, sample_stride=10
     )
     time.time() - start_time
@@ -296,7 +296,7 @@ def test_numerical_stability_large_system():
     psi0 = np.zeros(dim, dtype=np.complex128)
     psi0[0] = 1.0
 
-    result = SchrodingerPropagator().propagate(
+    result = SchrodingerPropagator()._propagate_array(
         H0, Efield, dipole, psi0, return_traj=True, sample_stride=2
     )
     # ノルム保存の確認
@@ -388,7 +388,7 @@ def test_backend_performance_comparison():
 
     # NumPyバックエンド
     start_time = time.time()
-    result_numpy = SchrodingerPropagator(backend="numpy").propagate(
+    result_numpy = SchrodingerPropagator(backend="numpy")._propagate_array(
         H0, efield, dipole, psi0
     )
     numpy_time = time.time() - start_time

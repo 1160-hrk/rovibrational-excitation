@@ -125,6 +125,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         SchrodingerPropagator,
     )
     from rovibrational_excitation.core.propagation.utils import validate_axes
+    from rovibrational_excitation.core.states import PureState
     from rovibrational_excitation.core.time import TimeGrid
 
     from .validation import validate_simulation_case
@@ -212,7 +213,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         hamiltonian=H0,
         efield=E,
         dipole_matrix=dip,
-        initial_state=sv.data,
+        initial_state=PureState(sv.data.ravel()),
         coupling_mode=model.coupling.mode,
         **(
             {"axes": params.get("axes", model.coupling.default_axes)}

@@ -86,7 +86,7 @@ def test_schrodinger_propagation():
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
     dip = DummyDipole()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
-    result = SchrodingerPropagator().propagate(H0, ef, dip, psi0)
+    result = SchrodingerPropagator()._propagate_array(H0, ef, dip, psi0)
     assert result.shape[-1] == 2 or result[1].shape[-1] == 2
 
 
@@ -170,7 +170,7 @@ def test_schrodinger_propagation_with_constant_polarization():
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
     # 軌跡あり
-    result_traj = SchrodingerPropagator(renorm=True).propagate(
+    result_traj = SchrodingerPropagator(renorm=True)._propagate_array(
         H0, ef, dip, psi0, return_traj=True
     )
 
@@ -182,7 +182,7 @@ def test_schrodinger_propagation_with_constant_polarization():
         assert result_traj.shape[1] == 2
 
     # 軌跡なし
-    result_final = SchrodingerPropagator(renorm=True).propagate(
+    result_final = SchrodingerPropagator(renorm=True)._propagate_array(
         H0, ef, dip, psi0, return_traj=False
     )
     assert result_final.shape == (2,)  # 形状を正しく修正
@@ -217,7 +217,9 @@ def test_schrodinger_propagation_with_variable_polarization():
     dip = DummyDipoleOffDiag()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
-    result = SchrodingerPropagator().propagate(H0, ef, dip, psi0, return_traj=True)
+    result = SchrodingerPropagator()._propagate_array(
+        H0, ef, dip, psi0, return_traj=True
+    )
     assert result.shape[1] == 2
 
 
@@ -239,7 +241,7 @@ def test_schrodinger_propagation_with_time_return():
     dip = DummyDipoleOffDiag()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
-    time_psi, psi_traj = SchrodingerPropagator().propagate(
+    time_psi, psi_traj = SchrodingerPropagator()._propagate_array(
         H0, ef, dip, psi0, return_traj=True, return_time_psi=True
     )
 
@@ -259,10 +261,10 @@ def test_schrodinger_propagation_different_axes():
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
     # デフォルト（axes="xy"）
-    result_xy = SchrodingerPropagator().propagate(H0, ef, dip, psi0, axes="xy")
+    result_xy = SchrodingerPropagator()._propagate_array(H0, ef, dip, psi0, axes="xy")
 
     # zx軸設定
-    result_zx = SchrodingerPropagator().propagate(H0, ef, dip, psi0, axes="zx")
+    result_zx = SchrodingerPropagator()._propagate_array(H0, ef, dip, psi0, axes="zx")
 
     # 異なる結果になる（mu_zは0なので影響は少ないが）
     assert result_xy.shape == result_zx.shape
@@ -352,12 +354,12 @@ def test_propagation_sample_stride():
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
     # stride=1のとき
-    result_stride1 = SchrodingerPropagator().propagate(
+    result_stride1 = SchrodingerPropagator()._propagate_array(
         H0, ef, dip, psi0, return_traj=True, sample_stride=1
     )
 
     # stride=2のとき
-    result_stride2 = SchrodingerPropagator().propagate(
+    result_stride2 = SchrodingerPropagator()._propagate_array(
         H0, ef, dip, psi0, return_traj=True, sample_stride=2
     )
 
@@ -375,7 +377,7 @@ def test_propagation_backend_consistency():
     dip = DummyDipoleOffDiag()
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
-    result = SchrodingerPropagator(backend="numpy").propagate(H0, ef, dip, psi0)
+    result = SchrodingerPropagator(backend="numpy")._propagate_array(H0, ef, dip, psi0)
     assert result.shape[-1] == 2
 
 
@@ -390,14 +392,14 @@ def test_propagation_error_cases():
     psi0 = np.array([1.0, 0.0], dtype=np.complex128)
 
     with pytest.raises(ValueError):
-        SchrodingerPropagator().propagate(H0, ef, dip, psi0, axes="ab")
+        SchrodingerPropagator()._propagate_array(H0, ef, dip, psi0, axes="ab")
 
     class BadDipole:
         def __init__(self):
             pass
 
     with pytest.raises(AttributeError):
-        SchrodingerPropagator().propagate(H0, ef, BadDipole(), psi0)
+        SchrodingerPropagator()._propagate_array(H0, ef, BadDipole(), psi0)
 
 
 def test_propagation_large_system():
@@ -411,7 +413,7 @@ def test_propagation_large_system():
     dip = DummyDipole(dim=4)
     psi0 = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.complex128)
 
-    result = SchrodingerPropagator().propagate(H0, ef, dip, psi0)
+    result = SchrodingerPropagator()._propagate_array(H0, ef, dip, psi0)
     assert result.shape[-1] == 4
 
 
@@ -423,7 +425,7 @@ def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
 
     monkeypatch.setattr(
         propagator._schrodinger_prop,
-        "propagate",
+        "_propagate_array",
         return_initial_state,
     )
     states = IncoherentEnsemble(
@@ -449,7 +451,7 @@ def test_mixed_state_ignores_zero_weight_components(monkeypatch):
     propagator = MixedStatePropagator(validate_units=False)
     monkeypatch.setattr(
         propagator._schrodinger_prop,
-        "propagate",
+        "_propagate_array",
         lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
     )
 

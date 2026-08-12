@@ -158,7 +158,7 @@ def test_centering_restores_absolute_wavefunction_phase():
     initial = np.array([1.0, 0.0], dtype=np.complex128)
     solver = SchrodingerPropagator(validate_units=False)
 
-    time_dimensional, psi_dimensional = solver.propagate(
+    time_dimensional, psi_dimensional = solver._propagate_array(
         h0,
         field,
         dipole,
@@ -167,7 +167,7 @@ def test_centering_restores_absolute_wavefunction_phase():
         return_time_psi=True,
         nondimensional=False,
     )
-    time_scaled, psi_scaled = solver.propagate(
+    time_scaled, psi_scaled = solver._propagate_array(
         h0,
         field,
         dipole,
@@ -225,7 +225,7 @@ def test_auto_timestep_is_rejected_instead_of_resampling():
     dipole = _TwoLevelDipole(np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]]))
 
     with pytest.raises(ValueError, match=r"auto_timestep.*removed"):
-        SchrodingerPropagator(validate_units=False).propagate(
+        SchrodingerPropagator(validate_units=False)._propagate_array(
             h0,
             field,
             dipole,
@@ -239,7 +239,7 @@ def test_schrodinger_rejects_unknown_propagation_option():
     solver = SchrodingerPropagator(validate_units=False)
 
     with pytest.raises(ValueError, match="unsupported propagation options: typo"):
-        solver.propagate(
+        solver._propagate_array(
             None,
             None,
             None,
@@ -269,14 +269,14 @@ def test_schrodinger_rejects_inapplicable_options(kwargs, message):
     solver = SchrodingerPropagator(validate_units=False)
 
     with pytest.raises(ValueError, match=message):
-        solver.propagate(None, None, None, np.array([1.0]), **kwargs)
+        solver._propagate_array(None, None, None, np.array([1.0]), **kwargs)
 
 
 def test_schrodinger_rejects_noncallable_custom_propagator():
     solver = SchrodingerPropagator(validate_units=False)
 
     with pytest.raises(TypeError, match="propagator_func must be callable"):
-        solver.propagate(None, None, None, np.array([1.0]), propagator_func=0)
+        solver._propagate_array(None, None, None, np.array([1.0]), propagator_func=0)
 
 
 def test_schrodinger_constructor_rejects_unknown_backend():

@@ -196,7 +196,9 @@ def _resolved_propagation(initial, polarization, *, sparse=False):
         dense=not sparse,
         potential_type="harmonic",
     )
-    trajectory = SchrodingerPropagator(validate_units=False, sparse=sparse).propagate(
+    trajectory = SchrodingerPropagator(
+        validate_units=False, sparse=sparse
+    )._propagate_array(
         basis.generate_H0(),
         field,
         dipole,
@@ -334,7 +336,7 @@ def _full_m_reference(params):
     for m in range(-initial_j, initial_j + 1):
         initial = np.zeros(basis.size(), dtype=np.complex128)
         initial[basis.get_index((0, initial_j, m))] = 1.0
-        _time, wavefunction = propagator.propagate(
+        _time, wavefunction = propagator._propagate_array(
             basis.generate_H0(),
             field,
             dipole,

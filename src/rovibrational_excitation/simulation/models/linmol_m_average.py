@@ -9,6 +9,7 @@ import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
+from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 _LINEAR_POLARIZATION_TOL = 128.0 * np.finfo(np.float64).eps
@@ -233,7 +234,7 @@ def propagate_m_average(
             hamiltonian=block.hamiltonian,
             efield=electric_field,
             dipole_matrix=block.dipole,
-            initial_state=block.initial_state,
+            initial_state=PureState(block.initial_state),
             coupling_mode="scalar",
             coupling_axis="z",
             return_traj=params.get("return_traj", True),

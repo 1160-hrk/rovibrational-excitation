@@ -169,7 +169,7 @@ def _propagate_vib_ladder(
         units_input="C*m",
     )
     initial = np.array([np.sqrt(0.6), np.sqrt(0.3) * np.exp(0.17j), np.sqrt(0.1)])
-    return SchrodingerPropagator(validate_units=False).propagate(
+    return SchrodingerPropagator(validate_units=False)._propagate_array(
         basis.generate_H0(),
         _constant_field(polarization),
         dipole,

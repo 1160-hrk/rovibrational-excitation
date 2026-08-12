@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .schrodinger import SchrodingerPropagator
 from .utils import get_backend
 
 
-class MixedStatePropagator(PropagatorBase):
+class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
     """Propagate a normalized statistical mixture of pure states."""
 
     def __init__(
@@ -40,18 +40,18 @@ class MixedStatePropagator(PropagatorBase):
         """Return the selected mixed-state algorithm name."""
         return f"MixedState-{self.algorithm}"
 
-    def get_supported_backends(self) -> list:
+    def get_supported_backends(self) -> list[str]:
         """Return computational backends supported by the pure-state solver."""
         return self._schrodinger_prop.get_supported_backends()
 
     def propagate(
         self,
-        hamiltonian,
-        efield,
-        dipole_matrix,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
         initial_state: DensityState | IncoherentEnsemble,
-        **kwargs,
-    ) -> np.ndarray | tuple:
+        **kwargs: Any,
+    ) -> Any:
         """Propagate an explicitly typed density state or incoherent ensemble.
 
         ``IncoherentEnsemble`` owns normalized components and statistical
@@ -126,7 +126,7 @@ class MixedStatePropagator(PropagatorBase):
                 backend=self.backend,
                 validate_units=False,
             )
-            return liouville_prop.propagate(
+            return liouville_prop._propagate_array(
                 hamiltonian,
                 efield,
                 dipole_matrix,
@@ -146,7 +146,7 @@ class MixedStatePropagator(PropagatorBase):
         propagation_kwargs["verbose"] = False
 
         for state, weight in zip(initial_state.states, initial_state.weights):
-            result = self._schrodinger_prop.propagate(
+            result = self._schrodinger_prop._propagate_array(
                 hamiltonian,
                 efield,
                 dipole_matrix,

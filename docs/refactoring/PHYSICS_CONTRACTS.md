@@ -267,7 +267,9 @@ population sum.
 `PureState` requires a finite, nonempty, one-dimensional complex vector with
 norm one within `100 * n * eps_float64`. It stores an exact defensive copy and
 does not normalize caller input. Normalization requested by a workflow must be
-performed explicitly before typed construction.
+performed explicitly before typed construction. `SchrodingerPropagator` accepts
+only this type at its public boundary and passes `amplitudes` unchanged into the
+existing array calculation.
 
 ### 4.3 Incoherent ensemble
 
@@ -295,9 +297,16 @@ The typed `DensityState` boundary requires trace one within the scale-aware
 tolerance in Section 5. It never normalizes, clips, symmetrizes, or otherwise
 repairs caller input.
 
-`MixedStatePropagator` accepts this explicit type and passes its stored matrix
-to `LiouvillePropagator` unchanged. A raw square array is rejected; array shape
+`LiouvillePropagator` and `MixedStatePropagator` accept this explicit type and
+pass its stored matrix unchanged into the existing Liouville array calculation. A raw square array is rejected; array shape
 is never used to infer the state kind.
+
+Optimization is a deliberate internal exception during migration: GRAPE, Krotov,
+and the local optimizer pass intermediate ndarray results through the private
+`_propagate_array` bridge. Constructing `PureState` between steps is forbidden
+because validation or normalization could alter the characterized calculation.
+The local optimizer preserves the same odd prefixes, shared endpoints, and array
+objects.
 
 ### 4.5 Solver renormalization
 

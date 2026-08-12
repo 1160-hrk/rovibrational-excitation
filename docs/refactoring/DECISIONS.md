@@ -904,6 +904,36 @@ does not change either numerical time-development kernel.
 Implementation anchors: `core/propagation/mixed_state.py` and
 `tests/contracts/test_mixed_state_kind_dispatch.py`.
 
+### D-032: Single-state propagators expose typed facades over unchanged arrays
+
+Status: Accepted on 2026-08-12 as the P2.2-c implementation of D-026.
+
+Scope: `SchrodingerPropagator`, `LiouvillePropagator`, and optimization callers.
+
+Decision:
+
+- public Schrodinger propagation accepts exactly `PureState`;
+- public Liouville propagation accepts exactly `DensityState`;
+- both facades reject raw arrays before unit or solver validation, then unwrap
+  the stored read-only array without normalization or repair;
+- the former `propagate` calculation bodies are retained as private
+  `_propagate_array` methods without numerical edits;
+- normal simulation and fixed-M averaging construct typed initial states;
+- GRAPE, Krotov, mixed-state component propagation, numerical reference tests,
+  and the local optimizer use the private array bridge during migration;
+- local optimization must pass the identical intermediate ndarray and retain
+  its versioned odd-prefix, shared-endpoint, and index behavior.
+
+The normal runner historically stored a column vector while RK4 immediately
+applied `np.asarray(...).ravel()`. It now performs that same flattening before
+`PureState` construction, making the existing shape conversion explicit without
+changing component order or values. `PropagatorBase` is generic in the accepted
+initial-state type so subclasses do not violate the base signature.
+
+Implementation anchors: `core/propagation/{base,schrodinger,liouville}.py`,
+`tests/contracts/test_single_state_kind_dispatch.py`, and the unchanged local
+optimizer reference contracts.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

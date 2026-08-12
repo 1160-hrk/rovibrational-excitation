@@ -191,7 +191,7 @@ def run_krotov_optimization(
     def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField.from_time_grid(time_grid)
         ef.add_arbitrary_Efield(ef_data)
-        result = propagator.propagate(
+        result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
             dipole_matrix=dipole,
@@ -214,7 +214,7 @@ def run_krotov_optimization(
         chi_T = overlap * psi_target
         ef = ElectricField.from_time_grid(time_grid)
         ef.add_arbitrary_Efield(ef_data)
-        result = propagator.propagate(
+        result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
             dipole_matrix=dipole,

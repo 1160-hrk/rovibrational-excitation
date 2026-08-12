@@ -5,17 +5,18 @@ This module provides the LiouvillePropagator class for density matrix
 propagation using the Liouville-von Neumann equation.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 
+from ..states import DensityState
 from ..units.validators import validator
 from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
 from .base import PropagatorBase
 from .utils import prepare_propagation_args
 
 
-class LiouvillePropagator(PropagatorBase):
+class LiouvillePropagator(PropagatorBase[DensityState]):
     """
     Liouville-von Neumann equation propagator for density matrices.
 
@@ -51,17 +52,36 @@ class LiouvillePropagator(PropagatorBase):
         """Get the name of the propagation algorithm."""
         return "Liouville-von-Neumann"
 
-    def get_supported_backends(self) -> list:
+    def get_supported_backends(self) -> list[str]:
         """Get list of supported computational backends."""
         return ["numpy"]
 
     def propagate(
         self,
-        hamiltonian,
-        efield,
-        dipole_matrix,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
+        initial_state: DensityState,
+        **kwargs: Any,
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+        """Propagate an explicitly typed density state."""
+        if not isinstance(initial_state, DensityState):
+            raise TypeError("initial_state must be a DensityState")
+        return self._propagate_array(
+            hamiltonian,
+            efield,
+            dipole_matrix,
+            initial_state.matrix,
+            **kwargs,
+        )
+
+    def _propagate_array(
+        self,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
         initial_state: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Propagate density matrix using Liouville-von Neumann equation.

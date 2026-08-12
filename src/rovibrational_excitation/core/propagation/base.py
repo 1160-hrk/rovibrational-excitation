@@ -6,14 +6,16 @@ should inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 
 from ..units.validators import validator
 
+InitialStateT = TypeVar("InitialStateT")
 
-class PropagatorBase(ABC):
+
+class PropagatorBase(ABC, Generic[InitialStateT]):
     """
     Abstract base class for time propagation algorithms.
 
@@ -31,11 +33,16 @@ class PropagatorBase(ABC):
             Whether to validate physical units before propagation
         """
         self.validate_units = validate_units
-        self._last_validation_warnings = []
+        self._last_validation_warnings: list[str] = []
 
     @abstractmethod
     def propagate(
-        self, hamiltonian, efield, dipole_matrix, initial_state: np.ndarray, **kwargs
+        self,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
+        initial_state: InitialStateT,
+        **kwargs: Any,
     ) -> Any:
         """
         Propagate the quantum state forward in time.
@@ -63,8 +70,8 @@ class PropagatorBase(ABC):
     def validate_inputs(
         self,
         H0: np.ndarray,
-        dipole_matrix,
-        efield,
+        dipole_matrix: Any,
+        efield: Any,
         expected_H0_units: str = "J",
         expected_dipole_units: str = "C*m",
     ) -> bool:
@@ -98,11 +105,11 @@ class PropagatorBase(ABC):
 
         return len(self._last_validation_warnings) == 0
 
-    def get_validation_warnings(self) -> list:
+    def get_validation_warnings(self) -> list[str]:
         """Get the last validation warnings."""
         return self._last_validation_warnings.copy()
 
-    def print_validation_warnings(self):
+    def print_validation_warnings(self) -> None:
         """Print validation warnings if any."""
         if self._last_validation_warnings:
             print("⚠️  単位検証で以下の警告が検出されました:")
@@ -121,12 +128,12 @@ class PropagatorBase(ABC):
         """Get the name of the propagation algorithm."""
         pass
 
-    def get_supported_backends(self) -> list:
+    def get_supported_backends(self) -> list[str]:
         """Get list of supported computational backends."""
         return ["numpy"]
 
     def prepare_units(
-        self, H0: np.ndarray, dipole_matrix, efield
+        self, H0: np.ndarray, dipole_matrix: Any, efield: Any
     ) -> tuple[np.ndarray, Any, Any]:
         """
         Prepare quantities in appropriate units for calculation.

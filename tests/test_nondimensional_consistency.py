@@ -71,7 +71,7 @@ class TestNondimensionalConsistency:
         Efield = self.create_test_field(amplitude=1e7)  # より弱い電場
 
         # 次元ありでの計算
-        psi_final_dimensional = SchrodingerPropagator(renorm=True).propagate(
+        psi_final_dimensional = SchrodingerPropagator(renorm=True)._propagate_array(
             hamiltonian=self.H0,
             efield=Efield,
             dipole_matrix=self.dipole_matrix,
@@ -82,7 +82,7 @@ class TestNondimensionalConsistency:
         )
 
         # 無次元化での計算
-        psi_final_nondimensional = SchrodingerPropagator(renorm=True).propagate(
+        psi_final_nondimensional = SchrodingerPropagator(renorm=True)._propagate_array(
             hamiltonian=self.H0,
             efield=Efield,
             dipole_matrix=self.dipole_matrix,
@@ -128,7 +128,7 @@ class TestNondimensionalConsistency:
         sample_stride = 5  # メモリ節約
 
         # 次元ありでの計算
-        time_dimensional, psi_dimensional = SchrodingerPropagator().propagate(
+        time_dimensional, psi_dimensional = SchrodingerPropagator()._propagate_array(
             hamiltonian=self.H0,
             efield=Efield,
             dipole_matrix=self.dipole_matrix,
@@ -141,16 +141,18 @@ class TestNondimensionalConsistency:
         )
 
         # 無次元化での計算
-        time_nondimensional, psi_nondimensional = SchrodingerPropagator().propagate(
-            hamiltonian=self.H0,
-            efield=Efield,
-            dipole_matrix=self.dipole_matrix,
-            initial_state=self.psi0,
-            axes=self.axes,
-            return_traj=True,
-            return_time_psi=True,
-            sample_stride=sample_stride,
-            nondimensional=True,
+        time_nondimensional, psi_nondimensional = (
+            SchrodingerPropagator()._propagate_array(
+                hamiltonian=self.H0,
+                efield=Efield,
+                dipole_matrix=self.dipole_matrix,
+                initial_state=self.psi0,
+                axes=self.axes,
+                return_traj=True,
+                return_time_psi=True,
+                sample_stride=sample_stride,
+                nondimensional=True,
+            )
         )
 
         # 形状の一致性
@@ -185,7 +187,7 @@ class TestNondimensionalConsistency:
         Efield = self.create_test_field(amplitude=1e7)
 
         # 次元ありでの計算
-        psi_final_dimensional = SchrodingerPropagator().propagate(
+        psi_final_dimensional = SchrodingerPropagator()._propagate_array(
             hamiltonian=self.H0,
             efield=Efield,
             dipole_matrix=self.dipole_matrix,
@@ -196,7 +198,7 @@ class TestNondimensionalConsistency:
         )
 
         # 無次元化での計算
-        psi_final_nondimensional = SchrodingerPropagator().propagate(
+        psi_final_nondimensional = SchrodingerPropagator()._propagate_array(
             hamiltonian=self.H0,
             efield=Efield,
             dipole_matrix=self.dipole_matrix,

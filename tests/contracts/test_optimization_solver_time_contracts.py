@@ -46,7 +46,8 @@ class _DirectionSpy:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
 
-    def propagate(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+    def _propagate_array(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+        assert isinstance(kwargs["initial_state"], np.ndarray)
         efield = kwargs["efield"]
         direction = kwargs.get("direction", PropagationDirection.FORWARD)
         self.calls.append(

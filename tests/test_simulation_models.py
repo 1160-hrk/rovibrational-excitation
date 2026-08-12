@@ -5,6 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.simulation.models import build_model
 from rovibrational_excitation.simulation.runner import _run_one
 
@@ -234,6 +235,10 @@ def test_runner_uses_interval_duration_and_one_backend(
         sparse=True,
     )
     propagate_kwargs = propagator_cls.return_value.propagate.call_args.kwargs
+    assert isinstance(propagate_kwargs["initial_state"], PureState)
+    np.testing.assert_array_equal(
+        propagate_kwargs["initial_state"].amplitudes, [1.0, 0.0]
+    )
     assert "backend" not in propagate_kwargs
     assert propagate_kwargs["algorithm"] == "split_operator"
     assert propagate_kwargs["split_interaction"] == "cartesian"

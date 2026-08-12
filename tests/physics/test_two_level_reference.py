@@ -85,7 +85,7 @@ def _pure_propagation(
         backend=backend,
         validate_units=False,
         sparse=sparse,
-    ).propagate(
+    )._propagate_array(
         hamiltonian,
         field,
         dipole,
@@ -121,7 +121,7 @@ def test_density_evolution_is_outer_product_of_pure_evolution():
     hamiltonian, dipole = _two_level_system()
 
     time_psi, psi = _pure_propagation(field, initial)
-    time_rho, rho = LiouvillePropagator(validate_units=False).propagate(
+    time_rho, rho = LiouvillePropagator(validate_units=False)._propagate_array(
         hamiltonian,
         field,
         dipole,

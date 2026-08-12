@@ -138,7 +138,7 @@ def test_explicit_backward_direction_reproduces_legacy_krotov_kernel() -> None:
     times, actual = SchrodingerPropagator(
         validate_units=False,
         renorm=False,
-    ).propagate(
+    )._propagate_array(
         Hamiltonian(h0, units="rad/fs"),
         efield,
         _ArrayDipole(mu_x, mu_y),
@@ -167,9 +167,9 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
     propagator = SchrodingerPropagator(validate_units=False)
 
     with pytest.raises(TypeError, match="PropagationDirection"):
-        propagator.propagate(h0, efield, dipole, psi, direction="backward")
+        propagator._propagate_array(h0, efield, dipole, psi, direction="backward")
     with pytest.raises(ValueError, match="RK4"):
-        propagator.propagate(
+        propagator._propagate_array(
             h0,
             efield,
             dipole,
@@ -178,7 +178,7 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
             direction=PropagationDirection.BACKWARD,
         )
     with pytest.raises(ValueError, match="dimensional"):
-        propagator.propagate(
+        propagator._propagate_array(
             h0,
             efield,
             dipole,
@@ -194,7 +194,7 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
         backend="cupy", validate_units=False
     )
     with pytest.raises(ValueError, match="NumPy only"):
-        cupy_propagator.propagate(
+        cupy_propagator._propagate_array(
             h0,
             efield,
             dipole,

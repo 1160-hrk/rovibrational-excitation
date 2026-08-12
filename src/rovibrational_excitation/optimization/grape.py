@@ -85,7 +85,7 @@ def run_grape_optimization(
     ) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField.from_time_grid(time_grid)
         ef.add_arbitrary_Efield(ef_data)
-        result = propagator.propagate(
+        result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
             dipole_matrix=dipole,

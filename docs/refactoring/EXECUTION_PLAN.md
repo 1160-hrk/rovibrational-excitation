@@ -615,8 +615,12 @@ states, norm-encoded incoherent ensembles, and trace-one density states without
 repair. P2.2-b is complete: `MixedStatePropagator` requires
 `IncoherentEnsemble | DensityState`, dispatches by type, and unwraps immediately
 before the unchanged Schrodinger or Liouville solver. Raw list and square-array
-inputs are rejected. Migrate the remaining single-kind solver boundaries one at
-a time; temporary adapters may remain only where explicitly documented.
+inputs are rejected. P2.2-c is complete: `SchrodingerPropagator` requires
+`PureState` and `LiouvillePropagator` requires `DensityState`. Both unwrap the
+typed value through a thin facade into the byte-for-byte unchanged array
+calculation body. Optimization retains an internal `_propagate_array` migration
+bridge so intermediate RK4 vectors are neither validated nor repaired between
+segments or forward/backward passes. The bridge is not public API.
 
 ### P2.3 Introduce ExecutionPolicy and capabilities
 

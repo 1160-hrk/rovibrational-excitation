@@ -64,7 +64,7 @@ def test_liouville_rejects_ignored_timestep_override():
     solver = LiouvillePropagator(validate_units=False)
 
     with pytest.raises(ValueError, match="dt override is unsupported"):
-        solver.propagate(None, None, None, np.eye(2), dt=0.1)
+        solver._propagate_array(None, None, None, np.eye(2), dt=0.1)
 
 
 def test_liouville_returns_physical_time_and_forwards_coupling_options(
@@ -83,7 +83,7 @@ def test_liouville_returns_physical_time_and_forwards_coupling_options(
     monkeypatch.setattr(liouville_module, "prepare_propagation_args", fake_prepare)
     efield = SimpleNamespace(tlist=np.linspace(-1.0, 0.0, fields.size))
 
-    time, rho = LiouvillePropagator(validate_units=False).propagate(
+    time, rho = LiouvillePropagator(validate_units=False)._propagate_array(
         object(),
         efield,
         object(),
@@ -122,7 +122,7 @@ def test_liouville_final_state_time_is_field_endpoint(monkeypatch):
     )
     efield = SimpleNamespace(tlist=np.linspace(-1.0, 0.0, fields.size))
 
-    time, rho = LiouvillePropagator(validate_units=False).propagate(
+    time, rho = LiouvillePropagator(validate_units=False)._propagate_array(
         object(),
         efield,
         object(),
@@ -150,7 +150,7 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
         calls.append(kwargs)
         return np.array([3.0]), np.asarray(args[3])
 
-    solver._schrodinger_prop.propagate = fake_propagate
+    solver._schrodinger_prop._propagate_array = fake_propagate
     states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
     time, rho = solver.propagate(
@@ -206,7 +206,7 @@ def test_liouville_rejects_unsupported_solver_options(kwargs, message):
     solver = LiouvillePropagator(validate_units=False)
 
     with pytest.raises(ValueError, match=message):
-        solver.propagate(None, None, None, np.eye(2), **kwargs)
+        solver._propagate_array(None, None, None, np.eye(2), **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -293,7 +293,7 @@ def test_liouville_rejects_unknown_propagation_option():
     solver = LiouvillePropagator(validate_units=False)
 
     with pytest.raises(ValueError, match="unsupported propagation options: typo"):
-        solver.propagate(None, None, None, np.eye(2), typo=True)
+        solver._propagate_array(None, None, None, np.eye(2), typo=True)
 
 
 def test_mixed_state_rejects_unknown_propagation_option():
@@ -320,7 +320,7 @@ def test_liouville_rejects_inapplicable_coupling_options(kwargs):
     solver = LiouvillePropagator(validate_units=False)
 
     with pytest.raises(ValueError, match="not applicable"):
-        solver.propagate(None, None, None, np.eye(2), **kwargs)
+        solver._propagate_array(None, None, None, np.eye(2), **kwargs)
 
 
 def test_mixed_state_rejects_conflicting_algorithm_override():

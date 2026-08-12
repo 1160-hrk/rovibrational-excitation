@@ -73,6 +73,11 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
     assert mypy["follow_imports"] == "silent"
     assert mypy["files"] == [
         "src/rovibrational_excitation/core/nondimensional/scales.py",
+        "src/rovibrational_excitation/core/propagation/base.py",
+        "src/rovibrational_excitation/core/propagation/factory.py",
+        "src/rovibrational_excitation/core/propagation/liouville.py",
+        "src/rovibrational_excitation/core/propagation/mixed_state.py",
+        "src/rovibrational_excitation/core/propagation/schrodinger.py",
         "src/rovibrational_excitation/core/time.py",
         "src/rovibrational_excitation/core/states.py",
         "src/rovibrational_excitation/core/units/constants.py",

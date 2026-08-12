@@ -280,7 +280,7 @@ def test_physical_time_uses_two_field_intervals_and_characterizes_stride_endpoin
     field, hamiltonian, dipole = _high_level_time_problem()
     initial = np.array([np.sqrt(0.3), np.sqrt(0.7)], dtype=np.complex128)
     solver = SchrodingerPropagator(validate_units=False)
-    full_time, full = solver.propagate(
+    full_time, full = solver._propagate_array(
         hamiltonian,
         field,
         dipole,
@@ -289,7 +289,7 @@ def test_physical_time_uses_two_field_intervals_and_characterizes_stride_endpoin
         coupling_axis="x",
         return_time_psi=True,
     )
-    stride_time, stride = solver.propagate(
+    stride_time, stride = solver._propagate_array(
         hamiltonian,
         field,
         dipole,
@@ -299,7 +299,7 @@ def test_physical_time_uses_two_field_intervals_and_characterizes_stride_endpoin
         return_time_psi=True,
         sample_stride=2,
     )
-    final_time, final = solver.propagate(
+    final_time, final = solver._propagate_array(
         hamiltonian,
         field,
         dipole,

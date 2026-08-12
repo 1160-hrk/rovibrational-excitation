@@ -10,6 +10,7 @@ from typing import Any, Literal, Union, cast
 
 import numpy as np
 
+from ..states import PureState
 from ..units.constants import CONSTANTS
 from ..units.validators import validator
 from .base import PropagatorBase
@@ -22,7 +23,7 @@ from .utils import (
 )
 
 
-class SchrodingerPropagator(PropagatorBase):
+class SchrodingerPropagator(PropagatorBase[PureState]):
     """
     Time-dependent Schrödinger equation propagator.
 
@@ -38,7 +39,7 @@ class SchrodingerPropagator(PropagatorBase):
         split_interaction: Literal["cartesian", "helicity_projected"] = "cartesian",
         renorm: bool = False,
         sparse: bool = False,
-        custom_propagator: Callable | None = None,
+        custom_propagator: Callable[..., Any] | None = None,
     ):
         """
         Initialize Schrödinger propagator.
@@ -86,7 +87,7 @@ class SchrodingerPropagator(PropagatorBase):
         if backend == "cupy" and sparse:
             raise ValueError("sparse=True is not supported by the CuPy propagator")
 
-    def set_custom_propagator(self, propagator_func: Callable) -> None:
+    def set_custom_propagator(self, propagator_func: Callable[..., Any]) -> None:
         """
         Set custom propagation function from outside.
 
@@ -106,7 +107,7 @@ class SchrodingerPropagator(PropagatorBase):
             return f"Schrödinger-Custom-{getattr(self.custom_propagator, '__name__', 'Unknown')}"
         return f"Schrödinger-{self.algorithm}"
 
-    def get_supported_backends(self) -> list:
+    def get_supported_backends(self) -> list[str]:
         """Get list of supported computational backends."""
         backends = ["numpy"]
         if HAS_CUPY:
@@ -115,12 +116,31 @@ class SchrodingerPropagator(PropagatorBase):
 
     def propagate(
         self,
-        hamiltonian,
-        efield,
-        dipole_matrix,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
+        initial_state: PureState,
+        **kwargs: Any,
+    ) -> Any:
+        """Propagate an explicitly typed pure state."""
+        if not isinstance(initial_state, PureState):
+            raise TypeError("initial_state must be a PureState")
+        return self._propagate_array(
+            hamiltonian,
+            efield,
+            dipole_matrix,
+            initial_state.amplitudes,
+            **kwargs,
+        )
+
+    def _propagate_array(
+        self,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
         initial_state: np.ndarray,
-        **kwargs,
-    ) -> Union[np.ndarray, tuple]:
+        **kwargs: Any,
+    ) -> Any:
         """
         Propagate wavefunction using time-dependent Schrödinger equation.
 
@@ -401,7 +421,7 @@ class SchrodingerPropagator(PropagatorBase):
         """Run RK4 propagation algorithm."""
         from .algorithms.rk4.schrodinger import rk4_schrodinger
 
-        backend_typed = cast(Literal["numpy", "cupy"], self.backend)
+        backend_typed = self.backend
 
         return rk4_schrodinger(
             H0,
@@ -439,7 +459,7 @@ class SchrodingerPropagator(PropagatorBase):
         """Run split-operator propagation algorithm."""
         from .algorithms.split_operator.schrodinger import splitop_schrodinger
 
-        backend_typed = cast(Literal["numpy", "cupy"], self.backend)
+        backend_typed = self.backend
 
         return splitop_schrodinger(
             H0,
