@@ -5,9 +5,16 @@ from typing import Any, TypedDict
 import numpy as np
 
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.core.propagation import (
+    PropagationDirection,
+    SchrodingerPropagator,
+)
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
 from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.optimization.timegrid import (
+    build_optimization_time_settings,
+    sample_optimization_output,
+)
 
 from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
 
@@ -42,12 +49,6 @@ def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
     return np.sin(np.pi * t / T) ** 2
 
 
-def _rk4_consistent_tlist(time_total: float, dt: float) -> np.ndarray:
-    target_traj_steps = int(time_total / dt) + 1
-    required_field_steps = 2 * (target_traj_steps - 1) + 1
-    return np.linspace(0.0, time_total, required_field_steps)
-
-
 def run_krotov_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
@@ -71,9 +72,10 @@ def run_krotov_optimization(
     if target_idx is None:
         raise ValueError("Krotov requires a target state.")
 
-    time_total = float(time_cfg["total_fs"])
-    dt = float(time_cfg["dt_fs"])
-    sample_stride = int(time_cfg.get("sample_stride", 1))
+    time_settings = build_optimization_time_settings(time_cfg)
+    time_grid = time_settings.grid
+    time_total = time_grid.t_end_fs
+    output_stride = time_settings.output_stride
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
     convergence_tol = float(
@@ -85,8 +87,8 @@ def run_krotov_optimization(
     )
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
 
-    # Build time list consistent with RK4 propagator
-    tlist = _rk4_consistent_tlist(time_total, dt)
+    # Build the canonical RK4 field grid from its explicit field spacing.
+    tlist = time_grid.field_times_fs
     n_field_steps = len(tlist)
 
     # Propagator
@@ -123,7 +125,7 @@ def run_krotov_optimization(
     mu_b_prime = mu_map[control_axes[1]]
 
     # Initial field (gaussian)
-    Efield_test = ElectricField(tlist=tlist)
+    Efield_test = ElectricField.from_time_grid(time_grid)
     carrier_freq = params.get(
         "carrier_freq_initial", DEFAULT_PARAMS["carrier_freq_initial"]
     )
@@ -187,7 +189,7 @@ def run_krotov_optimization(
             use_sc = True
 
     def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        ef = ElectricField(tlist=tlist)
+        ef = ElectricField.from_time_grid(time_grid)
         ef.add_arbitrary_Efield(ef_data)
         result = propagator.propagate(
             hamiltonian=hamiltonian,
@@ -197,7 +199,7 @@ def run_krotov_optimization(
             axes=control_axes,
             return_traj=True,
             return_time_psi=True,
-            sample_stride=sample_stride,
+            sample_stride=1,
             algorithm="rk4",
             sparse=False,
             propagator_func=propagator_func,
@@ -210,9 +212,8 @@ def run_krotov_optimization(
         psi_final = psi_traj[-1]
         overlap = np.vdot(psi_target, psi_final)
         chi_T = overlap * psi_target
-        # Reverse-time field
-        ef = ElectricField(tlist=tlist[::-1])
-        ef.add_arbitrary_Efield(ef_data[::-1])
+        ef = ElectricField.from_time_grid(time_grid)
+        ef.add_arbitrary_Efield(ef_data)
         result = propagator.propagate(
             hamiltonian=hamiltonian,
             efield=ef,
@@ -221,10 +222,11 @@ def run_krotov_optimization(
             axes=control_axes,
             return_traj=True,
             return_time_psi=True,
-            sample_stride=sample_stride,
+            sample_stride=1,
             algorithm="rk4",
             sparse=False,
             propagator_func=propagator_func,
+            direction=PropagationDirection.BACKWARD,
         )
         time_b = -result[0][::-1]
         chi_traj = result[1][::-1]
@@ -279,10 +281,15 @@ def run_krotov_optimization(
             field_data = field_data + delta_field
 
     # Final forward for outputs
-    ef_total = ElectricField(tlist=tlist)
+    ef_total = ElectricField.from_time_grid(time_grid)
     ef_total.add_arbitrary_Efield(field_data)
-    time_full, psi_traj_full = forward(field_data)
-    fidelity = fidelity_of(psi_traj_full[-1])
+    internal_time, internal_trajectory = forward(field_data)
+    fidelity = fidelity_of(internal_trajectory[-1])
+    time_full, psi_traj_full = sample_optimization_output(
+        internal_time,
+        internal_trajectory,
+        output_stride=output_stride,
+    )
 
     return RunResult(
         efield=ef_total,

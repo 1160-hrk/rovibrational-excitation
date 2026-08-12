@@ -95,7 +95,7 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
         hamiltonian=_ZeroHamiltonian(),
         dipole=_ZeroDipole(),
         states={"initial": (0,), "target": (0,)},
-        time_cfg={"total_fs": time_total, "dt_fs": 0.1, "sample_stride": 1},
+        time_cfg={"total_fs": time_total, "field_dt_fs": 0.1, "sample_stride": 1},
         params={"segment_size_steps": None, "segment_size_fs": 0.5},
     )
 
@@ -103,6 +103,27 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
     assert spy.calls[-1]["tlist"][-1] == pytest.approx(expected_full_last_time)
     assert result["tlist"].size == expected_storage_length
     assert result["tlist"][-1] == pytest.approx(expected_storage_last_time)
+
+
+def test_local_optimizer_rejects_removed_or_missing_time_options() -> None:
+    common = {
+        "basis": _OneStateBasis(),
+        "hamiltonian": _ZeroHamiltonian(),
+        "dipole": _ZeroDipole(),
+        "states": {"initial": (0,), "target": (0,)},
+        "params": {"segment_size_steps": None, "segment_size_fs": 0.5},
+    }
+
+    with pytest.raises(ValueError, match="dt_fs was removed.*field_dt_fs"):
+        local_module.run_local_optimization(
+            **common,
+            time_cfg={"total_fs": 0.8, "dt_fs": 0.1, "sample_stride": 1},
+        )
+    with pytest.raises(ValueError, match="missing required.*field_dt_fs"):
+        local_module.run_local_optimization(
+            **common,
+            time_cfg={"total_fs": 0.8, "sample_stride": 1},
+        )
 
 
 def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
@@ -115,7 +136,7 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
             hamiltonian=_ZeroHamiltonian(),
             dipole=_ZeroDipole(),
             states={"initial": (0,), "target": (0,)},
-            time_cfg={"total_fs": 0.8, "dt_fs": 0.1, "sample_stride": 1},
+            time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
             params={"segment_size_steps": None, "segment_size_fs": 0.5},
         )
     finally:

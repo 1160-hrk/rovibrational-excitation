@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import Hamiltonian
+from rovibrational_excitation.core.basis import Hamiltonian, TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import (
     PropagationDirection,
@@ -14,11 +14,10 @@ from rovibrational_excitation.core.propagation import (
 from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.optimization.grape import (
-    _rk4_consistent_tlist as grape_tlist,
-)
-from rovibrational_excitation.optimization.krotov import (
-    _rk4_consistent_tlist as krotov_tlist,
+from rovibrational_excitation.dipole.twolevel.cache import TwoLevelDipoleMatrix
+from rovibrational_excitation.optimization.krotov import run_krotov_optimization
+from rovibrational_excitation.optimization.timegrid import (
+    build_optimization_time_settings,
 )
 
 
@@ -30,13 +29,14 @@ def test_grape_and_krotov_share_the_existing_repository_time_grid(
     propagation_steps = int(total_fs / propagation_dt_fs)
     expected = np.linspace(0.0, total_fs, 2 * propagation_steps + 1)
 
-    grape_grid = grape_tlist(total_fs, propagation_dt_fs)
-    krotov_grid = krotov_tlist(total_fs, propagation_dt_fs)
+    settings = build_optimization_time_settings(
+        {"total_fs": total_fs, "field_dt_fs": propagation_dt_fs / 2.0}
+    )
+    migrated_grid = settings.grid.field_times_fs
 
-    np.testing.assert_array_equal(grape_grid, expected)
-    np.testing.assert_array_equal(krotov_grid, expected)
-    assert grape_grid[1] - grape_grid[0] == pytest.approx(0.05)
-    assert grape_grid[2] - grape_grid[0] == pytest.approx(0.1)
+    np.testing.assert_array_equal(migrated_grid, expected)
+    assert migrated_grid[1] - migrated_grid[0] == pytest.approx(0.05)
+    assert migrated_grid[2] - migrated_grid[0] == pytest.approx(0.1)
 
 
 def _manual_rk4(
@@ -156,7 +156,9 @@ def test_explicit_backward_direction_reproduces_legacy_krotov_kernel() -> None:
     np.testing.assert_array_equal(times, np.array([0.4, 0.2, 0.0]))
 
 
-def test_backward_direction_rejects_ambiguous_or_unsupported_modes() -> None:
+def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     h0 = Hamiltonian(np.diag([0.0, 0.7]), units="rad/fs")
     zeros = np.zeros((2, 2), dtype=np.complex128)
     dipole = _ArrayDipole(zeros, zeros)
@@ -184,3 +186,53 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes() -> None:
             nondimensional=True,
             direction=PropagationDirection.BACKWARD,
         )
+
+    import rovibrational_excitation.core.propagation.schrodinger as schrodinger_module
+
+    monkeypatch.setattr(schrodinger_module, "HAS_CUPY", True)
+    cupy_propagator = schrodinger_module.SchrodingerPropagator(
+        backend="cupy", validate_units=False
+    )
+    with pytest.raises(ValueError, match="NumPy only"):
+        cupy_propagator.propagate(
+            h0,
+            efield,
+            dipole,
+            psi,
+            direction=PropagationDirection.BACKWARD,
+        )
+
+
+def test_krotov_completes_one_real_forward_backward_iteration() -> None:
+    basis = TwoLevelBasis(
+        energy_gap=0.7,
+        input_units="rad/fs",
+        output_units="rad/fs",
+    )
+    hamiltonian = basis.generate_H0()
+    dipole = TwoLevelDipoleMatrix(
+        basis=basis,
+        mu0=2e-29,
+        units="C*m",
+        units_input="C*m",
+    )
+
+    result = run_krotov_optimization(
+        basis=basis,
+        hamiltonian=hamiltonian,
+        dipole=dipole,
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 1},
+        params={
+            "duration_initial": 0.2,
+            "amplitude_initial": 1e9,
+            "max_iter": 1,
+            "target_fidelity": 1.0,
+        },
+    )
+
+    np.testing.assert_array_equal(result["time"], np.arange(5, dtype=float) * 0.2)
+    assert result["psi_traj"].shape == (5, 2)
+    assert result["field_data"].shape == (9, 2)
+    assert np.all(np.isfinite(result["psi_traj"]))
+    assert np.isfinite(result["metrics"]["fidelity"])

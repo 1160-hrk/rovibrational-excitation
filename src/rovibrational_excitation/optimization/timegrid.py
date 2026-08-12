@@ -1,16 +1,20 @@
-"""Versioned time-layout contract for the local optimizer.
+"""Time-layout contracts for optimization algorithms.
 
-This module deliberately does not use :class:`core.time.TimeGrid`.  The local
-optimizer has a historically different endpoint and segment-index contract;
-changing that contract changes its numerical calculation.
+GRAPE and Krotov use the canonical :class:`core.time.TimeGrid`.  The local
+optimizer deliberately does not: it has a historically different endpoint and
+segment-index contract, and changing that contract changes its calculation.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
+
+from rovibrational_excitation.core.time import TimeGrid
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -58,4 +62,81 @@ class LocalOptimizerLegacyGridV1:
         return self.tlist[self.full_rk4_slice]
 
 
-__all__ = ["LocalOptimizerLegacyGridV1"]
+@dataclass(frozen=True, slots=True)
+class OptimizationTimeSettings:
+    """Canonical GRAPE/Krotov grid plus output-only sampling policy."""
+
+    grid: TimeGrid
+    output_stride: int
+
+
+def build_optimization_time_settings(
+    time_cfg: Mapping[str, Any],
+) -> OptimizationTimeSettings:
+    """Build a strict GRAPE/Krotov time contract without implicit resampling."""
+    if "dt_fs" in time_cfg:
+        raise ValueError("dt_fs was removed; provide field_dt_fs")
+    if "sample_stride" in time_cfg:
+        raise ValueError(
+            "sample_stride was removed; provide output_stride for output-only thinning"
+        )
+
+    allowed = {"total_fs", "field_dt_fs", "output_stride"}
+    unknown = sorted(set(time_cfg) - allowed)
+    if unknown:
+        raise ValueError("unsupported optimization time options: " + ", ".join(unknown))
+    missing = sorted({"total_fs", "field_dt_fs"} - set(time_cfg))
+    if missing:
+        raise ValueError(
+            "missing required optimization time options: " + ", ".join(missing)
+        )
+
+    output_stride = time_cfg.get("output_stride", 1)
+    if (
+        isinstance(output_stride, (bool, np.bool_))
+        or not isinstance(output_stride, (int, np.integer))
+        or int(output_stride) < 1
+    ):
+        raise ValueError("output_stride must be a positive integer")
+
+    grid = TimeGrid.from_bounds(
+        0.0,
+        time_cfg["total_fs"],
+        time_cfg["field_dt_fs"],
+    )
+    return OptimizationTimeSettings(grid=grid, output_stride=int(output_stride))
+
+
+def sample_optimization_output(
+    times_fs: np.ndarray,
+    trajectory: np.ndarray,
+    *,
+    output_stride: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Thin a complete optimizer trajectory while retaining its endpoint."""
+    if (
+        isinstance(output_stride, (bool, np.bool_))
+        or not isinstance(output_stride, (int, np.integer))
+        or int(output_stride) < 1
+    ):
+        raise ValueError("output_stride must be a positive integer")
+
+    times = np.asarray(times_fs)
+    states = np.asarray(trajectory)
+    if times.ndim != 1 or times.size < 1:
+        raise ValueError("times_fs must be a nonempty one-dimensional array")
+    if states.ndim < 1 or states.shape[0] != times.size:
+        raise ValueError("trajectory first dimension must match times_fs")
+
+    indices = np.arange(0, times.size, int(output_stride), dtype=np.int64)
+    if indices[-1] != times.size - 1:
+        indices = np.append(indices, times.size - 1)
+    return times[indices], states[indices]
+
+
+__all__ = [
+    "LocalOptimizerLegacyGridV1",
+    "OptimizationTimeSettings",
+    "build_optimization_time_settings",
+    "sample_optimization_output",
+]

@@ -233,6 +233,8 @@ class SchrodingerPropagator(PropagatorBase):
             )
         if self.backend == "cupy" and sparse:
             raise ValueError("sparse=True is not supported by the CuPy propagator")
+        if direction is PropagationDirection.BACKWARD and self.backend != "numpy":
+            raise ValueError("backward propagation currently supports NumPy only")
         if direction is PropagationDirection.BACKWARD and algorithm != "rk4":
             raise ValueError("backward propagation currently supports RK4 only")
         if direction is PropagationDirection.BACKWARD and nondimensional:

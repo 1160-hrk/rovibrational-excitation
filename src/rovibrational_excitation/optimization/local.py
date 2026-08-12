@@ -121,8 +121,16 @@ def run_local_optimization(
     initial_idx = basis.get_index(initial_state)
     target_idx = basis.get_index(target_state) if target_state is not None else None
 
+    if "dt_fs" in time_cfg:
+        raise ValueError("dt_fs was removed; provide field_dt_fs")
+    missing_time = sorted({"total_fs", "field_dt_fs"} - set(time_cfg))
+    if missing_time:
+        raise ValueError(
+            "missing required local optimization time options: "
+            + ", ".join(missing_time)
+        )
     time_total = float(time_cfg["total_fs"])
-    dt = float(time_cfg["dt_fs"])
+    dt = float(time_cfg["field_dt_fs"])
     sample_stride = int(time_cfg.get("sample_stride", 1))
 
     seg_steps = params.get("segment_size_steps", DEFAULT_PARAMS["segment_size_steps"])

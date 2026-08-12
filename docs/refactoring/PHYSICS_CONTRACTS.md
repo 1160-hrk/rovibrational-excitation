@@ -688,6 +688,41 @@ It fixes the following deterministic problems and tolerances:
 The low-level endpoint, mixed split-operator factory, and renormalization checks
 remain characterization anchors while D-026 is applied at the typed boundary.
 
+### Optimization time and backward-propagation contract
+
+GRAPE and Krotov use canonical `TimeGrid` instances beginning at zero. Their
+configuration specifies the electric-field sampling interval directly as
+`field_dt_fs`; one state-propagation step is exactly
+`2 * field_dt_fs`. The requested total span must be exactly divisible by that
+propagation step. A solver or configuration layer must never round the number
+of steps, extend the endpoint, or reinterpret `field_dt_fs` as a propagation
+interval.
+
+The repository Krotov configurations use `field_dt_fs = 0.05` fs. This is the
+explicit form of the historical `dt_fs = 0.1` fs propagation step and produces
+the same field arrays. Local optimization is a deliberate exception under
+D-027: it retains its versioned `np.arange` storage, segment endpoints, and
+`sample_stride`, with the existing numerical value 0.1 fs renamed only to
+`field_dt_fs`.
+
+GRAPE and Krotov optimization always consume every propagated state internally.
+`output_stride` applies only after the final objective has been evaluated and
+only to the returned trajectory. The initial state and exact endpoint remain in
+the returned trajectory even when the stride does not divide the propagation
+step count.
+
+Krotov costates use explicit `PropagationDirection.BACKWARD`. For dimensional
+NumPy RK4 this reverses both field component arrays and applies the negative
+propagation interval used by the historical implementation, while the public
+`ElectricField` time grid remains strictly increasing. Backward CuPy,
+split-operator, and nondimensional propagation are unsupported and must raise;
+they never fall back to forward propagation.
+
+Reference anchors are
+`tests/physics/test_optimization_time_reference.py`,
+`tests/contracts/test_optimization_time_grid_contracts.py`, and
+`tests/contracts/test_optimization_solver_time_contracts.py`.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature
@@ -834,5 +869,6 @@ The first four Phase 2 propagation questions were resolved by D-026. These
 items still require user input before behavior changes:
 
 1. The intended production status and validated physics scope of SymTop.
-2. Reference problems and acceptable tolerances for optimization and
-   spectroscopy, which currently have insufficient automated coverage.
+2. Independent objective/gradient references and acceptable tolerances for
+   optimization, plus spectroscopy references beyond the existing exact-route
+   tests.

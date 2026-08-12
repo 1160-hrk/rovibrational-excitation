@@ -7,6 +7,10 @@ import numpy as np
 from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
+from rovibrational_excitation.optimization.timegrid import (
+    build_optimization_time_settings,
+    sample_optimization_output,
+)
 
 DEFAULT_PARAMS = {
     "max_iter": 200,
@@ -28,12 +32,6 @@ class RunResult(TypedDict, total=False):
     target_idx: int
 
 
-def _rk4_consistent_tlist(time_total: float, dt: float) -> np.ndarray:
-    target_traj_steps = int(time_total / dt) + 1
-    required_field_steps = 2 * (target_traj_steps - 1) + 1
-    return np.linspace(0.0, time_total, required_field_steps)
-
-
 def run_grape_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
@@ -45,9 +43,9 @@ def run_grape_optimization(
     if target_idx is None:
         raise ValueError("GRAPE requires a target state.")
 
-    time_total = float(time_cfg["total_fs"])
-    dt = float(time_cfg["dt_fs"])
-    sample_stride = int(time_cfg.get("sample_stride", 1))
+    time_settings = build_optimization_time_settings(time_cfg)
+    time_grid = time_settings.grid
+    output_stride = time_settings.output_stride
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
     convergence_tol = float(
@@ -59,7 +57,7 @@ def run_grape_optimization(
         params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"])
     )
     propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
-    tlist = _rk4_consistent_tlist(time_total, dt)
+    tlist = time_grid.field_times_fs
     n_field_steps = len(tlist)
 
     propagator = SchrodingerPropagator(
@@ -85,7 +83,7 @@ def run_grape_optimization(
     def forward(
         ef_data: np.ndarray, initial_state_vec: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
-        ef = ElectricField(tlist=tlist)
+        ef = ElectricField.from_time_grid(time_grid)
         ef.add_arbitrary_Efield(ef_data)
         result = propagator.propagate(
             hamiltonian=hamiltonian,
@@ -95,7 +93,7 @@ def run_grape_optimization(
             axes="xy",
             return_traj=True,
             return_time_psi=True,
-            sample_stride=sample_stride,
+            sample_stride=1,
             algorithm="rk4",
             sparse=False,
             propagator_func=propagator_func,
@@ -138,10 +136,15 @@ def run_grape_optimization(
         # Gradient descent step
         field_data = field_data - float(learning_rate) * grad
 
-    ef_total = ElectricField(tlist=tlist)
+    ef_total = ElectricField.from_time_grid(time_grid)
     ef_total.add_arbitrary_Efield(field_data)
-    time_full, psi_traj_full = forward(field_data, psi_initial)
-    fidelity = fidelity_of(psi_traj_full[-1])
+    internal_time, internal_trajectory = forward(field_data, psi_initial)
+    fidelity = fidelity_of(internal_trajectory[-1])
+    time_full, psi_traj_full = sample_optimization_output(
+        internal_time,
+        internal_trajectory,
+        output_stride=output_stride,
+    )
 
     return RunResult(
         efield=ef_total,

@@ -194,7 +194,7 @@ def run_from_config(
     if algorithm is not None and str(algorithm).strip():
         selected = str(algorithm).strip()
     params = dict(cfg.get("algorithms", {}).get(selected, {}))
-    time_cfg = dict(cfg["time"])  # {total_fs, dt_fs, sample_stride}
+    time_cfg = dict(cfg["time"])
 
     runner = ALGO_REGISTRY.get(selected)
     if runner is None:
@@ -235,7 +235,9 @@ def run_from_config(
             efield_obj = result.get("efield")
             time_full = result.get("time")
             psi_traj = result.get("psi_traj")
-            tlist = result.get("tlist") or time_full
+            tlist = result.get("tlist")
+            if tlist is None:
+                tlist = time_full
             field_data = result.get("field_data")
             target_idx = result.get("target_idx", -1)
             if (
@@ -246,6 +248,9 @@ def run_from_config(
             ):
                 omega_center_cm = cfg["system"].get("params", {}).get("omega_cm")
                 plot_cfg = cfg.get("plot", {})
+                plot_stride_key = (
+                    "sample_stride" if selected == "local" else "output_stride"
+                )
                 plot_all(
                     basis=basis,
                     optimizer_like=type(
@@ -259,7 +264,8 @@ def run_from_config(
                     efield=efield_obj,
                     psi_traj=psi_traj,
                     field_data=field_data,
-                    sample_stride=int(cfg["time"].get("sample_stride", 1)),
+                    sample_stride=int(cfg["time"].get(plot_stride_key, 1)),
+                    trajectory_times_fs=time_full,
                     omega_center_cm=omega_center_cm,
                     figures_dir=str(out_path),
                     filename_prefix=safe_name,

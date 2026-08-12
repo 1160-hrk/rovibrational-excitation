@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-11
+Last verified: 2026-08-12
 Active refactor branch: `refactor/v0.3`
-Verified behavioral checkpoint: `53bfb2c`
+Verified behavioral contract: D-029 (P2.1-b)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -125,14 +125,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P2.1-a TimeGrid implementation:
+Current local CPU baseline after the P2.1-b optimization time migration:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-548 passed, 10 GPU tests skipped (558 collected)
+576 passed, 10 GPU tests skipped (586 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -180,7 +180,7 @@ Measured at `613ce93`:
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
-- Current branch coverage: 59%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 65%; the initial mandatory CI floor is 47%.
 - Optimization modules: 7-16% measured coverage.
 - Spectroscopy monolith: 81% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -196,11 +196,11 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Characterize the GRAPE, Krotov, and local-optimizer timestep semantics before
-   P2.1-b migration; do not change their rounding behavior without O-006
-   evidence and user approval.
-2. Continue with P2.2 explicit state kinds after the time-grid boundary is
-   accepted, without changing low-level numerical kernels.
+1. Continue with P2.2 explicit state kinds without changing low-level
+   numerical kernels. P2.1 time construction is complete under D-027 through
+   D-029.
+2. Continue P2.3 execution-policy capability work after state-kind boundaries
+   are stable.
 3. Perform target directory migration only after typed contracts are stable.
-4. Obtain trusted optimization and spectroscopy references before Phase 7
-   decomposition.
+4. Obtain independent optimization objective/gradient and spectroscopy
+   references before Phase 7 decomposition.

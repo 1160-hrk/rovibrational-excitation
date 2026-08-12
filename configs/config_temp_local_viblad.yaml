@@ -11,7 +11,7 @@ states:
   target:  [2]
 time:
   total_fs: 6000.0
-  dt_fs: 0.1
+  field_dt_fs: 0.1
   sample_stride: 1
 algorithm:
   selected: local

@@ -244,7 +244,9 @@ pre-solver exception: local optimization retains
 That layout is never rebuilt or endpoint-repaired by `TimeGrid`; it exposes the
 odd prefix historically consumed by RK4 when constructing the solver input.
 The returned optimization field and cost still use the complete legacy storage
-array.
+array. GRAPE and Krotov have no such exception: D-029 requires canonical
+`TimeGrid`, explicit `field_dt_fs`, complete internal trajectories, and
+output-only `output_stride`.
 
 ### 5.2 CouplingSpec
 

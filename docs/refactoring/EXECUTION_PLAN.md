@@ -581,9 +581,11 @@ Implementation status:
 - P2.1-a is complete for the normal simulation path: the frozen `TimeGrid`,
   legacy adapter, validation, and `ElectricField.from_time_grid` are tested;
   every remote required gate passed in Actions run #53.
-- P2.1-b-local now uses the explicit `LocalOptimizerLegacyGridV1` boundary.
-  Its builder, segment indices, storage tail, and legacy RK4 consumption are
-  frozen by D-027. GRAPE and Krotov time semantics remain pending under O-006.
+- P2.1-b is complete for time-array construction. Local optimization keeps
+  the D-027 legacy layout. GRAPE and Krotov use canonical `TimeGrid`, explicit
+  field spacing, full internal trajectories, output-only thinning, and the
+  D-028 backward direction under D-029. Independent objective and gradient
+  references remain open under O-006.
 
 ### P2.1 Introduce TimeGrid
 
@@ -596,7 +598,9 @@ Implementation status:
 Do not remove old calls until each workflow either uses `TimeGrid` directly or
 has an accepted, characterized adapter. Under D-027 the local optimizer keeps
 its versioned storage layout and exposes only its legacy-consumed odd prefix to
-the solver boundary.
+the solver boundary. Under D-029, GRAPE and Krotov construct the canonical grid
+from `field_dt_fs`; their optimization calculations always use the full
+trajectory and apply `output_stride` only to returned output.
 
 ### P2.2 Introduce explicit state kinds
 

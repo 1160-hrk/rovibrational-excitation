@@ -11,8 +11,8 @@ states:
   target:  [3]
 time:
   total_fs: 1000.0
-  dt_fs: 0.1
-  sample_stride: 1
+  field_dt_fs: 0.05
+  output_stride: 1
 algorithm:
   selected: krotov
 algorithms:

@@ -698,8 +698,9 @@ Consequences:
 Implementation checkpoints:
 
 - P2.1-a `TimeGrid` core and normal simulation migration: `53bfb2c`.
-- P2.1-b-local endpoint migration: implemented in the working tree under D-027;
-  GRAPE and Krotov time semantics remain pending O-006 characterization.
+- P2.1-b-local endpoint migration: `965dcda` under D-027.
+- Explicit backward RK4 direction: `b211610` under D-028.
+- GRAPE and Krotov canonical time migration: D-029 and its contract tests.
 
 ### D-027: Local optimizer preserves its versioned legacy time layout
 
@@ -754,7 +755,7 @@ Verification:
   kernel call and the validated odd-prefix call, including an extreme ignored
   final sample.
 
-Implementation: working tree; commit pending.
+Implementation: `965dcda`.
 
 ### D-028: Backward RK4 direction is explicit
 
@@ -778,16 +779,74 @@ Decision:
   arrays and multiplies the positive propagation interval by minus one before
   entering the unchanged kernel. Its returned physical times run from the
   configured final endpoint toward the initial endpoint.
-- Backward split-operator and nondimensional propagation raise until they have
-  independent numerical references. No fallback to forward propagation is
-  permitted.
+- Backward CuPy, split-operator, and nondimensional propagation raise until
+  they have independent numerical references. No fallback to forward
+  propagation is permitted.
 - Krotov must use this direction instead of constructing a decreasing
   `ElectricField`.
 
 The reference test compares the complete trajectory with the legacy reversed
 field and negative-dt RK4 call using exact array equality.
 
-Implementation: working tree; commit pending.
+Implementation: `b211610`; the NumPy-only capability guard is included in
+the P2.1-b time-contract change.
+
+### D-029: Optimization time spacing and output sampling are explicit
+
+Status: Accepted on 2026-08-12.
+
+Scope: GRAPE and Krotov time configuration, optimizer-internal trajectories,
+and output-only trajectory thinning. Local optimization remains governed by
+D-027.
+
+Observed behavior:
+
+- GRAPE and Krotov historically interpreted configured `dt_fs` as one RK4
+  propagation interval, then generated `2 * int(total_fs / dt_fs) + 1` field
+  samples with `np.linspace`. For the repository configurations, `dt_fs = 0.1`
+  fs therefore meant a 0.05 fs field interval and a 0.1 fs propagation step.
+- Krotov backward propagation worked while decreasing `ElectricField` grids
+  were accepted. The later strict-increasing field validation exposed an
+  incomplete migration, not evidence that the original Krotov update had never
+  executed. D-028 restores that route explicitly without changing the RK4
+  kernel.
+- Passing `sample_stride` into optimizer propagation can remove states needed
+  by objective and update indexing. It is therefore not merely an output
+  control.
+
+Decision:
+
+- GRAPE and Krotov require `field_dt_fs`; `dt_fs` is rejected. Repository
+  Krotov values migrate from 0.1 to 0.05 fs so the generated arrays and
+  effective 0.1 fs propagation step remain exactly unchanged.
+- `total_fs` must be an integer multiple of `2 * field_dt_fs`. No rounding,
+  endpoint extension, or implicit resampling is permitted.
+- Optimizer forward and costate calculations always use the complete internal
+  trajectory with propagation `sample_stride = 1`.
+- `output_stride` thins only the final returned trajectory. It never changes
+  integration, fidelity, gradient, update, or field samples, and the exact
+  endpoint is always retained. The explicit returned trajectory times are
+  used for plotting so endpoint retention cannot create a time-state length
+  mismatch.
+- The removed `sample_stride` optimization option is rejected for GRAPE and
+  Krotov rather than reinterpreted. Local optimization retains `sample_stride`
+  and its original `field_dt_fs = 0.1` values because its indices and endpoint
+  handling are frozen by D-027. Only the local configuration key is renamed
+  from `dt_fs` to `field_dt_fs`; its numerical value and use are unchanged.
+
+Verification:
+
+- exact-array tests compare the migrated 200, 500, and 1000 fs field grids with
+  the historical construction;
+- solver spies require full internal trajectories and explicit forward and
+  backward directions;
+- a real TwoLevel Krotov case completes one forward-backward update iteration;
+- local exact-array, segment-index, and bitwise RK4 reference tests remain
+  unchanged apart from the configuration-key rename.
+
+Implementation anchors: `tests/contracts/test_optimization_time_grid_contracts.py`,
+`tests/contracts/test_optimization_solver_time_contracts.py`, and
+`tests/physics/test_optimization_time_reference.py`.
 
 ## Open decisions
 
@@ -828,11 +887,11 @@ User input and reference data are needed to define:
 
 D-027 resolves the local optimizer time-array, segment-index, shared-boundary,
 and legacy RK4-consumption contracts with exact and bitwise-equivalence tests.
-It does not establish an independent scientific objective reference. Before
-algorithmic refactoring, the user must still identify one trusted reference
-problem per supported optimizer and acceptable objective and gradient
-tolerances. GRAPE, Krotov, and spectral-constraint time semantics also remain
-to be characterized.
+D-028 and D-029 resolve GRAPE and Krotov direction, grid-spacing, and
+trajectory-sampling semantics. They do not establish an independent scientific
+objective reference. Before algorithmic refactoring, the user must still
+identify one trusted reference problem per supported optimizer and acceptable
+objective and gradient tolerances, including the spectral-constraint update.
 
 ### O-007: Spectroscopy reference behavior
 

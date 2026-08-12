@@ -183,9 +183,11 @@ potential type to `harmonic`. These fallbacks violate the explicit-validation
 policy and must become errors when the typed config is introduced. They are
 documented here only; P0.1 does not change calculation behavior.
 
-The P2.1 audit found that GRAPE/Krotov currently interpret configured `dt_fs`
-as a propagation interval and synthesize a half-spaced field grid. Those
-semantics remain under O-006. The local optimizer instead retains the versioned
+D-029 migrates the characterized GRAPE/Krotov time behavior to canonical
+`TimeGrid`. Configuration now states the historical half-spaced field interval
+directly as `field_dt_fs`; `output_stride` cannot alter optimizer-internal
+trajectories. D-028 provides the explicit dimensional NumPy RK4 backward route
+used by the Krotov costate. The local optimizer instead retains the versioned
 `LocalOptimizerLegacyGridV1` contract accepted in D-027: its existing
 `np.arange` storage array, shared-boundary ownership, segment slices, and
 floor-based RK4 consumption are not reconstructed through canonical `TimeGrid`.

@@ -6,11 +6,10 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.fft_utils import (
-    spectrogram_fast,
-)  # examples util – assumed present in project
 
 from rovibrational_excitation.core.units.converters import converter
+
+from .spectrogram import spectrogram_fast
 
 
 def plot_all(
@@ -21,6 +20,7 @@ def plot_all(
     psi_traj: np.ndarray,
     field_data: np.ndarray,
     sample_stride: int,
+    trajectory_times_fs: np.ndarray | None = None,
     omega_center_cm: float | None,
     figures_dir: str,
     filename_prefix: str = "opt",
@@ -50,10 +50,18 @@ def plot_all(
 
     # 2) Target population
     prob = np.abs(psi_traj) ** 2
+    if trajectory_times_fs is None:
+        trajectory_times = t[:: 2 * max(1, sample_stride)]
+    else:
+        trajectory_times = np.asarray(trajectory_times_fs)
+    if trajectory_times.ndim != 1 or trajectory_times.size != prob.shape[0]:
+        raise ValueError(
+            "trajectory_times_fs must be one-dimensional and match psi_traj"
+        )
     idx_tar = getattr(optimizer_like, "target_idx", -1)
     if idx_tar is not None and int(idx_tar) >= 0:
         plt.figure(figsize=(12, 4))
-        plt.plot(t[:: 2 * max(1, sample_stride)], prob[:, int(idx_tar)], "g-")
+        plt.plot(trajectory_times, prob[:, int(idx_tar)], "g-")
         plt.xlabel("Time [fs]")
         plt.ylabel("Population of target")
         plt.title("Target Population vs Time")
