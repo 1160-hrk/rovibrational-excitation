@@ -624,6 +624,13 @@ segments or forward/backward passes. The bridge is not public API.
 
 ### P2.3 Introduce ExecutionPolicy and capabilities
 
+P2.3-a is complete: `ExecutionPolicy` requires typed `ArrayBackend` and
+`MatrixStorage` choices with no defaults, and the capability registry encodes
+the accepted state/algorithm/backend/storage matrix. Structural incompatibility
+is rejected before optional-backend availability and before allocation. P2.3-b
+will replace the runner `dense`/`sparse` dual booleans and connect one policy to
+model construction and propagation.
+
 One policy controls backend and storage for model construction and propagation.
 A capability registry rejects unsupported combinations before matrix
 allocation.

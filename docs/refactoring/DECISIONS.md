@@ -934,6 +934,36 @@ Implementation anchors: `core/propagation/{base,schrodinger,liouville}.py`,
 `tests/contracts/test_single_state_kind_dispatch.py`, and the unchanged local
 optimizer reference contracts.
 
+### D-033: Execution policy is explicit and capability-checked before allocation
+
+Status: Accepted on 2026-08-12 as the P2.3-a implementation of D-026.
+
+Scope: backend/storage values and propagation capability preflight.
+
+Decision:
+
+- `ExecutionPolicy` has two required enum fields: `ArrayBackend` (`numpy` or
+  `cupy`) and `MatrixStorage` (`dense` or `csr`);
+- it has no defaults and accepts no raw strings at its typed constructor;
+- configuration strings cross one explicit `from_strings` parser, where unknown
+  values raise instead of falling back or being inferred;
+- one capability registry encodes the accepted pure, incoherent-ensemble, and
+  density state combinations for RK4 and split operator;
+- structural incompatibilities such as CuPy CSR and non-RK4 density propagation
+  raise before optional-backend availability checks, conversion, or allocation;
+- requested but unavailable CuPy raises and never substitutes NumPy;
+- `dense` and `sparse` properties exist only as legacy adapter projections from
+  the single storage choice.
+
+P2.3-a does not yet change production constructors. P2.3-b must remove the
+runner dual-boolean inference and pass the same policy to dipole construction
+and propagation. The old factory automatic algorithm selection remains a known
+transitional violation and must not be reused by the typed facade.
+
+Implementation anchors: `core/execution.py`,
+`core/propagation/capabilities.py`, and
+`tests/contracts/test_execution_policy_contracts.py`.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

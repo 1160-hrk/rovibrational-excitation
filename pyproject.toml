@@ -114,8 +114,10 @@ ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_configs = true
 files = [
+    "src/rovibrational_excitation/core/execution.py",
     "src/rovibrational_excitation/core/nondimensional/scales.py",
     "src/rovibrational_excitation/core/propagation/base.py",
+    "src/rovibrational_excitation/core/propagation/capabilities.py",
     "src/rovibrational_excitation/core/propagation/factory.py",
     "src/rovibrational_excitation/core/propagation/liouville.py",
     "src/rovibrational_excitation/core/propagation/mixed_state.py",

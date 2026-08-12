@@ -614,6 +614,10 @@ direction-independent response.
 
 Current verified/implemented contract:
 
+The typed source of truth is `ExecutionPolicy` plus
+`validate_execution_capability`; legacy constructor booleans remain adapters
+until P2.3-b.
+
 | State path | Algorithm | NumPy dense | NumPy sparse | CuPy dense | CuPy sparse |
 |---|---|---:|---:|---:|---:|
 | Pure state | RK4 | Yes | Yes | Yes when CuPy is installed | No |
