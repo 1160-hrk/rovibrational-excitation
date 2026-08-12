@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-12
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-030 (P2.2-a)
+Verified behavioral contract: D-034 (P2.3-b)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -132,7 +132,7 @@ pytest -q
 ~~~
 
 ~~~text
-593 passed, 10 GPU tests skipped (603 collected)
+641 passed, 10 GPU tests skipped (651 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -180,7 +180,7 @@ Measured at `613ce93`:
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
-- Current branch coverage: 65%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 66%; the initial mandatory CI floor is 47%.
 - Optimization modules: 7-16% measured coverage.
 - Spectroscopy monolith: 81% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -196,10 +196,10 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Continue P2.2 by migrating solver boundaries to the D-030 state kinds,
-   without changing low-level numerical kernels or retaining shape inference.
-2. Continue P2.3 execution-policy capability work after state-kind boundaries
-   are stable.
+1. Complete P2.3-c by removing the old propagator-factory automatic algorithm
+   selection and making production solver construction consume typed execution
+   choices without changing low-level numerical kernels.
+2. Continue P2.4 with typed propagation options after factory defaults are gone.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain independent optimization objective/gradient and spectroscopy
    references before Phase 7 decomposition.

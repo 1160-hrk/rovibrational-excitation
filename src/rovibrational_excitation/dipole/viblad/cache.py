@@ -57,6 +57,7 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
     mu0: float
     potential_type: Literal["harmonic", "morse"]
     backend: Literal["numpy", "cupy"] = "numpy"
+    dense: bool = True
     units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
     units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
 
@@ -83,10 +84,36 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
     # concrete builder required by DipoleMatrixBase
     # ------------------------------------------------------------------
     def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
-        xp = _xp(self.backend)
         dim = self.basis.size()
-        matrix = xp.zeros((dim, dim), dtype=xp.complex128)
+        if not dense:
+            if self.backend != "numpy":
+                raise ValueError("CuPy CSR dipole matrices are not supported")
+            import scipy.sparse as sp
 
+            if axis != "z":
+                return sp.csr_matrix((dim, dim), dtype=np.complex128)  # type: ignore[return-value]
+            rows: list[int] = []
+            columns: list[int] = []
+            data: list[complex] = []
+            for i in range(dim):
+                v1 = self.basis.V_array[i]
+                for j in range(dim):
+                    v2 = self.basis.V_array[j]
+                    if self._morse_level_parameter is None:
+                        val = tdm_vib_harm(v1, v2)
+                    else:
+                        val = tdm_vib_morse(v1, v2, self._morse_level_parameter)
+                    if val != 0.0:
+                        rows.append(i)
+                        columns.append(j)
+                        data.append(self.mu0 * val)
+            return sp.csr_matrix(  # type: ignore[return-value]
+                (np.asarray(data, dtype=np.complex128), (rows, columns)),
+                shape=(dim, dim),
+            )
+
+        xp = _xp(self.backend)
+        matrix = xp.zeros((dim, dim), dtype=xp.complex128)
         if axis == "z":
             for i in range(dim):
                 v1 = self.basis.V_array[i]
@@ -102,13 +129,6 @@ class VibLadderDipoleMatrix(DipoleMatrixBase):
                         )
                     if val != 0.0:
                         matrix[i, j] = self.mu0 * val
-        elif axis == "x":
-            # matrix = xp.diag(xp.ones(len(self.basis.V_array)-1), 1)
-            # matrix += xp.diag(xp.ones(len(self.basis.V_array)-1), -1)
-            # matrix *= self.mu0
-            matrix = xp.zeros((dim, dim), dtype=xp.complex128)
-        elif axis == "y":
-            matrix = xp.zeros((dim, dim), dtype=xp.complex128)
         return matrix
 
     # ------------------------------------------------------------------

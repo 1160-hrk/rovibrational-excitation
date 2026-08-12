@@ -7,6 +7,11 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.core.execution import (
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
+)
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.simulation.models.linmol_m_average import (
@@ -53,6 +58,7 @@ def _runner_params(**overrides):
         "initial_states": [1],  # reduced state |v=0,J=1>
         "backend": "numpy",
         "algorithm": "rk4",
+        "storage": "dense",
         "validate_units": False,
         "return_traj": True,
         "save": False,
@@ -381,7 +387,12 @@ def test_m_average_is_independent_of_fixed_linear_lab_direction(polarization):
 
 def test_block_weights_are_normalized_and_reduce_dense_work():
     params = _runner_params(V_max=2, J_max=5, initial_states=[2])
-    blocks = build_m_average_blocks(params)
+    blocks = build_m_average_blocks(
+        params,
+        execution_policy=ExecutionPolicy(
+            backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+        ),
+    )
     assert [block.abs_m for block in blocks] == [0, 1, 2]
     np.testing.assert_allclose(
         [block.weight for block in blocks], [1 / 5, 2 / 5, 2 / 5]
@@ -391,6 +402,13 @@ def test_block_weights_are_normalized_and_reduce_dense_work():
     full_dimension = (params["V_max"] + 1) * (params["J_max"] + 1) ** 2
     block_matrix_elements = sum(block.basis.size() ** 2 for block in blocks)
     assert block_matrix_elements < full_dimension**2
+
+
+def test_m_average_dense_csr_population_parity():
+    dense = _run_one(_runner_params(storage="dense"))
+    csr = _run_one(_runner_params(storage="csr"))
+
+    np.testing.assert_allclose(csr, dense, rtol=0.0, atol=PROPAGATION_ATOL)
 
 
 def test_saved_m_average_has_no_fictitious_aggregate_wavefunction(tmp_path):

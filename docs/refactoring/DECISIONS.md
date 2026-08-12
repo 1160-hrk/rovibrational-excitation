@@ -955,14 +955,57 @@ Decision:
 - `dense` and `sparse` properties exist only as legacy adapter projections from
   the single storage choice.
 
-P2.3-a does not yet change production constructors. P2.3-b must remove the
-runner dual-boolean inference and pass the same policy to dipole construction
-and propagation. The old factory automatic algorithm selection remains a known
-transitional violation and must not be reused by the typed facade.
+P2.3-b removed normal-runner dual-boolean inference and passes one
+policy to dipole construction and propagation. The old factory automatic
+algorithm selection remains a known transitional violation for P2.3-c and must
+not be reused by the typed facade.
 
 Implementation anchors: `core/execution.py`,
 `core/propagation/capabilities.py`, and
 `tests/contracts/test_execution_policy_contracts.py`.
+
+### D-034: One execution policy controls normal simulation construction and propagation
+
+Status: Accepted on 2026-08-12 as the P2.3-b implementation of D-026 and D-033.
+
+Scope: normal simulation validation, model/dipole construction, fixed-M
+averaging, and solver dispatch.
+
+Decision:
+
+- every normal simulation case requires explicit `backend`, `storage`, and
+  `algorithm` fields;
+- the removed `dense` and `sparse` configuration booleans raise, rather
+  than being reconciled or used as fallbacks;
+- validation parses one `ExecutionPolicy` and one `PropagationAlgorithm`,
+  performs capability preflight, and returns those typed values to the runner;
+- the identical policy instance controls dipole backend/storage and propagator
+  backend/storage for both ordinary pure-state simulations and the fixed-M
+  incoherent average;
+- TwoLevel and VibLadder implement real SciPy CSR dipoles for NumPy, with
+  exact dense element parity; CuPy CSR remains unsupported and raises before
+  matrix allocation;
+- low-level propagator constructor booleans remain temporary adapters derived
+  only from `ExecutionPolicy`; they are not separate configuration sources.
+
+Consequences:
+
+- missing execution choices and unknown or structurally unsupported
+  combinations fail during simulation preflight;
+- model builders require an `ExecutionPolicy`, so direct callers cannot
+  accidentally construct matrices with defaults that differ from propagation;
+- no Hamiltonian, dipole-element, field-sampling, RK4, split-operator,
+  population-summing, or optimization formula changes in this step;
+- dense/CSR parity is tested for scalar-model dipoles and for the fixed-M
+  population trajectory.
+
+Implementation anchors: `simulation/validation.py`, `simulation/runner.py`,
+`simulation/models/`, `dipole/twolevel/cache.py`,
+`dipole/viblad/cache.py`,
+`tests/contracts/test_simulation_execution_wiring.py`, and
+`tests/physics/test_linear_molecule_reference.py`.
+
+Implementation commit: pending.
 
 ## Open decisions
 

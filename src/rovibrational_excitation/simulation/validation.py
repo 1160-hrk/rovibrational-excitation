@@ -7,6 +7,12 @@ from typing import Any
 
 import numpy as np
 
+from rovibrational_excitation.core.execution import ExecutionPolicy
+from rovibrational_excitation.core.propagation.capabilities import (
+    PropagationAlgorithm,
+    StatePath,
+    validate_execution_capability,
+)
 from rovibrational_excitation.core.propagation.utils import validate_axes
 from rovibrational_excitation.core.time import TimeGrid
 
@@ -25,6 +31,9 @@ _COMMON_REQUIRED = {
     "amplitude",
     "polarization",
     "duration",
+    "backend",
+    "storage",
+    "algorithm",
 }
 _MODEL_REQUIRED = {
     "linmol": {
@@ -106,7 +115,9 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
         raise SimulationConfigurationError(f"{key} must be a finite number")
 
 
-def validate_simulation_case(params: Mapping[str, Any]) -> None:
+def validate_simulation_case(
+    params: Mapping[str, Any],
+) -> tuple[ExecutionPolicy, PropagationAlgorithm]:
     """Validate one fully-expanded case without changing its values."""
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params
@@ -119,6 +130,12 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
     if "pulse_duration" in params:
         raise SimulationConfigurationError(
             "pulse_duration was removed; use the required parameter duration"
+        )
+    legacy_storage = {key for key in ("dense", "sparse") if key in params}
+    if legacy_storage:
+        names = ", ".join(sorted(legacy_storage))
+        raise SimulationConfigurationError(
+            f"{names} were removed; use required storage='dense' or storage='csr'"
         )
 
     basis_type = validate_model_parameters(params)
@@ -156,11 +173,28 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
     if not np.all(np.isfinite(polarization)) or not np.isfinite(norm) or norm == 0:
         raise SimulationConfigurationError("polarization must be finite and non-zero")
 
-    sparse = params.get("sparse", not params.get("dense", True))
-    if params.get("backend", "numpy") == "cupy" and sparse:
-        raise SimulationConfigurationError(
-            "sparse=True is not supported by the CuPy propagator"
+    try:
+        execution_policy = ExecutionPolicy.from_strings(
+            backend=params["backend"],
+            storage=params["storage"],
         )
+        algorithm = PropagationAlgorithm(params["algorithm"])
+    except (TypeError, ValueError) as exc:
+        raise SimulationConfigurationError(str(exc)) from exc
+
+    state_path = (
+        StatePath.INCOHERENT_ENSEMBLE
+        if basis_type == "linmol" and not params.get("use_M", True)
+        else StatePath.PURE
+    )
+    try:
+        validate_execution_capability(
+            state_path=state_path,
+            algorithm=algorithm,
+            policy=execution_policy,
+        )
+    except (RuntimeError, ValueError) as exc:
+        raise SimulationConfigurationError(str(exc)) from exc
 
     # Only LinMol has a physical Cartesian polarization mapping.
     if basis_type == "linmol":
@@ -185,10 +219,6 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
             except ValueError as exc:
                 raise SimulationConfigurationError(str(exc)) from exc
 
-    if params.get("algorithm", "rk4") not in {"rk4", "split_operator"}:
-        raise SimulationConfigurationError(
-            "algorithm must be 'rk4' or 'split_operator'"
-        )
     if params.get("split_interaction", "cartesian") not in {
         "cartesian",
         "helicity_projected",
@@ -196,5 +226,4 @@ def validate_simulation_case(params: Mapping[str, Any]) -> None:
         raise SimulationConfigurationError(
             "split_interaction must be 'cartesian' or 'helicity_projected'"
         )
-    if params.get("backend", "numpy") not in {"numpy", "cupy"}:
-        raise SimulationConfigurationError("backend must be 'numpy' or 'cupy'")
+    return execution_policy, algorithm

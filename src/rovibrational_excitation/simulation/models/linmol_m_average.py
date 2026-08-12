@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.core.execution import ExecutionPolicy
+from rovibrational_excitation.core.propagation.capabilities import PropagationAlgorithm
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
@@ -143,13 +145,14 @@ def validate_m_average_initial_states(params: dict[str, Any]) -> None:
     _reduced_initial_states(params)
 
 
-def build_m_average_blocks(params: dict[str, Any]) -> tuple[MBlockProblem, ...]:
+def build_m_average_blocks(
+    params: dict[str, Any], *, execution_policy: ExecutionPolicy
+) -> tuple[MBlockProblem, ...]:
     """Build the non-negative |M| representatives for an isotropic M mixture."""
     initial_states, initial_j = _reduced_initial_states(params)
     degeneracy = 2 * initial_j + 1
     amplitude = 1.0 / np.sqrt(len(initial_states))
-    sparse = params.get("sparse", not params.get("dense", True))
-    dense = params.get("dense", not sparse)
+    dense = execution_policy.dense
     blocks: list[MBlockProblem] = []
 
     for abs_m in range(initial_j + 1):
@@ -173,7 +176,7 @@ def build_m_average_blocks(params: dict[str, Any]) -> tuple[MBlockProblem, ...]:
             basis,
             mu0=params["mu0_Cm"],
             potential_type=params["potential_type"],
-            backend=params.get("backend", "numpy"),
+            backend=execution_policy.backend.value,
             dense=dense,
         )
         reduced_indices = (
@@ -204,6 +207,9 @@ def _as_numpy(array: Any) -> np.ndarray:
 def propagate_m_average(
     params: dict[str, Any],
     electric_field: Any,
+    *,
+    execution_policy: ExecutionPolicy,
+    algorithm: PropagationAlgorithm,
 ) -> MAveragePropagationResult:
     """Propagate fixed-M blocks and incoherently sum reduced populations."""
     removed_options = {
@@ -214,12 +220,12 @@ def propagate_m_average(
         raise ValueError(
             f"{names} were removed; define the ElectricField grid explicitly"
         )
-    blocks = build_m_average_blocks(params)
-    sparse = params.get("sparse", not params.get("dense", True))
-    algorithm = params.get("algorithm", "rk4")
+    blocks = build_m_average_blocks(params, execution_policy=execution_policy)
+    sparse = execution_policy.sparse
+    algorithm_name: Literal["rk4", "split_operator"] = algorithm.value
     propagator = SchrodingerPropagator(
-        backend=params.get("backend", "numpy"),
-        algorithm=algorithm,
+        backend=execution_policy.backend.value,
+        algorithm=algorithm_name,
         validate_units=params.get("validate_units", True),
         renorm=params.get("renorm", False),
         sparse=sparse,
@@ -242,7 +248,7 @@ def propagate_m_average(
             sample_stride=params.get("sample_stride", 1),
             nondimensional=params.get("nondimensional", False),
             verbose=params.get("verbose", False),
-            algorithm=algorithm,
+            algorithm=algorithm_name,
             sparse=sparse,
             renorm=params.get("renorm", False),
         )

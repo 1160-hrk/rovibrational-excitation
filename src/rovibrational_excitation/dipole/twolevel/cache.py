@@ -51,6 +51,7 @@ class TwoLevelDipoleMatrix(DipoleMatrixBase):
     basis: TwoLevelBasis
     mu0: float
     backend: Literal["numpy", "cupy"] = "numpy"
+    dense: bool = True
     units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
     units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
 
@@ -70,13 +71,25 @@ class TwoLevelDipoleMatrix(DipoleMatrixBase):
     # concrete builder required by DipoleMatrixBase
     # ------------------------------------------------------------------
     def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
+        if not dense:
+            if self.backend != "numpy":
+                raise ValueError("CuPy CSR dipole matrices are not supported")
+            import scipy.sparse as sp
+
+            if axis == "x":
+                matrix = self.mu0 * np.array([[0, 1], [1, 0]], dtype=np.complex128)
+            elif axis == "y":
+                matrix = self.mu0 * np.array([[0, -1j], [1j, 0]], dtype=np.complex128)
+            else:
+                matrix = np.zeros((2, 2), dtype=np.complex128)
+            return sp.csr_matrix(matrix)  # type: ignore[return-value]
+
         xp = _xp(self.backend)
         if axis == "x":
             return self.mu0 * xp.array([[0, 1], [1, 0]], dtype=xp.complex128)
-        elif axis == "y":
+        if axis == "y":
             return self.mu0 * xp.array([[0, -1j], [1j, 0]], dtype=xp.complex128)
-        else:  # z
-            return xp.zeros((2, 2), dtype=xp.complex128)
+        return xp.zeros((2, 2), dtype=xp.complex128)
 
     # DipoleMatrixBase supplies mu_x/y/z, unit conversion, persistence, repr
 

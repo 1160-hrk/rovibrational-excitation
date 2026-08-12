@@ -5,9 +5,20 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.execution import (
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
+)
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.simulation.models import build_model
 from rovibrational_excitation.simulation.runner import _run_one
+
+_NUMPY_DENSE = ExecutionPolicy(backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE)
+
+
+def _build_model(params):
+    return build_model(params, execution_policy=_NUMPY_DENSE)
 
 
 @pytest.mark.parametrize(
@@ -51,7 +62,7 @@ from rovibrational_excitation.simulation.runner import _run_one
     ],
 )
 def test_build_model_constructs_normalized_existing_components(params, expected_size):
-    model = build_model(params)
+    model = _build_model(params)
 
     assert model.basis.size() == expected_size
     assert model.hamiltonian.shape == (expected_size, expected_size)
@@ -74,11 +85,11 @@ def test_linmol_rejects_morse_with_zero_anharmonicity():
     }
 
     with pytest.raises(ValueError, match="must be non-zero"):
-        build_model(params)
+        _build_model(params)
 
 
 def test_build_model_constructs_coherent_superposition():
-    model = build_model(
+    model = _build_model(
         {
             "basis_type": "twolevel",
             "energy_gap": 1.0,
@@ -117,17 +128,17 @@ def test_build_model_constructs_coherent_superposition():
 )
 def test_build_model_requires_physical_scale_parameters(params, missing):
     with pytest.raises(ValueError, match=missing):
-        build_model(params)
+        _build_model(params)
 
 
 def test_build_model_rejects_unknown_basis_type():
     with pytest.raises(ValueError, match="Unknown basis_type"):
-        build_model({"basis_type": "unknown"})
+        _build_model({"basis_type": "unknown"})
 
 
 def test_build_model_preserves_missing_parameter_error():
     with pytest.raises(ValueError, match="V_max"):
-        build_model({"basis_type": "linmol"})
+        _build_model({"basis_type": "linmol"})
 
 
 @pytest.mark.parametrize(
@@ -174,6 +185,9 @@ def test_runner_zero_field_preserves_population_after_model_split(model_params):
         "initial_states": [0],
         "return_time_psi": True,
         "save": False,
+        "backend": "numpy",
+        "storage": "dense",
+        "algorithm": "rk4",
         **model_params,
     }
 
@@ -213,8 +227,8 @@ def test_runner_uses_interval_duration_and_one_backend(
         "backend": "numpy",
         "save": False,
         "algorithm": "split_operator",
+        "storage": "csr",
         "renorm": True,
-        "dense": False,
         "verbose": True,
         "validate_units": False,
         "sample_stride": 2,

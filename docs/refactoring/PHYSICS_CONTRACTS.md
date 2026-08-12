@@ -615,8 +615,10 @@ direction-independent response.
 Current verified/implemented contract:
 
 The typed source of truth is `ExecutionPolicy` plus
-`validate_execution_capability`; legacy constructor booleans remain adapters
-until P2.3-b.
+`validate_execution_capability`. Normal simulation configuration requires
+`backend`, `storage`, and `algorithm`; one validated policy controls both dipole
+construction and propagation. Legacy low-level constructor booleans remain only
+as projections from that policy during the P2.4 migration.
 
 | State path | Algorithm | NumPy dense | NumPy sparse | CuPy dense | CuPy sparse |
 |---|---|---:|---:|---:|---:|
@@ -640,9 +642,8 @@ Additional constraints:
   This includes final-only output, whose shape is `(1, dimension)`, on both
   NumPy and CuPy paths. Higher-level final-only APIs may remove that leading
   saved-time axis exactly once.
-- Existing dipole helper `_xp` can fall back to NumPy when CuPy is unavailable.
-  This silent fallback is a known defect and must be replaced by an explicit
-  availability error.
+- Dipole helper `_xp` raises when requested CuPy is unavailable; it never
+  substitutes NumPy.
 
 ### Numba CSR RK4 reference anchor
 

@@ -24,18 +24,13 @@ def build_mu(
 ):
     """Stateless builder for μ_axis.
 
-    Notes
-    -----
-    - The vibrational ladder currently provides dense matrices only.
-      If ``dense=False`` is requested, ``NotImplementedError`` is raised.
-    - Units management is handled by the underlying cache implementation.
+    NumPy supports dense and CSR storage. CuPy supports dense storage only.
     """
-    if not dense:
-        raise NotImplementedError("VibLadder builder does not provide sparse matrices")
     obj = _CacheVibLadderDipoleMatrix(
         basis=basis,
         mu0=mu0,
         potential_type=potential_type,
         backend=backend,
+        dense=dense,
     )
     return obj.mu(axis)

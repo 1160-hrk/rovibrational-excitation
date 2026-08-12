@@ -131,7 +131,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     from .validation import validate_simulation_case
 
     # --- Electric field 共通 ---
-    validate_simulation_case(params)
+    execution_policy, algorithm = validate_simulation_case(params)
     polarization = _deserialize_pol(params["polarization"])
     use_m_average = params.get(
         "basis_type", "linmol"
@@ -168,7 +168,12 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     if use_m_average:
         from .models.linmol_m_average import propagate_m_average
 
-        result = propagate_m_average(params, E)
+        result = propagate_m_average(
+            params,
+            E,
+            execution_policy=execution_policy,
+            algorithm=algorithm,
+        )
         if params.get("save", True):
             outdir = Path(params["outdir"])
             save_data: dict[str, Any] = {
@@ -191,19 +196,19 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         return result.population
 
     # --- 系タイプ別の構築 ---
-    model = build_model(params)
+    model = build_model(params, execution_policy=execution_policy)
     sv = model.state
     H0 = model.hamiltonian
     dip = model.dipole
 
     # ---------- Propagation 共通 ----------
     use_nondimensional = params.get("nondimensional", False)
-    backend = params.get("backend", "numpy")
-    algorithm = params.get("algorithm", "rk4")
-    sparse = params.get("sparse", not params.get("dense", True))
+    backend = execution_policy.backend.value
+    algorithm_name = algorithm.value
+    sparse = execution_policy.sparse
     prop = SchrodingerPropagator(
         backend=backend,
-        algorithm=algorithm,
+        algorithm=algorithm_name,
         split_interaction=params.get("split_interaction", "cartesian"),
         validate_units=params.get("validate_units", True),
         renorm=params.get("renorm", False),
@@ -225,10 +230,10 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         sample_stride=params.get("sample_stride", 1),
         nondimensional=use_nondimensional,
         verbose=params.get("verbose", False),
-        algorithm=algorithm,
+        algorithm=algorithm_name,
         **(
             {"split_interaction": params.get("split_interaction", "cartesian")}
-            if algorithm == "split_operator"
+            if algorithm_name == "split_operator"
             else {}
         ),
         sparse=sparse,

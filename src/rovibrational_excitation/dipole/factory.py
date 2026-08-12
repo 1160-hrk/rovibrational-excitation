@@ -117,6 +117,7 @@ def create_dipole_matrix(
             basis=basis,
             mu0=mu0,
             backend=backend,
+            dense=dense,
             units=units,
             units_input=units_input,
         )
@@ -126,6 +127,7 @@ def create_dipole_matrix(
             mu0=mu0,
             potential_type=potential_type,
             backend=backend,
+            dense=dense,
             units=units,
             units_input=units_input,
         )

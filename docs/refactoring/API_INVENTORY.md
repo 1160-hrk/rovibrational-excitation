@@ -82,7 +82,7 @@ not treated as intentional API.
 | `core.basis` | `BasisBase`, `Hamiltonian`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic types to `core`; model bases to their `models.*` owners | temporary public |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `converter`, `UnitValidator`, `validator`, `ParameterProcessor`, `parameter_processor` | immutable constants and explicit conversion services under `core.units`; typed config handles parameter conversion | classes temporary public; singleton objects internal and delete |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
-| `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; runner/model wiring pending P2.3-b |
+| `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
 | `core.states` | `PureState`, `IncoherentEnsemble`, `DensityState` | explicit immutable initial-state kinds | target public module; all propagator facades migrated in P2.2 |
 
 `core` itself has no `__init__.py`, so it has no explicit public contract today.
@@ -127,7 +127,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.symtop` | `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public pending O-005 |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
-| `simulation.models` | `CouplingSpec`, `ModelComponents`, `build_model` | typed model protocol and config dispatch under `models` | internal transition facade; delete after callers migrate |
+| `simulation.models` | `CouplingSpec`, `ModelComponents`, `build_model` | typed model protocol and config dispatch under `models` | internal transition facade; `build_model` requires `ExecutionPolicy` since P2.3-b |
 
 `SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
 simulation `build_model` registry supports only `linmol`, `twolevel`, and
@@ -164,12 +164,15 @@ versioned so historical calculations remain interpretable.
 4. `expand_cases` treats most iterable values as sweep dimensions; only
    `polarization`, `initial_states`, and `envelope_func` are fixed-value
    exceptions.
-5. `validate_simulation_case` runs only after expansion.
-6. `build_model` dispatches through a local dictionary and returns
-   `ModelComponents` plus scalar/Cartesian coupling metadata.
-7. `runner._run_one` constructs one immutable `TimeGrid`, constructs the
-   `ElectricField` from it, then constructs the propagator and writes an
-   unversioned NPZ/JSON result.
+5. `validate_simulation_case` runs only after expansion; it requires and parses
+   `backend`, `storage`, and `algorithm`, rejects the removed `dense`/`sparse`
+   booleans, and performs capability preflight.
+6. `build_model` requires that validated `ExecutionPolicy`, dispatches through a
+   local dictionary, and returns `ModelComponents` plus scalar/Cartesian
+   coupling metadata.
+7. `runner._run_one` constructs one immutable `TimeGrid` and `ElectricField`,
+   then passes the same policy to model construction and propagation before
+   writing an unversioned NPZ/JSON result.
 
 This entire route is temporary. Python-file execution, heuristic conversion,
 implicit sweep inference, and unversioned output are not part of the target

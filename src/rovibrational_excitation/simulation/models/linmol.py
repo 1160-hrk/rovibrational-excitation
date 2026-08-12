@@ -5,12 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 from .common import build_initial_state
 
 
-def build_linmol(params: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
+def build_linmol(
+    params: dict[str, Any], *, execution_policy: ExecutionPolicy
+) -> tuple[Any, Any, Any, Any]:
     """Build basis, initial state, Hamiltonian, and dipole without changing formulas."""
     if not params.get("use_M", True):
         raise ValueError(
@@ -42,7 +45,7 @@ def build_linmol(params: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
         basis,
         mu0=params["mu0_Cm"],
         potential_type=potential_type,
-        backend=params.get("backend", "numpy"),
-        dense=params.get("dense", True),
+        backend=execution_policy.backend.value,
+        dense=execution_policy.dense,
     )
     return basis, state, hamiltonian, dipole

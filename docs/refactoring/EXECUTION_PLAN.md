@@ -628,8 +628,13 @@ P2.3-a is complete: `ExecutionPolicy` requires typed `ArrayBackend` and
 `MatrixStorage` choices with no defaults, and the capability registry encodes
 the accepted state/algorithm/backend/storage matrix. Structural incompatibility
 is rejected before optional-backend availability and before allocation. P2.3-b
-will replace the runner `dense`/`sparse` dual booleans and connect one policy to
-model construction and propagation.
+is complete: normal simulation requires `backend`, `storage`, and `algorithm`,
+rejects legacy `dense`/`sparse` booleans, and passes one validated policy to
+model/dipole construction and pure or fixed-M propagation. NumPy TwoLevel and
+VibLadder CSR construction now returns actual SciPy CSR matrices with dense
+element parity. P2.3-c must remove the old propagator factory automatic
+algorithm selection and make production solver construction consume the typed
+policy directly.
 
 One policy controls backend and storage for model construction and propagation.
 A capability registry rejects unsupported combinations before matrix

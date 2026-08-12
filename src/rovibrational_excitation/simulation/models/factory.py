@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from rovibrational_excitation.core.execution import ExecutionPolicy
+
 from ..validation import validate_model_parameters
 from .linmol import build_linmol
 from .twolevel import build_twolevel
@@ -29,7 +31,9 @@ class ModelComponents:
     coupling: CouplingSpec
 
 
-def build_model(params: dict[str, Any]) -> ModelComponents:
+def build_model(
+    params: dict[str, Any], *, execution_policy: ExecutionPolicy
+) -> ModelComponents:
     """Build a configured model using the same dispatch as the existing runner."""
     basis_type = validate_model_parameters(params)
     builders = {
@@ -41,5 +45,5 @@ def build_model(params: dict[str, Any]) -> ModelComponents:
         builder, coupling = builders[basis_type]
     except KeyError:
         raise ValueError(f"Unknown basis_type: {basis_type}") from None
-    parts = builder(params)
+    parts = builder(params, execution_policy=execution_policy)
     return ModelComponents(*parts, coupling=coupling)

@@ -23,12 +23,7 @@ def build_mu(
 ):
     """Stateless builder for μ_axis in a two-level system.
 
-    Notes
-    -----
-    - Only dense matrices are provided; ``dense=False`` raises NotImplementedError.
-    - Units management and backend selection are handled by the cache implementation.
+    NumPy supports dense and CSR storage. CuPy supports dense storage only.
     """
-    if not dense:
-        raise NotImplementedError("TwoLevel builder does not provide sparse matrices")
-    obj = _CacheTwoLevelDipoleMatrix(basis=basis, mu0=mu0, backend=backend)
+    obj = _CacheTwoLevelDipoleMatrix(basis=basis, mu0=mu0, backend=backend, dense=dense)
     return obj.mu(axis)

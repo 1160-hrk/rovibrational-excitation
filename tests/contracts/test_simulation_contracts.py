@@ -32,6 +32,9 @@ def _base_case(**overrides):
         "polarization": [1.0, 0.0],
         "initial_states": [0],
         "save": False,
+        "backend": "numpy",
+        "storage": "dense",
+        "algorithm": "rk4",
     }
     case.update(overrides)
     return case
