@@ -79,7 +79,7 @@ def test_schrodinger_public_boundary_projects_typed_options_without_change(monke
 
     def fake_array_propagation(*args, **kwargs):
         captured.update(kwargs)
-        return args[3]
+        return np.array([0.2]), args[3], None
 
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
     state = PureState(np.array([1.0, 0.0], dtype=np.complex128))
@@ -88,14 +88,14 @@ def test_schrodinger_public_boundary_projects_typed_options_without_change(monke
     result = solver.propagate(
         problem,
         options=options,
-        return_times=True,
     )
 
-    assert result is state.amplitudes
+    assert result.state is state.amplitudes
     assert captured == {
         "return_traj": False,
         "return_time_psi": True,
-        "sample_stride": 3,
+        "sample_stride": 1,
+        "_return_context": True,
         "nondimensional": True,
         "coupling_mode": "scalar",
         "coupling_axis": "z",

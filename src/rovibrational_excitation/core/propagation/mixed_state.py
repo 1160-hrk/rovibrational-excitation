@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 import numpy as np
 
@@ -11,6 +11,7 @@ from ..units.validators import validator
 from .base import PropagatorBase
 from .options import PropagationOptions
 from .problem import PropagationProblem
+from .result import PropagationResult, finalize_propagation_result
 from .schrodinger import SchrodingerPropagator
 from .utils import get_backend
 
@@ -51,10 +52,9 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
         problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        return_times: bool = False,
         verbose: bool = False,
         split_interaction: Literal["cartesian", "helicity_projected"] | None = None,
-    ) -> Any:
+    ) -> PropagationResult:
         """Propagate one complete typed statistical-state problem."""
         if not isinstance(problem, PropagationProblem):
             raise TypeError("problem must be a PropagationProblem")
@@ -88,14 +88,15 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
                 validate_units=False,
             )
             liouville_prop._validate_public_options(options)
-            return liouville_prop._propagate_array(
+            times_fs, state, scales = liouville_prop._propagate_array(
                 hamiltonian,
                 efield,
                 dipole_matrix,
                 initial_state.matrix,
                 return_traj=options.return_trajectory,
-                return_time_rho=return_times,
-                sample_stride=options.sample_stride,
+                return_time_rho=True,
+                sample_stride=1,
+                _return_context=True,
                 nondimensional=options.nondimensional,
                 coupling_mode=problem.coupling_mode,
                 **problem.coupling_kwargs,
@@ -103,14 +104,24 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
                 algorithm=options.algorithm_name,
                 sparse=options.sparse,
             )
+            return finalize_propagation_result(
+                problem=problem,
+                options=options,
+                times_fs=times_fs,
+                state=state,
+                state_kind="density_matrix",
+                scales=scales,
+            )
 
         xp = get_backend(self.backend)
         rho_out = None
         time_psi = None
+        scales_reference = None
         propagation_kwargs = {
             "return_traj": options.return_trajectory,
-            "return_time_psi": return_times,
-            "sample_stride": options.sample_stride,
+            "return_time_psi": True,
+            "sample_stride": 1,
+            "_return_context": True,
             "nondimensional": options.nondimensional,
             "coupling_mode": problem.coupling_mode,
             **problem.coupling_kwargs,
@@ -134,16 +145,12 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
                 **propagation_kwargs,
             )
 
-            if isinstance(result, tuple):
-                component_time, psi_t = result
-                if time_psi is None:
-                    time_psi = component_time
-                elif not np.allclose(time_psi, component_time):
-                    raise RuntimeError(
-                        "ensemble components returned inconsistent times"
-                    )
-            else:
-                psi_t = result
+            component_time, psi_t, component_scales = result
+            if time_psi is None:
+                time_psi = component_time
+                scales_reference = component_scales
+            elif not np.allclose(time_psi, component_time):
+                raise RuntimeError("ensemble components returned inconsistent times")
 
             psi_backend = xp.asarray(psi_t)
             if options.return_trajectory:
@@ -157,6 +164,13 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
                 rho_out = xp.zeros_like(component_density)
             rho_out += float(weight) * component_density
 
-        if return_times and time_psi is not None:
-            return time_psi, rho_out
-        return rho_out
+        if time_psi is None or rho_out is None:
+            raise RuntimeError("ensemble propagation produced no result")
+        return finalize_propagation_result(
+            problem=problem,
+            options=options,
+            times_fs=time_psi,
+            state=rho_out,
+            state_kind="density_matrix",
+            scales=scales_reference,
+        )

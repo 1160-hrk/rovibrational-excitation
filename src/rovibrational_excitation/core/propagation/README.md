@@ -36,12 +36,36 @@ options = PropagationOptions(
 
 solver constructor の algorithm、backend、storage、renormalization と `options` が一致しない場合は、計算前にエラーになります。
 
-## 純粋状態
+## 完全な問題と純粋状態
 
 ```python
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
-from rovibrational_excitation.core.states import PureState
+import numpy as np
 
+from rovibrational_excitation.core.propagation import (
+    Axis,
+    CouplingSpec,
+    PropagationProblem,
+    SchrodingerPropagator,
+    SystemModel,
+)
+from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.core.time import TimeGrid
+
+time_grid = TimeGrid(np.asarray(field.tlist))
+model = SystemModel(
+    name="my-model",
+    basis=basis,
+    hamiltonian=hamiltonian,
+    dipole=dipole,
+    coupling=CouplingSpec.cartesian("xy"),
+    metadata={},
+)
+problem = PropagationProblem(
+    model=model,
+    field=field,
+    time_grid=time_grid,
+    initial_state=PureState(amplitudes),
+)
 solver = SchrodingerPropagator(
     algorithm="rk4",
     backend="numpy",
@@ -49,20 +73,12 @@ solver = SchrodingerPropagator(
     renorm=False,
     validate_units=True,
 )
-
-state_or_pair = solver.propagate(
-    hamiltonian=hamiltonian,
-    efield=field,
-    dipole_matrix=dipole,
-    initial_state=PureState(amplitudes),
-    options=options,
-    coupling_mode="cartesian",
-    axes="xy",
-    return_times=True,
-)
+result = solver.propagate(problem, options=options)
+time_fs = result.times_fs
+psi = result.state
 ```
 
-scalar coupling では `axes` を渡さず、`coupling_axis="x"` などを必須指定します。Cartesian coupling へ `coupling_axis` を渡すこと、および scalar coupling へ `axes` を渡すことはエラーです。
+結合モードと軸は `SystemModel.coupling` が一意に所有します。scalar coupling では `CouplingSpec.scalar(Axis.Z)`、Cartesian coupling では `CouplingSpec.cartesian("xy")` のように指定します。モデルと solver 呼び出し側で軸を二重管理しません。
 
 ## 密度行列
 
@@ -70,20 +86,18 @@ scalar coupling では `axes` を渡さず、`coupling_axis="x"` などを必須
 from rovibrational_excitation.core.propagation import LiouvillePropagator
 from rovibrational_excitation.core.states import DensityState
 
-solver = LiouvillePropagator(backend="numpy", validate_units=True)
-time_fs, rho = solver.propagate(
-    hamiltonian=hamiltonian,
-    efield=field,
-    dipole_matrix=dipole,
+density_problem = PropagationProblem(
+    model=model,
+    field=field,
+    time_grid=time_grid,
     initial_state=DensityState(rho0),
-    options=options,
-    coupling_mode="cartesian",
-    axes="xy",
-    return_times=True,
 )
+solver = LiouvillePropagator(backend="numpy", validate_units=True)
+rho_result = solver.propagate(density_problem, options=options)
+rho = rho_result.state
 ```
 
-Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け付けます。`DensityState` は有限、正方、Hermitian、positive semidefinite、trace one でなければなりません。入力は自動修復されません。
+Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け付けます。`DensityState` は有限、正方、Hermitian、positive semidefinite、trace one でなければなりません。入力は自動修復されません。Numba kernel に渡す直前だけ、同じ値を持つ writable C-order 作業配列を作ります。
 
 ## インコヒーレント ensemble
 
@@ -91,7 +105,20 @@ Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け�
 from rovibrational_excitation.core.propagation import MixedStatePropagator
 from rovibrational_excitation.core.states import IncoherentEnsemble
 
-ensemble = IncoherentEnsemble(component_amplitudes)
+scalar_model = SystemModel(
+    name="my-scalar-model",
+    basis=basis,
+    hamiltonian=hamiltonian,
+    dipole=dipole,
+    coupling=CouplingSpec.scalar(Axis.Z),
+    metadata={},
+)
+ensemble_problem = PropagationProblem(
+    model=scalar_model,
+    field=field,
+    time_grid=time_grid,
+    initial_state=IncoherentEnsemble(component_amplitudes),
+)
 solver = MixedStatePropagator(
     algorithm="rk4",
     backend="numpy",
@@ -99,15 +126,7 @@ solver = MixedStatePropagator(
     renorm=False,
     validate_units=True,
 )
-rho = solver.propagate(
-    hamiltonian=hamiltonian,
-    efield=field,
-    dipole_matrix=dipole,
-    initial_state=ensemble,
-    options=options,
-    coupling_mode="scalar",
-    coupling_axis="z",
-)
+rho_result = solver.propagate(ensemble_problem, options=options)
 ```
 
 各入力ベクトルのノルム二乗が生の統計重みです。`IncoherentEnsemble` が重みを規格化した後、各純粋成分を別々に伝播し、`sum_i w_i |psi_i><psi_i|` を計算します。成分間のコヒーレント交差項は作りません。
@@ -125,4 +144,8 @@ rho = solver.propagate(
 
 時間刻みは `ElectricField` の grid だけから決まります。solver-level `dt`、automatic timestep、accuracy による暗黙調整はありません。
 
-P2.5 完了までは `return_times=True` により `(time, state)`、`False` により state array を返す移行 API です。trajectory と stride は `PropagationOptions` が一意に所有します。非公開 `_propagate_array()` は既存 optimizer と数値 kernel の移行用であり、新規コードの公開 API として使用しません。
+公開 `propagate()` は常に `PropagationResult` を返します。`return_times` は廃止済みです。最終状態だけを要求した場合も `times_fs` は終端時刻1点を持ちます。trajectory は厳密な開始点と終端を含み、stride が step 数を割り切らない場合は計算済み終端だけを出力へ追加します。積分刻み、電場サンプル、状態更新は変えません。
+
+`state` は選択した backend 上に残ります。NumPy が必要な保存・解析境界では `host_result = result.to_numpy()` と明示します。metadata は schema/package version、モデル宣言、全実行選択、時間格子、無次元化時に実際に使った scale、設定 hash を持つ読み取り専用JSON値です。設定 hash は宣言済み契約を対象とし、Hamiltonian・dipole・field の数値配列本体は暗黙にhostへ転送してhashしません。
+
+非公開 `_propagate_array()` は既存 optimizer と数値 kernel の移行用です。新規コードの公開 API として使用しません。

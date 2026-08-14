@@ -13,6 +13,7 @@ import numpy as np
 from ..units.validators import validator
 from .options import PropagationOptions
 from .problem import PropagationProblem
+from .result import PropagationResult
 
 InitialStateT = TypeVar("InitialStateT")
 
@@ -43,9 +44,8 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
         problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        return_times: bool = False,
         verbose: bool = False,
-    ) -> Any:
+    ) -> PropagationResult:
         """
         Propagate the quantum state forward in time.
 
@@ -58,8 +58,8 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
 
         Returns
         -------
-        Any
-            Final state or trajectory (can be array or tuple)
+        PropagationResult
+            Endpoint-complete typed result
         """
         pass
 

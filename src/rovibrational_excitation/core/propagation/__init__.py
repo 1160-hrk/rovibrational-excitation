@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from .problem import (
         SystemModel as SystemModel,
     )
+    from .result import PropagationResult as PropagationResult
     from .schrodinger import SchrodingerPropagator as SchrodingerPropagator
 
 _EXPORTS = {
@@ -56,6 +57,7 @@ _EXPORTS = {
     "PropagationProblem": (".problem", "PropagationProblem"),
     "PropagationState": (".problem", "PropagationState"),
     "SystemModel": (".problem", "SystemModel"),
+    "PropagationResult": (".result", "PropagationResult"),
 }
 
 __all__ = list(_EXPORTS)

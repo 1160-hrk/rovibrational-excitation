@@ -1165,7 +1165,8 @@ Decision:
 - fixed-M averaging builds one complete problem per block and still performs
   separate propagation followed by the same incoherent weighted population sum;
 - `split_interaction`, `return_times`, and `verbose` remain temporary explicit
-  call controls until later typed result and workflow contracts own them.
+  call controls until later typed result and workflow contracts own them. D-039
+  subsequently removes `return_times`; the other two controls remain explicit.
 
 Consequences:
 
@@ -1197,6 +1198,48 @@ Implementation anchors: `core/propagation/problem.py`,
 `tests/contracts/test_propagation_problem_contracts.py`.
 
 Implementation commit: `873ad6e`.
+
+### D-039: Public propagation has one backend-explicit reproducible result
+
+Status: Accepted on 2026-08-14 as P2.5 and the final implementation of D-026.
+
+Scope: public Schrödinger, Liouville, and mixed-state results; normal simulation, fixed-M averaging, and propagation benchmarking boundaries.
+
+Decision:
+
+- every public `propagate()` returns one frozen `PropagationResult`; boolean-dependent array/tuple returns and the public `return_times` control are removed;
+- `times_fs`, `state`, `state_kind`, `trajectory`, `backend`, and `metadata` are unconditional fields; a final-only result contains exactly one endpoint time;
+- trajectory output contains the exact configured start and endpoint. Output stride is applied only after integration, and an already computed endpoint is appended when the stride does not divide the propagation-step count;
+- private array adapters and numerical kernels keep their characterized regular-stride behavior. During this transition the public boundary requests a full private trajectory with stride one, then thins output. Stride one reuses the complete state trajectory without copying it; stride greater than one temporarily requires the full internal trajectory allocation;
+- state arrays remain on the requested backend. Host transfer is allowed only through explicit `PropagationResult.to_numpy()`; normal simulation and fixed-M averaging call it at their storage/population-analysis boundary;
+- metadata is recursively copied into immutable JSON-compatible values. Unsupported objects and non-finite numbers raise instead of being stringified or omitted;
+- metadata records independent result-schema and package versions, model declaration, coupling, every propagation/execution choice, time grid, and the nondimensional scales actually returned by the same propagation call;
+- the deterministic SHA-256 configuration hash has the explicit scope `declared_model_metadata_and_propagation_contract`. It deliberately does not hash numerical Hamiltonian, dipole, or field arrays, because doing so would cause an implicit device-to-host transfer and would overstate reproducibility;
+- typed `DensityState` remains immutable. The Liouville adapter makes one writable C-contiguous `complex128` working copy with identical values because the existing Numba LVNE kernel writes into its initial work array. It does not normalize, symmetrize, clip, or otherwise repair the density matrix.
+
+Numerical and performance evidence:
+
+- the 4001-field-point baseline was rerun for all seven NumPy dense/CSR Schrödinger and dense Liouville workloads; every final state is exactly equal to the committed Numba-CSR baseline (L2 difference `0.0`);
+- after removing an accidental stride-one trajectory copy and caching package-version lookup, 16/18-dimensional and Liouville public timings are between 6% faster and 8% slower than that baseline, while two-level CSR is 6% slower;
+- the two-level dense case changes from 0.177 ms to 0.276 ms (+56%, about 0.10 ms absolute). Profiling attributes the fixed cost to typed validation and immutable reproducibility metadata/result validation, not to the RK4 kernel. This deliberately tiny kernel is the documented performance exception accepted for the correctness and provenance contract;
+- GPU state retention is contract-tested with a device-like object, but CUDA execution remains unverified because CuPy/CUDA is unavailable in this environment.
+
+Consequences:
+
+- callers never infer return shape from flags and cannot silently receive a host array from a device calculation;
+- the configuration hash proves equality only for its named declared scope. Full input-data provenance requires future explicit content digests at the persistence boundary;
+- Phase 5 must add an endpoint-complete low-level storage policy so large `sample_stride > 1` calculations do not allocate a full internal trajectory; that optimization must preserve the characterized integration and field-index sequence;
+- optimization continues to use private migration adapters. In particular, `optimization/local.py` and its legacy odd-length grid, boundary indices, slices, and endpoint behavior are unchanged.
+
+Verification:
+
+- result contracts cover shape/kind/backend agreement, immutable times and nested metadata, explicit host conversion, deterministic hash scope, actual nondimensional scales, forward/backward endpoints, no-copy stride one, endpoint append, and rejection of ambiguous metadata;
+- workflow, public-signature, mixed-state, density, integration, physics-reference, and all seven benchmark-path tests pass;
+- the full suite passes 698 tests with 10 optional-GPU skips; branch coverage remains 67%; Ruff, formatting, strict mypy for 15 typed modules, and diff checks pass.
+
+Implementation anchors: `core/propagation/result.py`, `core/propagation/{base,schrodinger,liouville,mixed_state}.py`, `simulation/runner.py`, `simulation/models/linmol_m_average.py`, `benchmarks/run_baseline.py`, and `tests/{contracts,physics,performance}`.
+
+Implementation commit: this P2.5 milestone commit.
 
 ## Open decisions
 

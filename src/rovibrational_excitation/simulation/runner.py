@@ -221,10 +221,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         renorm=options.renorm,
         sparse=sparse,
     )
-    psi_t = prop.propagate(
+    propagation_result = prop.propagate(
         problem,
         options=options,
-        return_times=True,
         verbose=params.get("verbose", False),
         split_interaction=(
             split_interaction if algorithm_name == "split_operator" else None
@@ -249,10 +248,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         )
         regime_info = analyze_regime(scales)
 
-    if isinstance(psi_t, tuple) and len(psi_t) == 2:
-        t_p, psi_t = psi_t
-    else:
-        raise RuntimeError("propagator did not return the requested physical time grid")
+    host_result = propagation_result.to_numpy()
+    t_p = host_result.times_fs
+    psi_t = host_result.state
 
     pop_t = np.abs(psi_t) ** 2  # ideally (t, dim)
     # Ensure shape is always (t, dim)

@@ -39,7 +39,11 @@ def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch
     monkeypatch.setattr(
         solver._schrodinger_prop,
         "_propagate_array",
-        lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
+        lambda *args, **kwargs: (
+            np.array([0.2]),
+            np.asarray(args[3], dtype=np.complex128),
+            None,
+        ),
     )
 
     density = solver.propagate(
@@ -47,7 +51,7 @@ def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch
         options=propagation_options(return_trajectory=False),
     )
 
-    np.testing.assert_array_equal(density, np.diag([0.8, 0.2]))
+    np.testing.assert_array_equal(density.state, np.diag([0.8, 0.2]))
 
 
 def test_mixed_state_unwraps_density_without_repair(monkeypatch):
@@ -57,7 +61,7 @@ def test_mixed_state_unwraps_density_without_repair(monkeypatch):
 
     def fake_propagate(self, *args, **kwargs):
         captured["matrix"] = args[3]
-        return args[3]
+        return np.array([0.2]), args[3], None
 
     monkeypatch.setattr(LiouvillePropagator, "_propagate_array", fake_propagate)
 
@@ -67,4 +71,4 @@ def test_mixed_state_unwraps_density_without_repair(monkeypatch):
     )
 
     np.testing.assert_array_equal(captured["matrix"], matrix)
-    np.testing.assert_array_equal(result, matrix)
+    np.testing.assert_array_equal(result.state, matrix)

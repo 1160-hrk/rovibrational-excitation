@@ -157,12 +157,12 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
 
     def fake_propagate(*args, **kwargs):
         calls.append(kwargs)
-        return np.array([3.0]), np.asarray(args[3])
+        return np.array([0.2]), np.asarray(args[3]), None
 
     solver._schrodinger_prop._propagate_array = fake_propagate
     states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
-    time, rho = solver.propagate(
+    result = solver.propagate(
         scalar_propagation_problem(states, axis=Axis.X),
         options=propagation_options(
             algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
@@ -171,17 +171,17 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
             sample_stride=3,
             scaling=ScalingMode.NONDIMENSIONAL,
         ),
-        return_times=True,
         split_interaction="cartesian",
     )
 
-    np.testing.assert_array_equal(time, [3.0])
-    np.testing.assert_allclose(rho, np.eye(2) / 2.0)
+    np.testing.assert_array_equal(result.times_fs, [0.2])
+    np.testing.assert_allclose(result.state, np.eye(2) / 2.0)
     assert len(calls) == 2
     for call in calls:
         assert call["return_time_psi"] is True
         assert call["return_traj"] is False
-        assert call["sample_stride"] == 3
+        assert call["sample_stride"] == 1
+        assert call["_return_context"] is True
         assert call["nondimensional"] is True
         assert call["coupling_mode"] == "scalar"
         assert call["coupling_axis"] == "x"

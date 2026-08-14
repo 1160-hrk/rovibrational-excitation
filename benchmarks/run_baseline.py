@@ -34,10 +34,27 @@ from rovibrational_excitation.core.electric_field import (  # noqa: E402
     ElectricField,
     gaussian_fwhm,
 )
-from rovibrational_excitation.core.propagation import (  # noqa: E402
-    LiouvillePropagator,
-    SchrodingerPropagator,
+from rovibrational_excitation.core.execution import (  # noqa: E402
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
 )
+from rovibrational_excitation.core.propagation import (  # noqa: E402
+    Axis,
+    CouplingSpec,
+    LiouvillePropagator,
+    PropagationOptions,
+    PropagationProblem,
+    RenormalizationPolicy,
+    ScalingMode,
+    SchrodingerPropagator,
+    SystemModel,
+)
+from rovibrational_excitation.core.propagation.capabilities import (  # noqa: E402
+    PropagationAlgorithm,
+)
+from rovibrational_excitation.core.states import DensityState, PureState  # noqa: E402
+from rovibrational_excitation.core.time import TimeGrid  # noqa: E402
 from rovibrational_excitation.dipole import (  # noqa: E402
     LinMolDipoleMatrix,
     TwoLevelDipoleMatrix,
@@ -90,34 +107,47 @@ def _pure_workload(
     name: str,
     model: str,
     storage: str,
+    basis,
     hamiltonian,
     field: ElectricField,
     dipole,
     initial: np.ndarray,
-    coupling_mode: str,
-    coupling_axis: str | None = None,
-    axes: str = "xy",
+    coupling: CouplingSpec,
 ) -> Workload:
     sparse = storage == "sparse"
+    execution = ExecutionPolicy(
+        backend=ArrayBackend.NUMPY,
+        storage=MatrixStorage.CSR if sparse else MatrixStorage.DENSE,
+    )
+    options = PropagationOptions(
+        algorithm=PropagationAlgorithm.RK4,
+        execution=execution,
+        return_trajectory=True,
+        sample_stride=1,
+        scaling=ScalingMode.DIMENSIONAL,
+        renormalization=RenormalizationPolicy.DISABLED,
+    )
     solver = SchrodingerPropagator(
         backend="numpy",
         validate_units=False,
         sparse=sparse,
     )
+    problem = PropagationProblem(
+        model=SystemModel(
+            name=model,
+            basis=basis,
+            hamiltonian=hamiltonian,
+            dipole=dipole,
+            coupling=coupling,
+            metadata={"benchmark": "baseline-v0.2.10"},
+        ),
+        field=field,
+        time_grid=TimeGrid(np.asarray(field.tlist)),
+        initial_state=PureState(initial),
+    )
 
     def run() -> np.ndarray:
-        return solver.propagate(
-            hamiltonian,
-            field,
-            dipole,
-            initial,
-            axes=axes,
-            coupling_mode=coupling_mode,
-            coupling_axis=coupling_axis,
-            return_traj=True,
-            sample_stride=1,
-            sparse=sparse,
-        )
+        return solver.propagate(problem, options=options).state
 
     return Workload(
         name=name,
@@ -195,12 +225,12 @@ def build_workloads(field_points: int = 4001) -> list[Workload]:
                 name=f"two_level_schrodinger_numpy_{storage}",
                 model="two_level",
                 storage=storage,
+                basis=two_basis,
                 hamiltonian=two_h0,
                 field=scalar_field,
                 dipole=two_dipole,
                 initial=two_initial,
-                coupling_mode="scalar",
-                coupling_axis="z",
+                coupling=CouplingSpec.scalar(Axis.Z),
             )
         )
         workloads.append(
@@ -208,12 +238,12 @@ def build_workloads(field_points: int = 4001) -> list[Workload]:
                 name=f"vib_ladder_schrodinger_numpy_{storage}",
                 model="vib_ladder",
                 storage=storage,
+                basis=vib_basis,
                 hamiltonian=vib_h0,
                 field=scalar_field,
                 dipole=vib_dipole,
                 initial=vib_initial,
-                coupling_mode="scalar",
-                coupling_axis="z",
+                coupling=CouplingSpec.scalar(Axis.Z),
             )
         )
         lin_dipole = LinMolDipoleMatrix(
@@ -227,29 +257,47 @@ def build_workloads(field_points: int = 4001) -> list[Workload]:
                 name=f"linear_molecule_schrodinger_numpy_{storage}",
                 model="linear_molecule",
                 storage=storage,
+                basis=lin_basis,
                 hamiltonian=lin_h0,
                 field=cartesian_field,
                 dipole=lin_dipole,
                 initial=lin_initial,
-                coupling_mode="cartesian",
-                axes="xz",
+                coupling=CouplingSpec.cartesian("xz"),
             )
         )
 
     rho0 = np.outer(two_initial, two_initial.conj())
     liouville = LiouvillePropagator(backend="numpy", validate_units=False)
+    liouville_options = PropagationOptions(
+        algorithm=PropagationAlgorithm.RK4,
+        execution=ExecutionPolicy(
+            backend=ArrayBackend.NUMPY,
+            storage=MatrixStorage.DENSE,
+        ),
+        return_trajectory=True,
+        sample_stride=1,
+        scaling=ScalingMode.DIMENSIONAL,
+        renormalization=RenormalizationPolicy.DISABLED,
+    )
+    liouville_problem = PropagationProblem(
+        model=SystemModel(
+            name="two_level",
+            basis=two_basis,
+            hamiltonian=two_h0,
+            dipole=two_dipole,
+            coupling=CouplingSpec.scalar(Axis.Z),
+            metadata={"benchmark": "baseline-v0.2.10"},
+        ),
+        field=scalar_field,
+        time_grid=TimeGrid(np.asarray(scalar_field.tlist)),
+        initial_state=DensityState(rho0),
+    )
 
     def run_liouville() -> np.ndarray:
         return liouville.propagate(
-            two_h0,
-            scalar_field,
-            two_dipole,
-            rho0,
-            coupling_mode="scalar",
-            coupling_axis="z",
-            return_traj=True,
-            sample_stride=1,
-        )
+            liouville_problem,
+            options=liouville_options,
+        ).state
 
     workloads.append(
         Workload(

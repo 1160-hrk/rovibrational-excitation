@@ -260,10 +260,12 @@ def test_mixed_vs_pure_states():
 
     # 同じ純粋状態を混合状態として伝播
     psi0s = IncoherentEnsemble([psi0])
-    rho_traj = MixedStatePropagator().propagate(
+    mixed_result = MixedStatePropagator().propagate(
         propagation_problem(psi0s, hamiltonian=H0, field=efield, dipole=dipole),
         options=propagation_options(return_trajectory=True),
     )
+
+    rho_traj = mixed_result.state
 
     # 結果の一致確認（純粋状態の密度行列と比較）
     # より緩い許容値を使用（数値誤差を考慮）
@@ -504,11 +506,7 @@ def test_coherent_vs_incoherent():
         options=propagation_options(return_trajectory=False),
     )
 
-    # resultがtupleの場合の処理
-    if isinstance(result_incoherent, tuple):
-        rho_incoherent = result_incoherent[1]
-    else:
-        rho_incoherent = result_incoherent
+    rho_incoherent = result_incoherent.state
 
     # 対角成分（ポピュレーション）は似ているが、非対角成分が異なる
     pop_coherent = np.abs(psi_coherent_final) ** 2

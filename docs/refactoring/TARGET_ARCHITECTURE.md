@@ -360,6 +360,12 @@ Metadata should include:
 - normalization policy;
 - deterministic configuration hash.
 
+P2.5 implements this contract in `core.propagation.result`. Metadata values are recursively validated as finite JSON data and frozen; unsupported values fail explicitly. The SHA-256 hash scope is named `declared_model_metadata_and_propagation_contract`: it covers declared model metadata, coupling, options, time grid, and actual same-call nondimensional scales. It intentionally excludes numerical Hamiltonian, dipole, field, and state arrays so computing provenance never triggers a hidden device-to-host transfer. Full content-addressed input provenance belongs at a future explicit persistence boundary.
+
+The Phase 2 adapter requests a complete private trajectory with `sample_stride=1`, preserving every integration step and field index. Stride one reuses that backend state array. Larger output strides thin it and append the already computed endpoint; they temporarily retain the full internal trajectory. Phase 5 should replace only this storage policy with an endpoint-complete low-level writer after characterization tests, without changing integration.
+
+Normal simulation and fixed-M averaging call `to_numpy()` explicitly where their current population and persistence code requires NumPy. Optimizers retain their private array bridge until their separately characterized time/index contracts are migrated.
+
 ## 6. Backend and capability design
 
 Backend selection is separated from solver capability.

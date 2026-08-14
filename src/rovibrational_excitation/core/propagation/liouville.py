@@ -15,6 +15,7 @@ from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
 from .base import PropagatorBase
 from .options import PropagationOptions
 from .problem import PropagationProblem
+from .result import PropagationResult, finalize_propagation_result
 from .utils import prepare_propagation_args
 
 
@@ -63,29 +64,37 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        return_times: bool = False,
         verbose: bool = False,
-    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+    ) -> PropagationResult:
         """Propagate one complete typed density-state problem."""
         if not isinstance(problem, PropagationProblem):
             raise TypeError("problem must be a PropagationProblem")
         if not isinstance(problem.initial_state, DensityState):
             raise TypeError("problem initial_state must be a DensityState")
         self._validate_public_options(options)
-        return self._propagate_array(
+        times_fs, state, scales = self._propagate_array(
             problem.model.hamiltonian,
             problem.field,
             problem.model.dipole,
             problem.initial_state.matrix,
             return_traj=options.return_trajectory,
-            return_time_rho=return_times,
-            sample_stride=options.sample_stride,
+            return_time_rho=True,
+            sample_stride=1,
+            _return_context=True,
             verbose=verbose,
             nondimensional=options.nondimensional,
             coupling_mode=problem.coupling_mode,
             **problem.coupling_kwargs,
             algorithm=options.algorithm_name,
             sparse=options.sparse,
+        )
+        return finalize_propagation_result(
+            problem=problem,
+            options=options,
+            times_fs=times_fs,
+            state=state,
+            state_kind="density_matrix",
+            scales=scales,
         )
 
     def _validate_public_options(self, options: PropagationOptions) -> None:
@@ -110,7 +119,7 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         dipole_matrix: Any,
         initial_state: np.ndarray,
         **kwargs: Any,
-    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+    ) -> Any:
         """
         Propagate density matrix using Liouville-von Neumann equation.
 
@@ -149,9 +158,12 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         axes = kwargs.get("axes", "xy")
         return_traj = kwargs.get("return_traj", True)
         return_time_rho = kwargs.get("return_time_rho", False)
+        return_context = kwargs.get("_return_context", False)
         sample_stride = kwargs.get("sample_stride", 1)
         verbose = kwargs.get("verbose", False)
         nondimensional = kwargs.get("nondimensional", False)
+        if return_context and not return_time_rho:
+            raise ValueError("_return_context requires return_time_rho=True")
         removed_timestep_options = {
             key for key in ("auto_timestep", "target_accuracy") if key in kwargs
         }
@@ -162,6 +174,7 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
             )
         allowed_options = {
             "axes",
+            "_return_context",
             "return_traj",
             "return_time_rho",
             "sample_stride",
@@ -221,7 +234,8 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         steps = (len(Ex) - 1) // 2
 
         # Prepare arguments for RK4
-        rk4_args = (H0, mu_x, mu_y, Ex, Ey, np.asarray(rho0), dt_calc, steps)
+        rho_work = np.array(rho0, dtype=np.complex128, order="C", copy=True)
+        rk4_args = (H0, mu_x, mu_y, Ex, Ey, rho_work, dt_calc, steps)
 
         # Call the appropriate low-level propagator
         if return_traj:
@@ -237,5 +251,7 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
                 time = efield.tlist[0] + np.arange(rho.shape[0]) * step_fs
             else:
                 time = np.array([efield.tlist[-1]], dtype=np.float64)
+            if return_context:
+                return time, rho, scales_calc
             return time, rho
         return rho

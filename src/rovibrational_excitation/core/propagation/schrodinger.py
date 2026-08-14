@@ -17,6 +17,7 @@ from .base import PropagatorBase
 from .direction import PropagationDirection
 from .options import PropagationOptions
 from .problem import PropagationProblem
+from .result import PropagationResult, finalize_propagation_result
 from .utils import (
     HAS_CUPY,
     ensure_sparse_matrix,
@@ -121,11 +122,10 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
         problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        return_times: bool = False,
         verbose: bool = False,
         split_interaction: Literal["cartesian", "helicity_projected"] | None = None,
         direction: PropagationDirection = PropagationDirection.FORWARD,
-    ) -> Any:
+    ) -> PropagationResult:
         """Propagate one complete typed pure-state problem."""
         if not isinstance(problem, PropagationProblem):
             raise TypeError("problem must be a PropagationProblem")
@@ -133,14 +133,15 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             raise TypeError("problem initial_state must be a PureState")
         self._validate_public_options(options)
         self._validate_public_split_interaction(options, split_interaction)
-        return self._propagate_array(
+        times_fs, state, scales = self._propagate_array(
             problem.model.hamiltonian,
             problem.field,
             problem.model.dipole,
             problem.initial_state.amplitudes,
             return_traj=options.return_trajectory,
-            return_time_psi=return_times,
-            sample_stride=options.sample_stride,
+            return_time_psi=True,
+            sample_stride=1,
+            _return_context=True,
             nondimensional=options.nondimensional,
             coupling_mode=problem.coupling_mode,
             **problem.coupling_kwargs,
@@ -154,6 +155,15 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
                 else {}
             ),
             direction=direction,
+        )
+        return finalize_propagation_result(
+            problem=problem,
+            options=options,
+            times_fs=times_fs,
+            state=state,
+            state_kind="wavefunction",
+            scales=scales,
+            backward=direction is PropagationDirection.BACKWARD,
         )
 
     def _validate_public_options(self, options: PropagationOptions) -> None:
@@ -249,6 +259,7 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
         axes = kwargs.get("axes", "xy")
         return_traj = kwargs.get("return_traj", True)
         return_time_psi = kwargs.get("return_time_psi", False)
+        return_context = kwargs.get("_return_context", False)
         sample_stride = kwargs.get("sample_stride", 1)
         nondimensional = kwargs.get("nondimensional", False)
         removed_timestep_options = {
@@ -261,6 +272,7 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             )
         allowed_options = {
             "axes",
+            "_return_context",
             "return_traj",
             "return_time_psi",
             "sample_stride",
@@ -280,6 +292,8 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             raise ValueError(
                 "unsupported propagation options: " + ", ".join(unknown_options)
             )
+        if return_context and not return_time_psi:
+            raise ValueError("_return_context requires return_time_psi=True")
         coupling_mode = kwargs.get("coupling_mode", "cartesian")
         coupling_axis = kwargs.get("coupling_axis")
         verbose = kwargs.get("verbose", False)
@@ -459,6 +473,8 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
                     else efield.tlist[-1]
                 )
                 t = np.array([endpoint], dtype=np.float64)
+            if return_context:
+                return t, psi, scales_calc
             return t, psi
 
         return psi

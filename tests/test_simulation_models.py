@@ -218,10 +218,13 @@ def test_runner_uses_interval_duration_and_one_backend(
     real_field = RealElectricField.from_time_grid(real_grid)
     real_field.add_dispersed_Efield = MagicMock()
     electric_field_cls.from_time_grid.return_value = real_field
-    propagator_cls.return_value.propagate.return_value = (
-        np.array([0.0]),
-        np.array([[1.0 + 0.0j, 0.0 + 0.0j]]),
+    host_result = MagicMock(
+        times_fs=np.array([2.0, 6.0]),
+        state=np.array([[1.0 + 0.0j, 0.0 + 0.0j], [1.0 + 0.0j, 0.0 + 0.0j]]),
     )
+    propagation_result = MagicMock()
+    propagation_result.to_numpy.return_value = host_result
+    propagator_cls.return_value.propagate.return_value = propagation_result
     params = {
         "basis_type": "twolevel",
         "energy_gap": 1.0,
@@ -277,6 +280,5 @@ def test_runner_uses_interval_duration_and_one_backend(
     assert options.nondimensional is False
     assert propagate_kwargs["split_interaction"] == "cartesian"
     assert propagate_kwargs["verbose"] is True
-    assert propagate_kwargs["return_times"] is True
     assert problem.coupling_mode == "scalar"
     assert problem.coupling_kwargs == {"coupling_axis": "x"}

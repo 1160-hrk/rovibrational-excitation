@@ -658,25 +658,46 @@ basis, Hamiltonian, dipole, and exclusive typed coupling; `PropagationProblem`
 owns that model, the exact `ElectricField`/`TimeGrid` pair, and one typed initial
 state. Public solvers accept only this problem plus options and temporary result
 controls. The private array adapters and all numerical kernels remain frozen for
-optimization migration. P2.5 owns the final non-conditional result object.
+optimization migration. P2.5 now supplies the final non-conditional result object
+without changing that seam.
 
 The field TimeGrid is the only timestep source. No solver-level `dt` override.
 
 ### P2.5 Introduce PropagationResult
 
-All high-level solvers return a result object containing time, state, state
-kind, trajectory flag, backend, and metadata.
+Status: Complete on 2026-08-14 under D-039.
 
-Temporary old-array adapters are tested and then removed because compatibility
-is not required.
+All public solvers now return one immutable-contract `PropagationResult` with
+time, backend-native state, state kind, trajectory flag, backend, and recursively
+immutable JSON metadata. Public `return_times` and conditional array/tuple
+returns are removed. Final-only results carry one endpoint time; trajectories
+carry exact start/end times and append an already computed endpoint after regular
+stride samples without changing integration. Normal and fixed-M workflows use
+explicit `to_numpy()` conversion at their host analysis/storage boundary.
+
+Private array adapters and kernels remain the optimizer/numerical migration seam.
+The boundary requests stride one and thins only the returned output; stride one
+reuses the full state array without copying. The temporary full-trajectory cost
+for stride greater than one is recorded for Phase 5 rather than changing the
+characterized kernel during Phase 2. Metadata records the actual same-call
+nondimensional scales and an explicitly scoped deterministic configuration hash.
+The baseline recorder itself now executes all seven workloads through this typed
+public boundary.
 
 ### Phase 2 acceptance
+
+Status: Complete on 2026-08-14.
 
 - No high-level propagator public method accepts unrestricted `**kwargs`.
 - Return type no longer changes according to booleans.
 - Backend/storage/algorithm errors occur before expensive work.
-- Current physics and performance baselines pass.
-- API inventory and architecture documents are updated.
+- The 4001-point seven-workload baseline has exact final-state parity with the
+  committed Numba-CSR artifact; the documented 0.10 ms fixed two-level dense
+  result-contract overhead is the only greater-than-10% timing exception.
+- Full validation is 698 passed, 10 optional-GPU skips, 67% branch coverage,
+  clean Ruff/format/diff checks, and strict mypy success for 15 modules.
+- API inventory, architecture, decision, module, and baseline documents are
+  updated.
 
 ## 6. Phase 3 — target package migration
 

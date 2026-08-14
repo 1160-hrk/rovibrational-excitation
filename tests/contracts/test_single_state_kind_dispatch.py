@@ -29,7 +29,7 @@ def test_schrodinger_unwraps_pure_state_without_copy_or_repair(monkeypatch):
 
     def fake_array_propagation(*args, **kwargs):
         captured["array"] = args[3]
-        return args[3]
+        return np.array([0.2]), args[3], None
 
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
 
@@ -39,7 +39,7 @@ def test_schrodinger_unwraps_pure_state_without_copy_or_repair(monkeypatch):
     )
 
     assert captured["array"] is state.amplitudes
-    assert result is state.amplitudes
+    assert result.state is state.amplitudes
 
 
 def test_liouville_rejects_pure_state_before_unit_validation():
@@ -59,7 +59,7 @@ def test_liouville_unwraps_density_state_without_copy_or_repair(monkeypatch):
 
     def fake_array_propagation(*args, **kwargs):
         captured["array"] = args[3]
-        return args[3]
+        return np.array([0.2]), args[3], None
 
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
 
@@ -69,4 +69,4 @@ def test_liouville_unwraps_density_state_without_copy_or_repair(monkeypatch):
     )
 
     assert captured["array"] is state.matrix
-    assert result is state.matrix
+    assert result.state is state.matrix

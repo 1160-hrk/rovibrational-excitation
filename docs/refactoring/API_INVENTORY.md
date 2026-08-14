@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-11
+Last verified: 2026-08-14
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: `53bfb2c`
+Latest API checkpoint: P2.5 / D-039
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -105,7 +105,7 @@ temporary.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `core.propagation` | `PropagatorBase`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory`, `PropagationOptions`, `ScalingMode`, `RenormalizationPolicy` | `dynamics` typed problem/options/result plus `propagate` | temporary public; factory class deletes after replacement |
+| `core.propagation` | `PropagatorBase`, `PropagationDirection`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory`, `PropagationOptions`, `RenormalizationPolicy`, `ScalingMode`, `Axis`, `CouplingMode`, `CouplingSpec`, `PropagationProblem`, `PropagationState`, `SystemModel`, `PropagationResult` | `dynamics` typed problem/options/result plus `propagate` | typed transition surface; factory class deletes after replacement |
 | `core.propagation.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
 | `core.propagation.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
 | `core.propagation.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
@@ -221,9 +221,7 @@ visualization failure.
 
 `PropagatorFactory` no longer inspects polarization or sparsity. It requires a
 typed state path and one `PropagationOptions`, then validates them against the
-shared capability registry before construction. Public solver `propagate()` methods require that same typed options object and
-one `PropagationProblem`; coupling is owned by `SystemModel`. Only the private
-optimizer migration adapters retain `**kwargs`.
+shared capability registry before construction. Public solver `propagate()` methods require that same typed options object and one `PropagationProblem`; coupling is owned by `SystemModel`. They return one unconditional `PropagationResult`; `return_times` and loose physical arguments are removed. Backend state remains native until explicit `to_numpy()`. Only the private optimizer migration adapters retain `**kwargs`.
 
 ## 6. Examples and documentation callers
 
@@ -256,6 +254,8 @@ imports:
 - root `README.md`: `rve.generate_H0_LinMol`,
   `rovibrational_excitation.core.states.StateVector`, and
   `rve.schrodinger_propagation`.
+
+Direct propagation examples still call the removed loose-argument/conditional-return API. They are known broken migration callers, are not production paths, and must be rewritten or deleted with executable smoke tests in Phase 8; compatibility shims must not be restored for them.
 
 Examples import deep implementation paths such as
 `core.propagation.schrodinger`, `core.units.constants`, and

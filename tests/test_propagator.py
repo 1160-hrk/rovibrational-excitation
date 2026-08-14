@@ -113,7 +113,7 @@ def test_mixed_state_propagation():
         propagation_problem(psi0s, hamiltonian=H0, field=ef, dipole=dip),
         options=propagation_options(return_trajectory=True),
     )
-    assert result.shape[-1] == 2 or result[1].shape[-1] == 2
+    assert result.state.shape[-1] == 2
 
 
 def test_liouville_propagation():
@@ -303,14 +303,14 @@ def test_mixed_state_propagation_detailed():
         propagation_problem(psi0s, hamiltonian=H0, field=ef, dipole=dip),
         options=propagation_options(return_trajectory=True),
     )
-    assert result_traj.shape[1:] == (2, 2)  # 密度行列の形状
+    assert result_traj.state.shape[1:] == (2, 2)  # 密度行列の形状
 
     # 軌跡なし
     result_final = MixedStatePropagator().propagate(
         propagation_problem(psi0s, hamiltonian=H0, field=ef, dipole=dip),
         options=propagation_options(return_trajectory=False),
     )
-    assert result_final.shape == (2, 2)  # 密度行列の形状
+    assert result_final.state.shape == (2, 2)  # 密度行列の形状
 
 
 def test_mixed_state_propagation_with_time():
@@ -336,14 +336,13 @@ def test_mixed_state_propagation_with_time():
         ]
     )
 
-    time_rho, rho_traj = MixedStatePropagator().propagate(
+    result = MixedStatePropagator().propagate(
         propagation_problem(psi0s, hamiltonian=H0, field=ef, dipole=dip),
         options=propagation_options(return_trajectory=True),
-        return_times=True,
     )
 
-    assert len(time_rho) == rho_traj.shape[0]
-    assert rho_traj.shape[1] == 2
+    assert len(result.times_fs) == result.state.shape[0]
+    assert result.state.shape[1] == 2
 
 
 def test_propagation_sample_stride():
@@ -432,7 +431,11 @@ def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
     propagator = MixedStatePropagator(validate_units=False)
 
     def return_initial_state(*args, **kwargs):
-        return np.asarray(args[3], dtype=np.complex128)
+        return (
+            np.array([0.2]),
+            np.asarray(args[3], dtype=np.complex128),
+            None,
+        )
 
     monkeypatch.setattr(
         propagator._schrodinger_prop,
@@ -451,8 +454,8 @@ def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
         options=propagation_options(return_trajectory=False),
     )
 
-    np.testing.assert_allclose(density, np.diag([0.8, 0.2]))
-    np.testing.assert_allclose(np.trace(density), 1.0)
+    np.testing.assert_allclose(density.state, np.diag([0.8, 0.2]))
+    np.testing.assert_allclose(np.trace(density.state), 1.0)
 
 
 def test_mixed_state_ignores_zero_weight_components(monkeypatch):
@@ -460,7 +463,11 @@ def test_mixed_state_ignores_zero_weight_components(monkeypatch):
     monkeypatch.setattr(
         propagator._schrodinger_prop,
         "_propagate_array",
-        lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
+        lambda *args, **kwargs: (
+            np.array([0.2]),
+            np.asarray(args[3], dtype=np.complex128),
+            None,
+        ),
     )
 
     density = propagator.propagate(
@@ -468,4 +475,4 @@ def test_mixed_state_ignores_zero_weight_components(monkeypatch):
         options=propagation_options(return_trajectory=False),
     )
 
-    np.testing.assert_allclose(density, np.diag([1.0, 0.0]))
+    np.testing.assert_allclose(density.state, np.diag([1.0, 0.0]))

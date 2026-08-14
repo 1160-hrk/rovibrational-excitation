@@ -204,13 +204,6 @@ def build_m_average_blocks(
     return tuple(blocks)
 
 
-def _as_numpy(array: Any) -> np.ndarray:
-    getter = getattr(array, "get", None)
-    if callable(getter):
-        array = getter()
-    return np.asarray(array)
-
-
 def propagate_m_average(
     params: dict[str, Any],
     electric_field: Any,
@@ -258,17 +251,17 @@ def propagate_m_average(
             time_grid=time_grid,
             initial_state=PureState(block.initial_state),
         )
-        time_fs, wavefunction = propagator.propagate(
+        propagation_result = propagator.propagate(
             problem,
             options=options,
-            return_times=True,
             verbose=params.get("verbose", False),
             split_interaction=(
                 split_interaction if algorithm_name == "split_operator" else None
             ),
         )
-        time_fs = _as_numpy(time_fs)
-        wavefunction = _as_numpy(wavefunction)
+        host_result = propagation_result.to_numpy()
+        time_fs = host_result.times_fs
+        wavefunction = host_result.state
         if wavefunction.ndim == 1:
             wavefunction = wavefunction.reshape(1, -1)
 

@@ -44,6 +44,17 @@ def test_workload_matrix_covers_required_models_and_storage_paths():
     assert liouville.storage == "dense"
 
 
+def test_every_baseline_workload_executes_through_the_typed_public_boundary():
+    workloads = build_workloads(field_points=9)
+
+    for workload in workloads:
+        trajectory = workload.run()
+        assert trajectory.shape[0] == workload.propagation_steps + 1
+        assert trajectory.shape[1] == workload.dimension
+        if workload.state_kind == "density_matrix":
+            assert trajectory.shape[2] == workload.dimension
+
+
 @pytest.mark.parametrize(
     ("state_kind", "dimension", "expected"),
     [

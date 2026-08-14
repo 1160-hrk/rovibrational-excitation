@@ -95,6 +95,14 @@ tridiagonal diagnostic with 200 RK4 steps measured 5.67x speedup at dimension
 64 and 24.77x at dimension 256, with dense/sparse final L2 differences below
 `5.56e-17`.
 
+## P2.5 typed-result boundary check
+
+The recorder now constructs one `PropagationProblem` and `PropagationOptions` per workload and times the public `propagate()` boundary, then reads `PropagationResult.state`. A contract test executes all seven paths on a nine-point field grid so a future public-API migration cannot leave the recorder syntactically valid but unusable.
+
+On the same 4001-point, seven-repeat protocol, every P2.5 final state was exactly equal to `numba-csr-v0.2.10.json` (L2 difference `0.0`). After removing an accidental stride-one result copy and caching package-version discovery, measured public-call ratios versus that artifact were 1.08, 1.05, and 0.94 for the 16-level dense, 18-level dense, and dense Liouville workloads; all three CSR ratios were 1.02-1.06. The two-level dense micro-workload rose from 0.177 ms to 0.276 ms because roughly 0.10 ms of typed validation and immutable result/provenance work dominates its very short kernel. D-039 records this investigated fixed-overhead exception.
+
+CUDA was unavailable and remains explicitly unverified. No P2.5 benchmark artifact claims a GPU result.
+
 ## Regression policy
 
 Wall time is environment-dependent, so the artifact contains no absolute test
