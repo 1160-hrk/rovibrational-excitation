@@ -206,10 +206,11 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     backend = options.backend_name
     algorithm_name = options.algorithm_name
     sparse = options.sparse
+    split_interaction = params.get("split_interaction", "cartesian")
     prop = SchrodingerPropagator(
         backend=backend,
         algorithm=algorithm_name,
-        split_interaction=params.get("split_interaction", "cartesian"),
+        split_interaction=split_interaction,
         validate_units=params.get("validate_units", True),
         renorm=options.renorm,
         sparse=sparse,
@@ -219,25 +220,18 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         efield=E,
         dipole_matrix=dip,
         initial_state=PureState(sv.data.ravel()),
+        options=options,
         coupling_mode=model.coupling.mode,
         **(
             {"axes": params.get("axes", model.coupling.default_axes)}
             if model.coupling.mode == "cartesian"
             else {"coupling_axis": model.coupling.axis}
         ),
-        return_traj=options.return_trajectory,
-        return_time_psi=True,
-        sample_stride=options.sample_stride,
-        nondimensional=use_nondimensional,
+        return_times=True,
         verbose=params.get("verbose", False),
-        algorithm=algorithm_name,
-        **(
-            {"split_interaction": params.get("split_interaction", "cartesian")}
-            if algorithm_name == "split_operator"
-            else {}
+        split_interaction=(
+            split_interaction if algorithm_name == "split_operator" else None
         ),
-        sparse=sparse,
-        renorm=options.renorm,
     )
 
     # 無次元化使用時は物理レジーム情報も保存

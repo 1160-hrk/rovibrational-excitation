@@ -212,16 +212,18 @@ visualization failure.
 | `simulation.models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |
-| `core.propagation.PropagatorFactory.create_propagator` | required typed state path, algorithm, execution policy, and renorm | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete in P2.4 |
+| `core.propagation.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |
 | `optimization.ALGO_REGISTRY` | `local`, `krotov`, `grape` | package and example optimization runners | private typed optimization dispatch | internal |
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
 | `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | simulation config and tests | typed schema conversion at boundary | internal singleton, then delete |
 | `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found | typed constructors owned by operator/field or config boundary | delete after confirming no external workflow |
 | `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | one explicit field constructor contract | temporary public method; consolidate in Phase 4 |
 
-`PropagatorFactory` no longer inspects polarization or sparsity. It requires
-typed state path, algorithm, execution policy, and renormalization choices and
-validates them against the shared capability registry before construction.
+`PropagatorFactory` no longer inspects polarization or sparsity. It requires a
+typed state path and one `PropagationOptions`, then validates them against the
+shared capability registry before construction. Public solver `propagate()`
+methods require that same typed object and explicit coupling fields; only the
+private optimizer migration adapters retain `**kwargs`.
 
 ## 6. Examples and documentation callers
 

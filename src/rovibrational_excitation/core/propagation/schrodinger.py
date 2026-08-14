@@ -15,6 +15,7 @@ from ..units.constants import CONSTANTS
 from ..units.validators import validator
 from .base import PropagatorBase
 from .direction import PropagationDirection
+from .options import PropagationOptions
 from .utils import (
     HAS_CUPY,
     ensure_sparse_matrix,
@@ -120,18 +121,108 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
         efield: Any,
         dipole_matrix: Any,
         initial_state: PureState,
-        **kwargs: Any,
+        *,
+        options: PropagationOptions,
+        coupling_mode: Literal["cartesian", "scalar"],
+        axes: str | None = None,
+        coupling_axis: Literal["x", "y", "z"] | None = None,
+        return_times: bool = False,
+        verbose: bool = False,
+        split_interaction: Literal["cartesian", "helicity_projected"] | None = None,
+        direction: PropagationDirection = PropagationDirection.FORWARD,
     ) -> Any:
-        """Propagate an explicitly typed pure state."""
+        """Propagate a pure state through the explicit typed boundary."""
         if not isinstance(initial_state, PureState):
             raise TypeError("initial_state must be a PureState")
+        self._validate_public_options(options)
+        self._validate_public_split_interaction(options, split_interaction)
+        coupling_kwargs = self._validate_public_coupling(
+            coupling_mode=coupling_mode,
+            axes=axes,
+            coupling_axis=coupling_axis,
+        )
         return self._propagate_array(
             hamiltonian,
             efield,
             dipole_matrix,
             initial_state.amplitudes,
-            **kwargs,
+            return_traj=options.return_trajectory,
+            return_time_psi=return_times,
+            sample_stride=options.sample_stride,
+            nondimensional=options.nondimensional,
+            coupling_mode=coupling_mode,
+            **coupling_kwargs,
+            verbose=verbose,
+            algorithm=options.algorithm_name,
+            sparse=options.sparse,
+            renorm=options.renorm,
+            **(
+                {"split_interaction": split_interaction}
+                if split_interaction is not None
+                else {}
+            ),
+            direction=direction,
         )
+
+    def _validate_public_options(self, options: PropagationOptions) -> None:
+        """Reject a typed request that conflicts with this solver instance."""
+        if not isinstance(options, PropagationOptions):
+            raise TypeError("options must be a PropagationOptions")
+        configured = (self.algorithm, self.backend, self.sparse, self.renorm)
+        requested = (
+            options.algorithm_name,
+            options.backend_name,
+            options.sparse,
+            options.renorm,
+        )
+        if configured != requested:
+            raise ValueError(
+                "options conflict with the propagator constructor configuration"
+            )
+
+    def _validate_public_split_interaction(
+        self,
+        options: PropagationOptions,
+        split_interaction: Literal["cartesian", "helicity_projected"] | None,
+    ) -> None:
+        """Keep the exact or approximate split physics explicit and consistent."""
+        if options.algorithm_name == "split_operator":
+            if split_interaction is None:
+                raise ValueError(
+                    "split_interaction is required for split-operator propagation"
+                )
+            if split_interaction != self.split_interaction:
+                raise ValueError(
+                    "split_interaction conflicts with the propagator constructor"
+                )
+        elif split_interaction is not None:
+            raise ValueError(
+                "split_interaction is applicable only to split-operator propagation"
+            )
+
+    @staticmethod
+    def _validate_public_coupling(
+        *,
+        coupling_mode: Literal["cartesian", "scalar"],
+        axes: str | None,
+        coupling_axis: Literal["x", "y", "z"] | None,
+    ) -> dict[str, str]:
+        """Return only the coupling keyword applicable to the selected mode."""
+        if coupling_mode == "cartesian":
+            if axes is None:
+                raise ValueError("axes is required for Cartesian coupling")
+            if coupling_axis is not None:
+                raise ValueError(
+                    "coupling_axis is not applicable to Cartesian coupling"
+                )
+            return {"axes": axes}
+        if coupling_mode == "scalar":
+            if axes is not None:
+                raise ValueError("axes is not applicable to scalar coupling")
+            if coupling_axis not in {"x", "y", "z"}:
+                raise ValueError("coupling_axis must be x, y, or z for scalar coupling")
+            return {"coupling_axis": coupling_axis}
+        raise ValueError("coupling_mode must be cartesian or scalar")
 
     def _propagate_array(
         self,

@@ -259,13 +259,16 @@ def test_runner_uses_interval_duration_and_one_backend(
     np.testing.assert_array_equal(
         propagate_kwargs["initial_state"].amplitudes, [1.0, 0.0]
     )
-    assert "backend" not in propagate_kwargs
-    assert propagate_kwargs["algorithm"] == "split_operator"
+    options = propagate_kwargs["options"]
+    assert options.algorithm_name == "split_operator"
+    assert options.backend_name == "numpy"
+    assert options.renorm is True
+    assert options.sparse is True
+    assert options.sample_stride == 2
+    assert options.return_trajectory is True
+    assert options.nondimensional is False
     assert propagate_kwargs["split_interaction"] == "cartesian"
-    assert propagate_kwargs["renorm"] is True
-    assert propagate_kwargs["sparse"] is True
     assert propagate_kwargs["verbose"] is True
-    assert propagate_kwargs["sample_stride"] == 2
-    assert propagate_kwargs["return_time_psi"] is True
+    assert propagate_kwargs["return_times"] is True
     assert propagate_kwargs["coupling_mode"] == "scalar"
     assert propagate_kwargs["coupling_axis"] == "x"

@@ -19,7 +19,7 @@ recorded.
 |---|---|---|---|
 | Nondimensional scales | Zero quantities created 1 fs, 1 Debye, 1e8 V/m, or a 1000 fs cap | Explicit ZeroField/inactive scales or precise error | test_strict_nondimensional_contracts.py |
 | Time grid | auto_timestep could replace caller samples; target_accuracy could be accepted after removal | Both options are rejected at converter, solver, mixed-state, M-average, and simulation boundaries | test_strict_nondimensional_contracts.py; test_density_solver_contracts.py |
-| Propagator kwargs | Misspelled or unsupported kwargs were silently ignored | Schrodinger, Liouville, and MixedState reject unknown options | contract solver tests |
+| Public propagator kwargs | Misspelled or unsupported kwargs were silently ignored | Public methods accept no `**kwargs`; typed options, coupling, and split mode are validated before work; private array adapters remain only for optimizer migration | public propagation contract tests |
 | Dipole backend | backend='cupy' could return NumPy when CuPy was absent | RuntimeError; unknown backend names also raise | test_solver_contracts.py |
 | Energy centering | Centering could change the returned absolute wavefunction phase | Exact global phase is restored | test_strict_nondimensional_contracts.py |
 | Physical model inputs | duration and zero-valued constants could be omitted and silently defaulted | Model-specific constants, direct dipole mu0, vibrational potential type, units, and duration are required; explicit 0.0 remains valid | simulation and basis contract tests |

@@ -6,11 +6,12 @@ should inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 import numpy as np
 
 from ..units.validators import validator
+from .options import PropagationOptions
 
 InitialStateT = TypeVar("InitialStateT")
 
@@ -42,7 +43,13 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
         efield: Any,
         dipole_matrix: Any,
         initial_state: InitialStateT,
-        **kwargs: Any,
+        *,
+        options: PropagationOptions,
+        coupling_mode: Literal["cartesian", "scalar"],
+        axes: str | None = None,
+        coupling_axis: Literal["x", "y", "z"] | None = None,
+        return_times: bool = False,
+        verbose: bool = False,
     ) -> Any:
         """
         Propagate the quantum state forward in time.
@@ -57,8 +64,10 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
             Dipole moment matrices
         initial_state : np.ndarray
             Initial quantum state
-        **kwargs
-            Additional algorithm-specific parameters
+        options
+            Required typed computational policy.
+        coupling_mode, axes, coupling_axis
+            Explicit field-operator coupling selection.
 
         Returns
         -------

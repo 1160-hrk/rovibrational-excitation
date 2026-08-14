@@ -1,216 +1,128 @@
-# Propagation Module
+# Propagation module
 
-量子状態の時間発展を計算するためのモジュールです。シュレーディンガー方程式、リウビル方程式、および混合状態の伝播をサポートしています。
+量子状態の時間発展を行う高水準境界です。公開 API は純粋状態、密度行列、規格化済み統計重みを持つインコヒーレント ensemble を明示的に区別します。
 
-## 主な機能
+## 必須の計算設定
 
-- 複数の時間発展方程式のサポート
-  - シュレーディンガー方程式（純粋状態）
-  - リウビル-フォンノイマン方程式（密度行列）
-  - 混合状態の時間発展
-- 複数の数値計算アルゴリズム
-  - RK4法（4次のルンゲ・クッタ法）
-  - Split-operator法
-- 高度な最適化機能
-  - `sparse=True` による明示的なCSR行列計算
-  - NumPy/CuPyバックエンドの切り替え（GPU計算対応）
-- 物理単位の自動検証機能
+公開 `propagate()` は `PropagationOptions` と coupling 指定を必須にします。algorithm、backend、dense/CSR、trajectory、stride、次元化、逐次規格化は推測されません。
 
-## 基本的な使い方
+```python
+from rovibrational_excitation.core.execution import (
+    ArrayBackend,
+    ExecutionPolicy,
+    MatrixStorage,
+)
+from rovibrational_excitation.core.propagation import (
+    PropagationOptions,
+    RenormalizationPolicy,
+    ScalingMode,
+)
+from rovibrational_excitation.core.propagation.capabilities import (
+    PropagationAlgorithm,
+)
 
-### シュレーディンガー方程式の時間発展
+options = PropagationOptions(
+    algorithm=PropagationAlgorithm.RK4,
+    execution=ExecutionPolicy(
+        backend=ArrayBackend.NUMPY,
+        storage=MatrixStorage.DENSE,
+    ),
+    return_trajectory=True,
+    sample_stride=1,
+    scaling=ScalingMode.DIMENSIONAL,
+    renormalization=RenormalizationPolicy.DISABLED,
+)
+```
+
+solver constructor の algorithm、backend、storage、renormalization と `options` が一致しない場合は、計算前にエラーになります。
+
+## 純粋状態
 
 ```python
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.states import PureState
 
-# プロパゲータの初期化
-propagator = SchrodingerPropagator(
-    algorithm="rk4",  # "rk4" または "split_operator"
-    backend="numpy",  # "numpy" または "cupy"
-    sparse=False,  # スパース行列を使用するかどうか
-    validate_units=True,  # 物理単位の検証を行うかどうか
+solver = SchrodingerPropagator(
+    algorithm="rk4",
+    backend="numpy",
+    sparse=False,
+    renorm=False,
+    validate_units=True,
 )
 
-initial_pure_state = PureState(initial_state)
-
-# 時間発展の計算
-final_state = propagator.propagate(
-    hamiltonian=H0,  # ハミルトニアンオブジェクト
-    efield=efield,  # 電場オブジェクト
-    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    initial_state=initial_pure_state,  # 規格化済み純粋状態
-    axes="xy",  # 偏光軸の指定
-    return_traj=True,  # 軌跡を返すかどうか
-    sample_stride=1,  # サンプリング間隔
+state_or_pair = solver.propagate(
+    hamiltonian=hamiltonian,
+    efield=field,
+    dipole_matrix=dipole,
+    initial_state=PureState(amplitudes),
+    options=options,
+    coupling_mode="cartesian",
+    axes="xy",
+    return_times=True,
 )
 ```
 
-### リウビル方程式の時間発展
+scalar coupling では `axes` を渡さず、`coupling_axis="x"` などを必須指定します。Cartesian coupling へ `coupling_axis` を渡すこと、および scalar coupling へ `axes` を渡すことはエラーです。
+
+## 密度行列
 
 ```python
 from rovibrational_excitation.core.propagation import LiouvillePropagator
 from rovibrational_excitation.core.states import DensityState
 
-# プロパゲータの初期化
-propagator = LiouvillePropagator(
-    backend="numpy",  # Liouville は現在 "numpy" のみ
-    validate_units=True,  # 物理単位の検証を行うかどうか
-)
-
-# トレース1の物理的密度行列を明示的に構築
-initial_density_state = DensityState(rho0)
-
-# 時間発展の計算
-final_state = propagator.propagate(
-    hamiltonian=H0,  # ハミルトニアンオブジェクト
-    efield=efield,  # 電場オブジェクト
-    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    initial_state=initial_density_state,  # 明示的な密度状態
-    axes="xy",  # 偏光軸の指定
-    return_traj=True,  # 軌跡を返すかどうか
+solver = LiouvillePropagator(backend="numpy", validate_units=True)
+time_fs, rho = solver.propagate(
+    hamiltonian=hamiltonian,
+    efield=field,
+    dipole_matrix=dipole,
+    initial_state=DensityState(rho0),
+    options=options,
+    coupling_mode="cartesian",
+    axes="xy",
+    return_times=True,
 )
 ```
 
-### 混合状態の時間発展
+Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け付けます。`DensityState` は有限、正方、Hermitian、positive semidefinite、trace one でなければなりません。入力は自動修復されません。
+
+## インコヒーレント ensemble
 
 ```python
 from rovibrational_excitation.core.propagation import MixedStatePropagator
 from rovibrational_excitation.core.states import IncoherentEnsemble
 
-# プロパゲータの初期化
-propagator = MixedStatePropagator(
-    algorithm="rk4",  # "rk4" または "split_operator"
-    backend="numpy",  # "numpy" または "cupy"
-    sparse=False,  # スパース行列を使用するかどうか
-    validate_units=True,  # 物理単位の検証を行うかどうか
-)
-
-# 状態ベクトルのノルム二乗を統計重みとして明示的に構築
-initial_ensemble = IncoherentEnsemble(psi0_list)
-
-# 時間発展の計算
-final_states = propagator.propagate(
-    hamiltonian=H0,  # ハミルトニアンオブジェクト
-    efield=efield,  # 電場オブジェクト
-    dipole_matrix=dipole,  # 双極子モーメント行列オブジェクト
-    initial_state=initial_ensemble,  # 明示的なインコヒーレント混合
-    return_traj=True,  # 軌跡を返すかどうか
-)
-```
-
-各状態の未規格化ノルム二乗 `w_i = ||psi_i||^2` を統計重みとして計算し、総和が1になるよう規格化してから加算します。単位ノルムの状態を並べると等重みになります。任意重み `w_i` は `sqrt(w_i) * psi_i` として指定できます。
-
-## 専用プロパゲータ
-
-### Split-operator法専用プロパゲータ
-
-偏光が固定されている場合に最適化された実装を提供します。
-
-```python
-from rovibrational_excitation.core.propagation import SplitOperatorPropagator
-
-propagator = SplitOperatorPropagator(
-    backend="numpy",
-    validate_units=True,
-)
-
-# 偏光の設定（オプション）
-propagator.set_polarization(pol_x=1.0, pol_y=0.0)
-
-# 時間発展の計算
-final_state = propagator.propagate(
-    hamiltonian=H0,
-    efield=efield,
-    dipole_matrix=dipole,
-    psi0=initial_state,
-)
-```
-
-### RK4法専用プロパゲータ
-
-適応的時間ステップ制御機能を提供します。
-
-```python
-from rovibrational_excitation.core.propagation import RK4Propagator
-
-propagator = RK4Propagator(
+ensemble = IncoherentEnsemble(component_amplitudes)
+solver = MixedStatePropagator(
+    algorithm="rk4",
     backend="numpy",
     sparse=False,
+    renorm=False,
     validate_units=True,
-    adaptive=True,  # 適応的時間ステップ制御を有効化
 )
-
-# 時間発展の計算（誤差制御付き）
-final_state = propagator.propagate_with_error_control(
-    hamiltonian=H0,
-    efield=efield,
+rho = solver.propagate(
+    hamiltonian=hamiltonian,
+    efield=field,
     dipole_matrix=dipole,
-    psi0=initial_state,
-    tolerance=1e-6,  # 許容誤差
+    initial_state=ensemble,
+    options=options,
+    coupling_mode="scalar",
+    coupling_axis="z",
 )
 ```
 
-## アルゴリズムの選択指針
+各入力ベクトルのノルム二乗が生の統計重みです。`IncoherentEnsemble` が重みを規格化した後、各純粋成分を別々に伝播し、`sum_i w_i |psi_i><psi_i|` を計算します。成分間のコヒーレント交差項は作りません。
 
-1. スパース行列の使用
-   - 非ゼロ成分の比率が5%以下の場合
-   - 行列の次元が50を超える場合
+## Split operator の相互作用モード
 
-2. Split-operator法の使用
-   - 偏光が固定されている場合
-   - 大規模な系で高速な計算が必要な場合
+`split_operator` を選ぶ場合、solver constructor と公開 `propagate()` の両方で同じ `split_interaction` を明示します。
 
-3. RK4法の使用
-   - 偏光が時間変化する場合
-   - 高精度な計算が必要な場合（適応的時間ステップ制御）
+- `cartesian`: RK4 と同じ Hamiltonian を使う物理参照経路
+- `helicity_projected`: 選択則で射影する明示的な近似経路
 
-4. バックエンドの選択
-   - GPU利用可能な場合：CuPyバックエンド
-   - それ以外：NumPyバックエンド
+省略、constructor との不一致、RK4 への指定はすべて計算前にエラーになります。
 
-## モジュール構成
+## 時間と戻り値
 
-```
-propagation/
-├── algorithms/          # 数値計算アルゴリズムの実装
-│   ├── rk4/            # RK4法関連
-│   │   ├── lvne.py     # リウビル方程式用RK4
-│   │   └── schrodinger.py  # シュレーディンガー方程式用RK4
-│   └── split_operator/  # Split-operator法関連
-│       └── schrodinger.py  # シュレーディンガー方程式用Split-operator
-├── base.py             # 基底クラス（PropagatorBase）
-├── liouville.py        # リウビル方程式プロパゲータ
-├── mixed_state.py      # 混合状態プロパゲータ
-├── rk4.py             # RK4専用プロパゲータ
-├── schrodinger.py      # シュレーディンガー方程式プロパゲータ
-├── split_operator.py   # Split-operator専用プロパゲータ
-└── utils.py           # ユーティリティ関数（単位変換など）
-```
-## 注意事項
+時間刻みは `ElectricField` の grid だけから決まります。solver-level `dt`、automatic timestep、accuracy による暗黙調整はありません。
 
-1. 物理単位について
-   - ハミルトニアン：ジュール (J)
-   - 双極子モーメント：クーロン・メートル (C·m)
-   - 電場：ボルト/メートル (V/m)
-   - 時間：フェムト秒 (fs)
-
-2. バックエンド切り替え時の注意
-   - CuPyバックエンド使用時は入力データも自動的にGPUに転送
-   - CuPy伝播は密行列専用。`sparse=True` は明示的にエラー
-
-3. エラー処理
-   - 物理単位の不整合：`ValueError`
-   - バックエンドの問題：`RuntimeError`
-   - 入力データの形式エラー：`TypeError`
-
-4. 時間格子
-   - 電場配列は `2 * n_steps + 1` 点の奇数長が必須
-   - 電場のサンプリング間隔を `dt_field` とすると、状態更新は `2 * dt_field` ごと
-   - `return_time_psi=True` の時間は電場の `t_start` から始まる物理時間
-   - 偶数長配列の末尾を黙って切り捨てる処理は行わない
-
-5. パフォーマンス最適化
-   - スパース行列使用時は事前にパターンを解析して高速化
-   - Split-operator法は偏光が固定の場合に最適化
-   - RK4法は適応的時間ステップ制御で精度と速度のバランスを調整
+P2.5 完了までは `return_times=True` により `(time, state)`、`False` により state array を返す移行 API です。trajectory と stride は `PropagationOptions` が一意に所有します。非公開 `_propagate_array()` は既存 optimizer と数値 kernel の移行用であり、新規コードの公開 API として使用しません。

@@ -317,6 +317,13 @@ selection receive the same policy. Backend, matrix storage, and algorithm are
 required explicit choices; they are never inferred from polarization, matrix
 type, or optional dependency availability.
 
+At the P2.4 transition boundary, public solver calls accept this object plus
+explicit coupling fields and no unrestricted `**kwargs`. Cartesian calls require
+`axes`; scalar calls require `coupling_axis`. Split calls additionally require
+the same explicit `split_interaction` used to construct the solver. These
+call-level fields move into `PropagationProblem`/model ownership without
+changing their semantics.
+
 Do not encode the field grid with a separate solver `dt` option. The time grid
 is the source of truth.
 

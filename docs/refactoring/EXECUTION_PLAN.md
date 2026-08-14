@@ -651,9 +651,12 @@ and renormalization policy. Normal simulation validation constructs one object
 with no defaults and shares it with ordinary or fixed-M propagation. The typed
 factory consumes that object.
 
-P2.4-b will replace public solver `**kwargs` with typed fields. Unsupported
-combinations must fail during construction or preflight. P2.5 owns the final
-non-conditional result object.
+P2.4-b is complete: every public solver requires `PropagationOptions` and
+explicit coupling fields, accepts no unrestricted `**kwargs`, and rejects
+solver/options or split-interaction conflicts before numerical work. The private
+array adapters remain frozen for optimization migration. P2.4-c will introduce
+`PropagationProblem` without moving or changing numerical kernels. P2.5 owns
+the final non-conditional result object.
 
 The field TimeGrid is the only timestep source. No solver-level `dt` override.
 

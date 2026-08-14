@@ -1085,6 +1085,57 @@ Implementation anchors: `core/propagation/options.py`,
 `simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_propagation_options_contracts.py`.
 
+Implementation commit: `f2cd328`.
+
+### D-037: Public propagation calls use explicit typed fields
+
+Status: Accepted on 2026-08-14 as the P2.4-b implementation of D-026.
+
+Scope: public Schrödinger, Liouville, and mixed-state propagation methods and
+the normal simulation adapters.
+
+Decision:
+
+- every public `propagate()` requires one `PropagationOptions`; no public
+  propagator accepts unrestricted `**kwargs`;
+- options algorithm, backend, storage, and renormalization must agree with the
+  constructed solver, otherwise calculation stops before units, allocation, or
+  numerical work;
+- coupling is explicit: Cartesian mode requires `axes` and rejects
+  `coupling_axis`; scalar mode requires `coupling_axis` and rejects `axes`;
+- split-operator propagation requires an explicit `split_interaction` at the
+  public call, and it must equal the constructor mode; RK4 rejects that field;
+- therefore `cartesian`, the physical RK4-equivalent reference, can never be
+  silently exchanged with the `helicity_projected` approximation;
+- `return_times` remains a temporary explicit adapter until P2.5 introduces a
+  non-conditional `PropagationResult`;
+- private `_propagate_array()` retains its characterized keyword adapter while
+  optimization and low-level numerical callers are migrated separately. It is
+  not a public API.
+
+Consequences:
+
+- misspelled and removed public options are rejected by the Python signature;
+- normal and fixed-M runners pass the same options object used during
+  validation, and pass exactly the split interaction used at construction;
+- numerical kernels, field samples, return arrays, ensemble weighting, and
+  dimensionalization formulas are unchanged;
+- `optimization/local.py` is untouched, including its legacy time arrays, odd
+  RK4 prefix, segment indices, midpoint, write slices, and endpoint handling.
+
+Verification:
+
+- signature contracts cover all three public propagators;
+- projection tests capture every legacy value passed to the unchanged private
+  body;
+- coupling ambiguity, options conflicts, and split-mode omission or mismatch
+  fail before numerical work;
+- the full CPU suite and all optimization time/reference contracts pass.
+
+Implementation anchors: `core/propagation/{base,schrodinger,liouville,mixed_state}.py`,
+`simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
+`tests/contracts/test_public_*`.
+
 Implementation commit: pending.
 
 ## Open decisions

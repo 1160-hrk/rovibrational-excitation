@@ -6,6 +6,7 @@ import pytest
 from rovibrational_excitation.core.propagation import MixedStatePropagator
 from rovibrational_excitation.core.propagation.liouville import LiouvillePropagator
 from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from tests.propagation_options import propagation_options
 
 
 @pytest.mark.parametrize(
@@ -22,7 +23,15 @@ def test_mixed_state_rejects_untyped_initial_state(raw_state):
         TypeError,
         match="initial_state must be an IncoherentEnsemble or DensityState",
     ):
-        solver.propagate(None, None, None, raw_state, return_traj=False)
+        solver.propagate(
+            None,
+            None,
+            None,
+            raw_state,
+            options=propagation_options(return_trajectory=False),
+            coupling_mode="cartesian",
+            axes="xy",
+        )
 
 
 def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch):
@@ -40,7 +49,15 @@ def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch
         lambda *args, **kwargs: np.asarray(args[3], dtype=np.complex128),
     )
 
-    density = solver.propagate(None, None, None, ensemble, return_traj=False)
+    density = solver.propagate(
+        None,
+        None,
+        None,
+        ensemble,
+        options=propagation_options(return_trajectory=False),
+        coupling_mode="cartesian",
+        axes="xy",
+    )
 
     np.testing.assert_array_equal(density, np.diag([0.8, 0.2]))
 
@@ -61,7 +78,9 @@ def test_mixed_state_unwraps_density_without_repair(monkeypatch):
         None,
         None,
         density_state,
-        return_traj=False,
+        options=propagation_options(return_trajectory=False),
+        coupling_mode="cartesian",
+        axes="xy",
     )
 
     np.testing.assert_array_equal(captured["matrix"], matrix)

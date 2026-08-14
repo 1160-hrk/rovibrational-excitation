@@ -222,9 +222,11 @@ def propagate_m_average(
     blocks = build_m_average_blocks(params, execution_policy=options.execution)
     sparse = options.sparse
     algorithm_name = options.algorithm_name
+    split_interaction = "cartesian"
     propagator = SchrodingerPropagator(
         backend=options.backend_name,
         algorithm=algorithm_name,
+        split_interaction=split_interaction,
         validate_units=params.get("validate_units", True),
         renorm=options.renorm,
         sparse=sparse,
@@ -240,16 +242,14 @@ def propagate_m_average(
             efield=electric_field,
             dipole_matrix=block.dipole,
             initial_state=PureState(block.initial_state),
+            options=options,
             coupling_mode="scalar",
             coupling_axis="z",
-            return_traj=options.return_trajectory,
-            return_time_psi=True,
-            sample_stride=options.sample_stride,
-            nondimensional=options.nondimensional,
+            return_times=True,
             verbose=params.get("verbose", False),
-            algorithm=algorithm_name,
-            sparse=sparse,
-            renorm=options.renorm,
+            split_interaction=(
+                split_interaction if algorithm_name == "split_operator" else None
+            ),
         )
         time_fs = _as_numpy(time_fs)
         wavefunction = _as_numpy(wavefunction)

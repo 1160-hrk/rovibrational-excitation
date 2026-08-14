@@ -16,6 +16,7 @@ from rovibrational_excitation.core.propagation.utils import get_backend
 from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
 from tests.mock_objects import MockDipole, MockEfield
+from tests.propagation_options import propagation_options
 
 
 class DummyDipole:
@@ -107,7 +108,15 @@ def test_mixed_state_propagation():
             np.array([0.0, 1.0], dtype=np.complex128),
         ]
     )
-    result = MixedStatePropagator().propagate(H0, ef, dip, psi0s)
+    result = MixedStatePropagator().propagate(
+        H0,
+        ef,
+        dip,
+        psi0s,
+        options=propagation_options(return_trajectory=True),
+        coupling_mode="cartesian",
+        axes="xy",
+    )
     assert result.shape[-1] == 2 or result[1].shape[-1] == 2
 
 
@@ -294,12 +303,26 @@ def test_mixed_state_propagation_detailed():
     )
 
     # 軌跡あり
-    result_traj = MixedStatePropagator().propagate(H0, ef, dip, psi0s, return_traj=True)
+    result_traj = MixedStatePropagator().propagate(
+        H0,
+        ef,
+        dip,
+        psi0s,
+        options=propagation_options(return_trajectory=True),
+        coupling_mode="cartesian",
+        axes="xy",
+    )
     assert result_traj.shape[1:] == (2, 2)  # 密度行列の形状
 
     # 軌跡なし
     result_final = MixedStatePropagator().propagate(
-        H0, ef, dip, psi0s, return_traj=False
+        H0,
+        ef,
+        dip,
+        psi0s,
+        options=propagation_options(return_trajectory=False),
+        coupling_mode="cartesian",
+        axes="xy",
     )
     assert result_final.shape == (2, 2)  # 密度行列の形状
 
@@ -328,7 +351,14 @@ def test_mixed_state_propagation_with_time():
     )
 
     time_rho, rho_traj = MixedStatePropagator().propagate(
-        H0, ef, dip, psi0s, return_traj=True, return_time_rho=True
+        H0,
+        ef,
+        dip,
+        psi0s,
+        options=propagation_options(return_trajectory=True),
+        coupling_mode="cartesian",
+        axes="xy",
+        return_times=True,
     )
 
     assert len(time_rho) == rho_traj.shape[0]
@@ -440,7 +470,9 @@ def test_mixed_state_normalizes_norm_squared_weights(monkeypatch):
         None,
         None,
         states,
-        return_traj=False,
+        options=propagation_options(return_trajectory=False),
+        coupling_mode="cartesian",
+        axes="xy",
     )
 
     np.testing.assert_allclose(density, np.diag([0.8, 0.2]))
@@ -460,7 +492,9 @@ def test_mixed_state_ignores_zero_weight_components(monkeypatch):
         None,
         None,
         IncoherentEnsemble([np.array([1.0, 0.0]), np.zeros(2)]),
-        return_traj=False,
+        options=propagation_options(return_trajectory=False),
+        coupling_mode="cartesian",
+        axes="xy",
     )
 
     np.testing.assert_allclose(density, np.diag([1.0, 0.0]))

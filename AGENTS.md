@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-14
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-036 (P2.4-a)
+Verified behavioral contract: D-037 (P2.4-b)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -64,7 +64,11 @@ The authoritative details and formulas are in
 - Typed trajectories always include the exact endpoint; if stride does not
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
-  dense/CSR storage, and renormalization policy.
+  dense/CSR storage, trajectory, stride, scaling, and renormalization policy.
+- Public propagation requires explicit Cartesian axes or one scalar coupling
+  axis and accepts no unrestricted keyword arguments.
+- Split-operator calls require the constructor interaction mode again; omission
+  or a Cartesian/helicity-projected mismatch is an error.
 - Typed density input requires trace one and is never repaired automatically.
 - Result arrays remain backend-native until explicit `to_numpy()` conversion.
 - Multiple `initial_states` in the normal simulation runner form an
@@ -125,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P2.4-a typed propagation-options checkpoint:
+Current local CPU baseline after the P2.4-b explicit public-boundary checkpoint:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-659 passed, 10 GPU tests skipped (669 collected)
+670 passed, 10 GPU tests skipped (680 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -181,8 +185,8 @@ Measured at `613ce93`:
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
 - Current branch coverage: 66%; the initial mandatory CI floor is 47%.
-- Optimization modules: 7-16% measured coverage.
-- Spectroscopy monolith: 81% measured coverage.
+- Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
+- Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
 - README claims 63% coverage and contains removed APIs; it is not authoritative.
 
@@ -196,10 +200,10 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Continue P2.4-b by replacing public solver `**kwargs` with typed options
-   through characterization-preserving adapters.
-2. Introduce `PropagationProblem` after public solver options are stable; P2.5
-   owns the non-conditional result object.
+1. Introduce P2.4-c `PropagationProblem` around the now-stable options, model,
+   field, time-grid, and typed-state boundaries without changing kernels.
+2. Implement P2.5 `PropagationResult` so return shape no longer depends on a
+   boolean and backend-native arrays remain explicit.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain independent optimization objective/gradient and spectroscopy
    references before Phase 7 decomposition.

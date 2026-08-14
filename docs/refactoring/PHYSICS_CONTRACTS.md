@@ -615,10 +615,13 @@ direction-independent response.
 Current verified/implemented contract:
 
 The typed source of truth is `PropagationOptions`, containing one
-`ExecutionPolicy`, plus `validate_execution_capability`. Normal simulation configuration requires
-`backend`, `storage`, and `algorithm`; one validated policy controls both dipole
-construction and propagation. Legacy low-level constructor booleans remain only
-as projections from that policy during the P2.4 migration.
+`ExecutionPolicy`, plus `validate_execution_capability`. Normal simulation
+configuration requires backend, storage, algorithm, trajectory, stride,
+scaling, and renormalization; one validated object controls model construction
+and propagation. Public propagation also requires explicit Cartesian axes or a
+scalar coupling axis. Split propagation requires the same explicit interaction
+mode at construction and call time. Legacy booleans and keyword adapters remain
+only inside private numerical/optimizer migration boundaries.
 
 | State path | Algorithm | NumPy dense | NumPy sparse | CuPy dense | CuPy sparse |
 |---|---|---:|---:|---:|---:|

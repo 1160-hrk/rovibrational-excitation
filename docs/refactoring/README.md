@@ -43,24 +43,24 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 659 passed, 10 skipped (669 collected) |
+| Pytest | 670 passed, 10 skipped (680 collected) |
 | Measured branch coverage | 66% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
 | Files failing Ruff format check | 0 |
-| Optimization module coverage | 7-16% |
-| Spectroscopy coverage | 81% |
-| `simulation/runner.py` coverage | 66% |
+| Optimization module coverage | 8-90% |
+| Spectroscopy coverage | 90% |
+| `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, Ruff, and branch-coverage rows were verified locally on 2026-08-14 after the P2.4-a implementation. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
+The pytest, Ruff, and branch-coverage rows were verified locally on 2026-08-14 after the P2.4-b implementation. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
 | File | Physical lines | Main concern |
 |---|---:|---|
-| `spectroscopy/absorbance_calculator.py` | 913 | Multiple response/spectrum responsibilities, 11% coverage |
+| `spectroscopy/absorbance_calculator.py` | 913 | Multiple response/spectrum responsibilities despite 90% measured coverage |
 | `simulation/runner.py` | 628 | Construction, execution, multiprocessing, output, error handling |
 | `core/nondimensional/converter.py` | 562 | Strict scaling, array conversion, and object preparation |
 | `core/propagation/algorithms/rk4/schrodinger.py` | 478 | Dense, sparse, CPU, GPU, validation paths in one module |
@@ -135,7 +135,7 @@ These commits are the starting point, not the final architecture.
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
-| 2 | Typed propagation contracts | In progress — P2.1 complete; P2.2 complete; P2.3 complete; P2.4-a immutable options and normal-runner wiring complete; public solver kwargs remain for P2.4-b |
+| 2 | Typed propagation contracts | In progress — P2.1-P2.4-b complete; public solvers require typed options and explicit coupling; `PropagationProblem` is next |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.execution import MatrixStorage
 from rovibrational_excitation.core.propagation import (
     LiouvillePropagator,
     MixedStatePropagator,
@@ -19,7 +20,10 @@ from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import
 from rovibrational_excitation.core.propagation.algorithms.validation import (
     validate_density_matrix_properties,
 )
+from rovibrational_excitation.core.propagation.capabilities import PropagationAlgorithm
+from rovibrational_excitation.core.propagation.options import ScalingMode
 from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from tests.propagation_options import propagation_options
 
 
 def _low_level_problem(field_size=5):
@@ -158,12 +162,17 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
         object(),
         object(),
         states,
-        return_traj=False,
-        return_time_rho=True,
-        sample_stride=3,
-        nondimensional=True,
+        options=propagation_options(
+            algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+            storage=MatrixStorage.CSR,
+            return_trajectory=False,
+            sample_stride=3,
+            scaling=ScalingMode.NONDIMENSIONAL,
+        ),
+        return_times=True,
         coupling_mode="scalar",
         coupling_axis="x",
+        split_interaction="cartesian",
     )
 
     np.testing.assert_array_equal(time, [3.0])
@@ -185,12 +194,15 @@ def test_mixed_state_rejects_removed_timestep_options(option):
     solver = MixedStatePropagator(validate_units=False)
     states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
-    with pytest.raises(ValueError, match=rf"{option}.*removed"):
+    with pytest.raises(TypeError, match=option):
         solver.propagate(
             object(),
             object(),
             object(),
             states,
+            options=propagation_options(return_trajectory=True),
+            coupling_mode="cartesian",
+            axes="xy",
             **{option: True},
         )
 
@@ -221,9 +233,36 @@ def test_mixed_state_rejects_unsupported_options_for_explicit_density(
     message,
 ):
     solver = MixedStatePropagator(validate_units=False, **constructor_kwargs)
+    algorithm = (
+        PropagationAlgorithm.SPLIT_OPERATOR
+        if constructor_kwargs.get("algorithm") == "split_operator"
+        else PropagationAlgorithm.RK4
+    )
+    storage = (
+        MatrixStorage.CSR
+        if constructor_kwargs.get("sparse", False)
+        else MatrixStorage.DENSE
+    )
 
     with pytest.raises(ValueError, match=message):
-        solver.propagate(object(), object(), object(), DensityState(np.eye(2) / 2.0))
+        solver.propagate(
+            object(),
+            object(),
+            object(),
+            DensityState(np.eye(2) / 2.0),
+            options=propagation_options(
+                algorithm=algorithm,
+                storage=storage,
+                return_trajectory=False,
+            ),
+            coupling_mode="cartesian",
+            axes="xy",
+            split_interaction=(
+                "cartesian"
+                if algorithm is PropagationAlgorithm.SPLIT_OPERATOR
+                else None
+            ),
+        )
 
 
 def test_liouville_matches_schrodinger_for_a_pure_state():
@@ -299,12 +338,15 @@ def test_liouville_rejects_unknown_propagation_option():
 def test_mixed_state_rejects_unknown_propagation_option():
     solver = MixedStatePropagator(validate_units=False)
 
-    with pytest.raises(ValueError, match="unsupported propagation options: typo"):
+    with pytest.raises(TypeError, match="typo"):
         solver.propagate(
             None,
             None,
             None,
             IncoherentEnsemble([np.array([1.0, 0.0])]),
+            options=propagation_options(return_trajectory=False),
+            coupling_mode="cartesian",
+            axes="xy",
             typo=True,
         )
 
@@ -332,5 +374,11 @@ def test_mixed_state_rejects_conflicting_algorithm_override():
             None,
             None,
             IncoherentEnsemble([np.array([1.0, 0.0])]),
-            algorithm="split_operator",
+            options=propagation_options(
+                algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+                return_trajectory=False,
+            ),
+            coupling_mode="cartesian",
+            axes="xy",
+            split_interaction="cartesian",
         )
