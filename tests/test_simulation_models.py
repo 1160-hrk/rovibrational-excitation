@@ -188,6 +188,10 @@ def test_runner_zero_field_preserves_population_after_model_split(model_params):
         "backend": "numpy",
         "storage": "dense",
         "algorithm": "rk4",
+        "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
         **model_params,
     }
 
@@ -228,6 +232,8 @@ def test_runner_uses_interval_duration_and_one_backend(
         "save": False,
         "algorithm": "split_operator",
         "storage": "csr",
+        "return_traj": True,
+        "nondimensional": False,
         "renorm": True,
         "verbose": True,
         "validate_units": False,

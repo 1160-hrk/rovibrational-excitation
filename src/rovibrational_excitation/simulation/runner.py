@@ -131,7 +131,8 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     from .validation import validate_simulation_case
 
     # --- Electric field 共通 ---
-    execution_policy, algorithm = validate_simulation_case(params)
+    options = validate_simulation_case(params)
+    execution_policy = options.execution
     polarization = _deserialize_pol(params["polarization"])
     use_m_average = params.get(
         "basis_type", "linmol"
@@ -171,8 +172,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         result = propagate_m_average(
             params,
             E,
-            execution_policy=execution_policy,
-            algorithm=algorithm,
+            options=options,
         )
         if params.get("save", True):
             outdir = Path(params["outdir"])
@@ -202,16 +202,16 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     dip = model.dipole
 
     # ---------- Propagation 共通 ----------
-    use_nondimensional = params.get("nondimensional", False)
-    backend = execution_policy.backend.value
-    algorithm_name = algorithm.value
-    sparse = execution_policy.sparse
+    use_nondimensional = options.nondimensional
+    backend = options.backend_name
+    algorithm_name = options.algorithm_name
+    sparse = options.sparse
     prop = SchrodingerPropagator(
         backend=backend,
         algorithm=algorithm_name,
         split_interaction=params.get("split_interaction", "cartesian"),
         validate_units=params.get("validate_units", True),
-        renorm=params.get("renorm", False),
+        renorm=options.renorm,
         sparse=sparse,
     )
     psi_t = prop.propagate(
@@ -225,9 +225,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             if model.coupling.mode == "cartesian"
             else {"coupling_axis": model.coupling.axis}
         ),
-        return_traj=params.get("return_traj", True),
+        return_traj=options.return_trajectory,
         return_time_psi=True,
-        sample_stride=params.get("sample_stride", 1),
+        sample_stride=options.sample_stride,
         nondimensional=use_nondimensional,
         verbose=params.get("verbose", False),
         algorithm=algorithm_name,
@@ -237,7 +237,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             else {}
         ),
         sparse=sparse,
-        renorm=params.get("renorm", False),
+        renorm=options.renorm,
     )
 
     # 無次元化使用時は物理レジーム情報も保存

@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-12
+Last verified: 2026-08-14
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-035 (P2.3-c)
+Verified behavioral contract: D-036 (P2.4-a)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -125,14 +125,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P2.1-b optimization time migration:
+Current local CPU baseline after the P2.4-a typed propagation-options checkpoint:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-643 passed, 10 GPU tests skipped (653 collected)
+659 passed, 10 GPU tests skipped (669 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -196,9 +196,10 @@ Phase 0 and Phase 1 are complete, including remote required gates and branch
 protection. D-026 is accepted and Phase 2 typed propagation contracts are in
 progress. The next work is:
 
-1. Continue P2.4 with typed `PropagationOptions`; remove solver `**kwargs` and
-   conditional return shapes through tested migration adapters.
-2. Introduce `PropagationProblem` only after options are stable.
+1. Continue P2.4-b by replacing public solver `**kwargs` with typed options
+   through characterization-preserving adapters.
+2. Introduce `PropagationProblem` after public solver options are stable; P2.5
+   owns the non-conditional result object.
 3. Perform target directory migration only after typed contracts are stable.
 4. Obtain independent optimization objective/gradient and spectroscopy
    references before Phase 7 decomposition.

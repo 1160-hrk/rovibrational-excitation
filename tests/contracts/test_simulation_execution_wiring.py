@@ -37,12 +37,27 @@ def _twolevel_case(**overrides):
         "backend": "numpy",
         "storage": "dense",
         "algorithm": "rk4",
+        "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
     }
     params.update(overrides)
     return params
 
 
-@pytest.mark.parametrize("missing", ["backend", "storage", "algorithm"])
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "backend",
+        "storage",
+        "algorithm",
+        "return_traj",
+        "sample_stride",
+        "nondimensional",
+        "renorm",
+    ],
+)
 def test_simulation_requires_each_execution_choice(missing):
     params = _twolevel_case()
     del params[missing]
@@ -60,15 +75,19 @@ def test_simulation_rejects_legacy_storage_booleans(removed):
 
 
 def test_validation_returns_the_only_execution_choices_used_by_runner():
-    policy, algorithm = validate_simulation_case(
+    options = validate_simulation_case(
         _twolevel_case(storage="csr", algorithm="split_operator")
     )
 
-    assert policy == ExecutionPolicy(
+    assert options.execution == ExecutionPolicy(
         backend=ArrayBackend.NUMPY,
         storage=MatrixStorage.CSR,
     )
-    assert algorithm is PropagationAlgorithm.SPLIT_OPERATOR
+    assert options.algorithm is PropagationAlgorithm.SPLIT_OPERATOR
+    assert options.return_trajectory is True
+    assert options.sample_stride == 1
+    assert options.nondimensional is False
+    assert options.renorm is False
 
 
 def test_structurally_unsupported_policy_fails_during_simulation_preflight():

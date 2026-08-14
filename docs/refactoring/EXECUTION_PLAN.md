@@ -645,8 +645,15 @@ Add parameterized tests for every advertised combination.
 
 ### P2.4 Introduce PropagationProblem and PropagationOptions
 
-Replace solver `**kwargs` with typed fields. Required choices are explicit;
-unsupported combinations fail during construction or preflight.
+P2.4-a is complete: immutable `PropagationOptions` requires algorithm,
+execution policy, trajectory selection, positive sample stride, scaling mode,
+and renormalization policy. Normal simulation validation constructs one object
+with no defaults and shares it with ordinary or fixed-M propagation. The typed
+factory consumes that object.
+
+P2.4-b will replace public solver `**kwargs` with typed fields. Unsupported
+combinations must fail during construction or preflight. P2.5 owns the final
+non-conditional result object.
 
 The field TimeGrid is the only timestep source. No solver-level `dt` override.
 

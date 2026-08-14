@@ -13,6 +13,11 @@ from rovibrational_excitation.core.propagation.capabilities import (
     StatePath,
     validate_execution_capability,
 )
+from rovibrational_excitation.core.propagation.options import (
+    PropagationOptions,
+    RenormalizationPolicy,
+    ScalingMode,
+)
 from rovibrational_excitation.core.propagation.utils import validate_axes
 from rovibrational_excitation.core.time import TimeGrid
 
@@ -34,6 +39,10 @@ _COMMON_REQUIRED = {
     "backend",
     "storage",
     "algorithm",
+    "return_traj",
+    "sample_stride",
+    "nondimensional",
+    "renorm",
 }
 _MODEL_REQUIRED = {
     "linmol": {
@@ -117,7 +126,7 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
 
 def validate_simulation_case(
     params: Mapping[str, Any],
-) -> tuple[ExecutionPolicy, PropagationAlgorithm]:
+) -> PropagationOptions:
     """Validate one fully-expanded case without changing its values."""
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params
@@ -179,6 +188,26 @@ def validate_simulation_case(
             storage=params["storage"],
         )
         algorithm = PropagationAlgorithm(params["algorithm"])
+        if not isinstance(params["nondimensional"], bool):
+            raise TypeError("nondimensional must be a bool")
+        if not isinstance(params["renorm"], bool):
+            raise TypeError("renorm must be a bool")
+        options = PropagationOptions(
+            algorithm=algorithm,
+            execution=execution_policy,
+            return_trajectory=params["return_traj"],
+            sample_stride=params["sample_stride"],
+            scaling=(
+                ScalingMode.NONDIMENSIONAL
+                if params["nondimensional"]
+                else ScalingMode.DIMENSIONAL
+            ),
+            renormalization=(
+                RenormalizationPolicy.PER_STEP
+                if params["renorm"]
+                else RenormalizationPolicy.DISABLED
+            ),
+        )
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
@@ -190,8 +219,8 @@ def validate_simulation_case(
     try:
         validate_execution_capability(
             state_path=state_path,
-            algorithm=algorithm,
-            policy=execution_policy,
+            algorithm=options.algorithm,
+            policy=options.execution,
         )
     except (RuntimeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
@@ -226,4 +255,4 @@ def validate_simulation_case(
         raise SimulationConfigurationError(
             "split_interaction must be 'cartesian' or 'helicity_projected'"
         )
-    return execution_policy, algorithm
+    return options

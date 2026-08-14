@@ -297,19 +297,18 @@ heuristic in the final public API.
 ### 5.5 ExecutionPolicy and PropagationOptions
 
 ~~~python
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ExecutionPolicy:
-    backend: Literal["numpy", "cupy"]
-    matrix_storage: Literal["dense", "sparse"]
+    backend: ArrayBackend
+    storage: MatrixStorage
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PropagationOptions:
-    algorithm: Literal["rk4", "split_operator"]
+    algorithm: PropagationAlgorithm
     execution: ExecutionPolicy
     return_trajectory: bool
     sample_stride: int
-    scaling: Literal["dimensional", "nondimensional"]
-    timestep_policy: TimestepPolicy
+    scaling: ScalingMode
     renormalization: RenormalizationPolicy
 ~~~
 

@@ -105,7 +105,7 @@ temporary.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `core.propagation` | `PropagatorBase`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory` | `dynamics` typed problem/options/result plus `propagate` | temporary public; factory class deletes after replacement |
+| `core.propagation` | `PropagatorBase`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory`, `PropagationOptions`, `ScalingMode`, `RenormalizationPolicy` | `dynamics` typed problem/options/result plus `propagate` | temporary public; factory class deletes after replacement |
 | `core.propagation.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
 | `core.propagation.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
 | `core.propagation.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
@@ -164,14 +164,14 @@ versioned so historical calculations remain interpretable.
 4. `expand_cases` treats most iterable values as sweep dimensions; only
    `polarization`, `initial_states`, and `envelope_func` are fixed-value
    exceptions.
-5. `validate_simulation_case` runs only after expansion; it requires and parses
-   `backend`, `storage`, and `algorithm`, rejects the removed `dense`/`sparse`
-   booleans, and performs capability preflight.
+5. `validate_simulation_case` runs only after expansion; it requires algorithm,
+   backend, storage, trajectory, stride, scaling, and renormalization choices,
+   constructs one `PropagationOptions`, and performs capability preflight.
 6. `build_model` requires that validated `ExecutionPolicy`, dispatches through a
    local dictionary, and returns `ModelComponents` plus scalar/Cartesian
    coupling metadata.
 7. `runner._run_one` constructs one immutable `TimeGrid` and `ElectricField`,
-   then passes the same policy to model construction and propagation before
+   then passes the same options object to model construction adapters and propagation before
    writing an unversioned NPZ/JSON result.
 
 This entire route is temporary. Python-file execution, heuristic conversion,

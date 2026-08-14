@@ -1042,6 +1042,51 @@ Implementation anchors: `core/propagation/factory.py`,
 
 Implementation commit: pending.
 
+### D-036: Propagation options are immutable and required
+
+Status: Accepted on 2026-08-14 as the P2.4-a implementation of D-026.
+
+Scope: typed propagation configuration, factory construction, and normal
+simulation adaptation.
+
+Decision:
+
+- `PropagationOptions` is an immutable slots dataclass with no defaults;
+- it requires `PropagationAlgorithm`, `ExecutionPolicy`, trajectory selection,
+  a positive integer sample stride, `ScalingMode`, and
+  `RenormalizationPolicy`;
+- scaling is exactly `dimensional` or `nondimensional`; renormalization is
+  exactly `disabled` or `per_step`;
+- normal simulation configuration explicitly requires the existing adapter
+  keys `return_traj`, `sample_stride`, `nondimensional`, and `renorm` in
+  addition to algorithm, backend, and storage;
+- simulation validation constructs one options object and passes it unchanged
+  to the ordinary or fixed-M path;
+- `PropagatorFactory` accepts one options object instead of separate algorithm,
+  execution-policy, and renormalization arguments;
+- boolean and string projections exist only at calls into unchanged legacy
+  solver bodies.
+
+Consequences:
+
+- omitted trajectory, scaling, stride, or renormalization choices fail before
+  field or matrix construction;
+- no option is inferred from state shape, polarization, dependency
+  availability, or another option;
+- numerical kernels, field sampling, endpoint handling, and optimization are
+  unchanged;
+- P2.4-b must replace public propagator `**kwargs` with the typed options
+  boundary; P2.5 will replace conditional array/tuple results;
+- `core.propagation` uses lazy public exports so importing `core.states` first
+  cannot trigger a solver/state circular import.
+
+Implementation anchors: `core/propagation/options.py`,
+`core/propagation/factory.py`, `simulation/validation.py`,
+`simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
+`tests/contracts/test_propagation_options_contracts.py`.
+
+Implementation commit: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

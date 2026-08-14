@@ -43,6 +43,11 @@ from rovibrational_excitation.core.propagation.capabilities import (
     PropagationAlgorithm,
     StatePath,
 )
+from rovibrational_excitation.core.propagation.options import (
+    PropagationOptions,
+    RenormalizationPolicy,
+    ScalingMode,
+)
 from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 
 pytestmark = pytest.mark.physics
@@ -376,11 +381,16 @@ def test_unsupported_solver_capabilities_raise_explicitly():
         LiouvillePropagator(backend="cupy", validate_units=False)
     ensemble_solver = PropagatorFactory.create_propagator(
         state_path=StatePath.INCOHERENT_ENSEMBLE,
-        algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
-        execution_policy=ExecutionPolicy(
-            backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+        options=PropagationOptions(
+            algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+            execution=ExecutionPolicy(
+                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
+            ),
+            return_trajectory=True,
+            sample_stride=1,
+            scaling=ScalingMode.DIMENSIONAL,
+            renormalization=RenormalizationPolicy.DISABLED,
         ),
-        renorm=False,
         validate_units=False,
     )
     assert ensemble_solver.algorithm == "split_operator"

@@ -1,22 +1,48 @@
-"""
-Quantum state propagation module.
+"""Typed quantum-state propagation facade with cycle-safe lazy exports."""
 
-This module provides propagator classes for various types of quantum states
-and propagation algorithms.
-"""
+from __future__ import annotations
 
-from .base import PropagatorBase
-from .direction import PropagationDirection
-from .factory import PropagatorFactory
-from .liouville import LiouvillePropagator
-from .mixed_state import MixedStatePropagator
-from .schrodinger import SchrodingerPropagator
+from importlib import import_module
+from typing import TYPE_CHECKING, Any
 
-__all__ = [
-    "PropagatorBase",
-    "PropagationDirection",
-    "SchrodingerPropagator",
-    "LiouvillePropagator",
-    "MixedStatePropagator",
-    "PropagatorFactory",
-]
+if TYPE_CHECKING:
+    from .base import PropagatorBase as PropagatorBase
+    from .direction import PropagationDirection as PropagationDirection
+    from .factory import PropagatorFactory as PropagatorFactory
+    from .liouville import LiouvillePropagator as LiouvillePropagator
+    from .mixed_state import MixedStatePropagator as MixedStatePropagator
+    from .options import (
+        PropagationOptions as PropagationOptions,
+    )
+    from .options import (
+        RenormalizationPolicy as RenormalizationPolicy,
+    )
+    from .options import (
+        ScalingMode as ScalingMode,
+    )
+    from .schrodinger import SchrodingerPropagator as SchrodingerPropagator
+
+_EXPORTS = {
+    "PropagatorBase": (".base", "PropagatorBase"),
+    "PropagationDirection": (".direction", "PropagationDirection"),
+    "SchrodingerPropagator": (".schrodinger", "SchrodingerPropagator"),
+    "LiouvillePropagator": (".liouville", "LiouvillePropagator"),
+    "MixedStatePropagator": (".mixed_state", "MixedStatePropagator"),
+    "PropagatorFactory": (".factory", "PropagatorFactory"),
+    "PropagationOptions": (".options", "PropagationOptions"),
+    "RenormalizationPolicy": (".options", "RenormalizationPolicy"),
+    "ScalingMode": (".options", "ScalingMode"),
+}
+
+__all__ = list(_EXPORTS)
+
+
+def __getattr__(name: str) -> Any:
+    """Load public names on first access without importing solvers eagerly."""
+    try:
+        module_name, attribute_name = _EXPORTS[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__} has no attribute {name}") from None
+    value = getattr(import_module(module_name, __name__), attribute_name)
+    globals()[name] = value
+    return value

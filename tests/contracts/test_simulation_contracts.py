@@ -35,6 +35,10 @@ def _base_case(**overrides):
         "backend": "numpy",
         "storage": "dense",
         "algorithm": "rk4",
+        "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
     }
     case.update(overrides)
     return case

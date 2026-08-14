@@ -26,6 +26,27 @@ from rovibrational_excitation.core.propagation.capabilities import (
     PropagationAlgorithm,
     StatePath,
 )
+from rovibrational_excitation.core.propagation.options import (
+    PropagationOptions,
+    RenormalizationPolicy,
+    ScalingMode,
+)
+
+
+def _factory_options(
+    *,
+    algorithm: PropagationAlgorithm = PropagationAlgorithm.RK4,
+    storage: MatrixStorage = MatrixStorage.DENSE,
+    renormalization: RenormalizationPolicy = RenormalizationPolicy.DISABLED,
+):
+    return PropagationOptions(
+        algorithm=algorithm,
+        execution=ExecutionPolicy(backend=ArrayBackend.NUMPY, storage=storage),
+        return_trajectory=True,
+        sample_stride=1,
+        scaling=ScalingMode.DIMENSIONAL,
+        renormalization=renormalization,
+    )
 
 
 def test_split_operator_preserves_permanent_dipole_contribution():
@@ -133,11 +154,10 @@ def test_cupy_final_only_keeps_low_level_row_shape(monkeypatch):
 def test_factory_returns_explicitly_configured_split_operator():
     solver = PropagatorFactory.create_propagator(
         state_path=StatePath.PURE,
-        algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
-        execution_policy=ExecutionPolicy(
-            backend=ArrayBackend.NUMPY, storage=MatrixStorage.CSR
+        options=_factory_options(
+            algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+            storage=MatrixStorage.CSR,
         ),
-        renorm=False,
     )
 
     assert solver.algorithm == "split_operator"
@@ -152,11 +172,13 @@ def test_factory_requires_typed_explicit_choices():
     with pytest.raises(TypeError, match="StatePath"):
         PropagatorFactory.create_propagator(
             state_path="pure",
-            algorithm=PropagationAlgorithm.RK4,
-            execution_policy=ExecutionPolicy(
-                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
-            ),
-            renorm=False,
+            options=_factory_options(),
+        )
+
+    with pytest.raises(TypeError, match="PropagationOptions"):
+        PropagatorFactory.create_propagator(
+            state_path=StatePath.PURE,
+            options="rk4-numpy-dense",
         )
 
 
@@ -164,11 +186,7 @@ def test_factory_rejects_removed_automatic_selection_inputs():
     with pytest.raises(TypeError, match="const_polarization"):
         PropagatorFactory.create_propagator(
             state_path=StatePath.PURE,
-            algorithm=PropagationAlgorithm.RK4,
-            execution_policy=ExecutionPolicy(
-                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
-            ),
-            renorm=False,
+            options=_factory_options(),
             const_polarization=True,
         )
 
@@ -176,11 +194,7 @@ def test_factory_rejects_removed_automatic_selection_inputs():
 def test_factory_dispatches_explicit_density_path():
     solver = PropagatorFactory.create_propagator(
         state_path=StatePath.DENSITY,
-        algorithm=PropagationAlgorithm.RK4,
-        execution_policy=ExecutionPolicy(
-            backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
-        ),
-        renorm=False,
+        options=_factory_options(),
     )
 
     assert isinstance(solver, LiouvillePropagator)
@@ -190,11 +204,7 @@ def test_factory_rejects_renormalization_for_density_path():
     with pytest.raises(ValueError, match="renorm is not applicable"):
         PropagatorFactory.create_propagator(
             state_path=StatePath.DENSITY,
-            algorithm=PropagationAlgorithm.RK4,
-            execution_policy=ExecutionPolicy(
-                backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE
-            ),
-            renorm=True,
+            options=_factory_options(renormalization=RenormalizationPolicy.PER_STEP),
         )
 
 

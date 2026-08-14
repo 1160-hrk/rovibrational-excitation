@@ -59,8 +59,11 @@ def _runner_params(**overrides):
         "backend": "numpy",
         "algorithm": "rk4",
         "storage": "dense",
-        "validate_units": False,
         "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
+        "validate_units": False,
         "save": False,
     }
     params.update(overrides)

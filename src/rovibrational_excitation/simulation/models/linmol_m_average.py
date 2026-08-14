@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any
 
 import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.core.propagation.capabilities import PropagationAlgorithm
+from rovibrational_excitation.core.propagation.options import PropagationOptions
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
@@ -208,8 +208,7 @@ def propagate_m_average(
     params: dict[str, Any],
     electric_field: Any,
     *,
-    execution_policy: ExecutionPolicy,
-    algorithm: PropagationAlgorithm,
+    options: PropagationOptions,
 ) -> MAveragePropagationResult:
     """Propagate fixed-M blocks and incoherently sum reduced populations."""
     removed_options = {
@@ -220,14 +219,14 @@ def propagate_m_average(
         raise ValueError(
             f"{names} were removed; define the ElectricField grid explicitly"
         )
-    blocks = build_m_average_blocks(params, execution_policy=execution_policy)
-    sparse = execution_policy.sparse
-    algorithm_name: Literal["rk4", "split_operator"] = algorithm.value
+    blocks = build_m_average_blocks(params, execution_policy=options.execution)
+    sparse = options.sparse
+    algorithm_name = options.algorithm_name
     propagator = SchrodingerPropagator(
-        backend=execution_policy.backend.value,
+        backend=options.backend_name,
         algorithm=algorithm_name,
         validate_units=params.get("validate_units", True),
-        renorm=params.get("renorm", False),
+        renorm=options.renorm,
         sparse=sparse,
     )
     reduced_dimension = (params["V_max"] + 1) * (params["J_max"] + 1)
@@ -243,14 +242,14 @@ def propagate_m_average(
             initial_state=PureState(block.initial_state),
             coupling_mode="scalar",
             coupling_axis="z",
-            return_traj=params.get("return_traj", True),
+            return_traj=options.return_trajectory,
             return_time_psi=True,
-            sample_stride=params.get("sample_stride", 1),
-            nondimensional=params.get("nondimensional", False),
+            sample_stride=options.sample_stride,
+            nondimensional=options.nondimensional,
             verbose=params.get("verbose", False),
             algorithm=algorithm_name,
             sparse=sparse,
-            renorm=params.get("renorm", False),
+            renorm=options.renorm,
         )
         time_fs = _as_numpy(time_fs)
         wavefunction = _as_numpy(wavefunction)
