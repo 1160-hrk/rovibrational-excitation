@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-11
+Last verified: 2026-08-14
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,8 +43,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 670 passed, 10 skipped (680 collected) |
-| Measured branch coverage | 66% |
+| Pytest | 677 passed, 10 skipped (687 collected) |
+| Measured branch coverage | 67% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
@@ -54,7 +54,7 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, Ruff, and branch-coverage rows were verified locally on 2026-08-14 after the P2.4-b implementation. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
+The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on 2026-08-14 after the P2.4-c implementation. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
@@ -135,7 +135,7 @@ These commits are the starting point, not the final architecture.
 |---|---|---|
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
-| 2 | Typed propagation contracts | In progress — P2.1-P2.4-b complete; public solvers require typed options and explicit coupling; `PropagationProblem` is next |
+| 2 | Typed propagation contracts | In progress — P2.1-P2.4-c complete; public solvers require one typed problem and typed options; `PropagationResult` is next |
 | 3 | Target package migration | Pending |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |

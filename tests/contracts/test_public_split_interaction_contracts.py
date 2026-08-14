@@ -9,6 +9,7 @@ from rovibrational_excitation.core.propagation.capabilities import (
 )
 from rovibrational_excitation.core.states import PureState
 from tests.propagation_options import propagation_options
+from tests.propagation_problem import propagation_problem
 
 
 def _split_options():
@@ -30,13 +31,8 @@ def test_split_public_boundary_requires_interaction_mode_before_work():
 
     with pytest.raises(ValueError, match="split_interaction is required"):
         solver.propagate(
-            None,
-            None,
-            None,
-            _state(),
+            propagation_problem(_state()),
             options=_split_options(),
-            coupling_mode="cartesian",
-            axes="xy",
         )
 
 
@@ -49,13 +45,8 @@ def test_split_public_boundary_rejects_constructor_mode_conflict_before_work():
 
     with pytest.raises(ValueError, match="conflicts with the propagator"):
         solver.propagate(
-            None,
-            None,
-            None,
-            _state(),
+            propagation_problem(_state()),
             options=_split_options(),
-            coupling_mode="cartesian",
-            axes="xy",
             split_interaction="cartesian",
         )
 
@@ -65,12 +56,7 @@ def test_rk4_public_boundary_rejects_split_interaction():
 
     with pytest.raises(ValueError, match="only to split-operator"):
         solver.propagate(
-            None,
-            None,
-            None,
-            _state(),
+            propagation_problem(_state()),
             options=propagation_options(return_trajectory=False),
-            coupling_mode="cartesian",
-            axes="xy",
             split_interaction="cartesian",
         )

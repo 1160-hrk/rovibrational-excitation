@@ -16,6 +16,7 @@ from ..units.validators import validator
 from .base import PropagatorBase
 from .direction import PropagationDirection
 from .options import PropagationOptions
+from .problem import PropagationProblem
 from .utils import (
     HAS_CUPY,
     ensure_sparse_matrix,
@@ -117,41 +118,32 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
 
     def propagate(
         self,
-        hamiltonian: Any,
-        efield: Any,
-        dipole_matrix: Any,
-        initial_state: PureState,
+        problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None = None,
-        coupling_axis: Literal["x", "y", "z"] | None = None,
         return_times: bool = False,
         verbose: bool = False,
         split_interaction: Literal["cartesian", "helicity_projected"] | None = None,
         direction: PropagationDirection = PropagationDirection.FORWARD,
     ) -> Any:
-        """Propagate a pure state through the explicit typed boundary."""
-        if not isinstance(initial_state, PureState):
-            raise TypeError("initial_state must be a PureState")
+        """Propagate one complete typed pure-state problem."""
+        if not isinstance(problem, PropagationProblem):
+            raise TypeError("problem must be a PropagationProblem")
+        if not isinstance(problem.initial_state, PureState):
+            raise TypeError("problem initial_state must be a PureState")
         self._validate_public_options(options)
         self._validate_public_split_interaction(options, split_interaction)
-        coupling_kwargs = self._validate_public_coupling(
-            coupling_mode=coupling_mode,
-            axes=axes,
-            coupling_axis=coupling_axis,
-        )
         return self._propagate_array(
-            hamiltonian,
-            efield,
-            dipole_matrix,
-            initial_state.amplitudes,
+            problem.model.hamiltonian,
+            problem.field,
+            problem.model.dipole,
+            problem.initial_state.amplitudes,
             return_traj=options.return_trajectory,
             return_time_psi=return_times,
             sample_stride=options.sample_stride,
             nondimensional=options.nondimensional,
-            coupling_mode=coupling_mode,
-            **coupling_kwargs,
+            coupling_mode=problem.coupling_mode,
+            **problem.coupling_kwargs,
             verbose=verbose,
             algorithm=options.algorithm_name,
             sparse=options.sparse,
@@ -199,30 +191,6 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             raise ValueError(
                 "split_interaction is applicable only to split-operator propagation"
             )
-
-    @staticmethod
-    def _validate_public_coupling(
-        *,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None,
-        coupling_axis: Literal["x", "y", "z"] | None,
-    ) -> dict[str, str]:
-        """Return only the coupling keyword applicable to the selected mode."""
-        if coupling_mode == "cartesian":
-            if axes is None:
-                raise ValueError("axes is required for Cartesian coupling")
-            if coupling_axis is not None:
-                raise ValueError(
-                    "coupling_axis is not applicable to Cartesian coupling"
-                )
-            return {"axes": axes}
-        if coupling_mode == "scalar":
-            if axes is not None:
-                raise ValueError("axes is not applicable to scalar coupling")
-            if coupling_axis not in {"x", "y", "z"}:
-                raise ValueError("coupling_axis must be x, y, or z for scalar coupling")
-            return {"coupling_axis": coupling_axis}
-        raise ValueError("coupling_mode must be cartesian or scalar")
 
     def _propagate_array(
         self,

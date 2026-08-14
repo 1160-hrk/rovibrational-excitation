@@ -1,22 +1,20 @@
-"""Explicit state-kind dispatch contracts for mixed-state propagation."""
+"""Explicitdef state-kind dispatch contracts for mixed-state propagation."""
 
 import numpy as np
 import pytest
 
 from rovibrational_excitation.core.propagation import MixedStatePropagator
 from rovibrational_excitation.core.propagation.liouville import LiouvillePropagator
-from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
-from tests.propagation_options import propagation_options
-
-
-@pytest.mark.parametrize(
-    "raw_state",
-    [
-        [np.array([1.0, 0.0], dtype=np.complex128)],
-        np.eye(2, dtype=np.complex128) / 2.0,
-    ],
+from rovibrational_excitation.core.states import (
+    DensityState,
+    IncoherentEnsemble,
+    PureState,
 )
-def test_mixed_state_rejects_untyped_initial_state(raw_state):
+from tests.propagation_options import propagation_options
+from tests.propagation_problem import propagation_problem
+
+
+def test_mixed_state_rejects_pure_initial_state():
     solver = MixedStatePropagator()
 
     with pytest.raises(
@@ -24,13 +22,8 @@ def test_mixed_state_rejects_untyped_initial_state(raw_state):
         match="initial_state must be an IncoherentEnsemble or DensityState",
     ):
         solver.propagate(
-            None,
-            None,
-            None,
-            raw_state,
+            propagation_problem(PureState(np.array([1.0, 0.0], dtype=np.complex128))),
             options=propagation_options(return_trajectory=False),
-            coupling_mode="cartesian",
-            axes="xy",
         )
 
 
@@ -50,13 +43,8 @@ def test_mixed_state_unwraps_typed_ensemble_without_changing_weights(monkeypatch
     )
 
     density = solver.propagate(
-        None,
-        None,
-        None,
-        ensemble,
+        propagation_problem(ensemble),
         options=propagation_options(return_trajectory=False),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     np.testing.assert_array_equal(density, np.diag([0.8, 0.2]))
@@ -74,13 +62,8 @@ def test_mixed_state_unwraps_density_without_repair(monkeypatch):
     monkeypatch.setattr(LiouvillePropagator, "_propagate_array", fake_propagate)
 
     result = MixedStatePropagator(validate_units=False).propagate(
-        None,
-        None,
-        None,
-        density_state,
+        propagation_problem(density_state),
         options=propagation_options(return_trajectory=False),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     np.testing.assert_array_equal(captured["matrix"], matrix)

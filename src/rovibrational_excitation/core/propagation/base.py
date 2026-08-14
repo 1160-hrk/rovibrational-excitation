@@ -6,12 +6,13 @@ should inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 
 from ..units.validators import validator
 from .options import PropagationOptions
+from .problem import PropagationProblem
 
 InitialStateT = TypeVar("InitialStateT")
 
@@ -39,15 +40,9 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
     @abstractmethod
     def propagate(
         self,
-        hamiltonian: Any,
-        efield: Any,
-        dipole_matrix: Any,
-        initial_state: InitialStateT,
+        problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None = None,
-        coupling_axis: Literal["x", "y", "z"] | None = None,
         return_times: bool = False,
         verbose: bool = False,
     ) -> Any:
@@ -56,18 +51,10 @@ class PropagatorBase(ABC, Generic[InitialStateT]):
 
         Parameters
         ----------
-        hamiltonian : object
-            Hamiltonian object
-        efield : ElectricField
-            Electric field object
-        dipole_matrix : object
-            Dipole moment matrices
-        initial_state : np.ndarray
-            Initial quantum state
+        problem : PropagationProblem
+            Complete model, field, time grid, and typed initial state
         options
             Required typed computational policy.
-        coupling_mode, axes, coupling_axis
-            Explicit field-operator coupling selection.
 
         Returns
         -------

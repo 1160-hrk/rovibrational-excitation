@@ -29,6 +29,7 @@ from rovibrational_excitation.dipole import (
     VibLadderDipoleMatrix,
 )
 from tests.propagation_options import propagation_options
+from tests.propagation_problem import propagation_problem
 
 _DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
 
@@ -260,13 +261,8 @@ def test_mixed_vs_pure_states():
     # 同じ純粋状態を混合状態として伝播
     psi0s = IncoherentEnsemble([psi0])
     rho_traj = MixedStatePropagator().propagate(
-        H0,
-        efield,
-        dipole,
-        psi0s,
+        propagation_problem(psi0s, hamiltonian=H0, field=efield, dipole=dipole),
         options=propagation_options(return_trajectory=True),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     # 結果の一致確認（純粋状態の密度行列と比較）
@@ -504,13 +500,8 @@ def test_coherent_vs_incoherent():
         ]
     )
     result_incoherent = MixedStatePropagator().propagate(
-        H0,
-        efield,
-        dipole,
-        psi0s,
+        propagation_problem(psi0s, hamiltonian=H0, field=efield, dipole=dipole),
         options=propagation_options(return_trajectory=False),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     # resultがtupleの場合の処理

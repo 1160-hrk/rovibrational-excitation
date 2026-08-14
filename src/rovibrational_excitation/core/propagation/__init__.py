@@ -20,6 +20,24 @@ if TYPE_CHECKING:
     from .options import (
         ScalingMode as ScalingMode,
     )
+    from .problem import (
+        Axis as Axis,
+    )
+    from .problem import (
+        CouplingMode as CouplingMode,
+    )
+    from .problem import (
+        CouplingSpec as CouplingSpec,
+    )
+    from .problem import (
+        PropagationProblem as PropagationProblem,
+    )
+    from .problem import (
+        PropagationState as PropagationState,
+    )
+    from .problem import (
+        SystemModel as SystemModel,
+    )
     from .schrodinger import SchrodingerPropagator as SchrodingerPropagator
 
 _EXPORTS = {
@@ -32,6 +50,12 @@ _EXPORTS = {
     "PropagationOptions": (".options", "PropagationOptions"),
     "RenormalizationPolicy": (".options", "RenormalizationPolicy"),
     "ScalingMode": (".options", "ScalingMode"),
+    "Axis": (".problem", "Axis"),
+    "CouplingMode": (".problem", "CouplingMode"),
+    "CouplingSpec": (".problem", "CouplingSpec"),
+    "PropagationProblem": (".problem", "PropagationProblem"),
+    "PropagationState": (".problem", "PropagationState"),
+    "SystemModel": (".problem", "SystemModel"),
 }
 
 __all__ = list(_EXPORTS)

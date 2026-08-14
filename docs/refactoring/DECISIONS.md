@@ -1136,6 +1136,66 @@ Implementation anchors: `core/propagation/{base,schrodinger,liouville,mixed_stat
 `simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_public_*`.
 
+Implementation commit: `1f4169d`.
+
+### D-038: Models own coupling and public propagation accepts one problem
+
+Status: Accepted on 2026-08-14 as the P2.4-c implementation of D-026.
+
+Scope: public Schrödinger, Liouville, and mixed-state propagation boundaries;
+normal simulation and fixed-M averaging adapters.
+
+Decision:
+
+- `CouplingSpec` is an immutable exclusive sum type: scalar coupling owns one
+  typed axis; Cartesian coupling owns one ordered pair of typed axes; neither
+  representation has a default;
+- `SystemModel` owns name, basis, Hamiltonian, dipole, coupling, and read-only
+  metadata, and validates basis/Hamiltonian/dipole dimensions without rebuilding
+  any operator;
+- `PropagationProblem` owns one `SystemModel`, the exact `ElectricField` and
+  `TimeGrid`, and one typed initial state; field samples must exactly equal the
+  canonical grid and the state dimension must equal the model dimension;
+- all public `propagate()` methods accept the problem as their only physical
+  input. Loose Hamiltonian, field, dipole, state, mode, axes, and coupling-axis
+  arguments are removed;
+- LinMol normal propagation retains its configured ordered Cartesian axes;
+  TwoLevel retains scalar x coupling; VibLadder and fixed-M averaging retain
+  scalar z coupling;
+- fixed-M averaging builds one complete problem per block and still performs
+  separate propagation followed by the same incoherent weighted population sum;
+- `split_interaction`, `return_times`, and `verbose` remain temporary explicit
+  call controls until later typed result and workflow contracts own them.
+
+Consequences:
+
+- a model and its coupling can no longer disagree at the solver call site;
+- an `ElectricField` from another grid or a state from another model fails before
+  unit conversion, allocation, or numerical work;
+- normal and fixed-M paths pass the identical Hamiltonian, field, dipole, state
+  arrays, coupling projection, options, and split mode into the frozen private
+  adapters;
+- private `_propagate_array()` remains the intentionally isolated compatibility
+  seam for optimization and low-level migration;
+- `optimization/local.py` remains byte-for-byte untouched, including the legacy
+  odd prefix, boundary ownership, midpoint, indices, slices, and endpoints.
+
+Verification:
+
+- focused contracts cover exclusivity, dimension checks, metadata immutability,
+  exact field-grid equality, state dimension, object identity, state path, and
+  all three public signatures;
+- projection tests capture all values passed to frozen private adapters;
+- the complete suite passes 677 tests with 10 optional-GPU skips, including all
+  physics, sparse RK4, split-operator, integration, and optimizer reference tests;
+- Ruff, formatting, and strict mypy for the 14 named typed modules pass.
+
+Implementation anchors: `core/propagation/problem.py`,
+`core/propagation/{base,schrodinger,liouville,mixed_state}.py`,
+`simulation/models/factory.py`, `simulation/runner.py`,
+`simulation/models/linmol_m_average.py`, and
+`tests/contracts/test_propagation_problem_contracts.py`.
+
 Implementation commit: pending.
 
 ## Open decisions

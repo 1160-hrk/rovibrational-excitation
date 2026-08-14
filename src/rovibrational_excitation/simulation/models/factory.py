@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
+from rovibrational_excitation.core.propagation.problem import (
+    Axis,
+    CouplingSpec,
+    SystemModel,
+)
 
 from ..validation import validate_model_parameters
 from .linmol import build_linmol
@@ -14,21 +19,24 @@ from .vibladder import build_vibladder
 
 
 @dataclass(frozen=True)
-class CouplingSpec:
-    """Describe how a model couples to the electric field."""
-
-    mode: Literal["cartesian", "scalar"]
-    axis: Literal["x", "y", "z"] | None = None
-    default_axes: str = "xy"
-
-
-@dataclass(frozen=True)
 class ModelComponents:
+    name: str
     basis: Any
     state: Any
     hamiltonian: Any
     dipole: Any
     coupling: CouplingSpec
+
+    def to_system_model(self) -> SystemModel:
+        """Project the temporary builder result to the typed model boundary."""
+        return SystemModel(
+            name=self.name,
+            basis=self.basis,
+            hamiltonian=self.hamiltonian,
+            dipole=self.dipole,
+            coupling=self.coupling,
+            metadata={},
+        )
 
 
 def build_model(
@@ -37,13 +45,19 @@ def build_model(
     """Build a configured model using the same dispatch as the existing runner."""
     basis_type = validate_model_parameters(params)
     builders = {
-        "linmol": (build_linmol, CouplingSpec("cartesian")),
-        "twolevel": (build_twolevel, CouplingSpec("scalar", axis="x")),
-        "vibladder": (build_vibladder, CouplingSpec("scalar", axis="z")),
+        "linmol": build_linmol,
+        "twolevel": build_twolevel,
+        "vibladder": build_vibladder,
     }
     try:
-        builder, coupling = builders[basis_type]
+        builder = builders[basis_type]
     except KeyError:
         raise ValueError(f"Unknown basis_type: {basis_type}") from None
     parts = builder(params, execution_policy=execution_policy)
-    return ModelComponents(*parts, coupling=coupling)
+    if basis_type == "linmol":
+        coupling = CouplingSpec.cartesian(params.get("axes", "xy"))
+    elif basis_type == "twolevel":
+        coupling = CouplingSpec.scalar(Axis.X)
+    else:
+        coupling = CouplingSpec.scalar(Axis.Z)
+    return ModelComponents(basis_type, *parts, coupling=coupling)

@@ -14,6 +14,7 @@ from ..units.validators import validator
 from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
 from .base import PropagatorBase
 from .options import PropagationOptions
+from .problem import PropagationProblem
 from .utils import prepare_propagation_args
 
 
@@ -59,39 +60,30 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
 
     def propagate(
         self,
-        hamiltonian: Any,
-        efield: Any,
-        dipole_matrix: Any,
-        initial_state: DensityState,
+        problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None = None,
-        coupling_axis: Literal["x", "y", "z"] | None = None,
         return_times: bool = False,
         verbose: bool = False,
     ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
-        """Propagate a density state through the explicit typed boundary."""
-        if not isinstance(initial_state, DensityState):
-            raise TypeError("initial_state must be a DensityState")
+        """Propagate one complete typed density-state problem."""
+        if not isinstance(problem, PropagationProblem):
+            raise TypeError("problem must be a PropagationProblem")
+        if not isinstance(problem.initial_state, DensityState):
+            raise TypeError("problem initial_state must be a DensityState")
         self._validate_public_options(options)
-        coupling_kwargs = self._validate_public_coupling(
-            coupling_mode=coupling_mode,
-            axes=axes,
-            coupling_axis=coupling_axis,
-        )
         return self._propagate_array(
-            hamiltonian,
-            efield,
-            dipole_matrix,
-            initial_state.matrix,
+            problem.model.hamiltonian,
+            problem.field,
+            problem.model.dipole,
+            problem.initial_state.matrix,
             return_traj=options.return_trajectory,
             return_time_rho=return_times,
             sample_stride=options.sample_stride,
             verbose=verbose,
             nondimensional=options.nondimensional,
-            coupling_mode=coupling_mode,
-            **coupling_kwargs,
+            coupling_mode=problem.coupling_mode,
+            **problem.coupling_kwargs,
             algorithm=options.algorithm_name,
             sparse=options.sparse,
         )
@@ -110,30 +102,6 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
             )
         if options.renorm:
             raise ValueError("renorm is not applicable to density-state propagation")
-
-    @staticmethod
-    def _validate_public_coupling(
-        *,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None,
-        coupling_axis: Literal["x", "y", "z"] | None,
-    ) -> dict[str, str]:
-        """Return only the coupling keyword applicable to the selected mode."""
-        if coupling_mode == "cartesian":
-            if axes is None:
-                raise ValueError("axes is required for Cartesian coupling")
-            if coupling_axis is not None:
-                raise ValueError(
-                    "coupling_axis is not applicable to Cartesian coupling"
-                )
-            return {"axes": axes}
-        if coupling_mode == "scalar":
-            if axes is not None:
-                raise ValueError("axes is not applicable to scalar coupling")
-            if coupling_axis not in {"x", "y", "z"}:
-                raise ValueError("coupling_axis must be x, y, or z for scalar coupling")
-            return {"coupling_axis": coupling_axis}
-        raise ValueError("coupling_mode must be cartesian or scalar")
 
     def _propagate_array(
         self,

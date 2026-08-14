@@ -651,12 +651,14 @@ and renormalization policy. Normal simulation validation constructs one object
 with no defaults and shares it with ordinary or fixed-M propagation. The typed
 factory consumes that object.
 
-P2.4-b is complete: every public solver requires `PropagationOptions` and
-explicit coupling fields, accepts no unrestricted `**kwargs`, and rejects
-solver/options or split-interaction conflicts before numerical work. The private
-array adapters remain frozen for optimization migration. P2.4-c will introduce
-`PropagationProblem` without moving or changing numerical kernels. P2.5 owns
-the final non-conditional result object.
+P2.4-b is complete: every public solver requires `PropagationOptions`, accepts no
+unrestricted `**kwargs`, and rejects solver/options or split-interaction
+conflicts before numerical work. P2.4-c is complete: `SystemModel` owns the
+basis, Hamiltonian, dipole, and exclusive typed coupling; `PropagationProblem`
+owns that model, the exact `ElectricField`/`TimeGrid` pair, and one typed initial
+state. Public solvers accept only this problem plus options and temporary result
+controls. The private array adapters and all numerical kernels remain frozen for
+optimization migration. P2.5 owns the final non-conditional result object.
 
 The field TimeGrid is the only timestep source. No solver-level `dt` override.
 

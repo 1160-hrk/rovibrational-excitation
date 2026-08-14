@@ -130,8 +130,9 @@ def test_scalar_model_numpy_csr_is_real_csr_with_dense_element_parity(params):
         ),
     )
 
-    axis = csr_model.coupling.axis
+    axis = csr_model.coupling.scalar_axis
     assert axis is not None
+    axis = axis.value
     dense_mu = dense_model.dipole.mu(axis)
     csr_mu = csr_model.dipole.mu(axis)
 

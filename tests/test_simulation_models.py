@@ -1,16 +1,20 @@
 """Regression tests for model construction extracted from simulation.runner."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.electric_field import (
+    ElectricField as RealElectricField,
+)
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
     MatrixStorage,
 )
 from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.simulation.models import build_model
 from rovibrational_excitation.simulation.runner import _run_one
 
@@ -210,6 +214,10 @@ def test_runner_zero_field_preserves_population_after_model_split(model_params):
 def test_runner_uses_interval_duration_and_one_backend(
     electric_field_cls, propagator_cls
 ):
+    real_grid = TimeGrid.from_bounds(2.0, 6.0, 1.0)
+    real_field = RealElectricField.from_time_grid(real_grid)
+    real_field.add_dispersed_Efield = MagicMock()
+    electric_field_cls.from_time_grid.return_value = real_field
     propagator_cls.return_value.propagate.return_value = (
         np.array([0.0]),
         np.array([[1.0 + 0.0j, 0.0 + 0.0j]]),
@@ -254,11 +262,11 @@ def test_runner_uses_interval_duration_and_one_backend(
         renorm=True,
         sparse=True,
     )
-    propagate_kwargs = propagator_cls.return_value.propagate.call_args.kwargs
-    assert isinstance(propagate_kwargs["initial_state"], PureState)
-    np.testing.assert_array_equal(
-        propagate_kwargs["initial_state"].amplitudes, [1.0, 0.0]
-    )
+    propagate_call = propagator_cls.return_value.propagate.call_args
+    problem = propagate_call.args[0]
+    assert isinstance(problem.initial_state, PureState)
+    np.testing.assert_array_equal(problem.initial_state.amplitudes, [1.0, 0.0])
+    propagate_kwargs = propagate_call.kwargs
     options = propagate_kwargs["options"]
     assert options.algorithm_name == "split_operator"
     assert options.backend_name == "numpy"
@@ -270,5 +278,5 @@ def test_runner_uses_interval_duration_and_one_backend(
     assert propagate_kwargs["split_interaction"] == "cartesian"
     assert propagate_kwargs["verbose"] is True
     assert propagate_kwargs["return_times"] is True
-    assert propagate_kwargs["coupling_mode"] == "scalar"
-    assert propagate_kwargs["coupling_axis"] == "x"
+    assert problem.coupling_mode == "scalar"
+    assert problem.coupling_kwargs == {"coupling_axis": "x"}

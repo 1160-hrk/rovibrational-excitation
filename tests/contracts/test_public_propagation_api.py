@@ -1,4 +1,4 @@
-"""Contracts for the explicit public propagation boundary."""
+"""Contractsdef for the explicit public propagation boundary."""
 
 import inspect
 
@@ -11,6 +11,8 @@ from rovibrational_excitation.core.execution import (
     MatrixStorage,
 )
 from rovibrational_excitation.core.propagation import (
+    Axis,
+    CouplingSpec,
     LiouvillePropagator,
     MixedStatePropagator,
     SchrodingerPropagator,
@@ -24,6 +26,10 @@ from rovibrational_excitation.core.propagation.options import (
     ScalingMode,
 )
 from rovibrational_excitation.core.states import DensityState, PureState
+from tests.propagation_problem import (
+    propagation_problem,
+    scalar_propagation_problem,
+)
 
 
 def _options(
@@ -59,8 +65,11 @@ def test_public_propagate_has_no_unrestricted_keyword_arguments(solver_type):
         parameter.kind is not inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
+    assert signature.parameters["problem"].default is inspect.Parameter.empty
     assert signature.parameters["options"].default is inspect.Parameter.empty
-    assert signature.parameters["coupling_mode"].default is inspect.Parameter.empty
+    assert "coupling_mode" not in signature.parameters
+    assert "axes" not in signature.parameters
+    assert "coupling_axis" not in signature.parameters
 
 
 def test_schrodinger_public_boundary_projects_typed_options_without_change(monkeypatch):
@@ -75,14 +84,10 @@ def test_schrodinger_public_boundary_projects_typed_options_without_change(monke
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
     state = PureState(np.array([1.0, 0.0], dtype=np.complex128))
 
+    problem = scalar_propagation_problem(state, axis=Axis.Z)
     result = solver.propagate(
-        None,
-        None,
-        None,
-        state,
+        problem,
         options=options,
-        coupling_mode="scalar",
-        coupling_axis="z",
         return_times=True,
     )
 
@@ -102,30 +107,14 @@ def test_schrodinger_public_boundary_projects_typed_options_without_change(monke
     }
 
 
-@pytest.mark.parametrize(
-    ("coupling_mode", "axes", "coupling_axis", "message"),
-    [
-        ("cartesian", None, None, "axes is required"),
-        ("scalar", "xy", "z", "axes is not applicable"),
-        ("scalar", None, None, "coupling_axis must be"),
-    ],
-)
-def test_public_boundary_rejects_ambiguous_coupling(
-    coupling_mode, axes, coupling_axis, message
-):
-    solver = SchrodingerPropagator(validate_units=False)
+def test_problem_owns_the_only_coupling_configuration():
+    state = PureState(np.array([1.0, 0.0]))
+    problem = propagation_problem(
+        state,
+        coupling=CouplingSpec.cartesian("zx"),
+    )
 
-    with pytest.raises(ValueError, match=message):
-        solver.propagate(
-            None,
-            None,
-            None,
-            PureState(np.array([1.0, 0.0])),
-            options=_options(scaling=ScalingMode.DIMENSIONAL),
-            coupling_mode=coupling_mode,
-            axes=axes,
-            coupling_axis=coupling_axis,
-        )
+    assert problem.coupling_kwargs == {"axes": "zx"}
 
 
 def test_liouville_public_boundary_rejects_incompatible_options_before_work():
@@ -133,11 +122,6 @@ def test_liouville_public_boundary_rejects_incompatible_options_before_work():
 
     with pytest.raises(ValueError, match="algorithm"):
         solver.propagate(
-            None,
-            None,
-            None,
-            DensityState(np.eye(2) / 2.0),
+            propagation_problem(DensityState(np.eye(2) / 2.0)),
             options=_options(algorithm=PropagationAlgorithm.SPLIT_OPERATOR),
-            coupling_mode="cartesian",
-            axes="xy",
         )

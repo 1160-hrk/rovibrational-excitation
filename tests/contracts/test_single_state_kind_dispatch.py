@@ -9,20 +9,16 @@ from rovibrational_excitation.core.propagation import (
 )
 from rovibrational_excitation.core.states import DensityState, PureState
 from tests.propagation_options import propagation_options
+from tests.propagation_problem import propagation_problem
 
 
-def test_schrodinger_rejects_raw_array_before_unit_validation():
+def test_schrodinger_rejects_density_state_before_unit_validation():
     solver = SchrodingerPropagator()
 
     with pytest.raises(TypeError, match="initial_state must be a PureState"):
         solver.propagate(
-            None,
-            None,
-            None,
-            np.array([1.0]),
+            propagation_problem(DensityState(np.eye(2) / 2.0)),
             options=propagation_options(return_trajectory=False),
-            coupling_mode="cartesian",
-            axes="xy",
         )
 
 
@@ -38,31 +34,21 @@ def test_schrodinger_unwraps_pure_state_without_copy_or_repair(monkeypatch):
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
 
     result = solver.propagate(
-        None,
-        None,
-        None,
-        state,
+        propagation_problem(state),
         options=propagation_options(return_trajectory=False),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     assert captured["array"] is state.amplitudes
     assert result is state.amplitudes
 
 
-def test_liouville_rejects_raw_array_before_unit_validation():
+def test_liouville_rejects_pure_state_before_unit_validation():
     solver = LiouvillePropagator()
 
     with pytest.raises(TypeError, match="initial_state must be a DensityState"):
         solver.propagate(
-            None,
-            None,
-            None,
-            np.eye(2) / 2.0,
+            propagation_problem(PureState(np.array([1.0, 0.0], dtype=np.complex128))),
             options=propagation_options(return_trajectory=False),
-            coupling_mode="cartesian",
-            axes="xy",
         )
 
 
@@ -78,13 +64,8 @@ def test_liouville_unwraps_density_state_without_copy_or_repair(monkeypatch):
     monkeypatch.setattr(solver, "_propagate_array", fake_array_propagation)
 
     result = solver.propagate(
-        None,
-        None,
-        None,
-        state,
+        propagation_problem(state),
         options=propagation_options(return_trajectory=False),
-        coupling_mode="cartesian",
-        axes="xy",
     )
 
     assert captured["array"] is state.matrix

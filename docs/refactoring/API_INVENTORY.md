@@ -221,9 +221,9 @@ visualization failure.
 
 `PropagatorFactory` no longer inspects polarization or sparsity. It requires a
 typed state path and one `PropagationOptions`, then validates them against the
-shared capability registry before construction. Public solver `propagate()`
-methods require that same typed object and explicit coupling fields; only the
-private optimizer migration adapters retain `**kwargs`.
+shared capability registry before construction. Public solver `propagate()` methods require that same typed options object and
+one `PropagationProblem`; coupling is owned by `SystemModel`. Only the private
+optimizer migration adapters retain `**kwargs`.
 
 ## 6. Examples and documentation callers
 

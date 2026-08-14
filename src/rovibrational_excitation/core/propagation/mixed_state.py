@@ -10,6 +10,7 @@ from ..states import DensityState, IncoherentEnsemble
 from ..units.validators import validator
 from .base import PropagatorBase
 from .options import PropagationOptions
+from .problem import PropagationProblem
 from .schrodinger import SchrodingerPropagator
 from .utils import get_backend
 
@@ -47,33 +48,28 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
 
     def propagate(
         self,
-        hamiltonian: Any,
-        efield: Any,
-        dipole_matrix: Any,
-        initial_state: DensityState | IncoherentEnsemble,
+        problem: PropagationProblem,
         *,
         options: PropagationOptions,
-        coupling_mode: Literal["cartesian", "scalar"],
-        axes: str | None = None,
-        coupling_axis: Literal["x", "y", "z"] | None = None,
         return_times: bool = False,
         verbose: bool = False,
         split_interaction: Literal["cartesian", "helicity_projected"] | None = None,
     ) -> Any:
-        """Propagate a typed statistical state through the explicit boundary."""
+        """Propagate one complete typed statistical-state problem."""
+        if not isinstance(problem, PropagationProblem):
+            raise TypeError("problem must be a PropagationProblem")
+        initial_state = problem.initial_state
         if not isinstance(initial_state, (DensityState, IncoherentEnsemble)):
             raise TypeError(
-                "initial_state must be an IncoherentEnsemble or DensityState"
+                "problem initial_state must be an IncoherentEnsemble or DensityState"
             )
         self._schrodinger_prop._validate_public_options(options)
         self._schrodinger_prop._validate_public_split_interaction(
             options, split_interaction
         )
-        coupling_kwargs = self._schrodinger_prop._validate_public_coupling(
-            coupling_mode=coupling_mode,
-            axes=axes,
-            coupling_axis=coupling_axis,
-        )
+        hamiltonian = problem.model.hamiltonian
+        efield = problem.field
+        dipole_matrix = problem.model.dipole
 
         if self.validate_units:
             warnings = validator.validate_propagation_units(
@@ -101,8 +97,8 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
                 return_time_rho=return_times,
                 sample_stride=options.sample_stride,
                 nondimensional=options.nondimensional,
-                coupling_mode=coupling_mode,
-                **coupling_kwargs,
+                coupling_mode=problem.coupling_mode,
+                **problem.coupling_kwargs,
                 verbose=False,
                 algorithm=options.algorithm_name,
                 sparse=options.sparse,
@@ -116,8 +112,8 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
             "return_time_psi": return_times,
             "sample_stride": options.sample_stride,
             "nondimensional": options.nondimensional,
-            "coupling_mode": coupling_mode,
-            **coupling_kwargs,
+            "coupling_mode": problem.coupling_mode,
+            **problem.coupling_kwargs,
             "verbose": False,
             "algorithm": options.algorithm_name,
             "sparse": options.sparse,

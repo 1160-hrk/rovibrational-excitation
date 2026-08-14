@@ -10,8 +10,15 @@ import numpy as np
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.propagation.options import PropagationOptions
+from rovibrational_excitation.core.propagation.problem import (
+    Axis,
+    CouplingSpec,
+    PropagationProblem,
+    SystemModel,
+)
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 _LINEAR_POLARIZATION_TOL = 128.0 * np.finfo(np.float64).eps
@@ -208,6 +215,7 @@ def propagate_m_average(
     params: dict[str, Any],
     electric_field: Any,
     *,
+    time_grid: TimeGrid,
     options: PropagationOptions,
 ) -> MAveragePropagationResult:
     """Propagate fixed-M blocks and incoherently sum reduced populations."""
@@ -237,14 +245,22 @@ def propagate_m_average(
     trajectories: list[np.ndarray] = []
 
     for block in blocks:
-        time_fs, wavefunction = propagator.propagate(
-            hamiltonian=block.hamiltonian,
-            efield=electric_field,
-            dipole_matrix=block.dipole,
+        problem = PropagationProblem(
+            model=SystemModel(
+                name="linmol_m_average_block",
+                basis=block.basis,
+                hamiltonian=block.hamiltonian,
+                dipole=block.dipole,
+                coupling=CouplingSpec.scalar(Axis.Z),
+                metadata={"abs_m": block.abs_m},
+            ),
+            field=electric_field,
+            time_grid=time_grid,
             initial_state=PureState(block.initial_state),
+        )
+        time_fs, wavefunction = propagator.propagate(
+            problem,
             options=options,
-            coupling_mode="scalar",
-            coupling_axis="z",
             return_times=True,
             verbose=params.get("verbose", False),
             split_interaction=(

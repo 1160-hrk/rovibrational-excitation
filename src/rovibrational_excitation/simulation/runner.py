@@ -121,10 +121,10 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         gaussian_fwhm,
     )
     from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
+    from rovibrational_excitation.core.propagation.problem import PropagationProblem
     from rovibrational_excitation.core.propagation.schrodinger import (
         SchrodingerPropagator,
     )
-    from rovibrational_excitation.core.propagation.utils import validate_axes
     from rovibrational_excitation.core.states import PureState
     from rovibrational_excitation.core.time import TimeGrid
 
@@ -172,6 +172,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         result = propagate_m_average(
             params,
             E,
+            time_grid=time_grid,
             options=options,
         )
         if params.get("save", True):
@@ -197,9 +198,14 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
 
     # --- 系タイプ別の構築 ---
     model = build_model(params, execution_policy=execution_policy)
-    sv = model.state
-    H0 = model.hamiltonian
-    dip = model.dipole
+    problem = PropagationProblem(
+        model=model.to_system_model(),
+        field=E,
+        time_grid=time_grid,
+        initial_state=PureState(model.state.data.ravel()),
+    )
+    H0 = problem.model.hamiltonian
+    dip = problem.model.dipole
 
     # ---------- Propagation 共通 ----------
     use_nondimensional = options.nondimensional
@@ -216,17 +222,8 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         sparse=sparse,
     )
     psi_t = prop.propagate(
-        hamiltonian=H0,
-        efield=E,
-        dipole_matrix=dip,
-        initial_state=PureState(sv.data.ravel()),
+        problem,
         options=options,
-        coupling_mode=model.coupling.mode,
-        **(
-            {"axes": params.get("axes", model.coupling.default_axes)}
-            if model.coupling.mode == "cartesian"
-            else {"coupling_axis": model.coupling.axis}
-        ),
         return_times=True,
         verbose=params.get("verbose", False),
         split_interaction=(
@@ -241,18 +238,13 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             nondimensionalize_from_objects,
         )
 
-        if model.coupling.mode == "scalar":
-            axis = model.coupling.axis
-            assert axis is not None
-            coupling_axes = (axis,)
-        else:
-            coupling_axes = validate_axes(params.get("axes", "xy"))
+        coupling_axes = problem.coupling.axes
         *_, scales = nondimensionalize_from_objects(
             H0,
             dip,
             E,
             coupling_axes=coupling_axes,
-            scalar_coupling=model.coupling.mode == "scalar",
+            scalar_coupling=problem.coupling_mode == "scalar",
             verbose=False,
         )
         regime_info = analyze_regime(scales)

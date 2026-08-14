@@ -7,6 +7,7 @@ import pytest
 
 from rovibrational_excitation.core.execution import MatrixStorage
 from rovibrational_excitation.core.propagation import (
+    Axis,
     LiouvillePropagator,
     MixedStatePropagator,
 )
@@ -24,6 +25,10 @@ from rovibrational_excitation.core.propagation.capabilities import PropagationAl
 from rovibrational_excitation.core.propagation.options import ScalingMode
 from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
 from tests.propagation_options import propagation_options
+from tests.propagation_problem import (
+    propagation_problem,
+    scalar_propagation_problem,
+)
 
 
 def _low_level_problem(field_size=5):
@@ -158,10 +163,7 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
     states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
 
     time, rho = solver.propagate(
-        object(),
-        object(),
-        object(),
-        states,
+        scalar_propagation_problem(states, axis=Axis.X),
         options=propagation_options(
             algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
             storage=MatrixStorage.CSR,
@@ -170,8 +172,6 @@ def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
             scaling=ScalingMode.NONDIMENSIONAL,
         ),
         return_times=True,
-        coupling_mode="scalar",
-        coupling_axis="x",
         split_interaction="cartesian",
     )
 
@@ -196,13 +196,8 @@ def test_mixed_state_rejects_removed_timestep_options(option):
 
     with pytest.raises(TypeError, match=option):
         solver.propagate(
-            object(),
-            object(),
-            object(),
-            states,
+            propagation_problem(states),
             options=propagation_options(return_trajectory=True),
-            coupling_mode="cartesian",
-            axes="xy",
             **{option: True},
         )
 
@@ -246,17 +241,12 @@ def test_mixed_state_rejects_unsupported_options_for_explicit_density(
 
     with pytest.raises(ValueError, match=message):
         solver.propagate(
-            object(),
-            object(),
-            object(),
-            DensityState(np.eye(2) / 2.0),
+            propagation_problem(DensityState(np.eye(2) / 2.0)),
             options=propagation_options(
                 algorithm=algorithm,
                 storage=storage,
                 return_trajectory=False,
             ),
-            coupling_mode="cartesian",
-            axes="xy",
             split_interaction=(
                 "cartesian"
                 if algorithm is PropagationAlgorithm.SPLIT_OPERATOR
@@ -340,13 +330,8 @@ def test_mixed_state_rejects_unknown_propagation_option():
 
     with pytest.raises(TypeError, match="typo"):
         solver.propagate(
-            None,
-            None,
-            None,
-            IncoherentEnsemble([np.array([1.0, 0.0])]),
+            propagation_problem(IncoherentEnsemble([np.array([1.0, 0.0])])),
             options=propagation_options(return_trajectory=False),
-            coupling_mode="cartesian",
-            axes="xy",
             typo=True,
         )
 
@@ -370,15 +355,10 @@ def test_mixed_state_rejects_conflicting_algorithm_override():
 
     with pytest.raises(ValueError, match="constructor"):
         solver.propagate(
-            None,
-            None,
-            None,
-            IncoherentEnsemble([np.array([1.0, 0.0])]),
+            propagation_problem(IncoherentEnsemble([np.array([1.0, 0.0])])),
             options=propagation_options(
                 algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
                 return_trajectory=False,
             ),
-            coupling_mode="cartesian",
-            axes="xy",
             split_interaction="cartesian",
         )
