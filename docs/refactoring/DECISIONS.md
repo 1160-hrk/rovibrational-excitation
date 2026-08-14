@@ -1196,7 +1196,7 @@ Implementation anchors: `core/propagation/problem.py`,
 `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_propagation_problem_contracts.py`.
 
-Implementation commit: pending.
+Implementation commit: `873ad6e`.
 
 ## Open decisions
 

@@ -126,6 +126,7 @@ been compared with the replacement.
 | `53bfb2c` | Introduced the typed TimeGrid for normal simulation and passed Actions run #53 |
 | `965dcda` | Preserved the exact local-optimizer legacy time layout |
 | `b211610` | Made dimensional NumPy RK4 backward direction explicit for Krotov |
+| `873ad6e` | Made model coupling and complete physical propagation input one immutable `PropagationProblem` |
 
 These commits are the starting point, not the final architecture.
 
