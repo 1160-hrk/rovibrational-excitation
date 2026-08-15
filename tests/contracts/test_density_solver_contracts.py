@@ -7,6 +7,9 @@ import pytest
 
 from rovibrational_excitation.core.execution import MatrixStorage
 from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from rovibrational_excitation.core.validation import (
+    validate_density_matrix_properties,
+)
 from rovibrational_excitation.dynamics import (
     Axis,
     LiouvillePropagator,
@@ -18,9 +21,6 @@ from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
 )
 from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
-)
-from rovibrational_excitation.dynamics.algorithms.validation import (
-    validate_density_matrix_properties,
 )
 from rovibrational_excitation.dynamics.capabilities import PropagationAlgorithm
 from rovibrational_excitation.dynamics.options import ScalingMode

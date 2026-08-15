@@ -21,6 +21,9 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
+from rovibrational_excitation.core.validation import (
+    validate_density_matrix_properties,
+)
 from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
@@ -35,9 +38,6 @@ from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
 )
 from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
-)
-from rovibrational_excitation.dynamics.algorithms.validation import (
-    validate_density_matrix_properties,
 )
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,

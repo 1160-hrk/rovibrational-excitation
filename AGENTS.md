@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-15
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.1-d / Phase 3 in progress)
+Verified structural checkpoint: D-040 (P3.1-e / Phase 3 in progress)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P3.1-d scaling move:
+Current local CPU baseline after the P3.1-e core-validation move:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-705 passed, 10 GPU tests skipped (715 collected)
+706 passed, 10 GPU tests skipped (716 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -199,11 +199,12 @@ recorded baseline for a phase.
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is in progress under D-040: `Hamiltonian` is owned
 by `core/operators.py`, electric-field construction/modulation is owned by
-`fields/`, and propagation plus strict scaling are owned by `dynamics/`; all
-superseded paths are removed. The next work is:
+`fields/`, and propagation plus strict scaling are owned by `dynamics/`; generic numerical
+validation is owned by `core/validation.py`; all superseded paths are removed.
+The next work is:
 
-1. Move generic state validation to `core` in a separately tested unit to eliminate the reverse `core -> dynamics` dependency without changing any formula or tolerance.
-2. Reduce exact transition debt as owners move. The current entries are `core.states -> dynamics.algorithms.validation`, `core.units.parameter_processor -> fields`, `dynamics.utils -> dipole.base`, and `dynamics.scaling.converter -> dipole.base`; never broaden or hide them.
+1. Audit `simulation/models` for a mechanical move to the top-level `models` owner; preserve every basis index, Hamiltonian/dipole construction rule, M-average pathway, and runner result exactly. Do not split model formulas during the move.
+2. Reduce exact transition debt as owners move. The current entries are `core.units.parameter_processor -> fields`, `dynamics.utils -> dipole.base`, and `dynamics.scaling.converter -> dipole.base`; never broaden or hide them.
 3. Keep generic state/execution/time contracts at their current target paths; do not merge legacy `core/basis` classes until model ownership is handled in Phase 6.
 4. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
 5. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.

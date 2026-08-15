@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
-from ..validation import validate_density_matrix_problem
+from ....core.validation import validate_density_matrix_problem
 
 
 # ------------------------------------------------------------

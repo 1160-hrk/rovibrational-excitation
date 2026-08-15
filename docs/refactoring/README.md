@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 705 passed, 10 skipped (715 collected) |
+| Pytest | 706 passed, 10 skipped (716 collected) |
 | Measured branch coverage | 67% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -55,8 +55,9 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on
-2026-08-15 after P3.1-d moved the unchanged nondimensionalization implementation
-to `dynamics/scaling/`. P3.1-c had moved the unchanged propagation implementation
+2026-08-15 after P3.1-e moved generic numerical validation unchanged to
+`core/validation.py`. P3.1-d had moved the unchanged nondimensionalization
+implementation to `dynamics/scaling/`, and P3.1-c had moved propagation unchanged
 to `dynamics/`, P3.1-b had moved the unchanged electric-field implementation to
 `fields/`, and P3.1-a had moved the unchanged `Hamiltonian` implementation to
 `core/operators.py`. These checkpoints built and checked the distributions and
@@ -150,7 +151,7 @@ These commits are the starting point, not the final architecture.
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
-| 3 | Target package migration | In progress — P3.1-a through P3.1-d moved generic operators, fields, dynamics, and scaling with dependency/wheel boundary tests |
+| 3 | Target package migration | In progress — P3.1-a through P3.1-e moved generic operators, fields, dynamics, scaling, and validation with dependency/wheel boundary tests |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |

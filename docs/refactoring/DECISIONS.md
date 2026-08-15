@@ -1354,7 +1354,30 @@ Implementation anchors: `dynamics/scaling/`,
 `tests/contracts/test_scaling_package_architecture.py`, and the exact
 transition debt tests for `core` and `dynamics`.
 
-Implementation commit: this P3.1-d milestone commit.
+Implementation commit for P3.1-d: `7618364`.
+
+The fifth unit moves generic numerical and state validation from
+`dynamics/algorithms/validation.py` to `core/validation.py`. The file is a 100%
+exact rename: `NUMERICAL_VALIDATION_EPSILON_FACTOR`, all scale-aware tolerance
+calculations, finite/Hermitian/positive-semidefinite checks, shape rules, odd
+field-length handling, and backend checks are byte-for-byte unchanged. Only
+caller imports move.
+
+This eliminates the reverse `core.states -> dynamics` dependency. The exact
+`core` transition-debt allowlist now contains only the legacy
+`core.units.parameter_processor -> fields` dependency. The two exact
+`dynamics -> dipole.base` debts remain unchanged.
+
+P3.1-e verification: 128 focused tests pass with 6 optional-GPU skips, and the
+full 706-test CPU suite passes with 10 optional-GPU skips; branch coverage
+remains 67%. Ruff, formatting, strict mypy, sdist/wheel build, Twine checks,
+wheel contents, and isolated new-path/old-path-absence imports all pass.
+
+Implementation anchors: `core/validation.py`,
+`tests/contracts/test_core_validation_architecture.py`, and the reduced exact
+transition debt in `tests/contracts/test_package_architecture.py`.
+
+Implementation commit: this P3.1-e milestone commit.
 
 ## Open decisions
 

@@ -356,7 +356,7 @@ implementation must not silently:
 `MixedStatePropagator` performs no subsequent normalization or repair.
 
 Primary implementation:
-`dynamics/algorithms/validation.py`.
+`core/validation.py`.
 
 ## 6. Vibrational ladder and Morse potential
 

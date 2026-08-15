@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from ..dynamics.algorithms.validation import (
+from .validation import (
     NUMERICAL_VALIDATION_EPSILON_FACTOR,
     density_matrix_tolerance,
     validate_density_matrix_properties,

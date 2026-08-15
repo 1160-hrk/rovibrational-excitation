@@ -716,11 +716,11 @@ P3.1-c moved the unchanged propagation package to `dynamics/`, repaired direct
 imports, and removed the old path without a compatibility shim. All numerical
 kernels are exact renames. P3.1-d then moved the unchanged strict scaling
 package to `dynamics/scaling/`; only the relative constants import required
-repair. One exact `core -> fields` dependency remains in the legacy parameter
-processor. The pre-existing `core.states -> dynamics.algorithms.validation`,
-`dynamics.utils -> dipole.base`, and scaling converter type-only dependency on
-`dipole.base` are separately exact-allowlisted until generic validation and
-model ownership are consolidated.
+repair. P3.1-e moves generic numerical validation unchanged to
+`core/validation.py`, eliminating the reverse `core -> dynamics` dependency.
+One exact `core -> fields` dependency remains in the legacy parameter processor.
+`dynamics.utils -> dipole.base` and the scaling converter type-only dependency
+on `dipole.base` remain exact-allowlisted until model ownership is consolidated.
 
 Suggested movement order:
 
@@ -764,6 +764,12 @@ and 10 optional-GPU skips in the full suite; 67% branch coverage; clean Ruff,
 format, strict mypy, and diff checks; successful sdist/wheel build, Twine
 checks, wheel-content audit, and isolated import with `dynamics.scaling` present
 and `core.nondimensional` absent.
+
+P3.1-e verification: 128 focused tests with 6 optional-GPU skips; 706 passed
+and 10 optional-GPU skips in the full suite; 67% branch coverage; clean Ruff,
+format, strict mypy, and diff checks; successful sdist/wheel build, Twine
+checks, wheel-content audit, and isolated import with `core.validation` present
+and `dynamics.algorithms.validation` absent.
 
 ### Phase 3 acceptance
 

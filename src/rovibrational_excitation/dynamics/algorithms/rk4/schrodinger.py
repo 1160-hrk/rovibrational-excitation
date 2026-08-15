@@ -16,7 +16,7 @@ import numpy as np
 import scipy.sparse as sp
 from numba import njit
 
-from ..validation import validate_wavefunction_problem
+from ....core.validation import validate_wavefunction_problem
 from .sparse import apply_hamiltonian_csr, prepare_csr_arrays
 
 

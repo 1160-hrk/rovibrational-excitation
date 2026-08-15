@@ -466,6 +466,7 @@ unrelated parameter names to guess the model.
 | `simulation/models/*` | `models/*/model.py` | Remove duplicate facade after migration |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
+| `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |
 | `simulation/timegrid.py` | `core/time.py` | TimeGrid becomes a core invariant |
 | `simulation/storage.py` | `io/storage.py` | Add schema version |
 | `simulation/serialization.py` | `io/serialization.py` | JSON-safe typed conversion |

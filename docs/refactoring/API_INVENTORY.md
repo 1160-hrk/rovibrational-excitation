@@ -3,7 +3,7 @@
 Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-d / D-040
+Latest API checkpoint: P3.1-e / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -87,6 +87,7 @@ not treated as intentional API.
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 | `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
 | `core.states` | `PureState`, `IncoherentEnsemble`, `DensityState` | explicit immutable initial-state kinds | target public module; all propagator facades migrated in P2.2 |
+| `core.validation` | `NUMERICAL_VALIDATION_EPSILON_FACTOR`, `density_matrix_tolerance`, `validate_density_matrix_properties`, `validate_density_matrix_problem`, `validate_wavefunction_problem` | generic numerical input validation owner reached in P3.1-e | internal; no root re-export |
 
 `core/__init__.py` now makes the target package explicit but intentionally
 re-exports nothing until O-008 fixes the supported convenience surface.

@@ -26,7 +26,7 @@ from typing import Literal
 import numpy as np
 import scipy.sparse
 
-from ..validation import validate_wavefunction_problem
+from ....core.validation import validate_wavefunction_problem
 
 # ---------------------------------------------------------------------------
 # Optional back‑ends ----------------------------------------------------------
