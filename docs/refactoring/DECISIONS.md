@@ -286,7 +286,7 @@ roundoff from a physical relative phase without introducing a field-scale
 threshold.
 
 Implementation anchors:
-`simulation/models/linmol_m_average.py`,
+`simulation/m_average.py`,
 `simulation/runner.py`, and
 `tests/physics/test_linear_molecule_reference.py`.
 
@@ -1082,7 +1082,7 @@ Consequences:
 
 Implementation anchors: `dynamics/options.py`,
 `dynamics/factory.py`, `simulation/validation.py`,
-`simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
+`simulation/runner.py`, `simulation/m_average.py`, and
 `tests/contracts/test_propagation_options_contracts.py`.
 
 Implementation commit: `f2cd328`.
@@ -1133,7 +1133,7 @@ Verification:
 - the full CPU suite and all optimization time/reference contracts pass.
 
 Implementation anchors: `dynamics/{base,schrodinger,liouville,mixed_state}.py`,
-`simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
+`simulation/runner.py`, `simulation/m_average.py`, and
 `tests/contracts/test_public_*`.
 
 Implementation commit: `1f4169d`.
@@ -1193,8 +1193,8 @@ Verification:
 
 Implementation anchors: `dynamics/problem.py`,
 `dynamics/{base,schrodinger,liouville,mixed_state}.py`,
-`simulation/models/factory.py`, `simulation/runner.py`,
-`simulation/models/linmol_m_average.py`, and
+`models/factory.py`, `simulation/runner.py`,
+`simulation/m_average.py`, and
 `tests/contracts/test_propagation_problem_contracts.py`.
 
 Implementation commit: `873ad6e`.
@@ -1237,7 +1237,7 @@ Verification:
 - workflow, public-signature, mixed-state, density, integration, physics-reference, and all seven benchmark-path tests pass;
 - the full suite passes 698 tests with 10 optional-GPU skips; branch coverage remains 67%; Ruff, formatting, strict mypy for 15 typed modules, and diff checks pass.
 
-Implementation anchors: `dynamics/result.py`, `dynamics/{base,schrodinger,liouville,mixed_state}.py`, `simulation/runner.py`, `simulation/models/linmol_m_average.py`, `benchmarks/run_baseline.py`, and `tests/{contracts,physics,performance}`.
+Implementation anchors: `dynamics/result.py`, `dynamics/{base,schrodinger,liouville,mixed_state}.py`, `simulation/runner.py`, `simulation/m_average.py`, `benchmarks/run_baseline.py`, and `tests/{contracts,physics,performance}`.
 
 Implementation commit: this P2.5 milestone commit.
 
@@ -1377,7 +1377,37 @@ Implementation anchors: `core/validation.py`,
 `tests/contracts/test_core_validation_architecture.py`, and the reduced exact
 transition debt in `tests/contracts/test_package_architecture.py`.
 
-Implementation commit: this P3.1-e milestone commit.
+Implementation commit for P3.1-e: `3bb04c9`.
+
+The sixth unit moves model-construction modules from `simulation/models/` to a
+flat top-level `models/` owner. `__init__.py`, `common.py`, and the three model
+builders are exact renames. `factory.py` changes only its relative import back
+to the unchanged simulation validator. Basis indices, Hamiltonian and dipole
+construction, initial-state mapping, coupling selection, and execution-policy
+forwarding do not change.
+
+`linmol_m_average.py` is not a model constructor: it executes propagation and
+reduces block populations. It therefore moves as a 100% exact rename to
+`simulation/m_average.py`, preserving the odd/even M multiplicities, normalized
+weights, reduced indices, fixed-linear-polarization tolerance, block order,
+field/time handling, and incoherent population sum. The obsolete
+`simulation.models` path is removed without a shim.
+
+Three pre-existing higher-layer dependencies are exact-allowlisted at the new
+`models` boundary: its facade and factory import temporary contracts from
+`dynamics.problem`, and the factory imports `simulation.validation`. They must
+be resolved during typed model consolidation and are not permitted target
+directions.
+
+P3.1-f verification: 183 focused tests pass with 1 optional-GPU skip, and the
+full 708-test CPU suite passes with 10 optional-GPU skips; branch coverage
+remains 67%. Ruff, formatting, strict mypy, sdist/wheel build, Twine checks,
+wheel contents, and isolated ownership/old-path-absence imports all pass.
+
+Implementation anchors: `models/`, `simulation/m_average.py`, and
+`tests/contracts/test_models_package_architecture.py`.
+
+Implementation commit: this P3.1-f milestone commit.
 
 ## Open decisions
 

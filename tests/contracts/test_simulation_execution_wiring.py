@@ -14,7 +14,7 @@ from rovibrational_excitation.dipole import create_dipole_matrix
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
-from rovibrational_excitation.simulation.models import build_model
+from rovibrational_excitation.models import build_model
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,

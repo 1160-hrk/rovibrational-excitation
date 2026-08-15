@@ -15,7 +15,7 @@ from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import (
     ElectricField as RealElectricField,
 )
-from rovibrational_excitation.simulation.models import build_model
+from rovibrational_excitation.models import build_model
 from rovibrational_excitation.simulation.runner import _run_one
 
 _NUMPY_DENSE = ExecutionPolicy(backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE)

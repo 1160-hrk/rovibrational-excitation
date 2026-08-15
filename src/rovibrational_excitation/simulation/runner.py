@@ -24,6 +24,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from ..models import build_model
 from .checkpoint import CheckpointManager
 from .config import (
     load_params_file as _load_params_file,
@@ -31,7 +32,6 @@ from .config import (
 from .config import (
     process_params as _process_params,
 )
-from .models import build_model
 from .serialization import (
     deserialize_polarization as _deserialize_pol,
 )
@@ -138,7 +138,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         "basis_type", "linmol"
     ).lower() == "linmol" and not params.get("use_M", True)
     if use_m_average:
-        from .models.linmol_m_average import (
+        from .m_average import (
             canonicalize_fixed_linear_polarization,
         )
 
@@ -167,7 +167,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         )
 
     if use_m_average:
-        from .models.linmol_m_average import propagate_m_average
+        from .m_average import propagate_m_average
 
         result = propagate_m_average(
             params,

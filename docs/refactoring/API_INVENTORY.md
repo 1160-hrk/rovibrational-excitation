@@ -3,7 +3,7 @@
 Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-e / D-040
+Latest API checkpoint: P3.1-f / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -132,7 +132,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.symtop` | `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public pending O-005 |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
-| `simulation.models` | `CouplingSpec`, `ModelComponents`, `build_model` | typed model protocol and config dispatch under `models` | internal transition facade; `build_model` requires `ExecutionPolicy` since P2.3-b |
+| `models` | `CouplingSpec`, `ModelComponents`, `build_model` | flat target-owner facade reached in P3.1-f; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy` since P2.3-b |
 
 `SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
 simulation `build_model` registry supports only `linmol`, `twolevel`, and
@@ -152,7 +152,7 @@ exists but is empty; `simulation` and `plots` are namespace packages.
 
 | Script | Current route | Input and construction path | Target | Disposition |
 |---|---|---|---|---|
-| `rve-simulate` | `cli.simulate:main` | Python file executed by `simulation.config.load_params_file` -> implicit unit conversion -> iterable sweep expansion -> per-case validation -> `simulation.models.build_model` -> `SchrodingerPropagator` | versioned typed simulation config and one shared model/field builder | target public command; replace input contract |
+| `rve-simulate` | `cli.simulate:main` | Python file executed by `simulation.config.load_params_file` -> implicit unit conversion -> iterable sweep expansion -> per-case validation -> `models.build_model` -> `SchrodingerPropagator` | versioned typed simulation config and one shared model/field builder | target public command; replace input contract |
 | `rve-optimize` | `cli.optimize:main` | YAML `safe_load` -> dotted overrides -> private `_build_basis` and `_build_dipole` -> `optimization.ALGO_REGISTRY` -> algorithm function | versioned typed optimization config reusing the same model/field builders | target public command; replace orchestration internals |
 
 Both command names should remain. Backward compatibility for current config
@@ -186,7 +186,7 @@ contract.
 ### 4.2 Current optimization path and divergence
 
 `run_from_config` accepts YAML, a `Path`, or a dictionary. It owns a second set
-of basis and dipole builders instead of using `simulation.models.build_model`.
+of basis and dipole builders instead of using `models.build_model`.
 The parameter names also differ (`omega_cm` versus `omega_rad_phz`, for
 example). It silently changes an unknown dipole unit to `C*m` and an unknown
 potential type to `harmonic`. These fallbacks violate the explicit-validation
@@ -213,8 +213,8 @@ visualization failure.
 
 | Current entry | Dispatch key | Current callers | Target | Disposition |
 |---|---|---|---|---|
-| `simulation.models.build_model` | `basis_type`: `linmol`, `twolevel`, `vibladder` | simulation runner and tests | one typed model registry shared by both workflows | internal transition facade |
-| `simulation.models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
+| `models.build_model` | `basis_type`: `linmol`, `twolevel`, `vibladder` | simulation runner and tests | one typed model registry shared by both workflows | internal transition facade |
+| `models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |
 | `dynamics.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |

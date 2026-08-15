@@ -30,8 +30,8 @@ A linear molecule is currently represented across:
 - the generic `core/operators.py` plus model-specific basis modules;
 - `dipole/linmol/builder.py`;
 - `dipole/linmol/cache.py`;
-- `simulation/models/linmol.py`;
-- factories in both `dipole` and `simulation/models`.
+- `models/linmol.py`;
+- factories in both `dipole` and `models`.
 
 TwoLevel, VibLadder, and SymTop follow partial variations of the same pattern.
 This makes model capability, required parameters, and coupling semantics hard
@@ -463,7 +463,7 @@ unrelated parameter names to guess the model.
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
-| `simulation/models/*` | `models/*/model.py` | Remove duplicate facade after migration |
+| `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |

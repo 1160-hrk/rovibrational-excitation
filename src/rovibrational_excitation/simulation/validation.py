@@ -237,7 +237,7 @@ def validate_simulation_case(
                     "axes is not applicable when use_M=False; fixed linear "
                     "polarization is aligned with the internal z axis"
                 )
-            from .models.linmol_m_average import (
+            from .m_average import (
                 canonicalize_fixed_linear_polarization,
                 validate_m_average_initial_states,
             )

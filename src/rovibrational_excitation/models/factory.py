@@ -12,7 +12,7 @@ from rovibrational_excitation.dynamics.problem import (
     SystemModel,
 )
 
-from ..validation import validate_model_parameters
+from ..simulation.validation import validate_model_parameters
 from .linmol import build_linmol
 from .twolevel import build_twolevel
 from .vibladder import build_vibladder
