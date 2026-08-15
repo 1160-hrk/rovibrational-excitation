@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
 )
 
@@ -85,11 +85,11 @@ def test_splitop_schrodinger_backend_error():
         del sys.modules["cupy"]
     importlib.reload(
         __import__(
-            "rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger",
+            "rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger",
             fromlist=["splitop_schrodinger"],
         )
     )
-    from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+    from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
         splitop_schrodinger as splitop_reload,
     )
 

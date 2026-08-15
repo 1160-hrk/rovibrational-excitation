@@ -712,9 +712,14 @@ basis/state class consolidation is deliberately deferred to Phase 6 because it
 is a redesign rather than a mechanical move. P3.1-b then moved the unchanged
 electric-field package to `fields/`, renamed only its generic `core.py` module
 to `field.py`, repaired imports and public examples, and removed the old path.
-Five exact transitional `core` to `fields` dependencies remain test-enforced
-until propagation, scaling, and the legacy parameter processor move to their
-target owners.
+P3.1-c moved the unchanged propagation package to `dynamics/`, repaired direct
+imports, and removed the old path without a compatibility shim. All numerical
+kernels are exact renames. Three exact transitional `core` to `fields`
+dependencies remain test-enforced until scaling and the legacy parameter
+processor move to their target owners. The pre-existing
+`core.states -> dynamics.algorithms.validation` and
+`dynamics.utils -> dipole.base` ownership debts are separately exact-allowlisted
+until generic validation and model ownership are consolidated.
 
 Suggested movement order:
 
@@ -746,6 +751,12 @@ the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
 checks; successful sdist/wheel build, Twine checks, wheel-content audit, and
 isolated import with new fields modules present, root identity preserved, and
 the old subpackage absent.
+
+P3.1-c verification: 184 focused tests with 6 optional-GPU skips; 704 passed
+and 10 optional-GPU skips in the full suite; 67% branch coverage; clean Ruff,
+format, strict mypy, and diff checks; successful sdist/wheel build, Twine
+checks, wheel-content audit, and isolated import with `dynamics` present and
+`core.propagation` absent.
 
 ### Phase 3 acceptance
 

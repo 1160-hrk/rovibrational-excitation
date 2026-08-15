@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import rk4_lvne
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
 

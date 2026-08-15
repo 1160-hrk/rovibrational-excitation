@@ -7,7 +7,10 @@ import pytest
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.operators import Hamiltonian
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.dynamics import (
     Axis,
     CouplingMode,
     CouplingSpec,
@@ -17,9 +20,6 @@ from rovibrational_excitation.core.propagation import (
     SchrodingerPropagator,
     SystemModel,
 )
-from rovibrational_excitation.core.states import PureState
-from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.fields import ElectricField
 
 

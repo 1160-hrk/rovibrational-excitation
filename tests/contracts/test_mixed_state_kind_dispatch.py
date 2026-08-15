@@ -3,13 +3,13 @@
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation import MixedStatePropagator
-from rovibrational_excitation.core.propagation.liouville import LiouvillePropagator
 from rovibrational_excitation.core.states import (
     DensityState,
     IncoherentEnsemble,
     PureState,
 )
+from rovibrational_excitation.dynamics import MixedStatePropagator
+from rovibrational_excitation.dynamics.liouville import LiouvillePropagator
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

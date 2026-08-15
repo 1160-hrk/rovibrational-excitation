@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.sparse import (
+from rovibrational_excitation.dynamics.algorithms.rk4.sparse import (
     apply_hamiltonian_csr,
     prepare_csr_arrays,
 )

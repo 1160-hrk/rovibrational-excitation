@@ -10,7 +10,7 @@ from typing import Any, Generic, TypeVar
 
 import numpy as np
 
-from ..units.validators import validator
+from ..core.units.validators import validator
 from .options import PropagationOptions
 from .problem import PropagationProblem
 from .result import PropagationResult

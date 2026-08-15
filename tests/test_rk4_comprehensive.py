@@ -16,11 +16,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
     rk4_lvne,
     rk4_lvne_traj,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
 
@@ -212,7 +212,7 @@ class TestRK4CuPyBackend:
     def test_cupy_error_when_unavailable(self):
         """CuPy利用不可時のエラー"""
         # CuPyを一時的に無効化
-        import rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger as rk4_mod
+        import rovibrational_excitation.dynamics.algorithms.rk4.schrodinger as rk4_mod
 
         original_cp = rk4_mod.cp
         rk4_mod.cp = None

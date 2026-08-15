@@ -3,13 +3,13 @@
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.dynamics import (
     PropagationResult,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.options import ScalingMode
-from rovibrational_excitation.core.propagation.result import RESULT_SCHEMA_VERSION
-from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.dynamics.options import ScalingMode
+from rovibrational_excitation.dynamics.result import RESULT_SCHEMA_VERSION
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

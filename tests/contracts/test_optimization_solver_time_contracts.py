@@ -9,7 +9,7 @@ import pytest
 
 import rovibrational_excitation.optimization.grape as grape_module
 import rovibrational_excitation.optimization.krotov as krotov_module
-from rovibrational_excitation.core.propagation import PropagationDirection
+from rovibrational_excitation.dynamics import PropagationDirection
 
 
 class _TwoStateBasis:

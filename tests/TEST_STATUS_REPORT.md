@@ -33,14 +33,14 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 | `core/units/converters.py` | 63% |
 | `core/units/parameter_processor.py`| 63% |
 | `core/units/validators.py` | 61% |
-| `core/propagation/utils.py`| 69% |
+| `dynamics/utils.py`| 69% |
 
 #### 🔴 低カバレッジ (<50%)
 | モジュール | カバレッジ |
 | --- | --- |
 | `core/nondimensional/*` | 6-28% |
-| `core/propagation/algorithms/*`| 13-28% |
-| `core/propagation/liouville.py`| 20% |
+| `dynamics/algorithms/*`| 13-28% |
+| `dynamics/liouville.py`| 20% |
 | `core/propagator.py` | 18% |
 | `simulation/runner.py`| 55% |
 | `spectroscopy/*` | 12-71% |

@@ -12,12 +12,12 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dynamics import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
 
@@ -41,7 +41,7 @@ solver constructor の algorithm、backend、storage、renormalization と `opti
 ```python
 import numpy as np
 
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dynamics import (
     Axis,
     CouplingSpec,
     PropagationProblem,
@@ -83,7 +83,7 @@ psi = result.state
 ## 密度行列
 
 ```python
-from rovibrational_excitation.core.propagation import LiouvillePropagator
+from rovibrational_excitation.dynamics import LiouvillePropagator
 from rovibrational_excitation.core.states import DensityState
 
 density_problem = PropagationProblem(
@@ -102,7 +102,7 @@ Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け�
 ## インコヒーレント ensemble
 
 ```python
-from rovibrational_excitation.core.propagation import MixedStatePropagator
+from rovibrational_excitation.dynamics import MixedStatePropagator
 from rovibrational_excitation.core.states import IncoherentEnsemble
 
 scalar_model = SystemModel(

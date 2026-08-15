@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     _rk4_cpu_numba,
     rk4_schrodinger,
 )

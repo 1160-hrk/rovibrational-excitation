@@ -39,7 +39,7 @@ from rovibrational_excitation.core.execution import (  # noqa: E402
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import (  # noqa: E402
+from rovibrational_excitation.dynamics import (  # noqa: E402
     Axis,
     CouplingSpec,
     LiouvillePropagator,
@@ -50,7 +50,7 @@ from rovibrational_excitation.core.propagation import (  # noqa: E402
     SchrodingerPropagator,
     SystemModel,
 )
-from rovibrational_excitation.core.propagation.capabilities import (  # noqa: E402
+from rovibrational_excitation.dynamics.capabilities import (  # noqa: E402
     PropagationAlgorithm,
 )
 from rovibrational_excitation.core.states import DensityState, PureState  # noqa: E402

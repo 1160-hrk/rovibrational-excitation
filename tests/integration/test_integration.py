@@ -12,16 +12,16 @@ from rovibrational_excitation.core.basis import (
     TwoLevelBasis,
     VibLadderBasis,
 )
-from rovibrational_excitation.core.propagation import (
-    LiouvillePropagator,
-    MixedStatePropagator,
-    SchrodingerPropagator,
-)
 from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole import (
     LinMolDipoleMatrix,
     VibLadderDipoleMatrix,
+)
+from rovibrational_excitation.dynamics import (
+    LiouvillePropagator,
+    MixedStatePropagator,
+    SchrodingerPropagator,
 )
 from rovibrational_excitation.fields import (
     ElectricField,

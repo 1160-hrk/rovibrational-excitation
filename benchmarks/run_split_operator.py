@@ -33,10 +33,10 @@ import numpy as np
 import scipy
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
 )
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix

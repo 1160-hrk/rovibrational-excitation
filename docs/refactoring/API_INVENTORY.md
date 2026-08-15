@@ -3,7 +3,7 @@
 Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-b / D-040
+Latest API checkpoint: P3.1-c / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -109,10 +109,10 @@ temporary.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `core.propagation` | `PropagatorBase`, `PropagationDirection`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory`, `PropagationOptions`, `RenormalizationPolicy`, `ScalingMode`, `Axis`, `CouplingMode`, `CouplingSpec`, `PropagationProblem`, `PropagationState`, `SystemModel`, `PropagationResult` | `dynamics` typed problem/options/result plus `propagate` | typed transition surface; factory class deletes after replacement |
-| `core.propagation.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
-| `core.propagation.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
-| `core.propagation.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
+| `dynamics` | `PropagatorBase`, `PropagationDirection`, `SchrodingerPropagator`, `LiouvillePropagator`, `MixedStatePropagator`, `PropagatorFactory`, `PropagationOptions`, `RenormalizationPolicy`, `ScalingMode`, `Axis`, `CouplingMode`, `CouplingSpec`, `PropagationProblem`, `PropagationState`, `SystemModel`, `PropagationResult` | target typed problem/options/result owner reached in P3.1-c | typed public package; factory class deletes after replacement |
+| `dynamics.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
+| `dynamics.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
+| `dynamics.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
 | `core.nondimensional` | `NondimensionalizationScales`, `ScaleValue`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `determine_SI_based_scales`, `create_dimensionless_time_array`, `analyze_regime`, `dimensionalize_wavefunction`, `get_physical_time` | `dynamics.scaling` with one explicit scaling representation | strict temporary public surface; move without adding competing strategies |
 
 The former 25-name surface was reduced under D-022 after dimensional-equivalence
@@ -216,7 +216,7 @@ visualization failure.
 | `simulation.models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |
-| `core.propagation.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |
+| `dynamics.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |
 | `optimization.ALGO_REGISTRY` | `local`, `krotov`, `grape` | package and example optimization runners | private typed optimization dispatch | internal |
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
 | `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | simulation config and tests | typed schema conversion at boundary | internal singleton, then delete |
@@ -262,7 +262,7 @@ imports:
 Direct propagation examples still call the removed loose-argument/conditional-return API. They are known broken migration callers, are not production paths, and must be rewritten or deleted with executable smoke tests in Phase 8; compatibility shims must not be restored for them.
 
 Examples import deep implementation paths such as
-`core.propagation.schrodinger`, `core.units.constants`, and
+`dynamics.schrodinger`, `core.units.constants`, and
 `dipole.<model>`. Their current import success does not make those paths target
 public APIs. Phase 8 must run canonical examples as smoke tests against only
 the final supported surface.

@@ -7,14 +7,14 @@ import pytest
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.operators import Hamiltonian
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dipole.twolevel.cache import TwoLevelDipoleMatrix
+from rovibrational_excitation.dynamics import (
     PropagationDirection,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.dipole.twolevel.cache import TwoLevelDipoleMatrix
 from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.optimization.krotov import run_krotov_optimization
 from rovibrational_excitation.optimization.timegrid import (
@@ -188,7 +188,7 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
             direction=PropagationDirection.BACKWARD,
         )
 
-    import rovibrational_excitation.core.propagation.schrodinger as schrodinger_module
+    import rovibrational_excitation.dynamics.schrodinger as schrodinger_module
 
     monkeypatch.setattr(schrodinger_module, "HAS_CUPY", True)
     cupy_propagator = schrodinger_module.SchrodingerPropagator(

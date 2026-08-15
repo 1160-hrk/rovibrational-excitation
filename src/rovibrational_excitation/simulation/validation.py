@@ -8,18 +8,18 @@ from typing import Any
 import numpy as np
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
     validate_execution_capability,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,
 )
-from rovibrational_excitation.core.propagation.utils import validate_axes
-from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.dynamics.utils import validate_axes
 
 from .serialization import deserialize_polarization
 

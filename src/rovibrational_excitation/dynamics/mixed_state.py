@@ -6,8 +6,8 @@ from typing import Literal
 
 import numpy as np
 
-from ..states import DensityState, IncoherentEnsemble
-from ..units.validators import validator
+from ..core.states import DensityState, IncoherentEnsemble
+from ..core.units.validators import validator
 from .base import PropagatorBase
 from .options import PropagationOptions
 from .problem import PropagationProblem

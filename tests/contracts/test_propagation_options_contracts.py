@@ -12,10 +12,10 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,
@@ -45,7 +45,7 @@ def test_core_states_import_is_independent_of_propagation_facade_order():
             "-c",
             (
                 "from rovibrational_excitation.core.states import PureState; "
-                "from rovibrational_excitation.core.propagation import "
+                "from rovibrational_excitation.dynamics import "
                 "PropagationOptions"
             ),
         ],

@@ -7,11 +7,11 @@ import pytest
 from scipy.linalg import expm
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.fields import ElectricField
 
 pytestmark = pytest.mark.physics

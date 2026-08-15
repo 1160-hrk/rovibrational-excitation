@@ -141,9 +141,9 @@ Primary implementation anchors:
 
 - `core/time.py` (canonical typed grid)
 - `simulation/timegrid.py` (legacy writable-array adapter)
-- `core/propagation/utils.py`
-- `core/propagation/schrodinger.py`
-- `core/propagation/liouville.py`
+- `dynamics/utils.py`
+- `dynamics/schrodinger.py`
+- `dynamics/liouville.py`
 
 ### 3.1 Strict nondimensional generator
 
@@ -210,7 +210,7 @@ Implementation anchors:
 - fields/field.py: ZeroField;
 - core/nondimensional/converter.py: validation, centering, and scale derivation;
 - core/nondimensional/scales.py: values and provenance;
-- core/propagation/schrodinger.py: global-phase restoration;
+- dynamics/schrodinger.py: global-phase restoration;
 - tests/contracts/test_strict_nondimensional_contracts.py: reference contracts.
 ### 3.2 Explicit physical inputs
 
@@ -356,7 +356,7 @@ implementation must not silently:
 `MixedStatePropagator` performs no subsequent normalization or repair.
 
 Primary implementation:
-`core/propagation/algorithms/validation.py`.
+`dynamics/algorithms/validation.py`.
 
 ## 6. Vibrational ladder and Morse potential
 

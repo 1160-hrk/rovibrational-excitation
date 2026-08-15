@@ -14,14 +14,14 @@ import numpy as np
 import pytest
 
 # 低レベル伝播機能をインポート
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
     rk4_lvne,
     rk4_lvne_traj,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
 )
 

@@ -10,9 +10,9 @@ from typing import Any, Literal, Union, cast
 
 import numpy as np
 
-from ..states import PureState
-from ..units.constants import CONSTANTS
-from ..units.validators import validator
+from ..core.states import PureState
+from ..core.units.constants import CONSTANTS
+from ..core.units.validators import validator
 from .base import PropagatorBase
 from .direction import PropagationDirection
 from .options import PropagationOptions

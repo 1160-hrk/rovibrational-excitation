@@ -8,9 +8,9 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis, VibLadderBasis
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 
 pytestmark = pytest.mark.performance

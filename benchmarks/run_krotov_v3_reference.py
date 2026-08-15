@@ -25,7 +25,7 @@ SOURCE_ROOT = ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.simulation.optimize_runner import run_from_config
 
 DEFAULT_CONFIG = ROOT / "configs" / "reference_krotov_viblad_v3.yaml"

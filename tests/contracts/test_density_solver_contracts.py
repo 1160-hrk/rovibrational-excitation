@@ -6,24 +6,24 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.execution import MatrixStorage
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from rovibrational_excitation.dynamics import (
     Axis,
     LiouvillePropagator,
     MixedStatePropagator,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
     rk4_lvne,
     rk4_lvne_traj,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.validation import (
+from rovibrational_excitation.dynamics.algorithms.validation import (
     validate_density_matrix_properties,
 )
-from rovibrational_excitation.core.propagation.capabilities import PropagationAlgorithm
-from rovibrational_excitation.core.propagation.options import ScalingMode
-from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from rovibrational_excitation.dynamics.capabilities import PropagationAlgorithm
+from rovibrational_excitation.dynamics.options import ScalingMode
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import (
     propagation_problem,
@@ -79,7 +79,7 @@ def test_liouville_rejects_ignored_timestep_override():
 def test_liouville_returns_physical_time_and_forwards_coupling_options(
     monkeypatch,
 ):
-    import rovibrational_excitation.core.propagation.liouville as liouville_module
+    import rovibrational_excitation.dynamics.liouville as liouville_module
 
     captured = {}
     h0, mu, fields, rho0, _ = _low_level_problem()
@@ -111,7 +111,7 @@ def test_liouville_returns_physical_time_and_forwards_coupling_options(
 
 
 def test_liouville_final_state_time_is_field_endpoint(monkeypatch):
-    import rovibrational_excitation.core.propagation.liouville as liouville_module
+    import rovibrational_excitation.dynamics.liouville as liouville_module
 
     h0, mu, fields, rho0, _ = _low_level_problem()
     monkeypatch.setattr(

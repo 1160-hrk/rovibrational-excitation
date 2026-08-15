@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-15
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.1-b / Phase 3 in progress)
+Verified structural checkpoint: D-040 (P3.1-c / Phase 3 in progress)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P3.1-b fields move:
+Current local CPU baseline after the P3.1-c dynamics move:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-702 passed, 10 GPU tests skipped (712 collected)
+704 passed, 10 GPU tests skipped (714 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -198,11 +198,13 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is in progress under D-040: `Hamiltonian` is owned
-by `core/operators.py`, and electric-field construction/modulation is owned by
-`fields/`; both superseded paths are removed. The next work is:
+by `core/operators.py`, electric-field construction/modulation is owned by
+`fields/`, and propagation is owned by `dynamics/`; all superseded paths are
+removed. The next work is:
 
-1. Move `core/propagation` mechanically into `dynamics`, preserving every public/private adapter, kernel, field index, endpoint, and backend behavior.
-2. Reduce the exact five-entry `core` to `fields` transition-debt allowlist as owners move; never broaden or hide it.
-3. Keep generic state/execution/time contracts at their current target paths; do not merge legacy `core/basis` classes until model ownership is handled in Phase 6.
-4. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-5. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+1. Move `core/nondimensional` mechanically into `dynamics/scaling`, preserving every scale formula, conversion order, dtype, and validation threshold.
+2. Reduce the exact transition-debt allowlists as owners move; the current debts are three `core -> fields` references, one `core.states -> dynamics.algorithms.validation` reference, and one `dynamics.utils -> dipole.base` reference. Never broaden or hide them.
+3. Move generic state validation to `core` in a separately tested unit to eliminate the reverse `core -> dynamics` dependency without changing a formula or tolerance.
+4. Keep generic state/execution/time contracts at their current target paths; do not merge legacy `core/basis` classes until model ownership is handled in Phase 6.
+5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
+6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.

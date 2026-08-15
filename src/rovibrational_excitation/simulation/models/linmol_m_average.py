@@ -9,17 +9,17 @@ import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.core.propagation.options import PropagationOptions
-from rovibrational_excitation.core.propagation.problem import (
+from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.dynamics.options import PropagationOptions
+from rovibrational_excitation.dynamics.problem import (
     Axis,
     CouplingSpec,
     PropagationProblem,
     SystemModel,
 )
-from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
-from rovibrational_excitation.core.states import PureState
-from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 
 _LINEAR_POLARIZATION_TOL = 128.0 * np.finfo(np.float64).eps
 

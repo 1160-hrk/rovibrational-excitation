@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.fields import ElectricField, gaussian
-from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
+from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter

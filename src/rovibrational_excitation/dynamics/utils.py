@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any, Literal, Union
 import numpy as np
 import scipy.sparse
 
-from ...dipole.base import DipoleMatrixBase
-from ...fields import ElectricField
-from ..operators import Hamiltonian
-from ..time import FIELD_INTERVALS_PER_PROPAGATION_STEP
+from ..core.operators import Hamiltonian
+from ..core.time import FIELD_INTERVALS_PER_PROPAGATION_STEP
+from ..dipole.base import DipoleMatrixBase
+from ..fields import ElectricField
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -272,7 +272,7 @@ def prepare_propagation_args(
     The integration step is derived from the electric-field grid as
     ``efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP``.
     """
-    from ..nondimensional.converter import nondimensionalize_from_objects
+    from ..core.nondimensional.converter import nondimensionalize_from_objects
 
     if coupling_mode == "cartesian":
         ax0, ax1 = validate_axes(axes)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from ..execution import ArrayBackend, ExecutionPolicy, MatrixStorage
+from ..core.execution import ArrayBackend, ExecutionPolicy, MatrixStorage
 from .utils import HAS_CUPY
 
 

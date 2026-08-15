@@ -9,8 +9,8 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ..states import DensityState
-from ..units.validators import validator
+from ..core.states import DensityState
+from ..core.units.validators import validator
 from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
 from .base import PropagatorBase
 from .options import PropagationOptions

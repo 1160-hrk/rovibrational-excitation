@@ -18,7 +18,7 @@ from rovibrational_excitation.core.nondimensional.converter import (
     nondimensionalize_system,
 )
 from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
-from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
+from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 # パラメータ設定

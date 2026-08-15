@@ -8,13 +8,13 @@ import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis
 from rovibrational_excitation.core.operators import Hamiltonian
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.states import IncoherentEnsemble
+from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dynamics import (
     MixedStatePropagator,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.utils import get_backend
-from rovibrational_excitation.core.states import IncoherentEnsemble
-from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dynamics.utils import get_backend
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from tests.mock_objects import MockDipole, MockEfield
 from tests.propagation_options import propagation_options
@@ -143,7 +143,7 @@ def test_liouville_propagation():
 
     rk4_args = (H0_mat, mu_x, mu_y, Ex, Ey, xp.asarray(rho0), dt, steps)
 
-    from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+    from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
         rk4_lvne_traj,
     )
 

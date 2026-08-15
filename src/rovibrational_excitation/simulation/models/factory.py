@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.core.propagation.problem import (
+from rovibrational_excitation.dynamics.problem import (
     Axis,
     CouplingSpec,
     SystemModel,

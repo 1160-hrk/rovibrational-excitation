@@ -39,7 +39,7 @@ to discover.
 
 ### 2.2 Propagation preparation is overloaded
 
-`core/propagation/utils.py` currently handles combinations of:
+`dynamics/utils.py` currently handles combinations of:
 
 - backend lookup;
 - axes validation;
@@ -360,7 +360,7 @@ Metadata should include:
 - normalization policy;
 - deterministic configuration hash.
 
-P2.5 implements this contract in `core.propagation.result`. Metadata values are recursively validated as finite JSON data and frozen; unsupported values fail explicitly. The SHA-256 hash scope is named `declared_model_metadata_and_propagation_contract`: it covers declared model metadata, coupling, options, time grid, and actual same-call nondimensional scales. It intentionally excludes numerical Hamiltonian, dipole, field, and state arrays so computing provenance never triggers a hidden device-to-host transfer. Full content-addressed input provenance belongs at a future explicit persistence boundary.
+P2.5 implements this contract in `dynamics.result`. Metadata values are recursively validated as finite JSON data and frozen; unsupported values fail explicitly. The SHA-256 hash scope is named `declared_model_metadata_and_propagation_contract`: it covers declared model metadata, coupling, options, time grid, and actual same-call nondimensional scales. It intentionally excludes numerical Hamiltonian, dipole, field, and state arrays so computing provenance never triggers a hidden device-to-host transfer. Full content-addressed input provenance belongs at a future explicit persistence boundary.
 
 The Phase 2 adapter requests a complete private trajectory with `sample_stride=1`, preserving every integration step and field index. Stride one reuses that backend state array. Larger output strides thin it and append the already computed endpoint; they temporarily retain the full internal trajectory. Phase 5 should replace only this storage policy with an endpoint-complete low-level writer after characterization tests, without changing integration.
 
@@ -464,7 +464,7 @@ unrelated parameter names to guess the model.
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
 | `simulation/models/*` | `models/*/model.py` | Remove duplicate facade after migration |
-| `core/propagation/*` | `dynamics/*` | Introduce typed problem/result before moving |
+| `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Consolidate policy and transformation |
 | `simulation/timegrid.py` | `core/time.py` | TimeGrid becomes a core invariant |
 | `simulation/storage.py` | `io/storage.py` | Add schema version |

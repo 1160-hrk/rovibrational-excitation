@@ -10,22 +10,22 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.states import DensityState, PureState
+from rovibrational_excitation.dynamics import (
     Axis,
     CouplingSpec,
     LiouvillePropagator,
     MixedStatePropagator,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,
 )
-from rovibrational_excitation.core.states import DensityState, PureState
 from tests.propagation_problem import (
     propagation_problem,
     scalar_propagation_problem,

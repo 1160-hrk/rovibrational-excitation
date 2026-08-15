@@ -7,7 +7,7 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
     UnsupportedExecutionPolicyError,

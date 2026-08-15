@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.core.states import PureState
+from rovibrational_excitation.dynamics import SchrodingerPropagator
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
-from rovibrational_excitation.core.states import PureState
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

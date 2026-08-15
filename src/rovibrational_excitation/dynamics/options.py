@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
 
-from ..execution import ExecutionPolicy
+from ..core.execution import ExecutionPolicy
 from .capabilities import PropagationAlgorithm
 
 

@@ -5,8 +5,9 @@ Package for rovibrational wave-packet simulation.
 
 サブモジュール
 --------------
-core            … 低レベル数値計算 (Hamiltonian, RK4 propagator など)
+core            … 汎用状態、演算子、時間、単位
 fields          … 電場波形、包絡線、変調
+dynamics        … 時間発展facade、数値solver、実行契約
 dipole          … 双極子モーメント行列の高速生成
 plots           … 可視化ユーティリティ
 simulation      … バッチ実行・結果管理

@@ -209,7 +209,7 @@ def test_runner_zero_field_preserves_population_after_model_split(model_params):
     )
 
 
-@patch("rovibrational_excitation.core.propagation.schrodinger.SchrodingerPropagator")
+@patch("rovibrational_excitation.dynamics.schrodinger.SchrodingerPropagator")
 @patch("rovibrational_excitation.fields.ElectricField")
 def test_runner_uses_interval_duration_and_one_backend(
     electric_field_cls, propagator_cls

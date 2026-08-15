@@ -11,8 +11,8 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
+from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from rovibrational_excitation.simulation.models.linmol_m_average import (
     build_m_average_blocks,

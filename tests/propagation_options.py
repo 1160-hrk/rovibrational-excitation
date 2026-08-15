@@ -5,10 +5,10 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,

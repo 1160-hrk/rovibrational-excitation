@@ -27,9 +27,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.fields import ElectricField
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
+from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
 
 
 # =========================

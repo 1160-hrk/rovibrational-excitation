@@ -419,7 +419,7 @@ Cartesian モードは同じ Hamiltonian を使うので、刻みを細かくす
 高水準APIでは次のように指定する。
 
 ```python
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.dynamics import SchrodingerPropagator
 
 propagator = SchrodingerPropagator(
     algorithm="split_operator",
@@ -483,12 +483,12 @@ CPU と CuPy 経路は同じ M 位相回転と相互作用指数を実装して�
 
 主要実装：
 
-- `src/rovibrational_excitation/core/propagation/algorithms/split_operator/schrodinger.py`
+- `src/rovibrational_excitation/dynamics/algorithms/split_operator/schrodinger.py`
   - `_propagate_rotating_xy_numpy`: CPU の M 位相回転カーネル
   - `_splitop_rotating_xy_cupy`: GPU の対応カーネル
   - `_validate_xy_rotation_covariance`: 回転共変性の検証
   - `splitop_schrodinger`: 固定方向・回転方向・projected の振り分け
-- `src/rovibrational_excitation/core/propagation/schrodinger.py`
+- `src/rovibrational_excitation/dynamics/schrodinger.py`
   - 高水準APIから実電場成分と M 配列を渡す
 
 物理テスト：

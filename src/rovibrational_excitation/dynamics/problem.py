@@ -11,8 +11,8 @@ from typing import Any, Literal, Protocol
 
 import numpy as np
 
-from ..states import DensityState, IncoherentEnsemble, PureState
-from ..time import TimeGrid
+from ..core.states import DensityState, IncoherentEnsemble, PureState
+from ..core.time import TimeGrid
 from .capabilities import StatePath
 
 _ELECTRIC_FIELD_TYPE: type[Any] = import_module(

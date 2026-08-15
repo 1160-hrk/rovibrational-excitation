@@ -9,24 +9,24 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
     PropagatorFactory,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4 import (
+from rovibrational_excitation.dynamics.algorithms.rk4 import (
     schrodinger as rk4_module,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,

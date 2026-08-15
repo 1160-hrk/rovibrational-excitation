@@ -21,33 +21,33 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
     PropagatorFactory,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import (
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
     rk4_lvne_traj,
 )
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import (
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
     splitop_schrodinger,
 )
-from rovibrational_excitation.core.propagation.algorithms.validation import (
+from rovibrational_excitation.dynamics.algorithms.validation import (
     validate_density_matrix_properties,
 )
-from rovibrational_excitation.core.propagation.capabilities import (
+from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
 )
-from rovibrational_excitation.core.propagation.options import (
+from rovibrational_excitation.dynamics.options import (
     PropagationOptions,
     RenormalizationPolicy,
     ScalingMode,
 )
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.fields import ElectricField
 
 pytestmark = pytest.mark.physics

@@ -901,7 +901,7 @@ Decision:
 This removes semantic inference and the legacy density trace normalization. It
 does not change either numerical time-development kernel.
 
-Implementation anchors: `core/propagation/mixed_state.py` and
+Implementation anchors: `dynamics/mixed_state.py` and
 `tests/contracts/test_mixed_state_kind_dispatch.py`.
 
 ### D-032: Single-state propagators expose typed facades over unchanged arrays
@@ -930,7 +930,7 @@ applied `np.asarray(...).ravel()`. It now performs that same flattening before
 changing component order or values. `PropagatorBase` is generic in the accepted
 initial-state type so subclasses do not violate the base signature.
 
-Implementation anchors: `core/propagation/{base,schrodinger,liouville}.py`,
+Implementation anchors: `dynamics/{base,schrodinger,liouville}.py`,
 `tests/contracts/test_single_state_kind_dispatch.py`, and the unchanged local
 optimizer reference contracts.
 
@@ -960,7 +960,7 @@ dipole construction and propagation. D-035 replaces the old factory automatic
 algorithm selection with required typed choices and capability preflight.
 
 Implementation anchors: `core/execution.py`,
-`core/propagation/capabilities.py`, and
+`dynamics/capabilities.py`, and
 `tests/contracts/test_execution_policy_contracts.py`.
 
 ### D-034: One execution policy controls normal simulation construction and propagation
@@ -1010,7 +1010,7 @@ Implementation commit: pending.
 
 Status: Accepted on 2026-08-12 as the P2.3-c completion of D-026.
 
-Scope: `core.propagation.PropagatorFactory` dispatch only.
+Scope: `dynamics.PropagatorFactory` dispatch only.
 
 Decision:
 
@@ -1036,7 +1036,7 @@ Consequences:
 - the factory remains a temporary public migration facade until P2.4 replaces
   it with typed `PropagationOptions`.
 
-Implementation anchors: `core/propagation/factory.py`,
+Implementation anchors: `dynamics/factory.py`,
 `tests/contracts/test_solver_contracts.py`, and
 `tests/physics/test_solver_invariants.py`.
 
@@ -1077,11 +1077,11 @@ Consequences:
   unchanged;
 - P2.4-b must replace public propagator `**kwargs` with the typed options
   boundary; P2.5 will replace conditional array/tuple results;
-- `core.propagation` uses lazy public exports so importing `core.states` first
+- `dynamics` uses lazy public exports so importing `core.states` first
   cannot trigger a solver/state circular import.
 
-Implementation anchors: `core/propagation/options.py`,
-`core/propagation/factory.py`, `simulation/validation.py`,
+Implementation anchors: `dynamics/options.py`,
+`dynamics/factory.py`, `simulation/validation.py`,
 `simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_propagation_options_contracts.py`.
 
@@ -1132,7 +1132,7 @@ Verification:
   fail before numerical work;
 - the full CPU suite and all optimization time/reference contracts pass.
 
-Implementation anchors: `core/propagation/{base,schrodinger,liouville,mixed_state}.py`,
+Implementation anchors: `dynamics/{base,schrodinger,liouville,mixed_state}.py`,
 `simulation/runner.py`, `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_public_*`.
 
@@ -1191,8 +1191,8 @@ Verification:
   physics, sparse RK4, split-operator, integration, and optimizer reference tests;
 - Ruff, formatting, and strict mypy for the 14 named typed modules pass.
 
-Implementation anchors: `core/propagation/problem.py`,
-`core/propagation/{base,schrodinger,liouville,mixed_state}.py`,
+Implementation anchors: `dynamics/problem.py`,
+`dynamics/{base,schrodinger,liouville,mixed_state}.py`,
 `simulation/models/factory.py`, `simulation/runner.py`,
 `simulation/models/linmol_m_average.py`, and
 `tests/contracts/test_propagation_problem_contracts.py`.
@@ -1237,7 +1237,7 @@ Verification:
 - workflow, public-signature, mixed-state, density, integration, physics-reference, and all seven benchmark-path tests pass;
 - the full suite passes 698 tests with 10 optional-GPU skips; branch coverage remains 67%; Ruff, formatting, strict mypy for 15 typed modules, and diff checks pass.
 
-Implementation anchors: `core/propagation/result.py`, `core/propagation/{base,schrodinger,liouville,mixed_state}.py`, `simulation/runner.py`, `simulation/models/linmol_m_average.py`, `benchmarks/run_baseline.py`, and `tests/{contracts,physics,performance}`.
+Implementation anchors: `dynamics/result.py`, `dynamics/{base,schrodinger,liouville,mixed_state}.py`, `simulation/runner.py`, `simulation/models/linmol_m_average.py`, `benchmarks/run_baseline.py`, and `tests/{contracts,physics,performance}`.
 
 Implementation commit: this P2.5 milestone commit.
 
@@ -1291,12 +1291,9 @@ The second unit moves `core/electric_field/{core,envelopes,modulation}.py` to
 bodies. Root `ElectricField` remains the identical class object, while the old
 subpackage path is removed. Import and wheel tests fix the new module ownership.
 
-Five `core` to `fields` references remain explicitly allowlisted as migration
-debt: two in the future `dynamics/scaling` converter, two in the future
-`dynamics` propagation package (including its dynamic type import), and the
-unused field-construction helper in `core/units/parameter_processor.py`. The
-allowlist rejects additions and also fails if a resolved dependency is not
-removed. It is not a permitted target dependency direction.
+Five `core` to `fields` references remained explicitly allowlisted after
+P3.1-b. The allowlist rejects additions and also fails if a resolved dependency
+is not removed. It is not a permitted target dependency direction.
 
 P3.1-b verification: 154 focused tests and the full 702-test CPU suite pass
 with 10 optional-GPU skips; branch coverage remains 67%. Ruff, formatting,
@@ -1307,7 +1304,33 @@ Implementation anchors: `fields/`,
 `tests/contracts/test_fields_package_architecture.py`, and the exact transition
 debt in `tests/contracts/test_package_architecture.py`.
 
-Implementation commit: this P3.1-b milestone commit.
+Implementation commit for P3.1-b: `7b68046`.
+
+The third unit moves `core/propagation/` mechanically to `dynamics/`, preserving
+the lazy public facade, adapters, options, result contracts, and every numerical
+kernel. The old package is removed without a compatibility shim. All eight Python files
+under `dynamics/algorithms/` are exact renames; facade differences are import
+path repairs only.
+
+This move reduces exact transitional `core` to `fields` debt from five entries
+to three: two in the future `dynamics/scaling` converter and one in the unused
+field-construction helper in `core/units/parameter_processor.py`. It also makes
+two existing ownership debts explicit: `core/states.py` imports generic state
+validation from `dynamics/algorithms/validation.py`, and `dynamics/utils.py`
+imports the legacy dipole base class. Both are exact, test-enforced exceptions,
+not permitted target dependency directions.
+
+P3.1-c verification: 184 focused tests pass with 6 optional-GPU skips, and the
+full 704-test CPU suite passes with 10 optional-GPU skips; branch coverage
+remains 67%. Ruff, formatting, strict mypy, and distribution checks pass. The
+wheel contains `dynamics/`, excludes `core/propagation/`, and passes isolated
+new-path/old-path-absence imports.
+
+Implementation anchors: `dynamics/`,
+`tests/contracts/test_dynamics_package_architecture.py`, and the exact
+transition debt in `tests/contracts/test_package_architecture.py`.
+
+Implementation commit: this P3.1-c milestone commit.
 
 ## Open decisions
 

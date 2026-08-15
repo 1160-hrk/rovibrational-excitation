@@ -4,12 +4,12 @@ from typing import Any, TypedDict
 
 import numpy as np
 
-from rovibrational_excitation.core.propagation import (
+from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dynamics import (
     PropagationDirection,
     SchrodingerPropagator,
 )
-from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
-from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from rovibrational_excitation.optimization.timegrid import (
     build_optimization_time_settings,

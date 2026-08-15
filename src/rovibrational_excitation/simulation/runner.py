@@ -117,12 +117,12 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     """
     # --- 必要なimportは関数内で ---
     from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
-    from rovibrational_excitation.core.propagation.problem import PropagationProblem
-    from rovibrational_excitation.core.propagation.schrodinger import (
-        SchrodingerPropagator,
-    )
     from rovibrational_excitation.core.states import PureState
     from rovibrational_excitation.core.time import TimeGrid
+    from rovibrational_excitation.dynamics.problem import PropagationProblem
+    from rovibrational_excitation.dynamics.schrodinger import (
+        SchrodingerPropagator,
+    )
     from rovibrational_excitation.fields import (
         ElectricField,
         gaussian_fwhm,
