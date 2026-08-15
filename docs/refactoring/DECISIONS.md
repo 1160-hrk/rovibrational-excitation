@@ -1241,6 +1241,49 @@ Implementation anchors: `core/propagation/result.py`, `core/propagation/{base,sc
 
 Implementation commit: this P2.5 milestone commit.
 
+### D-040: Mechanical package migration uses target ownership without shims
+
+Status: Accepted on 2026-08-15 as the first Phase 3 migration checkpoint.
+
+Scope: target-package file moves, direct imports, package boundaries, and
+distribution contents; no physical or numerical implementation behavior.
+
+Decision:
+
+- tracked modules move with `git mv` to the owner already selected in
+  `TARGET_ARCHITECTURE.md`;
+- internal imports move directly to the target path, and superseded module
+  paths are removed rather than retained through compatibility shims;
+- each movement unit is limited to file ownership and import repair. Formula,
+  array, unit, backend, time-grid, and kernel changes require a later dedicated
+  change;
+- an AST dependency test rejects imports from `core` into higher application
+  layers or through the root convenience namespace;
+- wheel smoke tests must prove that the new module is packaged and the removed
+  module is absent.
+
+The first unit moves the unchanged generic `Hamiltonian` implementation from
+`core/basis/hamiltonian.py` to `core/operators.py`. The temporary package-root
+`Hamiltonian` re-export remains until O-008 resolves the final root namespace,
+but `core.basis.Hamiltonian` and `core.basis.hamiltonian` are removed.
+
+Consequences:
+
+- this is an intentional Python import break permitted by D-001;
+- the move does not authorize combining legacy basis/state classes or moving
+  model formulas, because those changes require Phase 6 ownership work;
+- a structural milestone must pass focused tests, the full physics/contract
+  suite, Ruff, formatting, mypy, build metadata checks, and clean-wheel import.
+
+Verification: 90 focused tests and the full 700-test CPU suite pass with 10
+optional-GPU skips; branch coverage remains 67%. Ruff, formatting, strict mypy,
+sdist/wheel build, Twine checks, and isolated wheel import all pass.
+
+Implementation anchors: `core/operators.py`, `core/__init__.py`, and
+`tests/contracts/test_package_architecture.py`.
+
+Implementation commit: this P3.1-a milestone commit.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

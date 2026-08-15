@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .hamiltonian import Hamiltonian
+    from ..operators import Hamiltonian
 
 
 class BasisBase(ABC):

@@ -13,7 +13,7 @@ import numpy as np
 from scipy import ndimage
 
 from rovibrational_excitation.core.basis import BasisBase
-from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
+from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.dipole.base import DipoleMatrixBase
 

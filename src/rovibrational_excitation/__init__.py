@@ -72,11 +72,11 @@ __all__: list[str] = [
 from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
 from .core.basis import (  # noqa: E402, F401
     DensityMatrix,
-    Hamiltonian,
     LinMolBasis,
     StateVector,
 )
 from .core.electric_field import ElectricField  # noqa: E402, F401
+from .core.operators import Hamiltonian  # noqa: E402, F401
 
 # Note: procedural propagators have been removed from public API in favor of class-based propagators
 # dipole

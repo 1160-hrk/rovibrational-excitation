@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-14
+Last verified: 2026-08-15
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 698 passed, 10 skipped (708 collected) |
+| Pytest | 700 passed, 10 skipped (710 collected) |
 | Measured branch coverage | 67% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -54,7 +54,17 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on 2026-08-14 after the P2.5 implementation. The same checkpoint reran the seven 4001-point CPU workloads through the typed public boundary: every final state is exactly equal to the committed Numba-CSR reference. The fixed 0.10 ms result-contract overhead is material only for the two-level dense micro-workload and is documented in D-039. The 47% gate intentionally starts at the accepted Phase 0 baseline; raise it in a dedicated coverage checkpoint after target ownership and omit policy are stable. The old README claim of 63% coverage is stale.
+The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on
+2026-08-15 after P3.1-a moved the unchanged `Hamiltonian` implementation to
+`core/operators.py`. The same checkpoint built and checked both distributions
+and verified the new and removed module paths in an isolated wheel install. The
+preceding P2.5 checkpoint reran the seven 4001-point CPU workloads through the
+typed public boundary: every final state was exactly equal to the committed
+Numba-CSR reference. The fixed 0.10 ms result-contract overhead is material
+only for the two-level dense micro-workload and is documented in D-039. The 47%
+gate intentionally starts at the accepted Phase 0 baseline; raise it in a
+dedicated coverage checkpoint after target ownership and omit policy are
+stable. The old README claim of 63% coverage is stale.
 
 ### Largest source hotspots
 
@@ -137,7 +147,7 @@ These commits are the starting point, not the final architecture.
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
-| 3 | Target package migration | Pending |
+| 3 | Target package migration | In progress — P3.1-a moved the generic Hamiltonian owner and added dependency/wheel boundary tests |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |

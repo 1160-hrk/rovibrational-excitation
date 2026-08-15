@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, "/workspace/src")
 from rovibrational_excitation.core.basis.linmol import LinMolBasis
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
-from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
+from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.spectroscopy.constants import (
     omega3_CO2_rad_fs as OMEGA_CO2_RAD_FS,
     B0_CO2_rad_fs as B_CO2_RAD_FS,

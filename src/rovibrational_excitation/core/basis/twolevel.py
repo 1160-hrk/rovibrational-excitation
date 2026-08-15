@@ -6,8 +6,8 @@ import numpy as np
 
 from rovibrational_excitation.core.units.converters import converter
 
+from ..operators import Hamiltonian
 from .base import BasisBase
-from .hamiltonian import Hamiltonian
 
 
 class TwoLevelBasis(BasisBase):

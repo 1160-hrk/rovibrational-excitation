@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-14
+Last verified: 2026-08-15
 Active refactor branch: `refactor/v0.3`
-Verified behavioral contract: D-039 (P2.5 / Phase 2 complete)
+Verified structural checkpoint: D-040 (P3.1-a / Phase 3 in progress)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P2.5 unified-result checkpoint:
+Current local CPU baseline after the P3.1-a operator move:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-698 passed, 10 GPU tests skipped (708 collected)
+700 passed, 10 GPU tests skipped (710 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -196,10 +196,13 @@ recorded baseline for a phase.
 
 ## Current next work
 
-Phase 0, Phase 1, and Phase 2 are complete. D-039 is the verified typed propagation boundary: one complete problem, one required options object, and one backend-explicit endpoint-complete result. The next work is:
+Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
+propagation boundary. Phase 3 is in progress under D-040; the unchanged generic
+`Hamiltonian` now lives at `core/operators.py`, and the superseded basis path is
+removed. The next work is:
 
-1. Begin Phase 3 with a mechanical dependency/package migration; do not redesign numerical kernels during file moves.
-2. Move generic state, execution, time, and operator contracts first, using `git mv`, import smoke tests, focused tests, and one narrow commit per ownership group.
+1. Continue Phase 3 with the electric-field package move into `fields`; preserve every sampling, polarization, and half-step behavior exactly.
+2. Keep generic state/execution/time contracts already at their target paths; do not merge legacy `core/basis` state classes until model ownership is handled in Phase 6.
 3. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
 4. In Phase 5, remove the temporary full internal trajectory allocation for public `sample_stride > 1` only after endpoint/state equivalence and performance tests exist.
 5. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.

@@ -6,8 +6,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import Hamiltonian, LinMolBasis, TwoLevelBasis
+from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import (
     MixedStatePropagator,
     SchrodingerPropagator,

@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
-Status: Working target; structural details remain revisable before Phase 3
-Last updated: 2026-08-11
+Status: Accepted working target; Phase 3 migration in progress
+Last updated: 2026-08-15
 
 ## 1. Design goals
 
@@ -27,7 +27,7 @@ The design should favor explicit data flow over inheritance and broad
 A linear molecule is currently represented across:
 
 - `core/basis/linmol.py`;
-- `core/basis/hamiltonian.py`;
+- the generic `core/operators.py` plus model-specific basis modules;
 - `dipole/linmol/builder.py`;
 - `dipole/linmol/cache.py`;
 - `simulation/models/linmol.py`;
@@ -167,7 +167,7 @@ src/rovibrational_excitation/
     └── optimize.py
 ~~~
 
-Names may be refined before Phase 3, but ownership and dependency direction are
+Names may be refined during Phase 3, but ownership and dependency direction are
 binding unless the decision log changes.
 
 ## 4. Dependency rules
@@ -454,7 +454,7 @@ unrelated parameter names to guess the model.
 |---|---|---|
 | `core/basis/base.py` | `core/states.py` and `models/base.py` | Separate generic state protocol from model basis |
 | `core/basis/states.py` | `core/states.py` | Remove model-specific assumptions |
-| `core/basis/hamiltonian.py` | `core/operators.py` | Generic unit-aware operator |
+| `core/basis/hamiltonian.py` | `core/operators.py` | Complete in P3.1-a; implementation moved unchanged and old path removed |
 | `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Co-locate energy-gap schema |

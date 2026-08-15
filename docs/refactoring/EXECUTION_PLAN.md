@@ -703,6 +703,14 @@ Status: Complete on 2026-08-14.
 
 Goal: establish dependency direction using mechanical movement before redesign.
 
+Status: In progress. P3.1-a completed on 2026-08-15 under D-040. The generic
+`Hamiltonian` implementation moved unchanged from `core/basis/hamiltonian.py`
+to `core/operators.py`; all direct imports moved to the target owner, the old
+path was removed without a compatibility shim, and an explicit empty
+`core/__init__.py` plus AST dependency-boundary tests were added. The legacy
+basis/state class consolidation is deliberately deferred to Phase 6 because it
+is a redesign rather than a mechanical move.
+
 Suggested movement order:
 
 1. generic states, operators, units, and TimeGrid into target `core`;
@@ -722,6 +730,11 @@ For each move:
 6. only then redesign internals in a later commit.
 
 Add an import-boundary test that rejects forbidden dependencies.
+
+P3.1-a verification: 90 focused tests; 700 passed and 10 optional-GPU skips in
+the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
+checks; successful sdist/wheel build, Twine checks, and isolated wheel import
+with the new module present and old module absent.
 
 ### Phase 3 acceptance
 

@@ -19,8 +19,8 @@ from .utils import _HBAR
 
 # 型ヒント用 (循環参照を避けるため文字列で書く)
 if TYPE_CHECKING:  # pragma: no cover
-    from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
     from rovibrational_excitation.core.electric_field import ElectricField
+    from rovibrational_excitation.core.operators import Hamiltonian
     from rovibrational_excitation.dipole.base import DipoleMatrixBase
 
 

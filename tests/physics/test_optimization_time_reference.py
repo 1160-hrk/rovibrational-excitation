@@ -5,8 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import Hamiltonian, TwoLevelBasis
+from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.electric_field import ElectricField
+from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import (
     PropagationDirection,
     SchrodingerPropagator,

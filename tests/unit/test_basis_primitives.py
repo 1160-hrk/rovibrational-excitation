@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis.base import BasisBase
-from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
+from rovibrational_excitation.core.operators import Hamiltonian
 
 
 def test_basis_base_is_abstract_with_expected_interface():

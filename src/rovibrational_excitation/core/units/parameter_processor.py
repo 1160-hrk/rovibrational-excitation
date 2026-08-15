@@ -247,7 +247,7 @@ class ParameterProcessor:
             Hamiltonian object with proper unit management
         """
         # Lazy import to avoid circular dependency
-        from ..basis.hamiltonian import Hamiltonian
+        from ..operators import Hamiltonian
 
         # Extract unit information
         input_units = params.get("hamiltonian_units", "J")

@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-14
+Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P2.5 / D-039
+Latest API checkpoint: P3.1-a / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -30,7 +30,7 @@ working proposal, not yet an accepted API decision.
 | Current root name | Observed callers | Target path or replacement | Disposition |
 |---|---|---|---|
 | `LinMolBasis` | README and direct subpackage examples use the concept; no source file imports it from root | `models.linear_molecule.LinearMoleculeModel` and typed parameters | temporary public |
-| `Hamiltonian` | Tests and examples use `core.basis.Hamiltonian` | `core.operators.Hamiltonian` | temporary public |
+| `Hamiltonian` | Root re-export remains; internal callers now use the target module | `core.operators.Hamiltonian` | temporary root re-export pending O-008; target submodule complete |
 | `StateVector` | Tests and examples use `core.basis.StateVector` | `core.states.StateVector` | temporary public |
 | `DensityMatrix` | Tests use `core.basis.DensityMatrix` | `core.states.DensityMatrix` | temporary public |
 | `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public |
@@ -79,13 +79,16 @@ not treated as intentional API.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `core.basis` | `BasisBase`, `Hamiltonian`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic types to `core`; model bases to their `models.*` owners | temporary public |
+| `core` | no re-exported names yet | narrow generic state/operator/time/unit surface pending O-008 | target public package created in P3.1-a |
+| `core.operators` | `Hamiltonian` is directly importable; no package `__all__` yet | generic unit-aware operator owner | target public module; root re-export remains temporary |
+| `core.basis` | `BasisBase`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; model bases to their `models.*` owners | temporary public; `Hamiltonian` removed in P3.1-a |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `converter`, `UnitValidator`, `validator`, `ParameterProcessor`, `parameter_processor` | immutable constants and explicit conversion services under `core.units`; typed config handles parameter conversion | classes temporary public; singleton objects internal and delete |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 | `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
 | `core.states` | `PureState`, `IncoherentEnsemble`, `DensityState` | explicit immutable initial-state kinds | target public module; all propagator facades migrated in P2.2 |
 
-`core` itself has no `__init__.py`, so it has no explicit public contract today.
+`core/__init__.py` now makes the target package explicit but intentionally
+re-exports nothing until O-008 fixes the supported convenience surface.
 
 ### 3.2 Fields
 

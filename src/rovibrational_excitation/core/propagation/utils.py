@@ -10,8 +10,8 @@ import numpy as np
 import scipy.sparse
 
 from ...dipole.base import DipoleMatrixBase
-from ..basis.hamiltonian import Hamiltonian
 from ..electric_field import ElectricField
+from ..operators import Hamiltonian
 from ..time import FIELD_INTERVALS_PER_PROPAGATION_STEP
 
 if TYPE_CHECKING:
