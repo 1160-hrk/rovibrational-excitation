@@ -465,7 +465,7 @@ unrelated parameter names to guess the model.
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
 | `simulation/models/*` | `models/*/model.py` | Remove duplicate facade after migration |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
-| `core/nondimensional/*` | `dynamics/scaling/*` | Consolidate policy and transformation |
+| `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `simulation/timegrid.py` | `core/time.py` | TimeGrid becomes a core invariant |
 | `simulation/storage.py` | `io/storage.py` | Add schema version |
 | `simulation/serialization.py` | `io/serialization.py` | JSON-safe typed conversion |

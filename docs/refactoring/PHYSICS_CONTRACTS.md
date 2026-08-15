@@ -208,8 +208,8 @@ raises rather than rounding or extending the endpoint.
 Implementation anchors:
 
 - fields/field.py: ZeroField;
-- core/nondimensional/converter.py: validation, centering, and scale derivation;
-- core/nondimensional/scales.py: values and provenance;
+- dynamics/scaling/converter.py: validation, centering, and scale derivation;
+- dynamics/scaling/scales.py: values and provenance;
 - dynamics/schrodinger.py: global-phase restoration;
 - tests/contracts/test_strict_nondimensional_contracts.py: reference contracts.
 ### 3.2 Explicit physical inputs

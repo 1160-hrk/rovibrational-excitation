@@ -115,7 +115,7 @@ follow_imports = "silent"
 warn_unused_configs = true
 files = [
     "src/rovibrational_excitation/core/execution.py",
-    "src/rovibrational_excitation/core/nondimensional/scales.py",
+    "src/rovibrational_excitation/dynamics/scaling/scales.py",
     "src/rovibrational_excitation/dynamics/base.py",
     "src/rovibrational_excitation/dynamics/capabilities.py",
     "src/rovibrational_excitation/dynamics/factory.py",

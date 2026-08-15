@@ -38,7 +38,7 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 #### 🔴 低カバレッジ (<50%)
 | モジュール | カバレッジ |
 | --- | --- |
-| `core/nondimensional/*` | 6-28% |
+| `dynamics/scaling/*` | 6-28% |
 | `dynamics/algorithms/*`| 13-28% |
 | `dynamics/liouville.py`| 20% |
 | `core/propagator.py` | 18% |

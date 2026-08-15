@@ -75,6 +75,7 @@ def test_dynamics_has_only_explicit_lower_layer_dependencies():
 
     expected_transition_debt = {
         "src/rovibrational_excitation/dynamics/utils.py imports dipole.base",
+        "src/rovibrational_excitation/dynamics/scaling/converter.py imports rovibrational_excitation.dipole.base",
     }
     assert len(violations) == len(expected_transition_debt)
     assert set(violations) == expected_transition_debt

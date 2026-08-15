@@ -9,7 +9,7 @@
 - envelopes: 包絡線関数群
 - modulation: 変調関数群
 
-無次元化機能は nondimensional.converter に統一されています。
+無次元化機能は dynamics.scaling.converter に統一されています。
 """
 
 from .envelopes import (

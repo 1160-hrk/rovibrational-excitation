@@ -272,7 +272,7 @@ def prepare_propagation_args(
     The integration step is derived from the electric-field grid as
     ``efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP``.
     """
-    from ..core.nondimensional.converter import nondimensionalize_from_objects
+    from .scaling.converter import nondimensionalize_from_objects
 
     if coupling_mode == "cartesian":
         ax0, ax1 = validate_axes(axes)

@@ -10,7 +10,7 @@ from typing import Literal
 
 import numpy as np
 
-from ..units.constants import CONSTANTS
+from ...core.units.constants import CONSTANTS
 
 
 @dataclass(frozen=True)

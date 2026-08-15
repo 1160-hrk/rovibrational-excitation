@@ -3,7 +3,7 @@
 Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-c / D-040
+Latest API checkpoint: P3.1-d / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -113,7 +113,7 @@ temporary.
 | `dynamics.algorithms` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger`, `splitop_schrodinger` | `dynamics.solvers` private kernels | internal |
 | `dynamics.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
 | `dynamics.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
-| `core.nondimensional` | `NondimensionalizationScales`, `ScaleValue`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `determine_SI_based_scales`, `create_dimensionless_time_array`, `analyze_regime`, `dimensionalize_wavefunction`, `get_physical_time` | `dynamics.scaling` with one explicit scaling representation | strict temporary public surface; move without adding competing strategies |
+| `dynamics.scaling` | `NondimensionalizationScales`, `ScaleValue`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `determine_SI_based_scales`, `create_dimensionless_time_array`, `analyze_regime`, `dimensionalize_wavefunction`, `get_physical_time` | target owner reached in P3.1-d with one explicit scaling representation | target public subpackage; old `core.nondimensional` path removed |
 
 The former 25-name surface was reduced under D-022 after dimensional-equivalence
 and strict-generator tests identified the production path. Compatibility

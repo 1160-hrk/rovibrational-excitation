@@ -116,10 +116,10 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     系タイプ（basis_type）に応じて汎用的に対応
     """
     # --- 必要なimportは関数内で ---
-    from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
     from rovibrational_excitation.core.states import PureState
     from rovibrational_excitation.core.time import TimeGrid
     from rovibrational_excitation.dynamics.problem import PropagationProblem
+    from rovibrational_excitation.dynamics.scaling.reporting import analyze_regime
     from rovibrational_excitation.dynamics.schrodinger import (
         SchrodingerPropagator,
     )
@@ -233,7 +233,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     # 無次元化使用時は物理レジーム情報も保存
     regime_info = None
     if use_nondimensional:
-        from rovibrational_excitation.core.nondimensional.converter import (
+        from rovibrational_excitation.dynamics.scaling.converter import (
             nondimensionalize_from_objects,
         )
 

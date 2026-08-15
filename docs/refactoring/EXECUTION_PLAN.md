@@ -714,12 +714,13 @@ electric-field package to `fields/`, renamed only its generic `core.py` module
 to `field.py`, repaired imports and public examples, and removed the old path.
 P3.1-c moved the unchanged propagation package to `dynamics/`, repaired direct
 imports, and removed the old path without a compatibility shim. All numerical
-kernels are exact renames. Three exact transitional `core` to `fields`
-dependencies remain test-enforced until scaling and the legacy parameter
-processor move to their target owners. The pre-existing
-`core.states -> dynamics.algorithms.validation` and
-`dynamics.utils -> dipole.base` ownership debts are separately exact-allowlisted
-until generic validation and model ownership are consolidated.
+kernels are exact renames. P3.1-d then moved the unchanged strict scaling
+package to `dynamics/scaling/`; only the relative constants import required
+repair. One exact `core -> fields` dependency remains in the legacy parameter
+processor. The pre-existing `core.states -> dynamics.algorithms.validation`,
+`dynamics.utils -> dipole.base`, and scaling converter type-only dependency on
+`dipole.base` are separately exact-allowlisted until generic validation and
+model ownership are consolidated.
 
 Suggested movement order:
 
@@ -758,6 +759,12 @@ format, strict mypy, and diff checks; successful sdist/wheel build, Twine
 checks, wheel-content audit, and isolated import with `dynamics` present and
 `core.propagation` absent.
 
+P3.1-d verification: 122 focused tests with 1 optional-GPU skip; 705 passed
+and 10 optional-GPU skips in the full suite; 67% branch coverage; clean Ruff,
+format, strict mypy, and diff checks; successful sdist/wheel build, Twine
+checks, wheel-content audit, and isolated import with `dynamics.scaling` present
+and `core.nondimensional` absent.
+
 ### Phase 3 acceptance
 
 - Source tree matches `TARGET_ARCHITECTURE.md` at the package level.
@@ -777,11 +784,13 @@ magnitude. ZeroField and inactive scale provenance are explicit. Absolute
 Schrodinger phase is restored after centering. Heuristic auto-timestep and
 invented zero scales now raise.
 P4.2 completed on 2026-08-10 under D-022 (`7d14fda`). The 25-name public
-scaling surface was reduced to strict transformation, scale metadata, exact conversions, and
-neutral reporting. `analysis.py`, `strategies.py`, `impl.py`, automatic
+scaling surface was reduced to strict transformation, scale metadata, exact
+conversions, and neutral reporting. `analysis.py`, `strategies.py`, `impl.py`, automatic
 timestep wrappers, heuristic strength verification, and demo factories were
-removed. Raw-array units and object coupling semantics are now required.
-
+removed. Raw-array units and object coupling semantics are now required. P3.1-d moved
+this implemented policy unchanged to its target `dynamics/scaling` owner. Scale
+provenance has already been attached to same-call `PropagationResult` metadata
+under P2.5.
 
 The 2026-08-09 explicit-fallback audit also rejects removed and unknown solver
 options and prevents dipole CuPy requests from becoming NumPy arrays. Remaining
@@ -789,19 +798,15 @@ P1/P2 findings and physics-facing default decisions are in FALLBACK_AUDIT.md.
 
 Remaining Phase 4 work:
 
-- move the implemented policy into the target dynamics/scaling package;
-- attach scale provenance to the unified PropagationResult rather than
-  recomputing it in simulation/runner.py;
 - finish explicit quantity types and property-style unit round trips;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 
 - define explicit quantity/unit types or validated value-plus-unit dataclasses;
 - keep pure conversion functions in `core/units`;
-- move complete-problem scaling to `dynamics/scaling`;
-- move the consolidated converter, scales, reporting, and conversion helpers
-  without reintroducing competing policy;
-- serialize scales in results;
+- preserve complete-problem scaling in `dynamics/scaling` without introducing
+  competing policy;
+- preserve same-call scale serialization in results;
 - add property-style round-trip tests.
 
 Acceptance:

@@ -65,8 +65,6 @@ def test_core_has_no_unrecorded_imports_from_higher_application_layers():
                     violations.append(f"{path.relative_to(ROOT)} imports {module}")
 
     expected_transitional_dependencies = {
-        "src/rovibrational_excitation/core/nondimensional/converter.py imports fields",
-        "src/rovibrational_excitation/core/nondimensional/converter.py imports rovibrational_excitation.fields",
         "src/rovibrational_excitation/core/states.py imports dynamics.algorithms.validation",
         "src/rovibrational_excitation/core/units/parameter_processor.py imports fields",
     }

@@ -4,7 +4,7 @@
 
 電場波形を表現するメインクラス。
 単位変換機能を持ち、SI単位系で内部保持する。
-無次元化機能は nondimensional.converter に統一。
+無次元化機能は dynamics.scaling.converter に統一。
 """
 
 import inspect
@@ -33,7 +33,7 @@ class ElectricField:
     電場波形を表現するクラス（偏光、包絡線、GDD/TOD付き）
 
     SI単位系（fs, V/m）で内部保持し、単位変換機能を提供。
-    無次元化機能は nondimensional.converter に委譲。
+    無次元化機能は dynamics.scaling.converter に委譲。
     """
 
     def __init__(

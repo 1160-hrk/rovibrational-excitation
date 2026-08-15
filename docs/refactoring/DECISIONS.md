@@ -375,7 +375,7 @@ Implementation commit: `93ee9eb`
 ### D-020: Nondimensionalization never invents missing scales or time grids
 
 Status: Accepted
-Scope: core/nondimensional, propagation preparation, returned wavefunction phase
+Scope: dynamics/scaling, propagation preparation, returned wavefunction phase
 
 A zero Hamiltonian, zero transition dipole, or zero electric field previously
 triggered arbitrary replacements corresponding to 1 fs, 1 Debye, or
@@ -1308,9 +1308,8 @@ Implementation commit for P3.1-b: `7b68046`.
 
 The third unit moves `core/propagation/` mechanically to `dynamics/`, preserving
 the lazy public facade, adapters, options, result contracts, and every numerical
-kernel. The old package is removed without a compatibility shim. All eight Python files
-under `dynamics/algorithms/` are exact renames; facade differences are import
-path repairs only.
+kernel. The old package is removed without a compatibility shim. All eight Python files under `dynamics/algorithms/` are exact renames; facade
+differences are import path repairs only.
 
 This move reduces exact transitional `core` to `fields` debt from five entries
 to three: two in the future `dynamics/scaling` converter and one in the unused
@@ -1330,7 +1329,32 @@ Implementation anchors: `dynamics/`,
 `tests/contracts/test_dynamics_package_architecture.py`, and the exact
 transition debt in `tests/contracts/test_package_architecture.py`.
 
-Implementation commit: this P3.1-c milestone commit.
+Implementation commit for P3.1-c: `7acab34`.
+
+The fourth unit moves `core/nondimensional/` mechanically to
+`dynamics/scaling/`. The package facade, converter, reporting helper, and
+conversion utilities are exact renames. `scales.py` changes only the relative
+import needed to keep using the identical `core.units.constants` object. No
+scale formula, validation threshold, fallback policy, conversion order, dtype,
+or result metadata behavior changes.
+
+The move reduces exact transitional `core` to `fields` debt from three entries
+to one, in the legacy `core/units/parameter_processor.py`. The converter type
+annotation dependency on `dipole.base` becomes visible under the stricter
+`dynamics` boundary and is exact-allowlisted alongside the existing
+`dynamics/utils.py` dependency. These are migration debts, not target
+dependency directions.
+
+P3.1-d verification: 122 focused tests pass with 1 optional-GPU skip, and the
+full 705-test CPU suite passes with 10 optional-GPU skips; branch coverage
+remains 67%. Ruff, formatting, strict mypy, sdist/wheel build, Twine checks,
+wheel contents, and isolated new-path/old-path-absence imports all pass.
+
+Implementation anchors: `dynamics/scaling/`,
+`tests/contracts/test_scaling_package_architecture.py`, and the exact
+transition debt tests for `core` and `dynamics`.
+
+Implementation commit: this P3.1-d milestone commit.
 
 ## Open decisions
 

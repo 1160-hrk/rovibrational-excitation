@@ -7,14 +7,14 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.nondimensional import (
+from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.dynamics.scaling import (
     NondimensionalizationScales,
     analyze_regime,
     dimensionalize_wavefunction,
     get_physical_time,
     nondimensionalize_system,
 )
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.fields import (
     ElectricField,
     ZeroField,
