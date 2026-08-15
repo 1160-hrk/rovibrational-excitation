@@ -4,9 +4,9 @@ from typing import Any, TypedDict
 
 import numpy as np
 
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
+from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.optimization.timegrid import (
     LocalOptimizerLegacyGridV1,
 )

@@ -19,7 +19,7 @@ def test_hamiltonian_is_owned_by_the_target_core_operator_module():
     assert Hamiltonian.__module__ == "rovibrational_excitation.core.operators"
 
 
-def test_core_has_no_imports_from_higher_application_layers():
+def test_core_has_no_unrecorded_imports_from_higher_application_layers():
     forbidden = {
         "cli",
         "dynamics",
@@ -42,6 +42,16 @@ def test_core_has_no_imports_from_higher_application_layers():
             elif isinstance(node, ast.ImportFrom) and node.module is not None:
                 modules = [node.module]
                 level = node.level
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "import_module"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                modules = [node.args[0].value]
+                level = 0
             else:
                 continue
             for module in modules:
@@ -54,4 +64,12 @@ def test_core_has_no_imports_from_higher_application_layers():
                 elif level > 1 and parts[0] in forbidden:
                     violations.append(f"{path.relative_to(ROOT)} imports {module}")
 
-    assert violations == []
+    expected_transitional_dependencies = {
+        "src/rovibrational_excitation/core/nondimensional/converter.py imports fields",
+        "src/rovibrational_excitation/core/nondimensional/converter.py imports rovibrational_excitation.fields",
+        "src/rovibrational_excitation/core/propagation/problem.py imports rovibrational_excitation.fields",
+        "src/rovibrational_excitation/core/propagation/utils.py imports fields",
+        "src/rovibrational_excitation/core/units/parameter_processor.py imports fields",
+    }
+    assert len(violations) == len(expected_transitional_dependencies)
+    assert set(violations) == expected_transitional_dependencies

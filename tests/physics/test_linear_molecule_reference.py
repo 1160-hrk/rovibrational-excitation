@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
@@ -14,6 +13,7 @@ from rovibrational_excitation.core.execution import (
 )
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
+from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from rovibrational_excitation.simulation.models.linmol_m_average import (
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,

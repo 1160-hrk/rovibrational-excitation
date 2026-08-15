@@ -3,13 +3,13 @@
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.electric_field import ElectricField, ZeroField
 from rovibrational_excitation.core.nondimensional import (
     nondimensionalize_from_objects,
     nondimensionalize_system,
 )
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
+from rovibrational_excitation.fields import ElectricField, ZeroField
 
 HBAR = 1.054571817e-34
 

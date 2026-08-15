@@ -5,9 +5,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.electric_field import (
-    ElectricField as RealElectricField,
-)
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
@@ -15,6 +12,9 @@ from rovibrational_excitation.core.execution import (
 )
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import (
+    ElectricField as RealElectricField,
+)
 from rovibrational_excitation.simulation.models import build_model
 from rovibrational_excitation.simulation.runner import _run_one
 
@@ -210,7 +210,7 @@ def test_runner_zero_field_preserves_population_after_model_split(model_params):
 
 
 @patch("rovibrational_excitation.core.propagation.schrodinger.SchrodingerPropagator")
-@patch("rovibrational_excitation.core.electric_field.ElectricField")
+@patch("rovibrational_excitation.fields.ElectricField")
 def test_runner_uses_interval_duration_and_one_backend(
     electric_field_cls, propagator_cls
 ):

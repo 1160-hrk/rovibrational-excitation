@@ -116,10 +116,6 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     系タイプ（basis_type）に応じて汎用的に対応
     """
     # --- 必要なimportは関数内で ---
-    from rovibrational_excitation.core.electric_field import (
-        ElectricField,
-        gaussian_fwhm,
-    )
     from rovibrational_excitation.core.nondimensional.reporting import analyze_regime
     from rovibrational_excitation.core.propagation.problem import PropagationProblem
     from rovibrational_excitation.core.propagation.schrodinger import (
@@ -127,6 +123,10 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     )
     from rovibrational_excitation.core.states import PureState
     from rovibrational_excitation.core.time import TimeGrid
+    from rovibrational_excitation.fields import (
+        ElectricField,
+        gaussian_fwhm,
+    )
 
     from .validation import validate_simulation_case
 

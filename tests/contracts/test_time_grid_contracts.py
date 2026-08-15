@@ -5,11 +5,11 @@ from dataclasses import FrozenInstanceError
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.time import (
     FIELD_INTERVALS_PER_PROPAGATION_STEP,
     TimeGrid,
 )
+from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.simulation.timegrid import build_time_grid
 
 

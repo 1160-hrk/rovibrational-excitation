@@ -30,7 +30,7 @@ from rovibrational_excitation.core.basis import (  # noqa: E402
     TwoLevelBasis,
     VibLadderBasis,
 )
-from rovibrational_excitation.core.electric_field import (  # noqa: E402
+from rovibrational_excitation.fields import (  # noqa: E402
     ElectricField,
     gaussian_fwhm,
 )

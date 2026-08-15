@@ -709,7 +709,12 @@ to `core/operators.py`; all direct imports moved to the target owner, the old
 path was removed without a compatibility shim, and an explicit empty
 `core/__init__.py` plus AST dependency-boundary tests were added. The legacy
 basis/state class consolidation is deliberately deferred to Phase 6 because it
-is a redesign rather than a mechanical move.
+is a redesign rather than a mechanical move. P3.1-b then moved the unchanged
+electric-field package to `fields/`, renamed only its generic `core.py` module
+to `field.py`, repaired imports and public examples, and removed the old path.
+Five exact transitional `core` to `fields` dependencies remain test-enforced
+until propagation, scaling, and the legacy parameter processor move to their
+target owners.
 
 Suggested movement order:
 
@@ -735,6 +740,12 @@ P3.1-a verification: 90 focused tests; 700 passed and 10 optional-GPU skips in
 the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
 checks; successful sdist/wheel build, Twine checks, and isolated wheel import
 with the new module present and old module absent.
+
+P3.1-b verification: 154 focused tests; 702 passed and 10 optional-GPU skips in
+the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
+checks; successful sdist/wheel build, Twine checks, wheel-content audit, and
+isolated import with new fields modules present, root identity preserved, and
+the old subpackage absent.
 
 ### Phase 3 acceptance
 

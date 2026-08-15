@@ -6,6 +6,7 @@ Package for rovibrational wave-packet simulation.
 サブモジュール
 --------------
 core            … 低レベル数値計算 (Hamiltonian, RK4 propagator など)
+fields          … 電場波形、包絡線、変調
 dipole          … 双極子モーメント行列の高速生成
 plots           … 可視化ユーティリティ
 simulation      … バッチ実行・結果管理
@@ -69,18 +70,18 @@ __all__: list[str] = [
 # ------------------------------------------------------------------
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
-from . import core, dipole, plots, simulation, spectroscopy  # noqa: E402, F401
+from . import core, dipole, fields, plots, simulation, spectroscopy  # noqa: E402, F401
 from .core.basis import (  # noqa: E402, F401
     DensityMatrix,
     LinMolBasis,
     StateVector,
 )
-from .core.electric_field import ElectricField  # noqa: E402, F401
 from .core.operators import Hamiltonian  # noqa: E402, F401
 
 # Note: procedural propagators have been removed from public API in favor of class-based propagators
 # dipole
 from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
+from .fields import ElectricField  # noqa: E402, F401
 
 # spectroscopy - Modern API (推奨)
 from .spectroscopy import (

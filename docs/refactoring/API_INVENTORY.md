@@ -3,7 +3,7 @@
 Last verified: 2026-08-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-a / D-040
+Latest API checkpoint: P3.1-b / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -45,7 +45,7 @@ Every current root `__all__` name therefore has an explicit disposition. Only
 ### 2.2 Other accessible root attributes
 
 `__version__` and `__author__` are accessible but absent from `__all__`.
-`core`, `dipole`, `plots`, `simulation`, and `spectroscopy` are bound by
+`core`, `dipole`, `fields`, `plots`, `simulation`, and `spectroscopy` are bound by
 eager root imports even though only `dipole` and `spectroscopy` have package
 `__init__.py` files. The others currently rely on namespace-package behavior.
 
@@ -54,6 +54,7 @@ eager root imports even though only `dipole` and `spectroscopy` have package
 | `__version__` | root metadata | target public; add to `__all__` |
 | `__author__` | package metadata only | internal; do not promise as API |
 | `core` | explicit `core/__init__.py` with narrow exports | target public subpackage |
+| `fields` | explicit field construction, envelopes, and modulation package | target public subpackage; `ElectricField` remains a temporary root re-export pending O-008 |
 | `dipole` | functionality moves under model ownership | temporary public; delete package after migration |
 | `plots` | `visualization` | temporary public; rename |
 | `simulation` | typed `simulation` workflows | target public subpackage |
@@ -94,7 +95,7 @@ re-exports nothing until O-008 fixes the supported convenience surface.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `core.electric_field` | `ElectricField`, `gaussian`, `lorentzian`, `voigt`, `gaussian_fwhm`, `lorentzian_fwhm`, `voigt_fwhm`, `apply_sinusoidal_mod`, `apply_dispersion`, `get_mod_spectrum_from_bin_setting` | `fields` | target public subpackage; only `ElectricField`, `gaussian`, and `gaussian_fwhm` proposed at root |
+| `fields` | `ElectricField`, `ZeroField`, `gaussian`, `lorentzian`, `voigt`, `gaussian_fwhm`, `lorentzian_fwhm`, `voigt_fwhm`, `apply_sinusoidal_mod`, `apply_dispersion`, `get_mod_spectrum_from_bin_setting` | target owner reached in P3.1-b | target public subpackage; only `ElectricField`, `gaussian`, and `gaussian_fwhm` proposed at root |
 
 `ElectricField.from_time_grid` is the canonical typed constructor. Its legacy
 array constructor remains available for kernels, optimization code, and tests

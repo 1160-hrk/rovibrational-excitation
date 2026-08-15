@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import (
     PropagationDirection,
@@ -16,6 +15,7 @@ from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import
     rk4_schrodinger,
 )
 from rovibrational_excitation.dipole.twolevel.cache import TwoLevelDipoleMatrix
+from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.optimization.krotov import run_krotov_optimization
 from rovibrational_excitation.optimization.timegrid import (
     build_optimization_time_settings,

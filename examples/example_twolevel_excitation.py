@@ -18,7 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix

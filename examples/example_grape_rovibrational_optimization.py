@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from rovibrational_excitation.core.basis import LinMolBasis, StateVector
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian
+from rovibrational_excitation.fields import ElectricField, gaussian
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.core.units.converters import converter

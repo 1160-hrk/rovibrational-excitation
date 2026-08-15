@@ -189,7 +189,7 @@ t = np.linspace(-200, 200, 4001)  # 時間軸 [fs]
 E = rve.ElectricField(tlist=t)
 
 E.add_dispersed_Efield(
-    envelope_func=rve.core.electric_field.gaussian_fwhm,
+    envelope_func=rve.fields.gaussian_fwhm,
     duration=50.0,                # ガウシアンFWHM [fs]
     t_center=0.0,                 # パルス中心時刻
     carrier_freq=2349*2*np.pi*c_vacuum,  # キャリア周波数

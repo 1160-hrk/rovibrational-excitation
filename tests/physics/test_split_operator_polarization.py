@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
@@ -14,6 +13,7 @@ from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodi
     splitop_schrodinger,
 )
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.fields import ElectricField
 
 
 def _linmol_problem():

@@ -459,7 +459,7 @@ unrelated parameter names to guess the model.
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Co-locate energy-gap schema |
 | `core/basis/symtop.py` | `models/symmetric_top/basis.py` | Keep experimental until validated |
-| `core/electric_field/*` | `fields/*` | Preserve field sampling semantics |
+| `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |

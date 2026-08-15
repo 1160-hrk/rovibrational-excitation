@@ -281,7 +281,7 @@ class ParameterProcessor:
             ElectricField object with proper unit management
         """
         # Lazy import to avoid circular dependency
-        from ..electric_field import ElectricField
+        from ...fields import ElectricField
 
         time_units = params.get("time_units", "fs")
         field_units = params.get("field_units", "V/m")

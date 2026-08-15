@@ -188,7 +188,7 @@ H0 = rve.generate_H0_LinMol(
 t  = np.linspace(-200, 200, 4001)                   # fs
 E  = rve.ElectricField(tlist=t)
 E.add_dispersed_Efield(
-        envelope_func=rve.core.electric_field.gaussian_fwhm,
+        envelope_func=rve.fields.gaussian_fwhm,
         duration=50.0,             # FWHM (fs)
         t_center=0.0,
         carrier_freq=2349*2*np.pi*c_vacuum,   # rad/fs

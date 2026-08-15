@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import (
     Axis,
@@ -21,6 +20,7 @@ from rovibrational_excitation.core.propagation import (
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.fields import ElectricField
 
 
 def _model(*, hamiltonian=None, coupling=None):

@@ -2,13 +2,13 @@
 
 import numpy as np
 
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import (
     LiouvillePropagator,
     SchrodingerPropagator,
 )
 from rovibrational_excitation.core.states import DensityState, PureState
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import ElectricField
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

@@ -7,11 +7,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.core.electric_field import (
-    ElectricField,
-    ZeroField,
-    gaussian_fwhm,
-)
 from rovibrational_excitation.core.nondimensional import (
     NondimensionalizationScales,
     analyze_regime,
@@ -20,6 +15,11 @@ from rovibrational_excitation.core.nondimensional import (
     nondimensionalize_system,
 )
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
+from rovibrational_excitation.fields import (
+    ElectricField,
+    ZeroField,
+    gaussian_fwhm,
+)
 
 
 def test_nondimensionalization_scales():

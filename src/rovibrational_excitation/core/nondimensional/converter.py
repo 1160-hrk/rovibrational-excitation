@@ -13,15 +13,15 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 # スケールクラス
-from ..electric_field import ZeroField
+from ...fields import ZeroField
 from .scales import NondimensionalizationScales
 from .utils import _HBAR
 
 # 型ヒント用 (循環参照を避けるため文字列で書く)
 if TYPE_CHECKING:  # pragma: no cover
-    from rovibrational_excitation.core.electric_field import ElectricField
     from rovibrational_excitation.core.operators import Hamiltonian
     from rovibrational_excitation.dipole.base import DipoleMatrixBase
+    from rovibrational_excitation.fields import ElectricField
 
 
 def _as_numpy(value: Any) -> np.ndarray:

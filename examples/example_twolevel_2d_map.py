@@ -26,7 +26,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian
+from rovibrational_excitation.fields import ElectricField, gaussian
 from rovibrational_excitation.core.propagation.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.core.basis import StateVector
 from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix

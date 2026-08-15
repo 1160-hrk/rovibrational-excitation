@@ -12,11 +12,6 @@ from rovibrational_excitation.core.basis import (
     TwoLevelBasis,
     VibLadderBasis,
 )
-from rovibrational_excitation.core.electric_field import (
-    ElectricField,
-    ZeroField,
-    gaussian,
-)
 from rovibrational_excitation.core.propagation import (
     LiouvillePropagator,
     MixedStatePropagator,
@@ -27,6 +22,11 @@ from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dipole import (
     LinMolDipoleMatrix,
     VibLadderDipoleMatrix,
+)
+from rovibrational_excitation.fields import (
+    ElectricField,
+    ZeroField,
+    gaussian,
 )
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem

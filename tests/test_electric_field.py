@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.electric_field import (
+from rovibrational_excitation.fields import (
     ElectricField,
     apply_dispersion,
     gaussian,

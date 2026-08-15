@@ -14,7 +14,7 @@ Run with:
 python -m rovibrational_excitation.simulation.runner examples/example_default_units.py
 """
 
-from rovibrational_excitation.core.electric_field import gaussian_fwhm
+from rovibrational_excitation.fields import gaussian_fwhm
 import numpy as np
 from rovibrational_excitation.core.units import (
     get_default_units,

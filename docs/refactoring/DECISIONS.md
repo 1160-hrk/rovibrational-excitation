@@ -1243,7 +1243,7 @@ Implementation commit: this P2.5 milestone commit.
 
 ### D-040: Mechanical package migration uses target ownership without shims
 
-Status: Accepted on 2026-08-15 as the first Phase 3 migration checkpoint.
+Status: Accepted on 2026-08-15 for the mechanical Phase 3 migration checkpoints.
 
 Scope: target-package file moves, direct imports, package boundaries, and
 distribution contents; no physical or numerical implementation behavior.
@@ -1257,8 +1257,10 @@ Decision:
 - each movement unit is limited to file ownership and import repair. Formula,
   array, unit, backend, time-grid, and kernel changes require a later dedicated
   change;
-- an AST dependency test rejects imports from `core` into higher application
-  layers or through the root convenience namespace;
+- AST dependency tests reject unrecorded imports from `core` into higher
+  application layers or through the root convenience namespace. During staged
+  movement, every unavoidable dependency is an exact allowlisted debt that must
+  shrink when its target owner moves;
 - wheel smoke tests must prove that the new module is packaged and the removed
   module is absent.
 
@@ -1282,7 +1284,30 @@ sdist/wheel build, Twine checks, and isolated wheel import all pass.
 Implementation anchors: `core/operators.py`, `core/__init__.py`, and
 `tests/contracts/test_package_architecture.py`.
 
-Implementation commit: this P3.1-a milestone commit.
+Implementation commit for P3.1-a: `cf9e7a2`.
+
+The second unit moves `core/electric_field/{core,envelopes,modulation}.py` to
+`fields/{field,envelopes,modulation}.py`, preserving all class and function
+bodies. Root `ElectricField` remains the identical class object, while the old
+subpackage path is removed. Import and wheel tests fix the new module ownership.
+
+Five `core` to `fields` references remain explicitly allowlisted as migration
+debt: two in the future `dynamics/scaling` converter, two in the future
+`dynamics` propagation package (including its dynamic type import), and the
+unused field-construction helper in `core/units/parameter_processor.py`. The
+allowlist rejects additions and also fails if a resolved dependency is not
+removed. It is not a permitted target dependency direction.
+
+P3.1-b verification: 154 focused tests and the full 702-test CPU suite pass
+with 10 optional-GPU skips; branch coverage remains 67%. Ruff, formatting,
+strict mypy, sdist/wheel build, Twine checks, wheel contents, and isolated
+new-path/root-identity/old-path-absence imports all pass.
+
+Implementation anchors: `fields/`,
+`tests/contracts/test_fields_package_architecture.py`, and the exact transition
+debt in `tests/contracts/test_package_architecture.py`.
+
+Implementation commit: this P3.1-b milestone commit.
 
 ## Open decisions
 

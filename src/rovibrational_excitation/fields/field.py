@@ -15,7 +15,7 @@ from numpy import pi
 from scipy.fft import irfft, rfft, rfftfreq
 
 if TYPE_CHECKING:
-    from ..time import TimeGrid
+    from ..core.time import TimeGrid
 
 from rovibrational_excitation.core.units.converters import converter
 

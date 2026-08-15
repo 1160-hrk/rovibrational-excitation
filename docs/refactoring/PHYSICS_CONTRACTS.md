@@ -207,7 +207,7 @@ raises rather than rounding or extending the endpoint.
 
 Implementation anchors:
 
-- core/electric_field/core.py: ZeroField;
+- fields/field.py: ZeroField;
 - core/nondimensional/converter.py: validation, centering, and scale derivation;
 - core/nondimensional/scales.py: values and provenance;
 - core/propagation/schrodinger.py: global-phase restoration;

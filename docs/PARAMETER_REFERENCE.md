@@ -308,7 +308,7 @@ initial_states = [0]
 高度な機能を使用した設定例
 """
 import numpy as np
-from rovibrational_excitation.core.electric_field import voigt_fwhm
+from rovibrational_excitation.fields import voigt_fwhm
 
 description = "advanced_simulation"
 

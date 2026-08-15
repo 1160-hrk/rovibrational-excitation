@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.propagation import (
     MixedStatePropagator,
@@ -16,6 +15,7 @@ from rovibrational_excitation.core.propagation import (
 from rovibrational_excitation.core.propagation.utils import get_backend
 from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
+from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from tests.mock_objects import MockDipole, MockEfield
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem

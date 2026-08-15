@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import VibLadderBasis
-from rovibrational_excitation.core.electric_field import ElectricField
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole import VibLadderDipoleMatrix
 from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
@@ -18,6 +17,7 @@ from rovibrational_excitation.dipole.vib.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
 )
+from rovibrational_excitation.fields import ElectricField
 
 pytestmark = pytest.mark.physics
 

@@ -1,9 +1,9 @@
 import numpy as np
 
 from rovibrational_excitation.core.basis import LinMolBasis, StateVector
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian
 from rovibrational_excitation.core.propagation import SchrodingerPropagator
 from rovibrational_excitation.dipole.linmol.cache import LinMolDipoleMatrix
+from rovibrational_excitation.fields import ElectricField, gaussian
 
 
 class TestNondimensionalConsistency:

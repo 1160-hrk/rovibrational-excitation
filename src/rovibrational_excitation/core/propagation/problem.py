@@ -16,7 +16,7 @@ from ..time import TimeGrid
 from .capabilities import StatePath
 
 _ELECTRIC_FIELD_TYPE: type[Any] = import_module(
-    "rovibrational_excitation.core.electric_field"
+    "rovibrational_excitation.fields"
 ).ElectricField
 
 

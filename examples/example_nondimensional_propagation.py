@@ -13,7 +13,7 @@ import numpy as np
 
 # ライブラリインポート
 from rovibrational_excitation.core.basis import LinMolBasis, StateVector
-from rovibrational_excitation.core.electric_field import ElectricField, gaussian_fwhm
+from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
 from rovibrational_excitation.core.nondimensional.converter import (
     nondimensionalize_system,
 )

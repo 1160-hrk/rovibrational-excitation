@@ -12,7 +12,6 @@
 無次元化機能は nondimensional.converter に統一されています。
 """
 
-from .core import ElectricField, ZeroField
 from .envelopes import (
     gaussian,
     gaussian_fwhm,
@@ -21,6 +20,7 @@ from .envelopes import (
     voigt,
     voigt_fwhm,
 )
+from .field import ElectricField, ZeroField
 from .modulation import (
     apply_dispersion,
     apply_sinusoidal_mod,
