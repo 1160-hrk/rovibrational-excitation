@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.1-h / Phase 3 acceptance pending)
+Verified structural checkpoint: D-040 (P3.2-a / Phase 3 acceptance cleanup)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P3.1-h visualization move:
+Current local CPU baseline after the P3.2-a acceptance cleanup:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-723 passed, 10 GPU tests skipped (733 collected)
+726 passed, 10 GPU tests skipped (736 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -202,12 +202,23 @@ by `core/operators.py`, electric-field construction/modulation is owned by
 `fields/`, and propagation plus strict scaling are owned by `dynamics/`; generic numerical validation is owned by `core/validation.py`; model construction
 is owned by flat `models/`, M-average propagation remains a simulation workflow,
 persistence helpers are owned by `io/`, and optional plotting is owned by
-`visualization/`; all superseded paths are removed.
+`visualization/`; all superseded paths are removed. P3.2-a removed the empty
+simulation manager, the obsolete writable-array time-grid adapter, and two
+uncalled construction helpers from `ParameterProcessor`; canonical callers use
+`TimeGrid.from_bounds` directly.
 The next work is:
 
-1. Audit the completed Phase 3 movement sequence against every acceptance criterion: package-level target shape, import cycles, root convenience imports, obsolete paths, duplicate factories, and wheel contents. Do not declare Phase 3 complete until each remaining departure is classified.
-2. Reduce exact transition debt as owners move. Current entries are `core.units.parameter_processor -> fields`, `dynamics.utils -> dipole.base`, `dynamics.scaling.converter -> dipole.base`, two `models -> dynamics.problem` imports, and `models.factory -> simulation.validation`; never broaden or hide them.
-3. Defer the model-specific package split and the three temporary model higher-layer dependencies to the separately tested Phase 6 consolidation; do not move basis/dipole formulas yet.
+1. Move model-input validation ownership from `simulation.validation` to
+   `models.validation` without changing predicates, messages, defaults, or
+   construction order. This removes the only remaining top-level package cycle,
+   `models <-> simulation`.
+2. Reduce exact transition debt as owners move. Current entries are
+   `dynamics.utils -> dipole.base`, `dynamics.scaling.converter -> dipole.base`,
+   two `models -> dynamics.problem` imports, and
+   `models.factory -> simulation.validation`; never broaden or hide them.
+3. Defer the model-specific package split and the two temporary
+   `models -> dynamics.problem` dependencies to the separately tested Phase 6
+   consolidation; do not move basis/dipole formulas yet.
 4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
 5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
 6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.

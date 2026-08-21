@@ -800,6 +800,32 @@ strict mypy, diff, sdist/wheel, Twine, wheel-content, and isolated import checks
 all pass. Five moved implementation files are 100% exact renames, `plots` is
 absent, and root import does not load Matplotlib.
 
+P3.2-a performs the first acceptance cleanup after the mechanical moves. It
+removes an empty `simulation/manager.py`, the unreferenced
+`simulation/timegrid.py` writable-array wrapper around the already canonical
+`TimeGrid.from_bounds`, and two uncalled construction helpers on
+`ParameterProcessor`. Tests now call the typed TimeGrid owner directly while
+retaining the same values, midpoint layout, exact endpoints, and rejection
+conditions. Removing the field-construction helper eliminates the final
+`core -> fields` reverse dependency. No formula, integration step, indexing,
+threshold, or backend behavior changes.
+
+The acceptance audit loads all 96 discovered source modules and finds one
+remaining top-level mutual dependency: `models <-> simulation`, caused by
+`models.factory` importing simulation-owned input validation while
+`simulation.runner` imports model construction. The three factories are not
+duplicates: model construction, dipole construction by basis, and propagator
+selection have different responsibilities. P3.2-b should move unchanged model
+validation ownership to `models.validation`; model/dipole consolidation stays
+in Phase 6.
+
+P3.2-a verification: 97 focused tests pass; 726 tests pass with 10 optional-GPU
+skips in the full suite; branch coverage remains 69%. Ruff, formatting, strict
+mypy for 14 modules, diff, sdist/wheel, Twine, wheel-content, all-module import,
+dependency, and isolated-install checks pass. The wheel contains
+`core/time.py`, excludes both removed simulation modules, and exposes neither
+uncalled construction helper.
+
 ### Phase 3 acceptance
 
 - Source tree matches `TARGET_ARCHITECTURE.md` at the package level.

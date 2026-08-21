@@ -7,8 +7,6 @@ unit conversion with automatic parameter detection and processing.
 
 from typing import Any
 
-import numpy as np
-
 from .converters import converter
 from .validators import validator
 
@@ -227,66 +225,6 @@ class ParameterProcessor:
             converted_params["_conversion_warnings"] = warnings
 
         return converted_params
-
-    def create_hamiltonian_from_params(
-        self, params: dict[str, Any], matrix: np.ndarray
-    ):
-        """
-        Create Hamiltonian object from parameters and matrix.
-
-        Parameters
-        ----------
-        params : Dict[str, Any]
-            Parameter dictionary containing unit information
-        matrix : np.ndarray
-            Hamiltonian matrix
-
-        Returns
-        -------
-        Hamiltonian
-            Hamiltonian object with proper unit management
-        """
-        # Lazy import to avoid circular dependency
-        from ..operators import Hamiltonian
-
-        # Extract unit information
-        input_units = params.get("hamiltonian_units", "J")
-        target_units = params.get("target_units", "J")
-
-        # Create basis info for debugging
-        basis_info = {
-            "source": "parameter_processor",
-            "input_units": input_units,
-            "target_units": target_units,
-        }
-
-        return Hamiltonian.from_input_units(
-            matrix, input_units, target_units, basis_info
-        )
-
-    def create_efield_from_params(self, params: dict[str, Any], tlist: np.ndarray):
-        """
-        Create ElectricField object from parameters.
-
-        Parameters
-        ----------
-        params : Dict[str, Any]
-            Parameter dictionary containing field and time unit information
-        tlist : np.ndarray
-            Time array
-
-        Returns
-        -------
-        ElectricField
-            ElectricField object with proper unit management
-        """
-        # Lazy import to avoid circular dependency
-        from ...fields import ElectricField
-
-        time_units = params.get("time_units", "fs")
-        field_units = params.get("field_units", "V/m")
-
-        return ElectricField(tlist, time_units=time_units, field_units=field_units)
 
     def add_parameter_group(
         self, group_name: str, param_list: list, quantity_type: str

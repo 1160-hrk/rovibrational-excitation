@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.io import CheckpointManager
 from rovibrational_excitation.simulation.runner import _run_one, run_all_with_checkpoint
-from rovibrational_excitation.simulation.timegrid import build_time_grid
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -45,7 +45,7 @@ def _base_case(**overrides):
 
 
 def test_time_grid_includes_exact_endpoints_and_rk_midpoints():
-    grid = build_time_grid(-1.0, 1.0, 0.1)
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.1).field_times_fs
 
     assert grid.size == 21
     assert grid[0] == -1.0
@@ -55,7 +55,7 @@ def test_time_grid_includes_exact_endpoints_and_rk_midpoints():
 
 def test_time_grid_rejects_span_that_solver_would_truncate():
     with pytest.raises(ValueError, match=r"integer multiple of 2 \* dt"):
-        build_time_grid(-1.0, 1.0, 0.3)
+        TimeGrid.from_bounds(-1.0, 1.0, 0.3)
 
 
 @pytest.mark.parametrize(

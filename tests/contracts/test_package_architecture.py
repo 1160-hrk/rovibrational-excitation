@@ -64,8 +64,6 @@ def test_core_has_no_unrecorded_imports_from_higher_application_layers():
                 elif level > 1 and parts[0] in forbidden:
                     violations.append(f"{path.relative_to(ROOT)} imports {module}")
 
-    expected_transitional_dependencies = {
-        "src/rovibrational_excitation/core/units/parameter_processor.py imports fields",
-    }
+    expected_transitional_dependencies: set[str] = set()
     assert len(violations) == len(expected_transitional_dependencies)
     assert set(violations) == expected_transitional_dependencies

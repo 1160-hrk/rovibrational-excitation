@@ -128,7 +128,6 @@ files = [
     "src/rovibrational_excitation/core/time.py",
     "src/rovibrational_excitation/core/states.py",
     "src/rovibrational_excitation/core/units/constants.py",
-    "src/rovibrational_excitation/simulation/timegrid.py",
 ]
 
 [tool.ruff]

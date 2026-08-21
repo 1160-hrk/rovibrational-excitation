@@ -1475,7 +1475,46 @@ Implementation anchors: `visualization/`,
 `tests/contracts/test_visualization_package_architecture.py`, and
 `tests/contracts/test_visualization_contracts.py`.
 
-Implementation commit: this P3.1-h milestone commit.
+Implementation commit for P3.1-h: `6ebbcdb`.
+
+The ninth unit, P3.2-a, begins the Phase 3 acceptance cleanup. A repository-wide
+reference, import-graph, module-import, and distribution audit establishes that
+`simulation/manager.py` contains only a comment, `simulation/timegrid.py` has no
+production callers and only returns a mutable copy from the canonical
+`TimeGrid.from_bounds`, and the two construction helpers on
+`ParameterProcessor` have no callers. All four obsolete surfaces are removed;
+time-grid tests and reference tests call the canonical owner directly.
+
+This cleanup preserves every field-grid value, propagation interval, midpoint,
+endpoint, and validation failure. It does not touch numerical kernels, physical
+formulas, thresholds, backends, or model construction. Immutability is now
+consistent at the typed boundary instead of being discarded by an unused
+adapter. Removing `create_efield_from_params` also removes the last exact
+`core -> fields` reverse dependency, reducing exact transition debts from six
+to five.
+
+The audit classifies the residual structure rather than hiding it. The only
+top-level mutual dependency is `models <-> simulation`: `models.factory`
+imports simulation-owned input validation and `simulation.runner` imports
+model construction. Moving those unchanged model predicates to
+`models.validation` is the next mechanical cleanup. The model factory, generic
+dipole factory, and propagator factory are not duplicates because they select
+different objects at different layers. The two `models -> dynamics.problem`
+and two `dynamics -> dipole.base` debts remain deferred to the separately
+characterized Phase 6 model consolidation.
+
+P3.2-a verification: 97 focused tests pass, and the full suite passes 726 tests
+with 10 optional-GPU skips; branch coverage remains 69%. Ruff, formatting,
+strict mypy for 14 modules, sdist/wheel build, Twine checks, all 96 discovered
+module imports, dependency audit, wheel contents, and isolated old-path/API
+absence checks pass.
+
+Implementation anchors: `core/time.py`,
+`core/units/parameter_processor.py`,
+`tests/contracts/test_phase3_acceptance_architecture.py`, and
+`tests/contracts/test_time_grid_contracts.py`.
+
+Implementation commit: this P3.2-a milestone commit.
 
 ## Open decisions
 

@@ -467,7 +467,7 @@ unrelated parameter names to guess the model.
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |
-| `simulation/timegrid.py` | `core/time.py` | TimeGrid becomes a core invariant |
+| `simulation/timegrid.py` | `core/time.py` | Complete in P3.2-a; obsolete writable-array wrapper removed and callers use `TimeGrid.from_bounds` directly |
 | `simulation/storage.py` | `io/storage.py` | Complete in P3.1-g as a 100% exact rename; schema versioning deferred |
 | `simulation/serialization.py` | `io/serialization.py` | Complete in P3.1-g as a 100% exact rename; typed schema redesign deferred |
 | `simulation/checkpoint.py` | `io/checkpoint.py` | Complete in P3.1-g as a 100% exact rename; manager/persistence split deferred |

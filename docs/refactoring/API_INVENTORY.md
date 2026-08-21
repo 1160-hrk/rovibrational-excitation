@@ -3,7 +3,7 @@
 Last verified: 2026-08-21
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-h / D-040
+Latest API checkpoint: P3.2-a / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -245,7 +245,7 @@ visualization failure.
 | `optimization.ALGO_REGISTRY` | `local`, `krotov`, `grape` | package and example optimization runners | private typed optimization dispatch | internal |
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
 | `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | simulation config and tests | typed schema conversion at boundary | internal singleton, then delete |
-| `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found | typed constructors owned by operator/field or config boundary | delete after confirming no external workflow |
+| removed `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found by P3.2-a acceptance audit | constructors remain owned by operator/field and the config boundary | deleted in P3.2-a; removal also eliminates `core -> fields` reverse dependency |
 | `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | one explicit field constructor contract | temporary public method; consolidate in Phase 4 |
 
 `PropagatorFactory` no longer inspects polarization or sparsity. It requires a

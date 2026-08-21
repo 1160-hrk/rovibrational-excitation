@@ -11,6 +11,7 @@ from rovibrational_excitation.core.execution import (
     ExecutionPolicy,
     MatrixStorage,
 )
+from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
@@ -19,7 +20,6 @@ from rovibrational_excitation.simulation.m_average import (
     canonicalize_fixed_linear_polarization,
 )
 from rovibrational_excitation.simulation.runner import _run_one
-from rovibrational_excitation.simulation.timegrid import build_time_grid
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
 )
@@ -178,7 +178,7 @@ def test_reduced_basis_cannot_be_silently_treated_as_m_zero_dipole():
 
 
 def _resolved_propagation(initial, polarization, *, sparse=False):
-    time_grid = build_time_grid(0.0, 0.08, 0.001)
+    time_grid = TimeGrid.from_bounds(0.0, 0.08, 0.001).field_times_fs
     field = ElectricField(time_grid)
     field.add_dispersed_Efield(
         gaussian_fwhm,
@@ -317,7 +317,9 @@ def test_m_average_accepts_coherent_vibrational_superposition_within_one_j():
 
 
 def _full_m_reference(params):
-    time_grid = build_time_grid(params["t_start"], params["t_end"], params["dt"])
+    time_grid = TimeGrid.from_bounds(
+        params["t_start"], params["t_end"], params["dt"]
+    ).field_times_fs
     field = ElectricField(time_grid)
     field.add_dispersed_Efield(
         gaussian_fwhm,
