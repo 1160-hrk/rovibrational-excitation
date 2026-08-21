@@ -3,7 +3,7 @@
 Last verified: 2026-08-21
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-g / D-040
+Latest API checkpoint: P3.1-h / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -45,9 +45,9 @@ Every current root `__all__` name therefore has an explicit disposition. Only
 ### 2.2 Other accessible root attributes
 
 `__version__` and `__author__` are accessible but absent from `__all__`.
-`core`, `dipole`, `fields`, `plots`, `simulation`, and `spectroscopy` are bound by
-eager root imports even though only `dipole` and `spectroscopy` have package
-`__init__.py` files. The others currently rely on namespace-package behavior.
+`core`, `dipole`, `fields`, `simulation`, `spectroscopy`, and `visualization` are
+bound by eager root imports. All except `simulation` have explicit package
+initializers; `simulation` currently remains a namespace package.
 
 | Current name | Target | Disposition |
 |---|---|---|
@@ -56,7 +56,7 @@ eager root imports even though only `dipole` and `spectroscopy` have package
 | `core` | explicit `core/__init__.py` with narrow exports | target public subpackage |
 | `fields` | explicit field construction, envelopes, and modulation package | target public subpackage; `ElectricField` remains a temporary root re-export pending O-008 |
 | `dipole` | functionality moves under model ownership | temporary public; delete package after migration |
-| `plots` | `visualization` | temporary public; rename |
+| `visualization` | explicit target package with module-level plotting helpers | target public subpackage; root import does not load optional Matplotlib |
 | `simulation` | typed `simulation` workflows | target public subpackage |
 | `spectroscopy` | decomposed `spectroscopy` package | target public subpackage |
 
@@ -149,16 +149,28 @@ without compatibility shims. P3.1-g changes ownership only: checkpoint and
 summary filenames, JSON/CSV/NPZ representations, deduplication, corruption
 status, and overwrite behavior remain unchanged and unversioned.
 
-### 3.6 Optimization and spectroscopy
+### 3.6 Visualization
+
+| Current package | Exact exported names | Target | Disposition |
+|---|---|---|---|
+| `visualization` | no package-level function exports; functions remain explicit under `visualization.plot_all`, `visualization.plot_electric_field`, `visualization.plot_electric_field_vector`, `visualization.plot_population`, and `visualization.spectrogram` | target visualization owner reached in P3.1-h | target public subpackage; root exposes only the package and keeps Matplotlib lazy |
+
+The former `plots` namespace was removed without a shim. The five implementation
+files are exact renames. Package-level function aliases are deliberately omitted
+because names such as `plot_all` collide with Python submodule attributes;
+callers import functions from their owning modules.
+
+### 3.7 Optimization and spectroscopy
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `optimization` | `run_local_optimization`, `run_krotov_optimization`, `run_grape_optimization`, `ALGO_REGISTRY` | typed functions under `optimization`; private registry | run functions target public in subpackage; registry internal |
 | `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical/polarization/pathway policy accepted by D-023 through D-025, scientific references pending O-007 |
 
-`cli`, `simulation`, and `plots` have no explicit `__all__`. `cli/__init__.py`
-exists but is empty; `simulation` and `plots` are namespace packages. `io` now
-has an explicit narrow facade, but it is not re-exported from the package root.
+`cli` and `simulation` have no explicit `__all__`. `cli/__init__.py` exists but
+is empty, and `simulation` remains a namespace package. `visualization` has an
+explicit empty initializer so root import does not load Matplotlib. `io` has a
+narrow facade but is not re-exported from the package root.
 
 ## 4. Console scripts and configuration routes
 

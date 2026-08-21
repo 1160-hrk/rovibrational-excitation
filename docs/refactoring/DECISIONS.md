@@ -1438,7 +1438,44 @@ Implementation anchors: `io/`,
 `tests/contracts/test_io_package_architecture.py`, and
 `tests/contracts/test_persistence_contracts.py`.
 
-Implementation commit: this P3.1-g milestone commit.
+Implementation commit for P3.1-g: `980c317`.
+
+The eighth unit moves all five files under `plots/` to top-level
+`visualization/`. Every implementation file is a 100% exact rename. Only the
+root package, lazy optimization runner, and test imports change; the old `plots`
+namespace is removed without a compatibility shim. The explicit
+`visualization/__init__.py` exports no functions because Python assigns
+same-named submodules such as `plot_all` onto the package, which would make a
+function facade import-order dependent. Callers use explicit owning modules.
+The root still exposes the `visualization` package but does not load Matplotlib.
+
+This checkpoint preserves spectrogram window indexing, FFT frequencies and
+magnitudes, explicit trajectory-time selection, plotted series, axis labels,
+limits, filename patterns, DPI, bounding boxes, and save/show order. It also
+preserves four characterized debts rather than silently changing behavior:
+`plot_population.state_index` is unused and all populations are plotted; the
+three standalone result-directory plotters call `show()` before `savefig()`;
+`plot_electric_field` requests a legend without labeled artists; and optional
+spectrum/spectrogram exceptions in `plot_all` remain print-only. These are
+cleanup candidates for a separate behavior commit, not part of the move.
+
+`visualization` imports no simulation, optimization, models, io, spectroscopy,
+or CLI modules. Its only package-internal dependency is the existing core unit
+converter in `plot_all`. The six exact transition debts elsewhere in the
+repository are unchanged.
+
+P3.1-h verification: 18 focused visualization/time tests and 39 broader
+optimization, CLI, reference, and architecture tests pass. The full suite
+passes 723 tests with 10 optional-GPU skips; branch coverage rises to 69%.
+Ruff, formatting, strict mypy, sdist/wheel build, Twine checks, wheel contents,
+and an isolated install with root-import laziness, new-owner imports, and old
+namespace absence all pass.
+
+Implementation anchors: `visualization/`,
+`tests/contracts/test_visualization_package_architecture.py`, and
+`tests/contracts/test_visualization_contracts.py`.
+
+Implementation commit: this P3.1-h milestone commit.
 
 ## Open decisions
 

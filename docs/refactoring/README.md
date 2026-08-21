@@ -43,8 +43,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 714 passed, 10 skipped (724 collected) |
-| Measured branch coverage | 67% |
+| Pytest | 723 passed, 10 skipped (733 collected) |
+| Measured branch coverage | 69% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
@@ -55,7 +55,9 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on
-2026-08-21 after P3.1-g moved checkpoint, serialization, and summary persistence
+2026-08-21 after P3.1-h moved all plotting helpers unchanged from `plots/` to
+`visualization/`, while root import remains independent of optional Matplotlib.
+P3.1-g had moved checkpoint, serialization, and summary persistence
 unchanged from `simulation/` to `io/`. File formats, filenames, deduplication,
 and overwrite behavior remain fixed by contract tests. P3.1-f had moved model
 construction unchanged to `models/` and kept the unchanged M-average
@@ -154,7 +156,7 @@ These commits are the starting point, not the final architecture.
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
-| 3 | Target package migration | In progress — P3.1-a through P3.1-g moved operators, fields, dynamics, scaling, validation, model construction, M-average workflow, and persistence with dependency/wheel tests |
+| 3 | Target package migration | Acceptance audit pending — P3.1-a through P3.1-h completed the planned mechanical package moves with dependency/wheel tests |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |

@@ -58,7 +58,7 @@ copied into the final public typed API.
 
 ## P2: cleanup and observability
 
-- plots/plot_all.py and storage/checkpoint helpers catch broad exceptions.
+- visualization/plot_all.py and io/{storage,checkpoint}.py helpers catch broad exceptions.
   Plotting failures may remain non-fatal only if returned in result metadata;
   persistence failures must be surfaced.
 - simulation/runner.py intentionally catches case failures for batch runs and

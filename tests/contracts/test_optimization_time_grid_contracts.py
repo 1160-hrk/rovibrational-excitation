@@ -67,7 +67,7 @@ def test_optimization_plotting_uses_explicit_result_times_without_examples_depen
 ):
     from inspect import signature
 
-    from rovibrational_excitation.plots.plot_all import plot_all
+    from rovibrational_excitation.visualization.plot_all import plot_all
 
     assert "trajectory_times_fs" in signature(plot_all).parameters
 

@@ -471,7 +471,7 @@ unrelated parameter names to guess the model.
 | `simulation/storage.py` | `io/storage.py` | Complete in P3.1-g as a 100% exact rename; schema versioning deferred |
 | `simulation/serialization.py` | `io/serialization.py` | Complete in P3.1-g as a 100% exact rename; typed schema redesign deferred |
 | `simulation/checkpoint.py` | `io/checkpoint.py` | Complete in P3.1-g as a 100% exact rename; manager/persistence split deferred |
-| `plots/*` | `visualization/*` | Rename only after import smoke tests |
+| `plots/*` | `visualization/*` | Complete in P3.1-h as five 100% exact renames; old namespace removed and optional Matplotlib remains lazy |
 | `spectroscopy/absorbance_calculator.py` | `spectroscopy/{response,thermal,broadening,transform,observables}.py` | Characterize first |
 | `optimization/*.py` | typed optimization modules | Characterize objectives and gradients first |
 

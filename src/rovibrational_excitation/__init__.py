@@ -9,7 +9,7 @@ core            … 汎用状態、演算子、時間、単位
 fields          … 電場波形、包絡線、変調
 dynamics        … 時間発展facade、数値solver、実行契約
 dipole          … 双極子モーメント行列の高速生成
-plots           … 可視化ユーティリティ
+visualization   … 可視化ユーティリティ
 simulation      … バッチ実行・結果管理
 spectroscopy    … 線形応答理論による分光計算 (吸収、PFID、放射スペクトルなど)
 
@@ -71,7 +71,14 @@ __all__: list[str] = [
 # ------------------------------------------------------------------
 # サブパッケージを名前空間に公開（必要なら）
 # ------------------------------------------------------------------
-from . import core, dipole, fields, plots, simulation, spectroscopy  # noqa: E402, F401
+from . import (  # noqa: E402, F401
+    core,
+    dipole,
+    fields,
+    simulation,
+    spectroscopy,
+    visualization,
+)
 from .core.basis import (  # noqa: E402, F401
     DensityMatrix,
     LinMolBasis,

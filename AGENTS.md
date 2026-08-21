@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.1-g / Phase 3 in progress)
+Verified structural checkpoint: D-040 (P3.1-h / Phase 3 acceptance pending)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P3.1-g persistence move:
+Current local CPU baseline after the P3.1-h visualization move:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-714 passed, 10 GPU tests skipped (724 collected)
+723 passed, 10 GPU tests skipped (733 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -184,7 +184,7 @@ Measured at `613ce93`:
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
-- Current branch coverage: 66%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 69%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -201,12 +201,14 @@ propagation boundary. Phase 3 is in progress under D-040: `Hamiltonian` is owned
 by `core/operators.py`, electric-field construction/modulation is owned by
 `fields/`, and propagation plus strict scaling are owned by `dynamics/`; generic numerical validation is owned by `core/validation.py`; model construction
 is owned by flat `models/`, M-average propagation remains a simulation workflow,
-and persistence helpers are owned by `io/`; all superseded paths are removed.
+persistence helpers are owned by `io/`, and optional plotting is owned by
+`visualization/`; all superseded paths are removed.
 The next work is:
 
-1. Characterize plotting imports and behavior, then move `plots/*` mechanically into top-level `visualization/`; preserve plotted data, axes, units, labels, defaults, and save behavior exactly.
+1. Audit the completed Phase 3 movement sequence against every acceptance criterion: package-level target shape, import cycles, root convenience imports, obsolete paths, duplicate factories, and wheel contents. Do not declare Phase 3 complete until each remaining departure is classified.
 2. Reduce exact transition debt as owners move. Current entries are `core.units.parameter_processor -> fields`, `dynamics.utils -> dipole.base`, `dynamics.scaling.converter -> dipole.base`, two `models -> dynamics.problem` imports, and `models.factory -> simulation.validation`; never broaden or hide them.
 3. Defer the model-specific package split and the three temporary model higher-layer dependencies to the separately tested Phase 6 consolidation; do not move basis/dipole formulas yet.
-4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
-5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
+5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
+6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
+7. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.

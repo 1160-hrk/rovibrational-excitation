@@ -230,7 +230,9 @@ def run_from_config(
     # 8) Optional plotting
     try:
         if do_plot:
-            from rovibrational_excitation.plots.plot_all import plot_all  # lazy import
+            from rovibrational_excitation.visualization.plot_all import (
+                plot_all,  # lazy import
+            )
 
             efield_obj = result.get("efield")
             time_full = result.get("time")

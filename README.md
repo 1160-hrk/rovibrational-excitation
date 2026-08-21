@@ -303,7 +303,7 @@ rovibrational_excitation/
 │   │   └── vib/             # vibrational elements
 │   │       ├── harmonic.py  # harmonic oscillator
 │   │       └── morse.py     # Morse oscillator
-│   ├── plots/               # visualization helpers
+│   ├── visualization/       # optional visualization helpers
 │   │   ├── plot_electric_field.py
 │   │   ├── plot_electric_field_vector.py
 │   │   └── plot_population.py

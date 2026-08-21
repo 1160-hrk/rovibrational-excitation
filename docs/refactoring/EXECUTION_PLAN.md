@@ -726,7 +726,11 @@ dependencies, and three higher-layer dependencies from the temporary flat
 persistence implementations from `simulation/` to `io/`, repairs only imports,
 and removes the old paths. The existing unversioned schemas and checkpoint
 manager design are deliberately preserved for a later, separately tested
-redesign.
+redesign. P3.1-h moves all five unchanged plotting implementations from `plots/`
+to `visualization/`, repairs the optimization runner and root package imports,
+and removes the old namespace. The package initializer intentionally exports no
+functions so root import keeps optional Matplotlib unloaded and same-named
+submodules cannot shadow function aliases.
 
 Suggested movement order:
 
@@ -788,6 +792,13 @@ the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
 checks; successful sdist/wheel build, Twine checks, wheel-content audit, and
 isolated import with `io` present and the three old simulation persistence
 modules absent. Three moved implementation files are 100% exact renames.
+
+P3.1-h verification: 18 visualization/time-contract tests and 39 broader
+optimization, CLI, reference, and architecture tests pass; 723 passed and 10
+optional-GPU skips in the full suite. Branch coverage rises to 69%; Ruff, format,
+strict mypy, diff, sdist/wheel, Twine, wheel-content, and isolated import checks
+all pass. Five moved implementation files are 100% exact renames, `plots` is
+absent, and root import does not load Matplotlib.
 
 ### Phase 3 acceptance
 
