@@ -45,7 +45,7 @@ recorded.
 3. simulation/optimize_runner.py now requires basis constants, dipole value and
    unit, potential type, and Krotov pulse duration. Target and plotting options
    still need a typed optimization configuration after O-006 reference tests.
-4. simulation/serialization.py interprets missing real or imaginary mapping
+4. io/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
 

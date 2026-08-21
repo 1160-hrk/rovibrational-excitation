@@ -20,8 +20,7 @@ from rovibrational_excitation.dynamics.options import (
     ScalingMode,
 )
 from rovibrational_excitation.dynamics.utils import validate_axes
-
-from .serialization import deserialize_polarization
+from rovibrational_excitation.io import deserialize_polarization
 
 
 class SimulationConfigurationError(ValueError):

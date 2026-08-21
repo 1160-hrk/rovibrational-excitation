@@ -1407,7 +1407,38 @@ wheel contents, and isolated ownership/old-path-absence imports all pass.
 Implementation anchors: `models/`, `simulation/m_average.py`, and
 `tests/contracts/test_models_package_architecture.py`.
 
-Implementation commit: this P3.1-f milestone commit.
+Implementation commit for P3.1-f: `718a53c`.
+
+The seventh unit moves `simulation/{checkpoint,serialization,storage}.py` to
+top-level `io/`. All three implementation files are 100% exact renames. Only
+the runner, validation, and test imports change, and a narrow `io/__init__.py`
+facade makes the new owner explicit. The old module paths are removed without
+compatibility shims.
+
+This checkpoint is ownership-only. It preserves `checkpoint.json`,
+`failed_cases.json`, `result.npz`, `summary.csv`, and `summary_success.csv`;
+the checkpoint key set, timestamp and hash representation, runtime-key
+exclusions, completed/failed deduplication, recursive JSON conversion,
+polarization deserialization, summary status rules, and write/overwrite
+behavior do not change. Adding a schema version or separating persistence from
+`CheckpointManager` is a redesign and is intentionally deferred until after
+the mechanical move.
+
+`io` has no dependency on simulation, models, dynamics, fields, optimization,
+spectroscopy, visualization, or CLI layers. An AST ownership test enforces that
+boundary without adding transition debt. The repository therefore retains the
+same six exact pre-existing transition-debt entries recorded after P3.1-f.
+
+P3.1-g verification: 73 focused tests pass, and the full 714-test CPU suite
+passes with 10 optional-GPU skips; branch coverage remains 67%. Ruff,
+formatting, strict mypy, sdist/wheel build, Twine checks, wheel contents, and an
+isolated install with new-owner imports and old-path absence all pass.
+
+Implementation anchors: `io/`,
+`tests/contracts/test_io_package_architecture.py`, and
+`tests/contracts/test_persistence_contracts.py`.
+
+Implementation commit: this P3.1-g milestone commit.
 
 ## Open decisions
 

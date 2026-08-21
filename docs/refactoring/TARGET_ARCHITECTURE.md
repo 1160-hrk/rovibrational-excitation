@@ -468,9 +468,9 @@ unrelated parameter names to guess the model.
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |
 | `simulation/timegrid.py` | `core/time.py` | TimeGrid becomes a core invariant |
-| `simulation/storage.py` | `io/storage.py` | Add schema version |
-| `simulation/serialization.py` | `io/serialization.py` | JSON-safe typed conversion |
-| `simulation/checkpoint.py` | `io/checkpoint.py` | Separate persistence from manager |
+| `simulation/storage.py` | `io/storage.py` | Complete in P3.1-g as a 100% exact rename; schema versioning deferred |
+| `simulation/serialization.py` | `io/serialization.py` | Complete in P3.1-g as a 100% exact rename; typed schema redesign deferred |
+| `simulation/checkpoint.py` | `io/checkpoint.py` | Complete in P3.1-g as a 100% exact rename; manager/persistence split deferred |
 | `plots/*` | `visualization/*` | Rename only after import smoke tests |
 | `spectroscopy/absorbance_calculator.py` | `spectroscopy/{response,thermal,broadening,transform,observables}.py` | Characterize first |
 | `optimization/*.py` | typed optimization modules | Characterize objectives and gradients first |

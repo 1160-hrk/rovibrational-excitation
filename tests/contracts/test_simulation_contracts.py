@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rovibrational_excitation.simulation.checkpoint import CheckpointManager
+from rovibrational_excitation.io import CheckpointManager
 from rovibrational_excitation.simulation.runner import _run_one, run_all_with_checkpoint
 from rovibrational_excitation.simulation.timegrid import build_time_grid
 from rovibrational_excitation.simulation.validation import (

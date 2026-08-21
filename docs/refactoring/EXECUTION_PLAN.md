@@ -722,7 +722,11 @@ P3.1-f moves construction modules to flat `models/` and keeps M-average
 propagation in `simulation/m_average.py`; all computational bodies are exact
 renames. One exact `core -> fields` dependency, two `dynamics -> dipole.base`
 dependencies, and three higher-layer dependencies from the temporary flat
-`models` facade/factory remain exact-allowlisted.
+`models` facade/factory remain exact-allowlisted. P3.1-g moves the unchanged
+persistence implementations from `simulation/` to `io/`, repairs only imports,
+and removes the old paths. The existing unversioned schemas and checkpoint
+manager design are deliberately preserved for a later, separately tested
+redesign.
 
 Suggested movement order:
 
@@ -778,6 +782,12 @@ and 10 optional-GPU skips in the full suite; 67% branch coverage; clean Ruff,
 format, strict mypy, and diff checks; successful sdist/wheel build, Twine
 checks, wheel-content audit, and isolated import with `models` and
 `simulation.m_average` present and `simulation.models` absent.
+
+P3.1-g verification: 73 focused tests; 714 passed and 10 optional-GPU skips in
+the full suite; 67% branch coverage; clean Ruff, format, strict mypy, and diff
+checks; successful sdist/wheel build, Twine checks, wheel-content audit, and
+isolated import with `io` present and the three old simulation persistence
+modules absent. Three moved implementation files are 100% exact renames.
 
 ### Phase 3 acceptance
 

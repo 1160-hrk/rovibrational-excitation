@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-15
+Last verified: 2026-08-21
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.1-f / D-040
+Latest API checkpoint: P3.1-g / D-040
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -138,7 +138,18 @@ and demo factories are deleted rather than deprecated.
 simulation `build_model` registry supports only `linmol`, `twolevel`, and
 `vibladder`. SymTop must not be advertised as stable until O-005 is resolved.
 
-### 3.5 Optimization and spectroscopy
+### 3.5 Persistence
+
+| Current package | Exact exported names | Target | Disposition |
+|---|---|---|---|
+| `io` | `CheckpointManager`, `deserialize_polarization`, `json_safe`, `make_results_root`, `update_summary` | target persistence owner reached in P3.1-g | internal transition facade; schema versioning and manager/persistence separation remain deferred |
+
+The former `simulation.{checkpoint,serialization,storage}` modules were removed
+without compatibility shims. P3.1-g changes ownership only: checkpoint and
+summary filenames, JSON/CSV/NPZ representations, deduplication, corruption
+status, and overwrite behavior remain unchanged and unversioned.
+
+### 3.6 Optimization and spectroscopy
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
@@ -146,7 +157,8 @@ simulation `build_model` registry supports only `linmol`, `twolevel`, and
 | `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical/polarization/pathway policy accepted by D-023 through D-025, scientific references pending O-007 |
 
 `cli`, `simulation`, and `plots` have no explicit `__all__`. `cli/__init__.py`
-exists but is empty; `simulation` and `plots` are namespace packages.
+exists but is empty; `simulation` and `plots` are namespace packages. `io` now
+has an explicit narrow facade, but it is not re-exported from the package root.
 
 ## 4. Console scripts and configuration routes
 
