@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-21
+Last verified: 2026-08-23
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 726 passed, 10 skipped (736 collected) |
+| Pytest | 732 passed, 10 skipped (742 collected) |
 | Measured branch coverage | 69% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -55,7 +55,11 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on
-2026-08-21 after P3.2-a audited the Phase 3 structure and removed the empty
+2026-08-23 after P3.2-b completed Phase 3 by moving unchanged model-selection
+and required-input predicates to `models.validation`. The simulation boundary
+retains its exception type and all workflow validation, the top-level import
+graph has no cycles, and strict mypy now covers 15 named modules.
+P3.2-a had audited the Phase 3 structure and removed the empty
 simulation manager, obsolete writable-array time-grid adapter, and two uncalled
 `ParameterProcessor` construction helpers. The cleanup routes callers through
 the already canonical immutable `TimeGrid`, removes the last `core -> fields`
@@ -161,7 +165,7 @@ These commits are the starting point, not the final architecture.
 | 0 | Physics characterization baseline | Complete — P0.1-P0.7 CPU baseline recorded; CUDA remains unverified |
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
-| 3 | Target package migration | Acceptance cleanup in progress — planned moves and P3.2-a obsolete-path audit complete; the `models <-> simulation` validation cycle remains |
+| 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
 | 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
 | 6 | Model consolidation | Pending |

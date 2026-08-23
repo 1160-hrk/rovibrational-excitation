@@ -21,6 +21,10 @@ from rovibrational_excitation.dynamics.options import (
 )
 from rovibrational_excitation.dynamics.utils import validate_axes
 from rovibrational_excitation.io import deserialize_polarization
+from rovibrational_excitation.models.validation import (
+    ModelConfigurationError,
+    validate_model_parameters,
+)
 
 
 class SimulationConfigurationError(ValueError):
@@ -43,26 +47,6 @@ _COMMON_REQUIRED = {
     "nondimensional",
     "renorm",
 }
-_MODEL_REQUIRED = {
-    "linmol": {
-        "V_max",
-        "J_max",
-        "omega_rad_phz",
-        "delta_omega_rad_phz",
-        "B_rad_phz",
-        "alpha_rad_phz",
-        "mu0_Cm",
-        "potential_type",
-    },
-    "twolevel": {"energy_gap", "energy_gap_units", "mu0_Cm"},
-    "vibladder": {
-        "V_max",
-        "omega_rad_phz",
-        "delta_omega_rad_phz",
-        "mu0_Cm",
-        "potential_type",
-    },
-}
 _FINITE_PARAMETERS = {
     "t_start",
     "t_end",
@@ -83,30 +67,6 @@ _FINITE_PARAMETERS = {
     "carrier_freq_sin_mod",
     "phase_rad_sin_mod",
 }
-
-
-def validate_model_parameters(params: Mapping[str, Any]) -> str:
-    """Validate model selection and physically defining model inputs."""
-    basis_type_raw = params.get("basis_type", "linmol")
-    if not isinstance(basis_type_raw, str):
-        raise SimulationConfigurationError("basis_type must be a string")
-    basis_type = basis_type_raw.lower()
-    if basis_type not in _MODEL_REQUIRED:
-        raise SimulationConfigurationError(f"Unknown basis_type: {basis_type}")
-
-    missing = sorted(_MODEL_REQUIRED[basis_type] - params.keys())
-    if missing:
-        raise SimulationConfigurationError(
-            "Missing required model parameters: " + ", ".join(missing)
-        )
-    if basis_type in {"linmol", "vibladder"} and params["potential_type"] not in {
-        "harmonic",
-        "morse",
-    }:
-        raise SimulationConfigurationError(
-            "potential_type must be 'harmonic' or 'morse'"
-        )
-    return basis_type
 
 
 def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
@@ -146,7 +106,10 @@ def validate_simulation_case(
             f"{names} were removed; use required storage='dense' or storage='csr'"
         )
 
-    basis_type = validate_model_parameters(params)
+    try:
+        basis_type = validate_model_parameters(params)
+    except ModelConfigurationError as exc:
+        raise SimulationConfigurationError(str(exc)) from exc
     missing = sorted(_COMMON_REQUIRED - params.keys())
     if missing:
         raise SimulationConfigurationError(

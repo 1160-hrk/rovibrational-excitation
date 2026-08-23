@@ -22,6 +22,7 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
 
     assert (MODELS / "__init__.py").is_file()
     assert (MODELS / "factory.py").is_file()
+    assert (MODELS / "validation.py").is_file()
     assert (MODELS / "linmol.py").is_file()
     assert (MODELS / "twolevel.py").is_file()
     assert (MODELS / "vibladder.py").is_file()
@@ -76,7 +77,6 @@ def test_models_has_only_exact_transitional_higher_layer_dependencies():
     expected_transition_debt = {
         "src/rovibrational_excitation/models/__init__.py imports rovibrational_excitation.dynamics.problem",
         "src/rovibrational_excitation/models/factory.py imports rovibrational_excitation.dynamics.problem",
-        "src/rovibrational_excitation/models/factory.py imports simulation.validation",
     }
     assert len(violations) == len(expected_transition_debt)
     assert set(violations) == expected_transition_debt

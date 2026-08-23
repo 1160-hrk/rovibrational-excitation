@@ -703,7 +703,7 @@ Status: Complete on 2026-08-14.
 
 Goal: establish dependency direction using mechanical movement before redesign.
 
-Status: In progress. P3.1-a completed on 2026-08-15 under D-040. The generic
+Status: Complete on 2026-08-23. P3.1-a completed on 2026-08-15 under D-040. The generic
 `Hamiltonian` implementation moved unchanged from `core/basis/hamiltonian.py`
 to `core/operators.py`; all direct imports moved to the target owner, the old
 path was removed without a compatibility shim, and an explicit empty
@@ -826,7 +826,31 @@ dependency, and isolated-install checks pass. The wheel contains
 `core/time.py`, excludes both removed simulation modules, and exposes neither
 uncalled construction helper.
 
+P3.2-b extracts only model selection, required model-key sets, and potential
+name validation from `simulation.validation` to `models.validation`. Predicate
+order, lower-case normalization, implicit defaults, required-key sets, accepted
+potential names, and messages remain unchanged. Direct model construction now
+raises `ModelConfigurationError`; the simulation boundary translates it to its
+existing `SimulationConfigurationError` with the same message. Time-grid,
+field, polarization, execution, capability, split-mode, and M-average validation
+remain simulation-owned. No numerical or physical code moves.
+
+This removes `models.factory -> simulation.validation`, the last top-level
+mutual dependency. The import audit reports no top-level cycle; all 97
+discovered modules import successfully. The four remaining exact transition
+debts are two `models -> dynamics.problem` and two
+`dynamics -> dipole.base` imports, all explicitly deferred to Phase 6 because
+resolving them requires model/operator ownership consolidation.
+
+P3.2-b verification: 74 focused model, simulation, and physics tests pass; the
+full suite passes 732 tests with 10 optional-GPU skips; branch coverage remains
+69%. Ruff, formatting, strict mypy for 15 modules, diff, sdist/wheel, Twine,
+wheel-content, dependency, all-module import, and isolated-wheel checks pass.
+Phase 3 acceptance is complete.
+
 ### Phase 3 acceptance
+
+Status: Complete on 2026-08-23 under D-040.
 
 - Source tree matches `TARGET_ARCHITECTURE.md` at the package level.
 - No circular imports.

@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-12
+Last updated: 2026-08-23
 
 ## How to use this log
 
@@ -1514,7 +1514,41 @@ Implementation anchors: `core/time.py`,
 `tests/contracts/test_phase3_acceptance_architecture.py`, and
 `tests/contracts/test_time_grid_contracts.py`.
 
-Implementation commit: this P3.2-a milestone commit.
+Implementation commit for P3.2-a: `3f05abd`.
+
+The tenth unit, P3.2-b, extracts the model-owned subset from
+`simulation/validation.py` to `models/validation.py`: the model key map, model
+selection normalization, required-key check, and potential-name check. Their
+predicate order, default, accepted values, sorted missing-key message, and
+construction order remain unchanged. Direct model construction receives the new
+`ModelConfigurationError`; `validate_simulation_case` translates that error to
+the existing `SimulationConfigurationError` with the identical message.
+
+Time-grid, pulse, polarization, execution, capability, split-interaction, and
+M-average validation remain in `simulation.validation`. Moving the entire file
+would incorrectly make workflow policy model-owned. No Hamiltonian, dipole,
+field, state, propagation, optimizer, index, threshold, or unit-conversion logic
+changes.
+
+This removes `models.factory -> simulation.validation` and therefore the final
+top-level mutual dependency. The four remaining exact migration debts are two
+`models -> dynamics.problem` and two `dynamics -> dipole.base` imports. They
+require Phase 6 model/operator consolidation and are not hidden by a structural
+allowance. The Phase 3 acceptance audit now finds no package-level cycle, no
+internal root convenience imports, no unclassified duplicate factory, and all
+target packages in the wheel.
+
+P3.2-b verification: 74 focused tests and the full 732-test CPU suite pass with
+10 optional-GPU skips; branch coverage remains 69%. Ruff, formatting, strict
+mypy for 15 modules, sdist/wheel build, Twine checks, all 97 discovered module
+imports, dependency audit, wheel contents, and isolated model/simulation error
+boundary checks pass.
+
+Implementation anchors: `models/validation.py`,
+`simulation/validation.py`, `models/factory.py`, and
+`tests/contracts/test_model_validation_ownership.py`.
+
+Implementation commit: this P3.2-b milestone commit.
 
 ## Open decisions
 
@@ -1629,6 +1663,45 @@ Resolved by D-025 on 2026-08-11. The old implicit `abs(delta_v) < 2` mask was
 replaced by required `pump_probe` (`V_i == V_j`) and `unfiltered` modes. The
 selected mode and discarded density norm are observable, and post-probe
 radiation/PFID is not filtered.
+
+### O-010: Normal simulation configuration must stop inferring physics
+
+Status: Open. No behavior changes are authorized by this entry.
+
+The Phase 3 validation-ownership audit found several defaults or accepted
+inapplicable keys that can change the physical problem without appearing in the
+configuration. The recommended Phase 7 typed-schema decisions are:
+
+1. Require `basis_type`; do not infer `linmol`.
+2. Require `initial_states`; do not infer the ground state `[0]`. Keep the
+   accepted coherent-list semantics from D-007.
+3. Replace LinMol `use_M` with a required explicit representation choice such
+   as `explicit_m` or `m_incoherent_average`. Require Cartesian `axes` only for
+   `explicit_m`; reject it for M averaging and scalar models.
+4. Do not require a dummy Jones polarization for TwoLevel or VibLadder. Their
+   typed field is scalar under D-010. LinMol Cartesian input continues to
+   require a finite nonzero Jones vector.
+5. Require `split_interaction` exactly when `algorithm=split_operator` and
+   reject it for RK4. For fixed-linear M averaging, accept only the existing
+   Cartesian/scalar-z interaction.
+6. Make pulse shape explicit: require an envelope kind and the parameters that
+   define that envelope, including its center when applicable. Retain explicit
+   zero defaults for additive modifiers (`phase`, GDD, TOD) and an explicit
+   no-modulation choice because those values mean absence rather than an
+   invented physical scale.
+7. Reject unknown and model-inapplicable keys. If sinusoidal modulation is
+   selected, require and validate all modulation parameters before field
+   construction. Replace the mixed-case `Sinusoidal_modulation` key in the
+   versioned schema.
+
+Separately, direct `build_model` currently validates required-key presence and
+potential names but relies on deeper constructors for numeric type, finiteness,
+ranges, Morse bounds, and unit errors. Phase 6 frozen parameter schemas should
+own those checks before matrix allocation.
+
+User approval is required before applying items 1-7 because they intentionally
+break existing configuration files even when the explicit replacement would
+preserve the resulting calculation.
 
 ## Decision template
 

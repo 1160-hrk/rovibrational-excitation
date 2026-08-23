@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
-Status: Accepted working target; Phase 3 migration in progress
-Last updated: 2026-08-15
+Status: Accepted working target; Phase 3 migration complete
+Last updated: 2026-08-23
 
 ## 1. Design goals
 
@@ -98,6 +98,7 @@ src/rovibrational_excitation/
 │   ├── __init__.py
 │   ├── base.py
 │   ├── registry.py
+│   ├── validation.py
 │   ├── two_level/
 │   │   ├── model.py
 │   │   ├── basis.py
@@ -464,6 +465,7 @@ unrelated parameter names to guess the model.
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
 | `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
+| model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |

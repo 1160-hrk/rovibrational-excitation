@@ -139,9 +139,8 @@ characterized and must raise.
 
 Primary implementation anchors:
 
-- `core/time.py` (canonical typed grid)
-- `core/time.py` (`TimeGrid`, the sole normal-simulation time-grid owner;
-  the legacy writable-array adapter was removed in P3.2-a)
+- `core/time.py` (`TimeGrid`, the canonical and sole normal-simulation
+  time-grid owner; the legacy writable-array adapter was removed in P3.2-a)
 - `dynamics/utils.py`
 - `dynamics/schrodinger.py`
 - `dynamics/liouville.py`

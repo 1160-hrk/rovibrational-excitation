@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-21
+Last verified: 2026-08-23
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.2-a / Phase 3 acceptance cleanup)
+Verified structural checkpoint: D-040 (P3.2-b / Phase 3 complete)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the P3.2-a acceptance cleanup:
+Current local CPU baseline after P3.2-b completed Phase 3:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-726 passed, 10 GPU tests skipped (736 collected)
+732 passed, 10 GPU tests skipped (742 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -197,28 +197,24 @@ recorded baseline for a phase.
 ## Current next work
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
-propagation boundary. Phase 3 is in progress under D-040: `Hamiltonian` is owned
-by `core/operators.py`, electric-field construction/modulation is owned by
-`fields/`, and propagation plus strict scaling are owned by `dynamics/`; generic numerical validation is owned by `core/validation.py`; model construction
-is owned by flat `models/`, M-average propagation remains a simulation workflow,
-persistence helpers are owned by `io/`, and optional plotting is owned by
-`visualization/`; all superseded paths are removed. P3.2-a removed the empty
-simulation manager, the obsolete writable-array time-grid adapter, and two
-uncalled construction helpers from `ParameterProcessor`; canonical callers use
-`TimeGrid.from_bounds` directly.
+propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
+are removed, all 97 discovered modules import, internal modules avoid root
+convenience imports, and the top-level import graph has no mutual dependency.
+P3.2-b moved model selection and required-input validation to
+`models/validation.py`; simulation retains time, field, execution, and M-average
+workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Move model-input validation ownership from `simulation.validation` to
-   `models.validation` without changing predicates, messages, defaults, or
-   construction order. This removes the only remaining top-level package cycle,
-   `models <-> simulation`.
-2. Reduce exact transition debt as owners move. Current entries are
-   `dynamics.utils -> dipole.base`, `dynamics.scaling.converter -> dipole.base`,
-   two `models -> dynamics.problem` imports, and
-   `models.factory -> simulation.validation`; never broaden or hide them.
-3. Defer the model-specific package split and the two temporary
-   `models -> dynamics.problem` dependencies to the separately tested Phase 6
-   consolidation; do not move basis/dipole formulas yet.
+1. Continue Phase 4 with typed quantity and strict unit-validation boundaries.
+   Characterize converter round trips and warning/fallback behavior before any
+   implementation replacement.
+2. Resolve O-010 before the Phase 7 typed simulation configuration: model,
+   initial state, LinMol representation, coupling, split interaction, and field
+   shape currently contain implicit defaults or inapplicable accepted keys.
+3. Reduce exact transition debt only with the Phase 6 model consolidation. The
+   four current entries are `dynamics.utils -> dipole.base`,
+   `dynamics.scaling.converter -> dipole.base`, and two
+   `models -> dynamics.problem` imports; never broaden or hide them.
 4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
 5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
 6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
