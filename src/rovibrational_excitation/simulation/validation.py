@@ -22,7 +22,9 @@ from rovibrational_excitation.dynamics.options import (
 from rovibrational_excitation.dynamics.utils import validate_axes
 from rovibrational_excitation.io import deserialize_polarization
 from rovibrational_excitation.models.validation import (
+    LinMolRepresentation,
     ModelConfigurationError,
+    validate_linmol_representation,
     validate_model_parameters,
 )
 
@@ -173,9 +175,12 @@ def validate_simulation_case(
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
+    representation = (
+        validate_linmol_representation(params) if basis_type == "linmol" else None
+    )
     state_path = (
         StatePath.INCOHERENT_ENSEMBLE
-        if basis_type == "linmol" and not params.get("use_M", True)
+        if representation is LinMolRepresentation.M_INCOHERENT_AVERAGE
         else StatePath.PURE
     )
     try:
@@ -187,28 +192,33 @@ def validate_simulation_case(
     except (RuntimeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
-    # Only LinMol has a physical Cartesian polarization mapping.
-    if basis_type == "linmol":
+    # Only m_resolved LinMol has a Cartesian laboratory-axis mapping.
+    if representation is LinMolRepresentation.M_RESOLVED:
+        if "axes" not in params:
+            raise SimulationConfigurationError(
+                "Missing required LinMol m_resolved parameter: axes"
+            )
         try:
-            validate_axes(params.get("axes", "xy"))
+            validate_axes(params["axes"])
         except (AttributeError, ValueError) as exc:
             raise SimulationConfigurationError(str(exc)) from exc
-        if not params.get("use_M", True):
-            if "axes" in params:
-                raise SimulationConfigurationError(
-                    "axes is not applicable when use_M=False; fixed linear "
-                    "polarization is aligned with the internal z axis"
-                )
-            from .m_average import (
-                canonicalize_fixed_linear_polarization,
-                validate_m_average_initial_states,
+    elif representation is LinMolRepresentation.M_INCOHERENT_AVERAGE:
+        if "axes" in params:
+            raise SimulationConfigurationError(
+                "axes is not applicable when representation="
+                "m_incoherent_average; fixed linear polarization is aligned "
+                "with the internal z axis"
             )
+        from .m_average import (
+            canonicalize_fixed_linear_polarization,
+            validate_m_average_initial_states,
+        )
 
-            try:
-                canonicalize_fixed_linear_polarization(polarization)
-                validate_m_average_initial_states(dict(params))
-            except ValueError as exc:
-                raise SimulationConfigurationError(str(exc)) from exc
+        try:
+            canonicalize_fixed_linear_polarization(polarization)
+            validate_m_average_initial_states(dict(params))
+        except ValueError as exc:
+            raise SimulationConfigurationError(str(exc)) from exc
 
     if params.get("split_interaction", "cartesian") not in {
         "cartesian",

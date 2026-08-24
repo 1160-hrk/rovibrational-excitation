@@ -55,7 +55,8 @@ def _build_model(params):
                 "basis_type": "linmol",
                 "V_max": 1,
                 "J_max": 1,
-                "use_M": True,
+                "representation": "m_resolved",
+                "axes": "xy",
                 "omega_rad_phz": 1.0,
                 "delta_omega_rad_phz": 0.01,
                 "B_rad_phz": 0.001,
@@ -77,12 +78,74 @@ def test_build_model_constructs_normalized_existing_components(params, expected_
     np.testing.assert_allclose(np.linalg.norm(model.state.data), 1.0)
 
 
+def test_linmol_resolved_representation_projects_to_existing_explicit_m_basis():
+    params = {
+        "basis_type": "linmol",
+        "V_max": 1,
+        "J_max": 1,
+        "representation": "m_resolved",
+        "axes": "zx",
+        "omega_rad_phz": 1.0,
+        "delta_omega_rad_phz": 0.01,
+        "alpha_rad_phz": 0.0,
+        "B_rad_phz": 0.001,
+        "mu0_Cm": 1e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+    }
+
+    model = _build_model(params)
+
+    assert model.basis.use_M is True
+    assert model.basis.size() == 8
+    assert model.coupling.axes == ("z", "x")
+
+
+def test_linmol_resolved_representation_requires_explicit_axes():
+    params = {
+        "basis_type": "linmol",
+        "V_max": 0,
+        "J_max": 0,
+        "representation": "m_resolved",
+        "omega_rad_phz": 1.0,
+        "delta_omega_rad_phz": 0.0,
+        "alpha_rad_phz": 0.0,
+        "B_rad_phz": 0.0,
+        "mu0_Cm": 1e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+    }
+
+    with pytest.raises(ValueError, match="m_resolved parameter: axes"):
+        _build_model(params)
+
+
+def test_m_incoherent_average_cannot_build_one_pure_state_model():
+    params = {
+        "basis_type": "linmol",
+        "V_max": 0,
+        "J_max": 0,
+        "representation": "m_incoherent_average",
+        "omega_rad_phz": 1.0,
+        "delta_omega_rad_phz": 0.0,
+        "alpha_rad_phz": 0.0,
+        "B_rad_phz": 0.0,
+        "mu0_Cm": 1e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+    }
+
+    with pytest.raises(ValueError, match="multi-block workflow"):
+        _build_model(params)
+
+
 def test_linmol_rejects_morse_with_zero_anharmonicity():
     params = {
         "basis_type": "linmol",
         "V_max": 1,
         "J_max": 1,
-        "use_M": True,
+        "representation": "m_resolved",
+        "axes": "xy",
         "omega_rad_phz": 1.0,
         "delta_omega_rad_phz": 0.0,
         "alpha_rad_phz": 0.0,
@@ -146,7 +209,13 @@ def test_build_model_rejects_unknown_basis_type():
 
 def test_build_model_preserves_missing_parameter_error():
     with pytest.raises(ValueError, match="V_max"):
-        _build_model({"basis_type": "linmol"})
+        _build_model(
+            {
+                "basis_type": "linmol",
+                "representation": "m_resolved",
+                "axes": "xy",
+            }
+        )
 
 
 @pytest.mark.parametrize(
@@ -170,7 +239,7 @@ def test_build_model_preserves_missing_parameter_error():
             "basis_type": "linmol",
             "V_max": 0,
             "J_max": 0,
-            "use_M": False,
+            "representation": "m_incoherent_average",
             "omega_rad_phz": 1.0,
             "delta_omega_rad_phz": 0.0,
             "B_rad_phz": 0.0,

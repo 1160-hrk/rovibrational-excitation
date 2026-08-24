@@ -3,7 +3,7 @@
 Last verified: 2026-08-24
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: first D-041 input-contract unit
+Latest API checkpoint: second D-041 representation unit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -132,7 +132,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.symtop` | `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public pending O-005 |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
-| `models` | `CouplingSpec`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy`, `basis_type`, and `initial_states`; the last two became mandatory in the first D-041 unit |
+| `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy`, `basis_type`, and `initial_states`; LinMol also requires `representation`, and `m_resolved` requires `axes`. Normal-simulation `use_M` is removed under D-041 |
 
 `SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
 simulation `build_model` registry supports only `linmol`, `twolevel`, and
@@ -237,7 +237,7 @@ visualization failure.
 
 | Current entry | Dispatch key | Current callers | Target | Disposition |
 |---|---|---|---|---|
-| `models.build_model` | `basis_type`: `linmol`, `twolevel`, `vibladder` | simulation runner and tests | one typed model registry shared by both workflows | internal transition facade |
+| `models.build_model` | `basis_type`, plus LinMol `representation`: `m_resolved` or `m_incoherent_average` | simulation runner and tests | one typed model registry shared by both workflows | internal transition facade |
 | `models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |

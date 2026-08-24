@@ -1016,8 +1016,9 @@ Split current runner into:
 
 The D-041 migration is divided into separately testable units:
 
-1. require `basis_type` and `initial_states`;
-2. replace `use_M` with the explicit LinMol representation;
+1. require `basis_type` and `initial_states` — complete on 2026-08-24;
+2. replace normal-simulation `use_M` with required `m_resolved` or
+   `m_incoherent_average` — complete on 2026-08-24;
 3. introduce scalar and Cartesian field values plus exact external-sample
    injection;
 4. require generated-envelope and modulation discriminators;

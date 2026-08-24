@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the first D-041 input-contract unit:
+Current local CPU baseline after the second D-041 representation unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-735 passed, 10 GPU tests skipped (745 collected)
+747 passed, 10 GPU tests skipped (757 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -208,9 +208,9 @@ The next work is:
 1. Continue Phase 4 with typed quantity and strict unit-validation boundaries.
    Characterize converter round trips and warning/fallback behavior before any
    implementation replacement.
-2. Implement accepted D-041 in bounded, test-protected units: required model
-   and initial state; explicit LinMol representation; scalar/Cartesian field
-   types with external-sample injection; explicit generated-field schema;
+2. Continue accepted D-041 after completing required model/initial state and
+   explicit LinMol representation: introduce scalar/Cartesian field types with
+   external-sample injection, then the explicit generated-field schema;
    frozen model parameter schemas; and strict unknown/inapplicable-key
    rejection. Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.

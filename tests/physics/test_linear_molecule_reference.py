@@ -40,7 +40,7 @@ def _runner_params(**overrides):
         "basis_type": "linmol",
         "V_max": 1,
         "J_max": 2,
-        "use_M": False,
+        "representation": "m_incoherent_average",
         "omega_rad_phz": OMEGA_RAD_PER_FS,
         "delta_omega_rad_phz": ANHARMONIC_SHIFT_RAD_PER_FS,
         "B_rad_phz": ROTATION_RAD_PER_FS,
@@ -296,6 +296,19 @@ def test_fixed_linear_polarization_removes_only_common_jones_phase():
 def test_m_average_rejects_circular_and_elliptical_polarization(polarization):
     with pytest.raises(SimulationConfigurationError, match="fixed linear"):
         _run_one(_runner_params(polarization=polarization))
+
+
+def test_normal_runner_rejects_removed_use_m_key():
+    with pytest.raises(SimulationConfigurationError, match="use_M was removed"):
+        _run_one(_runner_params(use_M=False))
+
+
+def test_m_resolved_requires_explicit_cartesian_axes():
+    with pytest.raises(
+        SimulationConfigurationError,
+        match="m_resolved parameter: axes",
+    ):
+        _run_one(_runner_params(representation="m_resolved"))
 
 
 def test_m_average_rejects_coherent_initial_states_spanning_different_j():

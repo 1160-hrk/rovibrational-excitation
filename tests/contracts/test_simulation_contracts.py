@@ -9,6 +9,7 @@ import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.io import CheckpointManager
+from rovibrational_excitation.simulation.config import load_params_file
 from rovibrational_excitation.simulation.runner import _run_one, run_all_with_checkpoint
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
@@ -194,3 +195,16 @@ def test_summary_keeps_each_result_with_its_original_case(tmp_path):
     assert first["status"] == "failed"
     assert second["status"] == "success"
     assert second["pop_0"] == pytest.approx(0.25)
+
+
+def test_runner_parameter_template_matches_current_required_contract():
+    repository_root = Path(__file__).parents[2]
+    params = load_params_file(str(repository_root / "examples" / "params_template.py"))
+
+    options = validate_simulation_case(params)
+
+    assert params["basis_type"] == "linmol"
+    assert params["representation"] == "m_resolved"
+    assert params["axes"] == "xy"
+    assert options.algorithm_name == "rk4"
+    assert options.execution.storage.value == "dense"

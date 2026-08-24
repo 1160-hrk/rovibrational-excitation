@@ -246,7 +246,8 @@ was incorrect.
 ### D-017: Reduced LinMol uses fixed-linear M-block averaging
 
 Status: Accepted
-Scope: LinMol `use_M`, polarization, initial states, propagation, and results
+Scope: LinMol magnetic-degeneracy representation, polarization, initial states,
+propagation, and results
 
 `use_M=True` is the explicit `|v,J,M>` Cartesian model. `use_M=False`
 means a qualitative, lower-cost calculation that averages unresolved magnetic
@@ -279,6 +280,12 @@ Consequences:
   M quantum numbers is an error;
 - backend selection remains common to block dipole construction and block time
   propagation under D-005.
+
+The normal-simulation configuration names above were replaced by D-041:
+`m_resolved` maps exactly to the former `use_M=True` branch and
+`m_incoherent_average` maps exactly to the former `use_M=False` branch.
+Direct `LinMolBasis` construction and optimization retain their separately scoped
+internal `use_M` flag during migration.
 
 The fixed-linear test tolerance is
 `128 * machine_epsilon` after Jones-vector normalization. It distinguishes
@@ -1626,10 +1633,12 @@ Consequences:
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first bounded unit is complete locally. It requires `basis_type` and
-`initial_states`, removes their construction fallbacks, and leaves all valid-case
-calculation inputs unchanged. Representation, field types/injection, generated-field
-schema, and frozen model schemas remain pending.
+Implementation: the first two bounded units are complete in this checkpoint. Normal simulation
+requires `basis_type`, `initial_states`, and LinMol `representation`;
+`m_resolved` additionally requires `axes`. The removed normal-simulation `use_M`
+key raises migration guidance. Both representations project to the same resolved or
+M-average calculation branches characterized under D-017. Field types/injection,
+generated-field schema, and frozen model schemas remain pending.
 
 ## Open decisions
 

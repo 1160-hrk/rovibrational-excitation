@@ -16,6 +16,12 @@ import numpy as np
 # メタ情報
 description = "my_simulation"
 
+# モデル設定
+basis_type = "linmol"
+representation = "m_resolved"
+axes = "xy"
+initial_states = [0]
+
 # 時間軸設定
 t_start, t_end, dt = -50.0, 50.0, 0.1
 
@@ -34,7 +40,14 @@ carrier_freq = omega_rad_phz
 amplitude = 1e9
 polarization = [1.0, 0.0]  # 固定値
 
-# その他の設定...
+# 実行設定（暗黙値なし）
+backend = "numpy"
+storage = "dense"
+algorithm = "rk4"
+nondimensional = False
+renorm = False
+return_traj = True
+sample_stride = 1
 ```
 
 ## パラメータ一覧
@@ -63,11 +76,12 @@ polarization = [1.0, 0.0]  # 固定値
 
 | パラメータ | 型 | 必須 | 説明 | 例 |
 |-----------|---|------|------|-----|
-| `V_max` | `int` | ✅ | 最大振動量子数 | `3` |
-| `J_max` | `int` | ✅ | 最大回転量子数 | `5` |
-| `use_M` | `bool` | ❌ | `True`: Mを明示、`False`: M縮退の非干渉平均 | `True` (デフォルト) |
+| `basis_type` | `str` | ✅ | モデル名 | `"linmol"` |
+| `V_max` | `int` | LinMol / VibLadder ✅ | 最大振動量子数 | `3` |
+| `J_max` | `int` | LinMol ✅ | 最大回転量子数 | `5` |
+| `representation` | `str` | LinMol ✅ | `"m_resolved"`: Mを明示、`"m_incoherent_average"`: M縮退の非干渉平均 | `"m_resolved"` |
 
-`use_M=False` は M=0 の純粋状態近似ではありません。固定直線偏光を内部 z 軸へ
+`representation="m_incoherent_average"` は M=0 の純粋状態近似ではありません。固定直線偏光を内部 z 軸へ
 合わせ、初期 J の各 M ブロックを別々に時間発展し、規格化重み
 `1 / (2J+1)` で population を非干渉和します。円偏光・楕円偏光・時間依存偏光は
 受け付けません。外部の直線偏光方向は任意ですが、`axes` は指定できません。
@@ -93,7 +107,7 @@ polarization = [1.0, 0.0]  # 固定値
 VibLadder は偏光自由度を持たないモデルなので、入力値は規格化・検証だけされ、
 スカラー電場との結合結果は偏光ベクトルに依存しません。
 
-LinMol の `use_M=False` も固定直線偏光の方向には依存しません。ただしこれは
+LinMol の `representation="m_incoherent_average"` も固定直線偏光の方向には依存しません。ただしこれは
 偏光自由度がないためではなく、量子化軸を固定直線偏光へ合わせて M 縮退を
 非干渉平均する、D-017 の近似によるものです。
 
@@ -118,7 +132,7 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 
 | パラメータ | 型 | 必須 | 説明 | 例 |
 |-----------|---|------|------|-----|
-| `initial_states` | `list[int]` | ❌ | 初期状態のインデックス（現行既定値 `[0]`） | `[0]` |
+| `initial_states` | `list[int]` | ✅ | 初期状態のインデックス（暗黙の基底状態なし） | `[0]` |
 
 複数インデックスは、等振幅・同位相で正規化したコヒーレント重ね合わせとして扱います。インコヒーレント混合には `MixedStatePropagator` を使用します。空リストはエラーです。
 
@@ -151,29 +165,28 @@ LinMol の `use_M=False` も固定直線偏光の方向には依存しません�
 
 #### 2.4 双極子行列設定
 
-| パラメータ | 型 | デフォルト | 説明 | 例 |
-|-----------|---|-----------|------|-----|
-| `backend` | `str` | `"numpy"` | 計算バックエンド | `"numpy"` or `"cupy"` |
-| `dense` | `bool` | `True` | 密行列を使用するか | `False` |
+| パラメータ | 型 | 必須 | 説明 | 例 |
+|-----------|---|------|------|-----|
+| `backend` | `str` | ✅ | 双極子行列生成と時間発展で共通の計算バックエンド | `"numpy"`, `"cupy"` |
+| `storage` | `str` | ✅ | 行列保存方式 | `"dense"`, `"csr"` |
 
 `backend` は双極子行列生成と時間発展の両方に適用されます。CuPy 経路は密行列専用で、
-`backend = "cupy"` と `sparse = True`（または `dense = False`）の組合せは
-型不一致へ進む前にエラーになります。
+`backend = "cupy"` と `storage = "csr"` の組合せは型不一致へ進む前に
+エラーになります。削除済みの `dense` または `sparse` を指定した場合もエラーです。
 
 #### 2.5 伝播設定
 
-| パラメータ | 型 | デフォルト | 説明 | 例 |
-|-----------|---|-----------|------|-----|
-| `axes` | `str` | `"xy"` | 電場-双極子の軸対応 | `"xy"`, `"zx"` |
-| `algorithm` | `str` | `"rk4"` | 時間発展法 | `"rk4"`, `"split_operator"` |
+| パラメータ | 型 | 必須/既定値 | 説明 | 例 |
+|-----------|---|-------------|------|-----|
+| `axes` | `str` | `m_resolved` で必須 | 電場-双極子の軸対応。M平均では指定不可 | `"xy"`, `"zx"` |
+| `algorithm` | `str` | ✅ | 時間発展法 | `"rk4"`, `"split_operator"` |
 | `split_interaction` | `str` | `"cartesian"` | split相互作用モデル | `"cartesian"`, `"helicity_projected"` |
-| `sparse` | `bool` | `not dense` | スパース演算を使うか | `True` |
-| `renorm` | `bool` | `False` | 各ステップで状態を再規格化するか | `True` |
-| `nondimensional` | `bool` | `False` | 無次元化して時間発展するか | `True` |
+| `renorm` | `bool` | ✅ | 各ステップで状態を再規格化するか | `False` |
+| `nondimensional` | `bool` | ✅ | 無次元化して時間発展するか | `False` |
 | `validate_units` | `bool` | `True` | 物理単位を検証するか | `False` |
 | `verbose` | `bool` | `False` | 詳細な検証情報を表示するか | `True` |
-| `return_traj` | `bool` | `True` | 軌跡を返すか | `False` |
-| `sample_stride` | `int` | `1` | サンプリング間隔 | `10` |
+| `return_traj` | `bool` | ✅ | 軌跡を返すか | `True` |
+| `sample_stride` | `int` | ✅ | サンプリング間隔 | `1` |
 
 `auto_timestep` と `target_accuracy` は削除済みです。指定した場合は、
 入力時間格子を暗黙変更せずエラーになります。
@@ -183,7 +196,7 @@ runner は保存結果との対応を保証するため、常に物理時間 `t_
 `split_interaction = "cartesian"` はRK4と同じ実Cartesian電場を使用します。
 `"helicity_projected"` は片方向遷移演算子とその随伴を使う明示的な近似です。
 split法はスパース入力を受け付けますが、相互作用の固有ベクトルは密行列なので、
-`sparse = True` はsplit法のスパースメモリスケーリングを意味しません。
+`storage = "csr"` はsplit法のスパースメモリスケーリングを意味しません。
 
 
 #### 2.6 出力設定
@@ -317,7 +330,8 @@ t_start, t_end, dt = -100.0, 100.0, 0.05
 
 # 量子系（大規模計算）
 V_max, J_max = 5, 10
-use_M = True
+representation = "m_resolved"
+axes = "xy"
 
 # 物理パラメータ（CO2分子）
 omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
@@ -350,7 +364,7 @@ initial_states = [0, 1, 2]
 
 # 計算設定
 backend = "cupy"        # GPU計算
-dense = False           # スパース行列
+storage = "csr"        # CSRスパース行列
 axes = "xy"
 sample_stride = 5       # メモリ節約
 ```
@@ -389,7 +403,7 @@ sample_stride = 5       # メモリ節約
 ```python
 # メモリ効率の良い設定
 sample_stride = 10      # サンプリング間隔を増やす
-dense = False           # スパース行列を使用
+storage = "csr"        # CSRスパース行列を使用
 backend = "numpy"       # CPUで確実に動作
 ```
 
@@ -399,7 +413,7 @@ backend = "numpy"       # CPUで確実に動作
 # 大規模計算の設定
 V_max, J_max = 10, 20   # 大きな基底
 backend = "cupy"        # GPU加速
-dense = True            # GPU計算では密行列が高速
+storage = "dense"      # GPU計算では密行列を使用
 nproc = 8               # 並列実行
 checkpoint_interval = 5 # チェックポイント頻度を上げる
 ```

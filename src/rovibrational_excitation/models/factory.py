@@ -14,7 +14,12 @@ from rovibrational_excitation.dynamics.problem import (
 
 from .linmol import build_linmol
 from .twolevel import build_twolevel
-from .validation import validate_model_parameters
+from .validation import (
+    LinMolRepresentation,
+    ModelConfigurationError,
+    validate_linmol_representation,
+    validate_model_parameters,
+)
 from .vibladder import build_vibladder
 
 
@@ -53,11 +58,35 @@ def build_model(
         builder = builders[basis_type]
     except KeyError:
         raise ValueError(f"Unknown basis_type: {basis_type}") from None
-    parts = builder(params, execution_policy=execution_policy)
     if basis_type == "linmol":
-        coupling = CouplingSpec.cartesian(params.get("axes", "xy"))
+        representation = validate_linmol_representation(params)
+        if representation is not LinMolRepresentation.M_RESOLVED:
+            raise ValueError(
+                "representation=m_incoherent_average is a multi-block workflow "
+                "and cannot be built as one pure-state model; use the simulation runner"
+            )
+        if "axes" not in params:
+            raise ModelConfigurationError(
+                "Missing required LinMol m_resolved parameter: axes"
+            )
+        try:
+            coupling = CouplingSpec.cartesian(params["axes"])
+        except (TypeError, ValueError) as exc:
+            raise ModelConfigurationError(str(exc)) from exc
     elif basis_type == "twolevel":
         coupling = CouplingSpec.scalar(Axis.X)
     else:
         coupling = CouplingSpec.scalar(Axis.Z)
-    return ModelComponents(basis_type, *parts, coupling=coupling)
+
+    basis, state, hamiltonian, dipole = builder(
+        params,
+        execution_policy=execution_policy,
+    )
+    return ModelComponents(
+        name=basis_type,
+        basis=basis,
+        state=state,
+        hamiltonian=hamiltonian,
+        dipole=dipole,
+        coupling=coupling,
+    )

@@ -444,7 +444,7 @@ split_interaction = "cartesian"
 ```
 
 と指定する。LinMol の円偏光・楕円偏光・時間変化する xy 方向には
-`use_M=True` が必要である。高水準APIが
+`representation="m_resolved"` が必要である。高水準APIが
 `dipole_matrix.basis.M_array` を低水準カーネルへ渡す。
 
 ## 16. よくある疑問

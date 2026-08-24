@@ -5,13 +5,74 @@ from __future__ import annotations
 import pytest
 
 from rovibrational_excitation.models.validation import (
+    LinMolRepresentation,
     ModelConfigurationError,
+    validate_linmol_representation,
     validate_model_parameters,
 )
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
 )
+
+
+def _linmol_params(**overrides):
+    params = {
+        "basis_type": "linmol",
+        "V_max": 1,
+        "J_max": 1,
+        "omega_rad_phz": 1.0,
+        "delta_omega_rad_phz": 0.01,
+        "B_rad_phz": 0.001,
+        "alpha_rad_phz": 0.0,
+        "mu0_Cm": 1.0e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+    }
+    params.update(overrides)
+    return params
+
+
+def test_linmol_representation_is_required_and_use_m_is_removed():
+    with pytest.raises(ModelConfigurationError, match="representation"):
+        validate_model_parameters(_linmol_params())
+
+    with pytest.raises(ModelConfigurationError, match="use_M was removed"):
+        validate_model_parameters(_linmol_params(use_M=True))
+
+    with pytest.raises(ModelConfigurationError, match="use_M was removed"):
+        validate_model_parameters(
+            {
+                "basis_type": "twolevel",
+                "energy_gap": 0.2,
+                "energy_gap_units": "rad/fs",
+                "mu0_Cm": 3.0e-30,
+                "initial_states": [0],
+                "use_M": False,
+            }
+        )
+
+
+@pytest.mark.parametrize("value", ["explicit_m", "average", True, None])
+def test_linmol_representation_rejects_unknown_or_non_string_values(value):
+    with pytest.raises(
+        ModelConfigurationError,
+        match="m_resolved.*m_incoherent_average",
+    ):
+        validate_model_parameters(_linmol_params(representation=value))
+
+
+def test_linmol_representation_parser_returns_typed_accepted_values():
+    assert (
+        validate_linmol_representation(_linmol_params(representation="m_resolved"))
+        is LinMolRepresentation.M_RESOLVED
+    )
+    assert (
+        validate_linmol_representation(
+            _linmol_params(representation="m_incoherent_average")
+        )
+        is LinMolRepresentation.M_INCOHERENT_AVERAGE
+    )
 
 
 def test_model_validation_requires_explicit_model_and_initial_state():

@@ -9,21 +9,23 @@ from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 from .common import build_initial_state
+from .validation import LinMolRepresentation, validate_linmol_representation
 
 
 def build_linmol(
     params: dict[str, Any], *, execution_policy: ExecutionPolicy
 ) -> tuple[Any, Any, Any, Any]:
     """Build basis, initial state, Hamiltonian, and dipole without changing formulas."""
-    if not params.get("use_M", True):
+    representation = validate_linmol_representation(params)
+    if representation is not LinMolRepresentation.M_RESOLVED:
         raise ValueError(
-            "use_M=False is an incoherent M-averaged workflow and cannot be "
-            "represented by one pure-state model; use the simulation runner"
+            "representation=m_incoherent_average is a multi-block workflow "
+            "and cannot be built as one pure-state model; use the simulation runner"
         )
     basis = LinMolBasis(
         params["V_max"],
         params["J_max"],
-        use_M=params.get("use_M", True),
+        use_M=True,
         omega=params["omega_rad_phz"],
         delta_omega=params["delta_omega_rad_phz"],
         B=params["B_rad_phz"],

@@ -40,6 +40,7 @@ from ..io import (
     update_summary as _update_summary,
 )
 from ..models import build_model
+from ..models.validation import LinMolRepresentation
 from .config import (
     load_params_file as _load_params_file,
 )
@@ -136,8 +137,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     options = validate_simulation_case(params)
     execution_policy = options.execution
     polarization = _deserialize_pol(params["polarization"])
-    use_m_average = params["basis_type"].lower() == "linmol" and not params.get(
-        "use_M", True
+    use_m_average = (
+        params["basis_type"].lower() == "linmol"
+        and params["representation"] == LinMolRepresentation.M_INCOHERENT_AVERAGE.value
     )
     if use_m_average:
         from .m_average import (

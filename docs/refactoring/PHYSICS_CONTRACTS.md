@@ -552,10 +552,10 @@ shape. `MixedStatePropagator` requires `IncoherentEnsemble` or `DensityState`.
 
 Decision D-017 defines two distinct LinMol workflows:
 
-- `use_M=True`: explicit `|v,J,M>` basis, Cartesian x/y/z coupling, and
-  physically direction-dependent polarization response;
-- `use_M=False`: reduced `|v,J>` output with an incoherent average over
-  separately propagated fixed-M blocks.
+- `representation="m_resolved"`: explicit `|v,J,M>` basis, Cartesian
+  x/y/z coupling, and physically direction-dependent polarization response;
+- `representation="m_incoherent_average"`: reduced `|v,J>` output with an
+  incoherent average over separately propagated fixed-M blocks.
 
 For a reduced initial state with rotational number `J0`,
 

@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 735 passed, 10 skipped (745 collected) |
+| Pytest | 747 passed, 10 skipped (757 collected) |
 | Measured branch coverage | 69% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -55,8 +55,10 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest and Ruff rows were last verified locally on 2026-08-24 after the
-first D-041 unit required explicit `basis_type` and `initial_states` without
-changing valid-case construction or propagation. Phase 3 had completed under
+second D-041 unit replaced normal-simulation `use_M` with required
+`m_resolved` or `m_incoherent_average`. The new values select the same
+resolved-basis or fixed-M incoherent-average branches as before; direct basis
+and optimization flags remain unchanged. Phase 3 had completed under
 P3.2-b by moving unchanged model-selection
 and required-input predicates to `models.validation`. The simulation boundary
 retains its exception type and all workflow validation, the top-level import

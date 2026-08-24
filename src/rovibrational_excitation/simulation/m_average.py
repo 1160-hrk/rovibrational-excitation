@@ -40,8 +40,9 @@ def canonicalize_fixed_linear_polarization(polarization: Any) -> np.ndarray:
     vector = vector * np.exp(-1j * np.angle(vector[pivot]))
     if np.linalg.norm(vector.imag) > _LINEAR_POLARIZATION_TOL:
         raise ValueError(
-            "use_M=False requires fixed linear polarization; "
-            "circular and elliptical polarization require use_M=True"
+            "representation=m_incoherent_average requires fixed linear "
+            "polarization; circular and elliptical polarization require "
+            "representation=m_resolved"
         )
     real_vector = vector.real
     return real_vector / np.linalg.norm(real_vector)
@@ -140,7 +141,8 @@ def _reduced_initial_states(
     initial_j = states[0][1]
     if any(j != initial_j for _, j in states[1:]):
         raise ValueError(
-            "use_M=False cannot assign an isotropic M average to a coherent "
+            "representation=m_incoherent_average cannot assign an isotropic M "
+            "average to a coherent "
             "superposition spanning different J values; use one J value or "
             "an explicit incoherent ensemble"
         )
