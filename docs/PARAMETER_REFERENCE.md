@@ -98,16 +98,18 @@ sample_stride = 1
 | `t_center` | `float` | ❌ | fs | パルス中心時刻（既定値 `0.0`） | `0.0` |
 | `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
-| `polarization` | `list` | ✅ | - | 偏光ベクトル [x, y] | `[1.0, 0.0]` |
+| `polarization` | `list` | generated `m_resolved` ✅ | - | Jones偏光ベクトル [x, y] | `[1.0, 0.0]` |
 
 `duration` は必須です。旧名 `pulse_duration` は削除済みで、自動変換せず
 時間発展前に移行エラーになります。
 
-`polarization` は LinMol では物理的な偏光として使われます。TwoLevel と
-VibLadder は偏光自由度を持たないモデルなので、入力値は規格化・検証だけされ、
-スカラー電場との結合結果は偏光ベクトルに依存しません。
+`polarization` は生成電場を使う `m_resolved` LinMol で必須です。
+TwoLevel と VibLadder は偏光自由度を持たないため省略でき、スカラー電場との
+結合結果は偏光方向に依存しません。指定した場合は移行期間中の生成入力として
+規格化・検証されますが、typed scalar fieldには偏光を保持しません。
 
-LinMol の `representation="m_incoherent_average"` も固定直線偏光の方向には依存しません。ただしこれは
+LinMol の `representation="m_incoherent_average"` も偏光を省略できます。
+指定する場合は固定直線偏光だけを受け付け、その方向には依存しません。ただしこれは
 偏光自由度がないためではなく、量子化軸を固定直線偏光へ合わせて M 縮退を
 非干渉平均する、D-017 の近似によるものです。
 
@@ -243,6 +245,61 @@ V_max = [3, 5, 7]     # 長さ3 → スイープ対象（3ケース）
 J_max = [2]           # 長さ1 → 固定値
 amplitude = 1e9       # スカラー → 固定値
 ```
+
+## 外部サンプル電場をPythonから注入する
+
+Python APIでは、パルス生成パラメータの代わりに、既にサンプリング済みの
+実数電場を渡せます。入口は
+`rovibrational_excitation.simulation.runner.run_simulation_case` です。
+
+```python
+import numpy as np
+
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import ScalarField
+from rovibrational_excitation.simulation.runner import run_simulation_case
+
+grid = TimeGrid.from_bounds(-50.0, 50.0, 0.1)
+samples_v_per_m = 1.0e8 * np.exp(-(grid.field_times_fs / 20.0) ** 2)
+field = ScalarField(grid, samples_v_per_m)
+
+params = {
+    "basis_type": "twolevel",
+    "energy_gap": 0.2,
+    "energy_gap_units": "rad/fs",
+    "mu0_Cm": 3.0e-30,
+    "initial_states": [0],
+    "backend": "numpy",
+    "storage": "dense",
+    "algorithm": "rk4",
+    "return_traj": True,
+    "sample_stride": 1,
+    "nondimensional": False,
+    "renorm": False,
+    "save": False,
+}
+population = run_simulation_case(params, field=field)
+```
+
+TwoLevel、VibLadder、`m_incoherent_average`は`ScalarField`を使います。
+`m_resolved` LinMolは次のように`CartesianField(grid, E0, E1)`を使い、
+2成分の順序を`axes`（例: `"xy"`）へ対応させます。
+
+外部注入では`t_start`、`t_end`、`dt`、`duration`、
+`carrier_freq`、`amplitude`、`polarization`などの生成用キーを同時に
+指定するとエラーです。時間は`field.time_grid`だけが正本です。入力配列は
+防御コピーされ、有限・実数・1次元・格子と同じ長さでなければエラーになります。
+格子は有限、単調増加、等間隔、奇数長で、両端点を含む必要があります。
+ライブラリは切り詰め、padding、丸め、補間、resampling、規格化を行いません。
+
+一般の`CartesianField`からJones偏光やscalar波形を推定しません。
+近似`split_interaction="helicity_projected"`を外部電場で明示的に使う場合だけ、
+コンストラクタへ規格化済みの`jones_polarization`と対応する
+`scalar_samples_v_per_m`を両方渡す必要があります。厳密なCartesian RK4 /
+split-operatorではこの追加情報は不要です。
+
+保存時の`result.npz["E"]`は、scalarなら`(n_samples,)`、
+Cartesianなら`(n_samples, 2)`です。
 
 ## 使用例
 

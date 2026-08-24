@@ -20,7 +20,7 @@ from rovibrational_excitation.dynamics import (
     SchrodingerPropagator,
     SystemModel,
 )
-from rovibrational_excitation.fields import ElectricField
+from rovibrational_excitation.fields import CartesianField, ElectricField, ScalarField
 
 
 def _model(*, hamiltonian=None, coupling=None):
@@ -144,3 +144,112 @@ def test_public_solver_boundary_accepts_one_problem_not_loose_components(solver_
     assert "coupling_mode" not in signature.parameters
     assert "axes" not in signature.parameters
     assert "coupling_axis" not in signature.parameters
+
+
+def test_sampled_scalar_field_owns_read_only_defensive_samples():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+    samples = np.array([1.0, 2.0, 3.0])
+
+    field = ScalarField(grid, samples)
+    samples[0] = 99.0
+
+    assert field.time_grid is grid
+    assert field.tlist is grid.field_times_fs
+    assert field.dt == grid.field_dt_fs
+    np.testing.assert_array_equal(field.samples_v_per_m, [1.0, 2.0, 3.0])
+    assert not field.samples_v_per_m.flags.writeable
+    np.testing.assert_array_equal(field.get_scalar_field(), field.samples_v_per_m)
+    assert field.get_Efield().shape == (3, 1)
+    with pytest.raises(ValueError):
+        field.samples_v_per_m[0] = 0.0
+
+
+def test_sampled_cartesian_field_owns_ordered_read_only_components():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+    first = np.array([1.0, 2.0, 3.0])
+    second = np.array([-1.0, -2.0, -3.0])
+
+    field = CartesianField(grid, first, second)
+    first[0] = 99.0
+    second[0] = 99.0
+
+    assert field.time_grid is grid
+    np.testing.assert_array_equal(
+        field.components_v_per_m,
+        [[1.0, -1.0], [2.0, -2.0], [3.0, -3.0]],
+    )
+    assert not field.components_v_per_m.flags.writeable
+    assert field.get_Efield() is field.components_v_per_m
+
+
+@pytest.mark.parametrize(
+    "samples, message",
+    [
+        (np.ones((3, 1)), "one-dimensional"),
+        (np.ones(5), "exactly match"),
+        (np.array([0.0, np.nan, 0.0]), "finite"),
+        (np.array([0.0, 1.0j, 0.0]), "real-valued"),
+    ],
+)
+def test_sampled_scalar_field_rejects_invalid_samples_without_repair(samples, message):
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+
+    with pytest.raises(ValueError, match=message):
+        ScalarField(grid, samples)
+
+
+def test_sampled_cartesian_field_rejects_component_shape_mismatch():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+
+    with pytest.raises(ValueError, match="exactly match"):
+        CartesianField(grid, np.ones(3), np.ones(5))
+
+
+def test_problem_rejects_typed_field_kind_that_conflicts_with_model_coupling():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+    scalar = ScalarField(grid, np.ones(3))
+    cartesian = CartesianField(grid, np.ones(3), np.zeros(3))
+
+    with pytest.raises(ValueError, match="Cartesian coupling requires"):
+        _problem(
+            model=_model(coupling=CouplingSpec.cartesian("xy")),
+            field=scalar,
+            time_grid=grid,
+        )
+    with pytest.raises(ValueError, match="scalar coupling requires"):
+        _problem(field=cartesian, time_grid=grid)
+
+
+def test_cartesian_field_preserves_explicit_helicity_decomposition():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+    scalar = np.array([1.0, 2.0, 3.0])
+    polarization = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+    field = CartesianField(
+        grid,
+        scalar,
+        np.zeros(3),
+        scalar_samples_v_per_m=scalar,
+        jones_polarization=polarization,
+    )
+    scalar[:] = -1.0
+    polarization[:] = 0.0
+
+    np.testing.assert_array_equal(field.get_scalar_field(), [1.0, 2.0, 3.0])
+    np.testing.assert_allclose(
+        field.get_pol(),
+        np.array([1.0, 1.0j]) / np.sqrt(2.0),
+    )
+    assert not field.get_scalar_field().flags.writeable
+    assert not field.get_pol().flags.writeable
+
+
+def test_cartesian_field_rejects_partial_helicity_decomposition():
+    grid = TimeGrid.from_bounds(0.0, 0.2, 0.1)
+
+    with pytest.raises(ValueError, match="provided together"):
+        CartesianField(
+            grid,
+            np.ones(3),
+            np.zeros(3),
+            scalar_samples_v_per_m=np.ones(3),
+        )

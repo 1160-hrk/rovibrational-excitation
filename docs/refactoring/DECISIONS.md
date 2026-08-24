@@ -1633,12 +1633,24 @@ Consequences:
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first two bounded units are complete in this checkpoint. Normal simulation
-requires `basis_type`, `initial_states`, and LinMol `representation`;
+Implementation: the first three bounded units are complete in this checkpoint. Normal
+simulation requires `basis_type`, `initial_states`, and LinMol `representation`;
 `m_resolved` additionally requires `axes`. The removed normal-simulation `use_M`
-key raises migration guidance. Both representations project to the same resolved or
-M-average calculation branches characterized under D-017. Field types/injection,
-generated-field schema, and frozen model schemas remain pending.
+key raises migration guidance. `ScalarField` and `CartesianField` own defensive,
+read-only, real V/m samples and the exact canonical `TimeGrid`.
+`simulation.runner.run_simulation_case` accepts one externally sampled field and
+rejects every generated-field parameter in the same call. Generated pulses still use
+the characterized `ElectricField` construction, then freeze its exact sampled values
+without numerical transformation. TwoLevel, VibLadder, and M averaging receive
+`ScalarField`; M-resolved LinMol receives `CartesianField`. Optional explicit
+scalar/Jones decomposition metadata preserves the existing generated
+`helicity_projected` path; a general Cartesian field does not invent that
+decomposition. Generated-field schema and frozen model schemas remain pending.
+
+Verification: the full CPU suite passes 765 tests with 10 optional-GPU skips;
+branch coverage is 70%. Ruff, formatting, cache-free strict mypy for 16 named
+modules, sdist/wheel build, and Twine checks pass. The local optimizer source,
+time grid, endpoint ownership, and indices are unchanged.
 
 ## Open decisions
 

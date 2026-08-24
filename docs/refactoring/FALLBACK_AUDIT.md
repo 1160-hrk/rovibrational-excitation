@@ -30,6 +30,7 @@ recorded.
 | Typed propagation defaults | Initial state and computational mode could be selected by defaults or inferred from input | D-026 requires explicit choices; P2.4-a makes algorithm, execution, trajectory, stride, scaling, and renormalization one required object | Phase 2 contract tests |
 | Optimization time options | `dt_fs` hid the half-spaced field grid; `sample_stride` could thin states used by GRAPE/Krotov updates | D-029 requires `field_dt_fs`, exact divisibility, full internal trajectories, and output-only `output_stride`; local remains frozen under D-027 | optimization time contract and physics tests |
 | Optimization plotting | Package plotting imported an examples-only FFT helper, NumPy `tlist or time` raised before plotting, and reconstructed trajectory times could disagree with retained endpoints | Package-local FFT helper, explicit `None` selection, and returned trajectory times | package import smoke check and full optimization contracts |
+| External sampled field | Generated-field parameters could otherwise conflict with caller-owned samples, or a Cartesian waveform could be guessed into helicity data | `run_simulation_case` rejects every generation key; typed fields reject shape, finiteness, complex time-domain values, and kind mismatches; no trim/pad/interpolation/resampling/normalization occurs; helicity decomposition must be explicit | sampled-field and simulation contract tests |
 
 ## P1: fix before API stabilization
 

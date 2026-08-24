@@ -516,11 +516,19 @@ case boundary:
   with an exact canonical `TimeGrid` match.
 
 Scalar fields serve TwoLevel, VibLadder, and LinMol M averaging. Cartesian
-fields serve M-resolved LinMol. Both own defensive sample arrays and expose the
-same solver-facing timing contract, but their distinct types prevent dummy or
-inapplicable polarization data. Configuration parsing performs no resampling
-or correction. Numerical convergence assessment is a separate application
-service, not a configuration fallback.
+fields serve M-resolved LinMol. The concrete boundary is
+`fields/sampled.py::{ScalarField, CartesianField}`; each makes a defensive
+read-only copy of real V/m samples and owns the canonical `TimeGrid`. Generated
+pulses are projected into these types only after the existing generator has
+produced its exact arrays. Python injection enters through
+`simulation.runner.run_simulation_case`.
+
+The two routes are mutually exclusive. External injection rejects pulse
+generation keys and performs no resampling or correction. Optional
+scalar/Jones decomposition metadata is carried only when explicitly known; it
+preserves the legacy generated `helicity_projected` approximation and is never
+invented for arbitrary Cartesian samples. Numerical convergence assessment is
+a separate application service, not a configuration fallback.
 
 Each model package owns a frozen parameter dataclass. Validation is complete
 before matrix allocation, while derived quantities such as Morse `N` remain

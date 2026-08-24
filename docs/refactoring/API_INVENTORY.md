@@ -3,7 +3,7 @@
 Last verified: 2026-08-24
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: second D-041 representation unit
+Latest API checkpoint: third D-041 sampled-field injection unit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -96,11 +96,13 @@ re-exports nothing until O-008 fixes the supported convenience surface.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `fields` | `ElectricField`, `ZeroField`, `gaussian`, `lorentzian`, `voigt`, `gaussian_fwhm`, `lorentzian_fwhm`, `voigt_fwhm`, `apply_sinusoidal_mod`, `apply_dispersion`, `get_mod_spectrum_from_bin_setting` | target owner reached in P3.1-b | target public subpackage; only `ElectricField`, `gaussian`, and `gaussian_fwhm` proposed at root |
+| `fields` | `ScalarField`, `CartesianField`, `SampledField`, `ElectricField`, `ZeroField`, `gaussian`, `lorentzian`, `voigt`, `gaussian_fwhm`, `lorentzian_fwhm`, `voigt_fwhm`, `apply_sinusoidal_mod`, `apply_dispersion`, `get_mod_spectrum_from_bin_setting` | target owner reached in P3.1-b | target public subpackage; only `ElectricField`, `gaussian`, and `gaussian_fwhm` proposed at root |
 
-`ElectricField.from_time_grid` is the canonical typed constructor. Its legacy
-array constructor remains available for kernels, optimization code, and tests
-that have not yet migrated.
+`ScalarField` and `CartesianField` are the normal-simulation typed values.
+They defensively copy real V/m samples and own one canonical `TimeGrid`.
+`ElectricField.from_time_grid` remains the generated-pulse constructor and its
+legacy array constructor remains available for kernels, optimization code, and
+tests that have not yet migrated.
 
 The modulation helpers remain public under `fields` only if Phase 4/5 tests
 establish their units and sampling contracts. Until then their stability is
@@ -199,9 +201,15 @@ versioned so historical calculations remain interpretable.
 6. `build_model` requires that validated `ExecutionPolicy`, dispatches through a
    local dictionary, and returns `ModelComponents` plus scalar/Cartesian
    coupling metadata.
-7. `runner._run_one` constructs one immutable `TimeGrid` and `ElectricField`,
-   then passes the same options object to model construction adapters and propagation before
-   writing an unversioned NPZ/JSON result.
+7. `runner._run_one` constructs one immutable `TimeGrid`, generates the legacy
+   pulse unchanged, and freezes its exact values as `ScalarField` or
+   `CartesianField` before propagation.
+8. Python callers may instead use
+   `simulation.runner.run_simulation_case(params, field=...)`; generated-field
+   keys are then rejected, and the injected field owns the exact `TimeGrid`.
+9. The same options object reaches model construction and propagation before
+   writing an unversioned NPZ/JSON result. Scalar `E` is stored one-dimensional
+   and Cartesian `E` is stored with shape `(n_samples, 2)`.
 
 This entire route is temporary. Python-file execution, heuristic conversion,
 implicit sweep inference, and unversioned output are not part of the target

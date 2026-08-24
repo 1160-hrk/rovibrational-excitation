@@ -1020,7 +1020,13 @@ The D-041 migration is divided into separately testable units:
 2. replace normal-simulation `use_M` with required `m_resolved` or
    `m_incoherent_average` — complete on 2026-08-24;
 3. introduce scalar and Cartesian field values plus exact external-sample
-   injection;
+   injection — complete on 2026-08-24;
+   Verification: exact generated/injected population parity covers scalar,
+   M-resolved Cartesian, and fixed-M incoherent-average paths; generated
+   helicity metadata is preserved and arbitrary Cartesian fields are never
+   decomposed by inference. The full suite is 765 passed and 10 skipped with
+   70% branch coverage; Ruff, format, 16-module strict mypy, build, and Twine
+   checks pass;
 4. require generated-envelope and modulation discriminators;
 5. consume the Phase 6 frozen model schemas in a typed `SimulationCase`;
 6. reject every unknown and inapplicable key at the final schema boundary;

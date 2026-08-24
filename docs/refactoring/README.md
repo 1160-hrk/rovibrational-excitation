@@ -43,8 +43,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 747 passed, 10 skipped (757 collected) |
-| Measured branch coverage | 69% |
+| Pytest | 765 passed, 10 skipped (775 collected) |
+| Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
@@ -54,15 +54,17 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest and Ruff rows were last verified locally on 2026-08-24 after the
-second D-041 unit replaced normal-simulation `use_M` with required
-`m_resolved` or `m_incoherent_average`. The new values select the same
-resolved-basis or fixed-M incoherent-average branches as before; direct basis
-and optimization flags remain unchanged. Phase 3 had completed under
+The pytest, coverage, and Ruff rows were last verified locally on 2026-08-24
+after the third D-041 unit introduced immutable scalar/Cartesian sampled
+fields and strict Python external-field injection. Generated fields retain the
+characterized pulse construction and produce exactly equal populations before
+and after projection to the typed field boundary. TwoLevel, M-resolved LinMol,
+and fixed-M incoherent averaging have exact generated/injected parity tests.
+Direct basis and optimization paths remain unchanged. Phase 3 had completed under
 P3.2-b by moving unchanged model-selection
 and required-input predicates to `models.validation`. The simulation boundary
 retains its exception type and all workflow validation, the top-level import
-graph has no cycles, and strict mypy now covers 15 named modules.
+graph has no cycles, and strict mypy now covers 16 named modules.
 P3.2-a had audited the Phase 3 structure and removed the empty
 simulation manager, obsolete writable-array time-grid adapter, and two uncalled
 `ParameterProcessor` construction helpers. The cleanup routes callers through

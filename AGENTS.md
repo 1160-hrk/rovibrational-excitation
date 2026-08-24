@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-24
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-040 (P3.2-b / Phase 3 complete)
+Verified structural checkpoint: D-041 unit 3 (sampled-field injection)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the second D-041 representation unit:
+Current local CPU baseline after the third D-041 sampled-field unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-747 passed, 10 GPU tests skipped (757 collected)
+765 passed, 10 GPU tests skipped (775 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -184,7 +184,7 @@ Measured at `613ce93`:
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
-- Current branch coverage: 69%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 70%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -208,9 +208,9 @@ The next work is:
 1. Continue Phase 4 with typed quantity and strict unit-validation boundaries.
    Characterize converter round trips and warning/fallback behavior before any
    implementation replacement.
-2. Continue accepted D-041 after completing required model/initial state and
-   explicit LinMol representation: introduce scalar/Cartesian field types with
-   external-sample injection, then the explicit generated-field schema;
+2. Continue accepted D-041 after completing required selection, LinMol
+   representation, and scalar/Cartesian external-field injection: implement
+   the explicit generated-field schema;
    frozen model parameter schemas; and strict unknown/inapplicable-key
    rejection. Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.

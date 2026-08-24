@@ -335,7 +335,7 @@ def prepare_propagation_args(
     dt = efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP
 
     try:
-        E_scalar = efield.get_scalar_and_pol()[0]
+        E_scalar = efield.get_scalar_field()
     except ValueError:
         E_scalar = None
 

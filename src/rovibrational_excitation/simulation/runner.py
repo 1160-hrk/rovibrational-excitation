@@ -24,6 +24,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from ..core.time import TimeGrid
+from ..fields import SampledField
 from ..io import (
     CheckpointManager,
 )
@@ -113,44 +115,29 @@ def _parallel_run_safe(
 # ---------------------------------------------------------------------
 # 1 ケース実行
 # ---------------------------------------------------------------------
-def _run_one(params: dict[str, Any]) -> np.ndarray:
-    """
-    1 パラメータセット実行し population(t) を返す。
-    系タイプ（basis_type）に応じて汎用的に対応
-    """
-    # --- 必要なimportは関数内で ---
-    from rovibrational_excitation.core.states import PureState
-    from rovibrational_excitation.core.time import TimeGrid
-    from rovibrational_excitation.dynamics.problem import PropagationProblem
-    from rovibrational_excitation.dynamics.scaling.reporting import analyze_regime
-    from rovibrational_excitation.dynamics.schrodinger import (
-        SchrodingerPropagator,
-    )
+def _generated_sampled_field(
+    params: Mapping[str, Any],
+    *,
+    time_grid: TimeGrid,
+    use_m_average: bool,
+    expects_cartesian: bool,
+) -> SampledField:
+    """Generate the legacy waveform, then freeze its exact sampled values."""
     from rovibrational_excitation.fields import (
+        CartesianField,
         ElectricField,
+        ScalarField,
         gaussian_fwhm,
     )
 
-    from .validation import validate_simulation_case
-
-    # --- Electric field 共通 ---
-    options = validate_simulation_case(params)
-    execution_policy = options.execution
-    polarization = _deserialize_pol(params["polarization"])
-    use_m_average = (
-        params["basis_type"].lower() == "linmol"
-        and params["representation"] == LinMolRepresentation.M_INCOHERENT_AVERAGE.value
-    )
+    polarization = _deserialize_pol(params.get("polarization", [1.0, 0.0]))
     if use_m_average:
-        from .m_average import (
-            canonicalize_fixed_linear_polarization,
-        )
+        from .m_average import canonicalize_fixed_linear_polarization
 
         polarization = canonicalize_fixed_linear_polarization(polarization)
-    time_grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
-    t_E = time_grid.field_times_fs
-    E = ElectricField.from_time_grid(time_grid)
-    E.add_dispersed_Efield(
+
+    generated = ElectricField.from_time_grid(time_grid)
+    generated.add_dispersed_Efield(
         envelope_func=params.get("envelope_func", gaussian_fwhm),
         duration=params["duration"],
         t_center=params.get("t_center", 0.0),
@@ -162,13 +149,86 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         tod=params.get("tod", 0.0),
     )
     if params.get("Sinusoidal_modulation", False):
-        E.apply_sinusoidal_mod(
+        generated.apply_sinusoidal_mod(
             center_freq=params["carrier_freq"],
             amplitude=params["amplitude_sin_mod"],
             carrier_freq=params["carrier_freq_sin_mod"],
             phase_rad=params.get("phase_rad_sin_mod", 0.0),
             type_mod=params.get("type_mod_sin_mod", "phase"),
         )
+
+    if expects_cartesian:
+        components = generated.get_Efield()
+        return CartesianField(
+            time_grid,
+            components[:, 0],
+            components[:, 1],
+            scalar_samples_v_per_m=generated.get_scalar_field(),
+            jones_polarization=generated.get_pol(),
+        )
+    return ScalarField(time_grid, generated.get_scalar_field())
+
+
+def _field_samples_for_storage(sampled_field: Any) -> np.ndarray:
+    """Return canonical sampled values without changing their meaning."""
+    from rovibrational_excitation.fields import CartesianField, ScalarField
+
+    if isinstance(sampled_field, ScalarField):
+        return sampled_field.samples_v_per_m
+    if isinstance(sampled_field, CartesianField):
+        return sampled_field.components_v_per_m
+    return np.asarray(sampled_field.Efield)
+
+
+def run_simulation_case(
+    params: Mapping[str, Any],
+    *,
+    field: SampledField,
+) -> np.ndarray:
+    """Run one case with an explicitly sampled scalar or Cartesian field."""
+    if not isinstance(params, Mapping):
+        raise TypeError("params must be a mapping")
+    return _execute_one(dict(params), field=field)
+
+
+def _run_one(params: dict[str, Any]) -> np.ndarray:
+    """Run one generated-field parameter set and return population(t)."""
+    return _execute_one(params, field=None)
+
+
+def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.ndarray:
+    """Execute one validated generated-field or sampled-field case."""
+    from rovibrational_excitation.core.states import PureState
+    from rovibrational_excitation.dynamics.problem import PropagationProblem
+    from rovibrational_excitation.dynamics.scaling.reporting import analyze_regime
+    from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
+
+    from .validation import validate_simulation_case
+
+    options = validate_simulation_case(params, field=field)
+    execution_policy = options.execution
+    use_m_average = (
+        params["basis_type"].lower() == "linmol"
+        and params["representation"] == LinMolRepresentation.M_INCOHERENT_AVERAGE.value
+    )
+    expects_cartesian = (
+        params["basis_type"].lower() == "linmol"
+        and params["representation"] == LinMolRepresentation.M_RESOLVED.value
+    )
+    if field is None:
+        time_grid = TimeGrid.from_bounds(
+            params["t_start"], params["t_end"], params["dt"]
+        )
+        E = _generated_sampled_field(
+            params,
+            time_grid=time_grid,
+            use_m_average=use_m_average,
+            expects_cartesian=expects_cartesian,
+        )
+    else:
+        time_grid = field.time_grid
+        E = field
+    t_E = time_grid.field_times_fs
 
     if use_m_average:
         from .m_average import propagate_m_average
@@ -184,7 +244,7 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
             save_data: dict[str, Any] = {
                 "t_E": t_E,
                 "pop": result.population,
-                "E": np.array(E.Efield),
+                "E": _field_samples_for_storage(E),
                 "t_p": result.time_fs,
                 "representation": np.array("m_incoherent_average"),
                 "abs_m": np.array([block.abs_m for block in result.blocks]),
@@ -200,7 +260,6 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
                 json.dump(_json_safe(params), f, indent=2)
         return result.population
 
-    # --- 系タイプ別の構築 ---
     model = build_model(params, execution_policy=execution_policy)
     problem = PropagationProblem(
         model=model.to_system_model(),
@@ -211,7 +270,6 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     H0 = problem.model.hamiltonian
     dip = problem.model.dipole
 
-    # ---------- Propagation 共通 ----------
     use_nondimensional = options.nondimensional
     backend = options.backend_name
     algorithm_name = options.algorithm_name
@@ -234,7 +292,6 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
         ),
     )
 
-    # 無次元化使用時は物理レジーム情報も保存
     regime_info = None
     if use_nondimensional:
         from rovibrational_excitation.dynamics.scaling.converter import (
@@ -256,22 +313,20 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     t_p = host_result.times_fs
     psi_t = host_result.state
 
-    pop_t = np.abs(psi_t) ** 2  # ideally (t, dim)
-    # Ensure shape is always (t, dim)
+    pop_t = np.abs(psi_t) ** 2
     if isinstance(pop_t, np.ndarray):
         if pop_t.ndim == 0:
             pop_t = np.array([[float(pop_t)]], dtype=float)
         elif pop_t.ndim == 1:
             pop_t = pop_t.reshape(1, -1)
 
-    # ---------- Save (npz 圧縮) 共通 ----------
     if params.get("save", True):
         outdir = Path(params["outdir"])
         save_data = {
             "t_E": t_E,
             "psi": psi_t,
             "pop": pop_t,
-            "E": np.array(E.Efield),
+            "E": _field_samples_for_storage(E),
             "t_p": t_p,
         }
         if regime_info is not None:

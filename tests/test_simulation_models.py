@@ -289,7 +289,7 @@ def test_runner_uses_interval_duration_and_one_backend(
 ):
     real_grid = TimeGrid.from_bounds(2.0, 6.0, 1.0)
     real_field = RealElectricField.from_time_grid(real_grid)
-    real_field.add_dispersed_Efield = MagicMock()
+    real_field.add_dispersed_Efield = MagicMock(wraps=real_field.add_dispersed_Efield)
     electric_field_cls.from_time_grid.return_value = real_field
     host_result = MagicMock(
         times_fs=np.array([2.0, 6.0]),

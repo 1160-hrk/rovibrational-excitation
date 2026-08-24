@@ -483,12 +483,11 @@ def nondimensionalize_from_objects(
 
     Efield_array = np.asarray(efield.get_Efield())
     try:
-        scalar_field = np.asarray(efield.get_scalar_and_pol()[0])
+        scalar_field = np.asarray(efield.get_scalar_field())
     except ValueError as exc:
         if scalar_coupling:
             raise ValueError(
-                "scalar_coupling requires an ElectricField with an explicit "
-                "constant polarization"
+                "scalar_coupling requires an explicit scalar waveform"
             ) from exc
         scalar_field = None
 

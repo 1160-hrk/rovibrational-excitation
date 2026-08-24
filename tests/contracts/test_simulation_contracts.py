@@ -8,9 +8,19 @@ import pandas as pd
 import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import (
+    CartesianField,
+    ElectricField,
+    ScalarField,
+    gaussian_fwhm,
+)
 from rovibrational_excitation.io import CheckpointManager
 from rovibrational_excitation.simulation.config import load_params_file
-from rovibrational_excitation.simulation.runner import _run_one, run_all_with_checkpoint
+from rovibrational_excitation.simulation.runner import (
+    _run_one,
+    run_all_with_checkpoint,
+    run_simulation_case,
+)
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -57,6 +67,14 @@ def test_time_grid_includes_exact_endpoints_and_rk_midpoints():
 def test_time_grid_rejects_span_that_solver_would_truncate():
     with pytest.raises(ValueError, match=r"integer multiple of 2 \* dt"):
         TimeGrid.from_bounds(-1.0, 1.0, 0.3)
+
+
+def test_scalar_model_generated_field_does_not_require_polarization():
+    explicit = _base_case()
+    implicit = _base_case()
+    implicit.pop("polarization")
+
+    np.testing.assert_array_equal(_run_one(implicit), _run_one(explicit))
 
 
 @pytest.mark.parametrize(
@@ -208,3 +226,193 @@ def test_runner_parameter_template_matches_current_required_contract():
     assert params["axes"] == "xy"
     assert options.algorithm_name == "rk4"
     assert options.execution.storage.value == "dense"
+
+
+_GENERATED_FIELD_KEYS = {
+    "t_start",
+    "t_end",
+    "dt",
+    "duration",
+    "t_center",
+    "carrier_freq",
+    "amplitude",
+    "polarization",
+}
+
+
+def _without_generated_field_keys(params):
+    return {
+        key: value for key, value in params.items() if key not in _GENERATED_FIELD_KEYS
+    }
+
+
+def test_external_scalar_field_matches_existing_generated_twolevel_calculation():
+    params = _base_case(t_center=0.0)
+    expected = _run_one(params)
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    generated = ElectricField.from_time_grid(grid)
+    generated.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
+        polarization=np.asarray(params["polarization"]),
+    )
+    field = ScalarField(grid, generated.get_scalar_field())
+
+    actual = run_simulation_case(
+        _without_generated_field_keys(params),
+        field=field,
+    )
+
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test_external_cartesian_field_matches_existing_generated_linmol_calculation():
+    params = {
+        "basis_type": "linmol",
+        "V_max": 0,
+        "J_max": 1,
+        "representation": "m_resolved",
+        "axes": "xy",
+        "omega_rad_phz": 0.2,
+        "delta_omega_rad_phz": 0.0,
+        "B_rad_phz": 0.001,
+        "alpha_rad_phz": 0.0,
+        "mu0_Cm": 3.0e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+        "t_start": -0.5,
+        "t_end": 0.5,
+        "dt": 0.05,
+        "duration": 0.3,
+        "t_center": 0.0,
+        "carrier_freq": 0.1,
+        "amplitude": 1.0e8,
+        "polarization": [1.0, 1.0],
+        "backend": "numpy",
+        "storage": "dense",
+        "algorithm": "rk4",
+        "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
+        "save": False,
+    }
+    expected = _run_one(params)
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    generated = ElectricField.from_time_grid(grid)
+    generated.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
+        polarization=np.asarray(params["polarization"]),
+    )
+    components = generated.get_Efield()
+    field = CartesianField(grid, components[:, 0], components[:, 1])
+
+    actual = run_simulation_case(
+        _without_generated_field_keys(params),
+        field=field,
+    )
+
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test_external_field_rejects_generation_parameters_and_wrong_field_kind():
+    grid = TimeGrid.from_bounds(-0.5, 0.5, 0.05)
+    scalar = ScalarField(grid, np.ones(grid.field_times_fs.size))
+    cartesian = CartesianField(
+        grid,
+        np.ones(grid.field_times_fs.size),
+        np.zeros(grid.field_times_fs.size),
+    )
+    external_params = _without_generated_field_keys(_base_case())
+
+    with pytest.raises(SimulationConfigurationError, match="amplitude"):
+        run_simulation_case({**external_params, "amplitude": 1.0}, field=scalar)
+    with pytest.raises(SimulationConfigurationError, match="scalar field"):
+        run_simulation_case(external_params, field=cartesian)
+
+
+def test_generated_cartesian_field_retains_legacy_helicity_inputs():
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    params = _base_case(
+        polarization=np.array([1.0, 1.0j]) / np.sqrt(2.0),
+    )
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+
+    field = _generated_sampled_field(
+        params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=True,
+    )
+
+    np.testing.assert_allclose(
+        field.get_pol(),
+        np.asarray(params["polarization"]),
+        rtol=0.0,
+        atol=2.0e-16,
+    )
+    assert field.get_scalar_field().shape == grid.field_times_fs.shape
+
+
+def _helicity_runner_case(**overrides):
+    params = {
+        "basis_type": "linmol",
+        "V_max": 1,
+        "J_max": 1,
+        "representation": "m_resolved",
+        "axes": "xy",
+        "omega_rad_phz": 0.2,
+        "delta_omega_rad_phz": 0.0,
+        "B_rad_phz": 0.001,
+        "alpha_rad_phz": 0.0,
+        "mu0_Cm": 3.0e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+        "t_start": -0.5,
+        "t_end": 0.5,
+        "dt": 0.05,
+        "duration": 0.3,
+        "t_center": 0.0,
+        "carrier_freq": 0.1,
+        "amplitude": 1.0e8,
+        "polarization": np.array([1.0, 1.0j]) / np.sqrt(2.0),
+        "backend": "numpy",
+        "storage": "dense",
+        "algorithm": "split_operator",
+        "split_interaction": "helicity_projected",
+        "return_traj": True,
+        "sample_stride": 1,
+        "nondimensional": False,
+        "renorm": False,
+        "validate_units": False,
+        "save": False,
+    }
+    params.update(overrides)
+    return params
+
+
+def test_generated_helicity_runner_retains_existing_decomposition_path():
+    population = _run_one(_helicity_runner_case())
+
+    np.testing.assert_allclose(population.sum(axis=1), 1.0, atol=2.0e-14)
+
+
+def test_external_cartesian_helicity_rejects_missing_decomposition():
+    params = _helicity_runner_case()
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    field = CartesianField(
+        grid,
+        np.ones(grid.field_times_fs.size),
+        np.zeros(grid.field_times_fs.size),
+    )
+
+    with pytest.raises(ValueError, match="requires polarization and scalar_field"):
+        run_simulation_case(_without_generated_field_keys(params), field=field)

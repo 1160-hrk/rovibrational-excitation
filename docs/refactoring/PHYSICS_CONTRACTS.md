@@ -884,6 +884,21 @@ both endpoints, `2 * propagation_steps + 1` values, and
 exact required one-dimensional shape. Validation never resamples, trims, pads,
 rounds, normalizes, or repairs the field.
 
+The implemented sampled-field boundary accepts real values only, in V/m.
+`ScalarField` stores one waveform. `CartesianField` stores two ordered components
+and may additionally carry an explicitly supplied scalar/Jones decomposition.
+That decomposition is provenance for the existing approximate
+`helicity_projected` split interaction; it is never inferred from arbitrary
+Cartesian samples. A missing decomposition therefore raises if that
+approximation is requested, while exact Cartesian RK4 and split propagation
+need only the two real components.
+
+Generated pulses are evaluated by the characterized legacy generator and then
+copied exactly into the typed field. Tests require bitwise-equal populations for
+generated and externally injected TwoLevel, M-resolved LinMol, and M-averaged
+LinMol cases. This boundary conversion changes neither field samples nor the
+Hamiltonian evaluated at them.
+
 Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit
 convergence calculation with a caller-selected tolerance. It reports the

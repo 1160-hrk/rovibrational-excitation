@@ -13,7 +13,9 @@ LEGACY_FIELDS = PACKAGE / "core" / "electric_field"
 
 def test_electric_field_is_owned_by_the_target_fields_package():
     from rovibrational_excitation.fields import (
+        CartesianField,
         ElectricField,
+        ScalarField,
         apply_dispersion,
         gaussian,
     )
@@ -22,11 +24,14 @@ def test_electric_field_is_owned_by_the_target_fields_package():
     assert (FIELDS / "field.py").is_file()
     assert (FIELDS / "envelopes.py").is_file()
     assert (FIELDS / "modulation.py").is_file()
+    assert (FIELDS / "sampled.py").is_file()
     assert not (LEGACY_FIELDS / "__init__.py").exists()
     assert not (LEGACY_FIELDS / "core.py").exists()
     assert not (LEGACY_FIELDS / "envelopes.py").exists()
     assert not (LEGACY_FIELDS / "modulation.py").exists()
     assert ElectricField.__module__ == "rovibrational_excitation.fields.field"
+    assert ScalarField.__module__ == "rovibrational_excitation.fields.sampled"
+    assert CartesianField.__module__ == "rovibrational_excitation.fields.sampled"
     assert gaussian.__module__ == "rovibrational_excitation.fields.envelopes"
     assert apply_dispersion.__module__ == "rovibrational_excitation.fields.modulation"
 

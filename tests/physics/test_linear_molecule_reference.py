@@ -14,12 +14,16 @@ from rovibrational_excitation.core.execution import (
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics import SchrodingerPropagator
-from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
+from rovibrational_excitation.fields import (
+    ElectricField,
+    ScalarField,
+    gaussian_fwhm,
+)
 from rovibrational_excitation.simulation.m_average import (
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,
 )
-from rovibrational_excitation.simulation.runner import _run_one
+from rovibrational_excitation.simulation.runner import _run_one, run_simulation_case
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
 )
@@ -438,3 +442,37 @@ def test_saved_m_average_has_no_fictitious_aggregate_wavefunction(tmp_path):
         assert "psi_abs_m_0" in result.files
         assert "psi_abs_m_1" in result.files
         np.testing.assert_allclose(result["m_weight"].sum(), 1.0)
+
+
+def test_m_average_external_scalar_field_matches_generated_field_exactly():
+    params = _runner_params()
+    expected = _run_one(params)
+
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    generated = ElectricField.from_time_grid(grid)
+    generated.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
+        polarization=np.asarray(params["polarization"]),
+    )
+    field = ScalarField(grid, generated.get_scalar_field())
+    generated_keys = {
+        "t_start",
+        "t_end",
+        "dt",
+        "duration",
+        "t_center",
+        "carrier_freq",
+        "amplitude",
+        "polarization",
+    }
+    external_params = {
+        key: value for key, value in params.items() if key not in generated_keys
+    }
+
+    actual = run_simulation_case(external_params, field=field)
+
+    np.testing.assert_array_equal(actual, expected)

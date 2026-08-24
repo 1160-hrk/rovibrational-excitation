@@ -20,6 +20,7 @@ from rovibrational_excitation.dynamics.options import (
     ScalingMode,
 )
 from rovibrational_excitation.dynamics.utils import validate_axes
+from rovibrational_excitation.fields import CartesianField, ScalarField
 from rovibrational_excitation.io import deserialize_polarization
 from rovibrational_excitation.models.validation import (
     LinMolRepresentation,
@@ -33,14 +34,7 @@ class SimulationConfigurationError(ValueError):
     """Raised before propagation when a simulation case is invalid."""
 
 
-_COMMON_REQUIRED = {
-    "t_start",
-    "t_end",
-    "dt",
-    "carrier_freq",
-    "amplitude",
-    "polarization",
-    "duration",
+_EXECUTION_REQUIRED = {
     "backend",
     "storage",
     "algorithm",
@@ -48,6 +42,28 @@ _COMMON_REQUIRED = {
     "sample_stride",
     "nondimensional",
     "renorm",
+}
+_GENERATED_REQUIRED = {
+    "t_start",
+    "t_end",
+    "dt",
+    "carrier_freq",
+    "amplitude",
+    "duration",
+}
+_GENERATED_FIELD_KEYS = {
+    *_GENERATED_REQUIRED,
+    "polarization",
+    "envelope_func",
+    "t_center",
+    "phase_rad",
+    "gdd",
+    "tod",
+    "Sinusoidal_modulation",
+    "amplitude_sin_mod",
+    "carrier_freq_sin_mod",
+    "phase_rad_sin_mod",
+    "type_mod_sin_mod",
 }
 _FINITE_PARAMETERS = {
     "t_start",
@@ -87,15 +103,18 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
 
 def validate_simulation_case(
     params: Mapping[str, Any],
+    *,
+    field: ScalarField | CartesianField | None = None,
 ) -> PropagationOptions:
-    """Validate one fully-expanded case without changing its values."""
+    """Validate one generated or externally sampled simulation case."""
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params
     }
     if removed_options:
         names = ", ".join(sorted(removed_options))
         raise SimulationConfigurationError(
-            f"{names} were removed; define dt explicitly and validate convergence"
+            f"{names} were removed; provide an exact TimeGrid and validate "
+            "convergence explicitly"
         )
     if "pulse_duration" in params:
         raise SimulationConfigurationError(
@@ -112,23 +131,74 @@ def validate_simulation_case(
         basis_type = validate_model_parameters(params)
     except ModelConfigurationError as exc:
         raise SimulationConfigurationError(str(exc)) from exc
-    missing = sorted(_COMMON_REQUIRED - params.keys())
+    representation = (
+        validate_linmol_representation(params) if basis_type == "linmol" else None
+    )
+    expects_cartesian = representation is LinMolRepresentation.M_RESOLVED
+
+    required = set(_EXECUTION_REQUIRED)
+    if field is None:
+        required.update(_GENERATED_REQUIRED)
+        if expects_cartesian:
+            required.add("polarization")
+    elif not isinstance(field, (ScalarField, CartesianField)):
+        raise SimulationConfigurationError(
+            "external field must be a ScalarField or CartesianField"
+        )
+    else:
+        inapplicable = sorted(_GENERATED_FIELD_KEYS & params.keys())
+        if inapplicable:
+            raise SimulationConfigurationError(
+                "generated field parameters are not applicable to external field "
+                "injection: " + ", ".join(inapplicable)
+            )
+
+    missing = sorted(required - params.keys())
     if missing:
         raise SimulationConfigurationError(
             "Missing required simulation parameters: " + ", ".join(missing)
         )
 
+    if field is not None:
+        if expects_cartesian and not isinstance(field, CartesianField):
+            raise SimulationConfigurationError(
+                "m_resolved LinMol requires a Cartesian field"
+            )
+        if not expects_cartesian and not isinstance(field, ScalarField):
+            raise SimulationConfigurationError(
+                f"{basis_type} scalar coupling requires a scalar field"
+            )
+
     for key in _FINITE_PARAMETERS:
         _require_finite_scalar(params, key)
 
-    try:
-        TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
-    except (TypeError, ValueError) as exc:
-        raise SimulationConfigurationError(str(exc)) from exc
+    polarization: np.ndarray | None = None
+    if field is None:
+        try:
+            TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+        except (TypeError, ValueError) as exc:
+            raise SimulationConfigurationError(str(exc)) from exc
 
-    duration = params["duration"]
-    if duration <= 0:
-        raise SimulationConfigurationError("duration must be positive")
+        duration = params["duration"]
+        if duration <= 0:
+            raise SimulationConfigurationError("duration must be positive")
+
+        if "polarization" in params:
+            try:
+                polarization = deserialize_polarization(params["polarization"])
+            except (TypeError, ValueError) as exc:
+                raise SimulationConfigurationError(
+                    f"Invalid polarization: {exc}"
+                ) from exc
+            norm = np.linalg.norm(polarization)
+            if (
+                not np.all(np.isfinite(polarization))
+                or not np.isfinite(norm)
+                or norm == 0
+            ):
+                raise SimulationConfigurationError(
+                    "polarization must be finite and non-zero"
+                )
 
     for key in ("V_max", "J_max"):
         if key in params and (
@@ -137,14 +207,6 @@ def validate_simulation_case(
             or params[key] < 0
         ):
             raise SimulationConfigurationError(f"{key} must be a non-negative integer")
-
-    try:
-        polarization = deserialize_polarization(params["polarization"])
-    except (TypeError, ValueError) as exc:
-        raise SimulationConfigurationError(f"Invalid polarization: {exc}") from exc
-    norm = np.linalg.norm(polarization)
-    if not np.all(np.isfinite(polarization)) or not np.isfinite(norm) or norm == 0:
-        raise SimulationConfigurationError("polarization must be finite and non-zero")
 
     try:
         execution_policy = ExecutionPolicy.from_strings(
@@ -175,9 +237,6 @@ def validate_simulation_case(
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
-    representation = (
-        validate_linmol_representation(params) if basis_type == "linmol" else None
-    )
     state_path = (
         StatePath.INCOHERENT_ENSEMBLE
         if representation is LinMolRepresentation.M_INCOHERENT_AVERAGE
@@ -192,7 +251,6 @@ def validate_simulation_case(
     except (RuntimeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
-    # Only m_resolved LinMol has a Cartesian laboratory-axis mapping.
     if representation is LinMolRepresentation.M_RESOLVED:
         if "axes" not in params:
             raise SimulationConfigurationError(
@@ -206,8 +264,7 @@ def validate_simulation_case(
         if "axes" in params:
             raise SimulationConfigurationError(
                 "axes is not applicable when representation="
-                "m_incoherent_average; fixed linear polarization is aligned "
-                "with the internal z axis"
+                "m_incoherent_average; scalar field uses the internal z axis"
             )
         from .m_average import (
             canonicalize_fixed_linear_polarization,
@@ -215,7 +272,8 @@ def validate_simulation_case(
         )
 
         try:
-            canonicalize_fixed_linear_polarization(polarization)
+            if polarization is not None:
+                canonicalize_fixed_linear_polarization(polarization)
             validate_m_average_initial_states(dict(params))
         except ValueError as exc:
             raise SimulationConfigurationError(str(exc)) from exc

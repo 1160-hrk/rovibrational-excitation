@@ -26,9 +26,13 @@ from .modulation import (
     apply_sinusoidal_mod,
     get_mod_spectrum_from_bin_setting,
 )
+from .sampled import CartesianField, SampledField, ScalarField
 
 __all__ = [
+    "CartesianField",
     "ElectricField",
+    "SampledField",
+    "ScalarField",
     "ZeroField",
     # Envelope functions
     "gaussian",
