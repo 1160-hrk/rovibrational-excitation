@@ -109,6 +109,14 @@ def test_validation_rejects_missing_physical_parameter_before_building():
         validate_simulation_case(params)
 
 
+def test_validation_rejects_missing_initial_states():
+    params = _base_case()
+    del params["initial_states"]
+
+    with pytest.raises(SimulationConfigurationError, match="initial_states"):
+        validate_simulation_case(params)
+
+
 def test_validation_rejects_missing_duration():
     params = _base_case()
     del params["duration"]

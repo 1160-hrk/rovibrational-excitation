@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ## 1. Design goals
 
@@ -507,6 +507,25 @@ Simulation configuration becomes a typed schema with:
 - explicit initial-state kind;
 - one execution policy;
 - serialization-safe values.
+
+D-041 requires two mutually exclusive field construction routes at the typed
+case boundary:
+
+- a fully explicit generated-field specification; or
+- an externally sampled scalar or Cartesian field supplied by the Python API
+  with an exact canonical `TimeGrid` match.
+
+Scalar fields serve TwoLevel, VibLadder, and LinMol M averaging. Cartesian
+fields serve M-resolved LinMol. Both own defensive sample arrays and expose the
+same solver-facing timing contract, but their distinct types prevent dummy or
+inapplicable polarization data. Configuration parsing performs no resampling
+or correction. Numerical convergence assessment is a separate application
+service, not a configuration fallback.
+
+Each model package owns a frozen parameter dataclass. Validation is complete
+before matrix allocation, while derived quantities such as Morse `N` remain
+instance-local properties. LinMol representation is a required enum-like
+choice rather than a boolean.
 
 Result files require a schema version independent of package version. A loader
 must either parse a known schema or raise an actionable error. It must not guess

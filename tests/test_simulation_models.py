@@ -34,6 +34,7 @@ def _build_model(params):
                 "energy_gap": 1.0,
                 "energy_gap_units": "rad/fs",
                 "mu0_Cm": 1e-30,
+                "initial_states": [0],
             },
             2,
         ),
@@ -45,6 +46,7 @@ def _build_model(params):
                 "delta_omega_rad_phz": 0.01,
                 "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
+                "initial_states": [0],
             },
             3,
         ),
@@ -60,6 +62,7 @@ def _build_model(params):
                 "alpha_rad_phz": 0.0,
                 "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
+                "initial_states": [0],
             },
             8,
         ),
@@ -86,6 +89,7 @@ def test_linmol_rejects_morse_with_zero_anharmonicity():
         "B_rad_phz": 0.001,
         "mu0_Cm": 1e-30,
         "potential_type": "morse",
+        "initial_states": [0],
     }
 
     with pytest.raises(ValueError, match="must be non-zero"):

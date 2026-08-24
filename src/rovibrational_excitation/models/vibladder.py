@@ -20,7 +20,7 @@ def build_vibladder(
         omega=params["omega_rad_phz"],
         delta_omega=params["delta_omega_rad_phz"],
     )
-    state = build_initial_state(basis, params.get("initial_states", [0]))
+    state = build_initial_state(basis, params["initial_states"])
     hamiltonian = basis.generate_H0()
     dipole = VibLadderDipoleMatrix(
         basis,

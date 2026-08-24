@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ## How to use this log
 
@@ -1550,6 +1550,87 @@ Implementation anchors: `models/validation.py`,
 
 Implementation commit: this P3.2-b milestone commit.
 
+### D-041: Simulation inputs, field kinds, and model parameters are explicit
+
+Status: Accepted on 2026-08-24.
+
+Scope: normal simulation configuration, model parameter schemas, field
+construction/injection, LinMol representation, and split-interaction options.
+
+The user accepted all recommendations in O-010, with the additional
+requirement that Python callers can inject an externally constructed electric
+field. Structural time-grid validation is mandatory for injected fields; the
+library must not silently reinterpret or repair their sampling.
+
+Decision:
+
+- `basis_type` and `initial_states` are required. The runner never infers
+  LinMol or the ground state. Multiple indices retain the coherent semantics of
+  D-007.
+- LinMol requires an explicit representation, named `m_resolved` or
+  `m_incoherent_average` in the target schema. The old `use_M` boolean is not a
+  target public option. Cartesian axes apply only to `m_resolved` and are
+  rejected for the M-averaged and scalar-model routes.
+- TwoLevel, VibLadder, and LinMol M averaging consume an explicit scalar field.
+  M-resolved LinMol consumes an explicit Cartesian field. Scalar physics does
+  not require or retain a dummy Jones polarization.
+- `split_interaction` is required only where split-operator propagation has a
+  genuine Cartesian/helicity choice: M-resolved LinMol. RK4 rejects it.
+  Scalar models and fixed-linear M averaging use their existing scalar Strang
+  interaction internally and do not expose an inapplicable mode selector.
+- Generated pulses require an explicit envelope kind and all parameters that
+  define that envelope, including its center when applicable. Additive absence
+  values such as zero phase, zero GDD, and zero TOD remain explicit safe
+  defaults. Modulation kind is explicit; selecting sinusoidal modulation
+  requires all of its defining parameters.
+- Unknown, removed, and model/field/algorithm-inapplicable keys raise with the
+  offending key and reason. The mixed-case `Sinusoidal_modulation` spelling is
+  not part of the versioned target schema.
+- YAML remains a declarative CLI input, but it is not the only construction
+  route. The Python API accepts an already sampled external field together with
+  the canonical `TimeGrid`. Generated and injected fields converge to the same
+  typed simulation-case boundary.
+- An injected field must match its `TimeGrid` exactly. The time samples are
+  finite, strictly increasing, uniform, odd in count, contain both endpoints,
+  and have length `2 * propagation_steps + 1`. Scalar samples are one
+  dimensional; Cartesian component arrays have identical one-dimensional
+  shape; all field samples are finite. The propagation interval remains
+  exactly twice the field-sampling interval.
+- Injection never trims, pads, rounds, interpolates, resamples, normalizes, or
+  otherwise repairs samples. Any future resampling utility is a separate,
+  explicitly invoked preprocessing operation and never part of simulation
+  validation.
+- Structural validity of a time step is distinct from numerical adequacy. The
+  former is validated automatically. Accuracy depends on the complete
+  generator and observable, so it is assessed only by an explicit convergence
+  operation with a caller-selected tolerance (for example comparing `dt` and
+  `dt/2`). Such an assessment reports results and never changes the requested
+  calculation.
+- Phase 6 introduces one immutable, frozen parameter schema per model. It owns
+  required fields, numeric types, finiteness, ranges, units, Morse constraints,
+  and derived instance-local values before basis or matrix allocation. Valid
+  parameter sets must produce the same basis ordering, Hamiltonian, dipole,
+  initial state, and propagation inputs as the characterized implementation.
+
+Consequences:
+
+- This intentionally breaks configurations that depended on defaults or
+  supplied ignored/inapplicable keys; backward compatibility is not preserved
+  under D-001.
+- The migration is split into test-protected commits: required selection,
+  representation, field types/injection, generated-field schema, model
+  schemas, and finally strict unknown-key rejection.
+- No numerical kernel, local-optimizer time array, segment index, endpoint,
+  Hamiltonian sign, physical threshold, or model formula changes as part of
+  these input-boundary migrations.
+- `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
+  reconstructed through the new normal-simulation field boundary.
+
+Implementation: the first bounded unit is complete locally. It requires `basis_type` and
+`initial_states`, removes their construction fallbacks, and leaves all valid-case
+calculation inputs unchanged. Representation, field types/injection, generated-field
+schema, and frozen model schemas remain pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -1666,7 +1747,7 @@ radiation/PFID is not filtered.
 
 ### O-010: Normal simulation configuration must stop inferring physics
 
-Status: Open. No behavior changes are authorized by this entry.
+Status: Resolved by D-041 on 2026-08-24.
 
 The Phase 3 validation-ownership audit found several defaults or accepted
 inapplicable keys that can change the physical problem without appearing in the
@@ -1699,9 +1780,9 @@ potential names but relies on deeper constructors for numeric type, finiteness,
 ranges, Morse bounds, and unit errors. Phase 6 frozen parameter schemas should
 own those checks before matrix allocation.
 
-User approval is required before applying items 1-7 because they intentionally
-break existing configuration files even when the explicit replacement would
-preserve the resulting calculation.
+The user accepted items 1-7, explicit external-field injection with strict
+grid validation, and frozen model parameter schemas. D-041 is authoritative
+for the staged implementation.
 
 ## Decision template
 

@@ -1,6 +1,6 @@
 # Codex repository instructions
 
-Last verified: 2026-08-23
+Last verified: 2026-08-24
 Active refactor branch: `refactor/v0.3`
 Verified structural checkpoint: D-040 (P3.2-b / Phase 3 complete)
 Latest infrastructure checkpoint: `62e6bfd`
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P3.2-b completed Phase 3:
+Current local CPU baseline after the first D-041 input-contract unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-732 passed, 10 GPU tests skipped (742 collected)
+735 passed, 10 GPU tests skipped (745 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -208,9 +208,12 @@ The next work is:
 1. Continue Phase 4 with typed quantity and strict unit-validation boundaries.
    Characterize converter round trips and warning/fallback behavior before any
    implementation replacement.
-2. Resolve O-010 before the Phase 7 typed simulation configuration: model,
-   initial state, LinMol representation, coupling, split interaction, and field
-   shape currently contain implicit defaults or inapplicable accepted keys.
+2. Implement accepted D-041 in bounded, test-protected units: required model
+   and initial state; explicit LinMol representation; scalar/Cartesian field
+   types with external-sample injection; explicit generated-field schema;
+   frozen model parameter schemas; and strict unknown/inapplicable-key
+   rejection. Structural field-grid validation never resamples, and numerical
+   adequacy is a separate explicit convergence report.
 3. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

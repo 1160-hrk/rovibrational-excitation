@@ -120,7 +120,7 @@ def _reduced_initial_states(
 ) -> tuple[list[tuple[int, int]], int]:
     j_count = params["J_max"] + 1
     dimension = (params["V_max"] + 1) * j_count
-    raw_indices = list(params.get("initial_states", [0]))
+    raw_indices = list(params["initial_states"])
     if not raw_indices:
         raise ValueError("initial_states must contain at least one state index")
 

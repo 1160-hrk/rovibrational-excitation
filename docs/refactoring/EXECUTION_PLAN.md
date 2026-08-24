@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-11
+Last updated: 2026-08-24
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -984,6 +984,12 @@ For each model:
 - eliminate duplicate simulation builder;
 - update registry and reference tests.
 
+Under D-041, each frozen schema validates required keys, numeric types,
+finiteness, ranges, units, and model-specific constraints before allocating a
+basis or operator. The migration first proves that a valid schema projects to
+the exact existing constructor values and results; strict rejection replaces
+the mapping path only after parity is established.
+
 Morse `N` remains derived instance-local data.
 
 ### Phase 6 acceptance
@@ -1007,6 +1013,22 @@ Split current runner into:
 - process management;
 - persistence/checkpoint service;
 - progress/reporting.
+
+The D-041 migration is divided into separately testable units:
+
+1. require `basis_type` and `initial_states`;
+2. replace `use_M` with the explicit LinMol representation;
+3. introduce scalar and Cartesian field values plus exact external-sample
+   injection;
+4. require generated-envelope and modulation discriminators;
+5. consume the Phase 6 frozen model schemas in a typed `SimulationCase`;
+6. reject every unknown and inapplicable key at the final schema boundary;
+7. add an opt-in convergence-report service that never changes the requested
+   time grid.
+
+Every unit characterizes the old valid-case projection first. None may route
+normal-simulation time construction through `LocalOptimizerLegacyGridV1` or
+alter the local optimizer frozen arrays and indices.
 
 One-case execution must be a deterministic pure application service aside from
 explicit result writing.

@@ -20,7 +20,7 @@ def build_twolevel(
         input_units=params["energy_gap_units"],
         output_units="J",
     )
-    state = build_initial_state(basis, params.get("initial_states", [0]))
+    state = build_initial_state(basis, params["initial_states"])
     hamiltonian = basis.generate_H0()
     dipole = TwoLevelDipoleMatrix(
         basis,

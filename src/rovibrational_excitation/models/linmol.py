@@ -31,7 +31,7 @@ def build_linmol(
         output_units="J",
         input_units="rad/fs",
     )
-    state = build_initial_state(basis, params.get("initial_states", [0]))
+    state = build_initial_state(basis, params["initial_states"])
 
     delta_omega = params["delta_omega_rad_phz"]
     potential_type = params["potential_type"]

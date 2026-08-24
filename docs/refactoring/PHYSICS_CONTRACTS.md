@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-12
+Last verified against source and tests: 2026-08-24
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -871,6 +871,23 @@ documented meaning, such as `backend="numpy"` or
 
 Unknown keys and unsupported combinations must fail with the parameter name and
 reason. No physical input may be ignored.
+
+Decision D-041 strengthens the target normal-simulation boundary. Model kind,
+initial states, LinMol representation, generated-field kind, and every
+field-defining parameter are explicit. Scalar models receive a scalar field;
+only M-resolved LinMol receives Cartesian components and polarization.
+
+Python callers may inject sampled external fields. Their samples must match one
+canonical `TimeGrid` exactly: finite uniform increasing time, odd sample count,
+both endpoints, `2 * propagation_steps + 1` values, and
+`propagation_dt = 2 * field_dt`. Field components must be finite and have the
+exact required one-dimensional shape. Validation never resamples, trims, pads,
+rounds, normalizes, or repairs the field.
+
+Time-grid consistency does not prove propagation accuracy. Accuracy assessment
+requires the complete generator and observable and is therefore an explicit
+convergence calculation with a caller-selected tolerance. It reports the
+comparison and never changes the requested field or propagation interval.
 
 ## 12. Required physics test matrix
 

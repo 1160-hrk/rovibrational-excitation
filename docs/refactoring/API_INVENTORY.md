@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-23
+Last verified: 2026-08-24
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: P3.2-b / D-040
+Latest API checkpoint: first D-041 input-contract unit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -132,7 +132,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.symtop` | `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public pending O-005 |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
-| `models` | `CouplingSpec`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy` since P2.3-b |
+| `models` | `CouplingSpec`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy`, `basis_type`, and `initial_states`; the last two became mandatory in the first D-041 unit |
 
 `SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
 simulation `build_model` registry supports only `linmol`, `twolevel`, and

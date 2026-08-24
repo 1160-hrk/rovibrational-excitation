@@ -136,9 +136,9 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
     options = validate_simulation_case(params)
     execution_policy = options.execution
     polarization = _deserialize_pol(params["polarization"])
-    use_m_average = params.get(
-        "basis_type", "linmol"
-    ).lower() == "linmol" and not params.get("use_M", True)
+    use_m_average = params["basis_type"].lower() == "linmol" and not params.get(
+        "use_M", True
+    )
     if use_m_average:
         from .m_average import (
             canonicalize_fixed_linear_polarization,

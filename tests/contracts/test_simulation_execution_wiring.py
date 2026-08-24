@@ -34,6 +34,7 @@ def _twolevel_case(**overrides):
         "carrier_freq": 0.1,
         "amplitude": 1.0e8,
         "polarization": [1.0, 0.0],
+        "initial_states": [0],
         "backend": "numpy",
         "storage": "dense",
         "algorithm": "rk4",
@@ -103,6 +104,7 @@ def test_structurally_unsupported_policy_fails_during_simulation_preflight():
             "energy_gap": 1.0,
             "energy_gap_units": "rad/fs",
             "mu0_Cm": 2.0e-30,
+            "initial_states": [0],
         },
         {
             "basis_type": "vibladder",
@@ -111,6 +113,7 @@ def test_structurally_unsupported_policy_fails_during_simulation_preflight():
             "delta_omega_rad_phz": 0.01,
             "potential_type": "harmonic",
             "mu0_Cm": 2.0e-30,
+            "initial_states": [0],
         },
     ],
 )

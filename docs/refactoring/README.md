@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-23
+Last verified: 2026-08-24
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 732 passed, 10 skipped (742 collected) |
+| Pytest | 735 passed, 10 skipped (745 collected) |
 | Measured branch coverage | 69% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -54,8 +54,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, Ruff, strict mypy, and branch-coverage rows were verified locally on
-2026-08-23 after P3.2-b completed Phase 3 by moving unchanged model-selection
+The pytest and Ruff rows were last verified locally on 2026-08-24 after the
+first D-041 unit required explicit `basis_type` and `initial_states` without
+changing valid-case construction or propagation. Phase 3 had completed under
+P3.2-b by moving unchanged model-selection
 and required-input predicates to `models.validation`. The simulation boundary
 retains its exception type and all workflow validation, the top-level import
 graph has no cycles, and strict mypy now covers 15 named modules.

@@ -14,12 +14,44 @@ from rovibrational_excitation.simulation.validation import (
 )
 
 
+def test_model_validation_requires_explicit_model_and_initial_state():
+    with pytest.raises(
+        ModelConfigurationError,
+        match="Missing required model parameter: basis_type",
+    ):
+        validate_model_parameters({})
+
+    with pytest.raises(
+        ModelConfigurationError,
+        match="Missing required model parameter: initial_states",
+    ):
+        validate_model_parameters(
+            {
+                "basis_type": "twolevel",
+                "energy_gap": 0.2,
+                "energy_gap_units": "rad/fs",
+                "mu0_Cm": 3.0e-30,
+            }
+        )
+
+
+def test_simulation_boundary_translates_missing_model_selection():
+    with pytest.raises(
+        SimulationConfigurationError,
+        match="Missing required model parameter: basis_type",
+    ) as captured:
+        validate_simulation_case({})
+
+    assert isinstance(captured.value.__cause__, ModelConfigurationError)
+
+
 def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
     params = {
         "basis_type": "TwoLevel",
         "energy_gap": 0.2,
         "energy_gap_units": "rad/fs",
         "mu0_Cm": 3.0e-30,
+        "initial_states": [0],
     }
 
     assert validate_model_parameters(params) == "twolevel"
@@ -45,6 +77,7 @@ def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
                 "delta_omega_rad_phz": 0.0,
                 "mu0_Cm": 3.0e-30,
                 "potential_type": "quadratic",
+                "initial_states": [0],
             },
             "potential_type must be 'harmonic' or 'morse'",
         ),
