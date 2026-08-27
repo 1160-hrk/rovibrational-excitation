@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-24
+Last updated: 2026-08-27
 
 ## How to use this log
 
@@ -1645,7 +1645,13 @@ without numerical transformation. TwoLevel, VibLadder, and M averaging receive
 `ScalarField`; M-resolved LinMol receives `CartesianField`. Optional explicit
 scalar/Jones decomposition metadata preserves the existing generated
 `helicity_projected` path; a general Cartesian field does not invent that
-decomposition. Generated fields now require `envelope_kind`, `t_center`, and
+decomposition. Generated fields now also require `carrier_frequency` and
+`carrier_frequency_units` under D-042. The immutable `Frequency` boundary
+normalizes once to `rad/fs`; explicit ordinary-frequency and wavenumber inputs
+omit `2π`, and the FFT modulation center is explicitly cycles/fs. The removed
+unit-ambiguous `carrier_freq` key raises.
+
+Generated fields now require `envelope_kind`, `t_center`, and
 `modulation_kind`; the four existing three-argument envelope functions preserve
 their exact sampled arrays. Sinusoidal selection requires amplitude, frequency,
 and `phase`/`amplitude` type, while additive phases and dispersion retain zero
@@ -1656,6 +1662,43 @@ Verification: the full CPU suite passes 785 tests with 10 optional-GPU skips;
 branch coverage is 70%. Ruff, formatting, cache-free strict mypy for 16 named
 modules, sdist/wheel build, and Twine checks pass. The local optimizer source,
 time grid, endpoint ownership, and indices are unchanged.
+
+### D-042: Frequency inputs use neutral names and explicit units
+
+Status: Accepted on 2026-08-27.
+
+Scope: public frequency-bearing configuration and typed unit boundaries.
+
+User-facing frequency values use a quantity name that does not encode a unit and
+a required paired `*_units` field. Ordinary-frequency and wavenumber values do
+not contain `2π`; angular-frequency values do. Supported ordinary-frequency
+units are Hz through PHz, supported wavenumber spellings are `cm^-1`, `cm-1`,
+and `wavenumber`, and supported angular-frequency units are `rad/s`, `rad/ps`,
+and `rad/fs`.
+
+`core.units.Frequency` is an immutable finite-scalar boundary. It converts once
+to canonical angular frequency in `rad/fs`; numerical consumers do not inspect
+unit strings. An explicit `cycles_per_fs` view exists only for boundaries whose
+mathematics is ordinary frequency, including FFT bins. No parameter processor
+may pre-convert the new neutral value and then leave a stale input-unit label.
+
+The generated-field schema therefore requires `carrier_frequency` and
+`carrier_frequency_units`. The removed ambiguous `carrier_freq` configuration
+key raises before allocation. Pulse phase construction receives canonical
+`rad/fs` with that unit stated explicitly. Sinusoidal spectral modulation
+receives the equivalent center in cycles/fs because `rfftfreq` uses ordinary
+frequency. Field samples and propagation formulas are otherwise unchanged.
+
+This first bounded implementation unit covers generated-field carrier
+frequency. Neutral model frequency names and frozen model schemas follow in a
+separate characterized unit. `carrier_freq_sin_mod` is deliberately excluded:
+its current formula multiplies an FFT-frequency difference, so its dimensional
+meaning must be confirmed before renaming or conversion.
+
+Verification anchors: `tests/unit/test_unit_conversions.py` and
+`tests/contracts/test_simulation_contracts.py`. The complete CPU suite passes 809 tests with
+10 optional-GPU skips; branch coverage remains 70%. Ruff, formatting, strict
+mypy for 16 configured modules, sdist/wheel build, and Twine checks pass.
 
 ## Open decisions
 

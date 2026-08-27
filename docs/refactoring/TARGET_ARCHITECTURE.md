@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-08-24
+Last updated: 2026-08-27
 
 ## 1. Design goals
 
@@ -418,6 +418,13 @@ call the converter.
 
 The target internal dimensional units are those listed in
 `PHYSICS_CONTRACTS.md`.
+
+`core.units.Frequency` is the first quantity value object. It stores the finite
+validated input value and unit for provenance and exposes canonical
+`angular_rad_per_fs`; `cycles_per_fs` is an explicit representation for FFT
+boundaries. New public configuration uses neutral names plus required unit
+fields. Unit-bearing suffixes such as `_rad_phz` are migration debt, not target
+schema names.
 
 ## 8. Model ownership
 

@@ -67,7 +67,8 @@ envelope_kind = "gaussian_fwhm"  # durationをFWHMとして使うガウス包絡
 duration = 20.0  # パルス幅（FWHM） [fs]
 t_center = 0.0  # パルス中心時刻 [fs]
 modulation_kind = "none"  # "sinusoidal"を選ぶ場合は変調パラメータが必須
-carrier_freq = omega_rad_phz  # キャリア周波数 [rad/fs] - 通常は共鳴周波数
+carrier_frequency = 2349.0  # キャリア周波数（通常周波数の波数表現）
+carrier_frequency_units = "cm^-1"  # 単位は必須。THz, PHz, Hz, rad/fs も選択可
 amplitude = 1e9  # 電場振幅 [V/m] - 1e8～1e12の範囲
 
 # 偏光設定（固定値キー - リストでもスイープされない）

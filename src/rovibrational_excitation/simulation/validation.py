@@ -9,6 +9,7 @@ import numpy as np
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.core.units import Frequency
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
@@ -47,7 +48,8 @@ _GENERATED_REQUIRED = {
     "t_start",
     "t_end",
     "dt",
-    "carrier_freq",
+    "carrier_frequency",
+    "carrier_frequency_units",
     "amplitude",
     "duration",
     "t_center",
@@ -71,7 +73,7 @@ _FINITE_PARAMETERS = {
     "t_start",
     "t_end",
     "dt",
-    "carrier_freq",
+    "carrier_frequency",
     "amplitude",
     "duration",
     "t_center",
@@ -128,6 +130,16 @@ def _validate_generated_field_schema(params: Mapping[str, Any]) -> None:
     except ValueError as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
+    try:
+        Frequency(
+            params["carrier_frequency"],
+            params["carrier_frequency_units"],
+        )
+    except (TypeError, ValueError) as exc:
+        raise SimulationConfigurationError(
+            "invalid carrier_frequency/carrier_frequency_units: " + str(exc)
+        ) from exc
+
     modulation_kind = params["modulation_kind"]
     if not isinstance(modulation_kind, str) or modulation_kind not in {
         "none",
@@ -168,13 +180,16 @@ def validate_simulation_case(
 ) -> PropagationOptions:
     """Validate one generated or externally sampled simulation case."""
     removed_field_selectors = {
-        key for key in ("envelope_func", "Sinusoidal_modulation") if key in params
+        key
+        for key in ("envelope_func", "Sinusoidal_modulation", "carrier_freq")
+        if key in params
     }
     if removed_field_selectors:
         names = ", ".join(sorted(removed_field_selectors))
         raise SimulationConfigurationError(
-            f"{names} were removed; use envelope_kind and modulation_kind, "
-            "or inject an external sampled field for a custom waveform"
+            f"{names} were removed; use envelope_kind, modulation_kind, and "
+            "carrier_frequency with carrier_frequency_units, or inject an "
+            "external sampled field for a custom waveform"
         )
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params

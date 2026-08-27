@@ -30,7 +30,6 @@ class ParameterProcessor:
             "delta_omega_rad_phz",
             "B_rad_phz",
             "alpha_rad_phz",
-            "carrier_freq",
             "vibrational_frequency_rad_per_fs",
             "rotational_constant_rad_per_fs",
             "vibration_rotation_coupling_rad_per_fs",

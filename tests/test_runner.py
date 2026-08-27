@@ -51,7 +51,8 @@ def test_run_all_file_output():
         "dt": 0.1,  # 十分な数の点数を確保
         "duration": 1.0,
         "t_center": 0.0,
-        "carrier_freq": 1.0,
+        "carrier_frequency": 1.0,
+        "carrier_frequency_units": "PHz",
         "amplitude": 0.1,
         "polarization": [1.0, 0.0],
         "V_max": 0,

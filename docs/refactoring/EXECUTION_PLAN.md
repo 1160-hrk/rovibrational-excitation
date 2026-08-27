@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-24
+Last updated: 2026-08-27
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -880,6 +880,15 @@ under P2.5.
 The 2026-08-09 explicit-fallback audit also rejects removed and unknown solver
 options and prevents dipole CuPy requests from becoming NumPy arrays. Remaining
 P1/P2 findings and physics-facing default decisions are in FALLBACK_AUDIT.md.
+
+P4.3-a implemented the first explicit quantity boundary on 2026-08-27 under
+D-042. Generated carrier input now requires neutral `carrier_frequency` plus
+`carrier_frequency_units`, is validated by immutable `Frequency`, and is
+normalized once to `rad/fs`. PHz, THz, Hz, wavenumber, and angular-frequency
+forms have field-level equivalence tests. The legacy ambiguous key is rejected;
+model frequency schemas remain the next bounded unit. The complete CPU suite
+passes 809 tests with 10 optional-GPU skips; branch coverage remains 70%, and
+Ruff, formatting, strict mypy, build, and Twine gates pass.
 
 Remaining Phase 4 work:
 

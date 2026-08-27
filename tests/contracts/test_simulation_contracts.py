@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.core.units import Frequency
 from rovibrational_excitation.fields import (
     CartesianField,
     ElectricField,
@@ -43,7 +44,8 @@ def _base_case(**overrides):
         "t_center": 0.0,
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
-        "carrier_freq": 0.1,
+        "carrier_frequency": 0.1,
+        "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
         "polarization": [1.0, 0.0],
         "initial_states": [0],
@@ -156,6 +158,84 @@ def test_generated_field_requires_explicit_discriminators_and_center(key):
 
     with pytest.raises(SimulationConfigurationError, match=key):
         validate_simulation_case(params)
+
+
+@pytest.mark.parametrize("key", ["carrier_frequency", "carrier_frequency_units"])
+def test_generated_field_requires_carrier_frequency_and_unit(key):
+    params = _base_case()
+    del params[key]
+
+    with pytest.raises(SimulationConfigurationError, match=key):
+        validate_simulation_case(params)
+
+
+def test_generated_field_rejects_removed_ambiguous_carrier_key():
+    params = _base_case(carrier_freq=0.1)
+
+    with pytest.raises(SimulationConfigurationError, match="carrier_freq"):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize(
+    ("value", "unit"),
+    [
+        (np.nan, "PHz"),
+        (True, "PHz"),
+        (0.1, "cycles_per_second"),
+    ],
+)
+def test_generated_field_rejects_invalid_carrier_frequency(value, unit):
+    params = _base_case(
+        carrier_frequency=value,
+        carrier_frequency_units=unit,
+    )
+
+    with pytest.raises(
+        SimulationConfigurationError,
+        match="carrier_frequency/carrier_frequency_units",
+    ):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize(
+    ("value", "unit"),
+    [
+        (100.0, "THz"),
+        (0.2 * np.pi, "rad/fs"),
+        (1.0e14, "Hz"),
+        (0.1 / (2.99792458e8 * 1.0e-13), "cm^-1"),
+        (0.1 / (2.99792458e8 * 1.0e-13), "wavenumber"),
+    ],
+)
+def test_generated_carrier_frequency_units_preserve_the_same_field(value, unit):
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    reference_params = _base_case()
+    params = _base_case(
+        carrier_frequency=value,
+        carrier_frequency_units=unit,
+    )
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+
+    reference = _generated_sampled_field(
+        reference_params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+    actual = _generated_sampled_field(
+        params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+
+    np.testing.assert_allclose(
+        actual.samples_v_per_m,
+        reference.samples_v_per_m,
+        rtol=2.0e-15,
+        atol=2.0e-7,
+    )
 
 
 @pytest.mark.parametrize(
@@ -310,7 +390,8 @@ _GENERATED_FIELD_KEYS = {
     "t_center",
     "envelope_kind",
     "modulation_kind",
-    "carrier_freq",
+    "carrier_frequency",
+    "carrier_frequency_units",
     "amplitude",
     "polarization",
 }
@@ -343,7 +424,9 @@ def test_generated_envelope_kind_preserves_existing_samples(
         envelope_func,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.asarray(params["polarization"]),
     )
@@ -384,12 +467,16 @@ def test_sinusoidal_modulation_kind_preserves_existing_samples(
         gaussian_fwhm,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.asarray(params["polarization"]),
     )
     expected.apply_sinusoidal_mod(
-        center_freq=params["carrier_freq"],
+        center_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude_sin_mod"],
         carrier_freq=params["carrier_freq_sin_mod"],
         phase_rad=expected_phase,
@@ -418,7 +505,9 @@ def test_external_scalar_field_matches_existing_generated_twolevel_calculation()
         gaussian_fwhm,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.asarray(params["polarization"]),
     )
@@ -453,7 +542,8 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
         "t_center": 0.0,
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
-        "carrier_freq": 0.1,
+        "carrier_frequency": 0.1,
+        "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
         "polarization": [1.0, 1.0],
         "backend": "numpy",
@@ -472,7 +562,9 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
         gaussian_fwhm,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.asarray(params["polarization"]),
     )
@@ -548,7 +640,8 @@ def _helicity_runner_case(**overrides):
         "t_center": 0.0,
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
-        "carrier_freq": 0.1,
+        "carrier_frequency": 0.1,
+        "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
         "polarization": np.array([1.0, 1.0j]) / np.sqrt(2.0),
         "backend": "numpy",

@@ -192,6 +192,7 @@ E.add_dispersed_Efield(
         duration=50.0,             # FWHM (fs)
         t_center=0.0,
         carrier_freq=2349*2*np.pi*c_vacuum,   # rad/fs
+        carrier_freq_units="rad/fs",
         amplitude=1.0,
         polarization=[1.0, 0.0],   # x-pol.
 )
@@ -232,12 +233,13 @@ duration       = [50.0, 80.0]                 # Gaussian FWHM (fs)
 polarization   = [[1,0], [1/2**0.5,1j/2**0.5]]
 t_center       = [0.0, 100.0]
 
-carrier_freq   = 2349*2*np.pi*1e12*1e-15      # rad/fs
+carrier_frequency = 2349.0                            # wavenumber
+carrier_frequency_units = "cm^-1"                    # required
 amplitude      = 1.0e9                        # V/m
 
 # --- molecular constants ----------------------------------------
 V_max, J_max   = 2, 4
-omega_rad_phz   = carrier_freq * 2 * np.pi
+omega_rad_phz   = 2349 * 2 * np.pi * 3e10 / 1e15
 mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
 ```
 

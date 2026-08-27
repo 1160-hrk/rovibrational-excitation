@@ -8,6 +8,7 @@ to ensure physical quantities are correctly converted to standard units.
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.units import Frequency
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.core.units.parameter_processor import parameter_processor
 
@@ -69,6 +70,41 @@ class TestFrequencyConversions:
         """Test error handling for invalid units."""
         with pytest.raises(ValueError, match="Unknown frequency unit"):
             convert_frequency(100, "invalid_unit")
+
+
+class TestFrequencyValue:
+    """Test the strict scalar frequency boundary."""
+
+    @pytest.mark.parametrize(
+        ("value", "unit"),
+        [
+            (0.1, "PHz"),
+            (100.0, "THz"),
+            (0.2 * np.pi, "rad/fs"),
+            (1.0e14, "Hz"),
+            (0.1 / (2.99792458e8 * 1.0e-13), "cm^-1"),
+            (0.1 / (2.99792458e8 * 1.0e-13), "wavenumber"),
+        ],
+    )
+    def test_equivalent_units_have_one_canonical_value(self, value, unit):
+        frequency = Frequency(value, unit)
+
+        assert frequency.angular_rad_per_fs == pytest.approx(0.2 * np.pi)
+        assert frequency.cycles_per_fs == pytest.approx(0.1)
+
+    @pytest.mark.parametrize("value", [True, np.bool_(False)])
+    def test_boolean_value_is_rejected(self, value):
+        with pytest.raises(TypeError, match="finite scalar"):
+            Frequency(value, "PHz")
+
+    @pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf])
+    def test_nonfinite_value_is_rejected(self, value):
+        with pytest.raises(ValueError, match="finite"):
+            Frequency(value, "PHz")
+
+    def test_unknown_unit_is_rejected(self):
+        with pytest.raises(ValueError, match="invalid frequency unit"):
+            Frequency(0.1, "cycles_per_second")
 
 
 class TestDipoleConversions:
@@ -259,6 +295,17 @@ class TestAutoConvertParameters:
 
         assert np.isclose(converted["omega_rad_phz"], expected_omega)
         assert np.isclose(converted["B_rad_phz"], expected_B)
+
+    def test_typed_carrier_is_not_preconverted(self):
+        """Leave neutral carrier input for the strict Frequency boundary."""
+        params = {
+            "carrier_frequency": 100.0,
+            "carrier_frequency_units": "THz",
+        }
+
+        converted = auto_convert_parameters(params)
+
+        assert converted == params
 
     def test_dipole_parameter_conversion(self):
         """Test automatic dipole parameter conversion."""

@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from ..core.time import TimeGrid
+from ..core.units import Frequency
 from ..fields import SampledField
 from ..io import (
     CheckpointManager,
@@ -137,21 +138,26 @@ def _generated_sampled_field(
 
     from rovibrational_excitation.fields.envelopes import get_generated_envelope
 
+    carrier_frequency = Frequency(
+        params["carrier_frequency"],
+        params["carrier_frequency_units"],
+    )
     generated = ElectricField.from_time_grid(time_grid)
     generated.add_dispersed_Efield(
         envelope_func=get_generated_envelope(params["envelope_kind"]),
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=carrier_frequency.angular_rad_per_fs,
         amplitude=params["amplitude"],
         polarization=polarization,
         phase_rad=params.get("phase_rad", 0.0),
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
+        carrier_freq_units="rad/fs",
     )
     if params["modulation_kind"] == "sinusoidal":
         generated.apply_sinusoidal_mod(
-            center_freq=params["carrier_freq"],
+            center_freq=carrier_frequency.cycles_per_fs,
             amplitude=params["amplitude_sin_mod"],
             carrier_freq=params["carrier_freq_sin_mod"],
             phase_rad=params.get("phase_rad_sin_mod", 0.0),

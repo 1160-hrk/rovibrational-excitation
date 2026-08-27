@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-27
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-041 unit 4 (generated-field schema)
+Verified structural checkpoint: D-042 unit 1 (generated carrier frequency)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the fourth D-041 generated-field unit:
+Current local CPU baseline after the first D-042 frequency unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-785 passed, 10 GPU tests skipped (795 collected)
+809 passed, 10 GPU tests skipped (819 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -205,9 +205,9 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 with typed quantity and strict unit-validation boundaries.
-   Characterize converter round trips and warning/fallback behavior before any
-   implementation replacement.
+1. Continue D-042 and Phase 4 by migrating model inputs to neutral names with
+   required units and frozen typed schemas. Preserve the characterized model
+   arrays and reject each old unit-encoded key explicitly.
 2. Continue accepted D-041 after completing required selection, LinMol
    representation, scalar/Cartesian external-field injection, and the explicit
    generated-field schema: implement frozen model parameter schemas, consume

@@ -12,6 +12,7 @@ from rovibrational_excitation.core.execution import (
     MatrixStorage,
 )
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.core.units import Frequency
 from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import (
@@ -58,7 +59,8 @@ def _runner_params(**overrides):
         "t_center": 0.02,
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
-        "carrier_freq": 0.0,
+        "carrier_frequency": 0.0,
+        "carrier_frequency_units": "PHz",
         "amplitude": 4.0e8,
         "polarization": [1.0, 0.0],
         "initial_states": [1],  # reduced state |v=0,J=1>
@@ -344,7 +346,9 @@ def _full_m_reference(params):
         gaussian_fwhm,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.array([1.0, 0.0]),
     )
@@ -456,7 +460,9 @@ def test_m_average_external_scalar_field_matches_generated_field_exactly():
         gaussian_fwhm,
         duration=params["duration"],
         t_center=params["t_center"],
-        carrier_freq=params["carrier_freq"],
+        carrier_freq=Frequency(
+            params["carrier_frequency"], params["carrier_frequency_units"]
+        ).cycles_per_fs,
         amplitude=params["amplitude"],
         polarization=np.asarray(params["polarization"]),
     )
@@ -469,7 +475,8 @@ def test_m_average_external_scalar_field_matches_generated_field_exactly():
         "t_center",
         "envelope_kind",
         "modulation_kind",
-        "carrier_freq",
+        "carrier_frequency",
+        "carrier_frequency_units",
         "amplitude",
         "polarization",
     }

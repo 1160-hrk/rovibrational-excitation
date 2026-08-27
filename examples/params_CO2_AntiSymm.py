@@ -36,7 +36,8 @@ polarization_sweep = [
     [1 / np.sqrt(2), 1j / np.sqrt(2)],  # RHC
     # [1/np.sqrt(2), (1+1j)/2],                 # arbitrary
 ]
-carrier_freq = 2349.0 * (3e10 * 1e-15)  # 2349 cm⁻¹ → /fs
+carrier_frequency = 2349.0  # 波数として入力
+carrier_frequency_units = "cm^-1"
 amplitude = 1e9  # V·m⁻¹
 gdd = 1e3  # fs²
 tod = 0.0  # fs³
@@ -53,7 +54,7 @@ J_max = 2
 # Morse / Harmonic 切替え
 potential_type = "harmonic"  # or "morse"
 
-omega_rad_phz = carrier_freq * 2 * np.pi  # ω₀ (rad/fs)
+omega_rad_phz = 2349.0 * 2 * np.pi * 3e10 * 1e-15  # ω₀ (rad/fs)
 delta_omega_rad_phz = 10.0 * (2 * np.pi * 3e10 * 1e-15)  # 非調和補正 (rad/fs)
 B_rad_phz = 0.3902 * (2 * np.pi * 3e10 * 1e-15)  # 回転定数 (rad/fs)
 alpha_rad_phz = 0.0  # 振動回転相互作用項を無視

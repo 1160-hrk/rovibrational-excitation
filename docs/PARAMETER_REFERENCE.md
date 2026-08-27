@@ -36,7 +36,8 @@ mu0_Cm = 1.0e-30
 
 # 電場パラメータ
 duration = [20.0, 30.0]  # スイープ対象
-carrier_freq = omega_rad_phz
+carrier_frequency = 2349.0
+carrier_frequency_units = "cm^-1"
 amplitude = 1e9
 polarization = [1.0, 0.0]  # 固定値
 
@@ -98,9 +99,18 @@ sample_stride = 1
 | `duration` | `float` | ✅ | fs | 包絡線の幅（意味は種類ごとに異なる） | `20.0` |
 | `t_center` | `float` | ✅ | fs | パルス中心時刻（暗黙値なし） | `0.0` |
 | `modulation_kind` | `str` | ✅ | - | `"none"` または `"sinusoidal"` | `"none"` |
-| `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
+| `carrier_frequency` | `float` | ✅ | 次行で指定 | 搬送波周波数（通常周波数・波数・角周波数を選択可） | `2349.0` |
+| `carrier_frequency_units` | `str` | ✅ | - | `carrier_frequency` の単位 | `"cm^-1"` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
 | `polarization` | `list` | generated `m_resolved` ✅ | - | Jones偏光ベクトル [x, y] | `[1.0, 0.0]` |
+
+`carrier_frequency_units` は必須です。通常周波数は `Hz`、`kHz`、`MHz`、
+`GHz`、`THz`、`PHz`、波数は `cm^-1`、`cm-1`、`wavenumber`、
+角周波数は `rad/s`、`rad/ps`、`rad/fs` を選べます。通常周波数と波数の
+入力値には `2π` を含めません。角周波数を選んだ場合だけ入力値に `2π` が
+含まれます。runner は検証済みの `Frequency` 境界で一度だけ `rad/fs` へ
+正規化します。旧 `carrier_freq` は単位が曖昧なため削除され、移行エラーに
+なります。
 
 通常 runner が受け付ける包絡線は `gaussian`（`duration` は標準偏差）、
 `gaussian_fwhm`（FWHM）、`lorentzian`（半値半幅）、`lorentzian_fwhm`（FWHM）です。
@@ -162,7 +172,7 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 |-----------|---|-----------|------|-----|
 | `modulation_kind` | `str` | 必須 | `"none"` または `"sinusoidal"` | `"sinusoidal"` |
 | `amplitude_sin_mod` | `float` | - | 変調振幅 | `0.1` |
-| `carrier_freq_sin_mod` | `float` | - | 変調キャリア周波数 | `0.01` |
+| `carrier_freq_sin_mod` | `float` | - | 既存のスペクトル変調係数（単位契約は未確定） | `0.01` |
 | `phase_rad_sin_mod` | `float` | `0.0` | 変調位相 | `np.pi/2` |
 | `type_mod_sin_mod` | `str` | sinusoidal時は必須 | 変調タイプ | `"phase"` or `"amplitude"` |
 
@@ -297,7 +307,7 @@ TwoLevel、VibLadder、`m_incoherent_average`は`ScalarField`を使います。
 2成分の順序を`axes`（例: `"xy"`）へ対応させます。
 
 外部注入では`t_start`、`t_end`、`dt`、`duration`、
-`carrier_freq`、`amplitude`、`polarization`などの生成用キーを同時に
+`carrier_frequency`、`carrier_frequency_units`、`amplitude`、`polarization`などの生成用キーを同時に
 指定するとエラーです。時間は`field.time_grid`だけが正本です。入力配列は
 防御コピーされ、有限・実数・1次元・格子と同じ長さでなければエラーになります。
 格子は有限、単調増加、等間隔、奇数長で、両端点を含む必要があります。
@@ -341,7 +351,8 @@ envelope_kind = "gaussian_fwhm"
 modulation_kind = "none"
 duration = 10.0
 t_center = 0.0
-carrier_freq = omega_rad_phz
+carrier_frequency = 2349.0
+carrier_frequency_units = "cm^-1"
 amplitude = 1e9
 polarization = [1.0, 0.0]  # x偏光
 
@@ -370,7 +381,8 @@ V_max, J_max = 3, 3
 omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
 mu0_Cm = 0.3 * 3.33564e-30
 t_center = 0.0
-carrier_freq = omega_rad_phz
+carrier_frequency = 2349.0
+carrier_frequency_units = "cm^-1"
 envelope_kind = "gaussian_fwhm"
 modulation_kind = "none"
 
@@ -417,7 +429,8 @@ potential_type = "morse"
 envelope_kind = "gaussian_fwhm"
 duration = 50.0
 t_center = 0.0
-carrier_freq = omega_rad_phz
+carrier_frequency = 2349.0
+carrier_frequency_units = "cm^-1"
 amplitude = 5e9
 polarization = [1/np.sqrt(2), 1j/np.sqrt(2)]   # 円偏光
 phase_rad = np.pi/4
@@ -445,13 +458,12 @@ sample_stride = 5       # メモリ節約
 
 ### 時間
 - **基本単位**: fs（フェムト秒）
-- **変換**: THz = 2π × 1000 rad/fs
 
 ### 周波数
-- **基本単位**: rad/fs
-- **変換**: 
-  - cm⁻¹ → rad/fs: `E_cm * 2π × 3e10 / 1e15`
-  - THz → rad/fs: `E_THz * 2π * 1000`
+- **内部標準単位**: rad/fs
+- **通常周波数入力**: 1 THz = 0.001 cycles/fs = `2π × 10^-3 rad/fs`
+- **波数入力**: 1 cm⁻¹ = `2π c × 10^-13 rad/fs`（c は m/s）
+- **入力規則**: `*_units` を必須指定し、通常周波数・波数には `2π` を含めない
 
 ### 電場
 - **基本単位**: V/m

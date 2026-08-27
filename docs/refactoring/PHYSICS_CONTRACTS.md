@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-24
+Last verified against source and tests: 2026-08-27
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -78,6 +78,15 @@ external units -> validated domain object -> one conversion boundary
 
 No parameter may be converted more than once. Conversion functions must not
 mutate caller-owned arrays or model parameters.
+
+Frequency-bearing public inputs use a neutral quantity name and a required
+`*_units` field. `Frequency` converts a finite scalar exactly once to canonical
+angular frequency in `rad/fs`. Hz through PHz and wavenumber inputs do not
+contain `2π`; `rad/s`, `rad/ps`, and `rad/fs` inputs do. The generated-field
+carrier keys are `carrier_frequency` and `carrier_frequency_units`; the old
+unit-ambiguous `carrier_freq` configuration key is rejected. FFT bins remain
+ordinary frequency in cycles/fs, so only an explicit `cycles_per_fs` view is
+passed to spectral modulation.
 
 Nondimensional propagation is a separate, explicit transformation. It must
 produce a scale object sufficient to convert time and observables back to

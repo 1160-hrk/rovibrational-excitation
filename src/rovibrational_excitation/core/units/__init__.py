@@ -7,12 +7,14 @@ conversions, and validation throughout the codebase.
 
 from .constants import PhysicalConstants
 from .converters import UnitConverter, converter
+from .frequency import Frequency
 from .parameter_processor import ParameterProcessor, parameter_processor
 from .validators import UnitValidator, validator
 
 __all__ = [
     "PhysicalConstants",
     "UnitConverter",
+    "Frequency",
     "converter",
     "UnitValidator",
     "validator",
