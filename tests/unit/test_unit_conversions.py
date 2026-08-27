@@ -274,27 +274,24 @@ class TestTimeConversions:
 class TestAutoConvertParameters:
     """Test automatic parameter conversion."""
 
-    def test_frequency_parameter_conversion(self):
-        """Test automatic frequency parameter conversion."""
+    def test_typed_model_quantities_are_not_preconverted(self):
+        """Leave values and unit labels together for the typed schemas."""
         params = {
-            "omega_rad_phz": 100.0,
-            "omega_rad_phz_units": "THz",
-            "B_rad_phz": 0.39,
-            "B_rad_phz_units": "cm^-1",
+            "vibrational_frequency": 100.0,
+            "vibrational_frequency_units": "THz",
+            "anharmonic_shift": 12.3,
+            "anharmonic_shift_units": "cm^-1",
+            "rotational_constant": 0.39,
+            "rotational_constant_units": "cm^-1",
+            "vibration_rotation_coupling": 0.003,
+            "vibration_rotation_coupling_units": "cm^-1",
+            "energy_gap": 1.5,
+            "energy_gap_units": "eV",
         }
 
         converted = auto_convert_parameters(params)
 
-        # Check that values were converted
-        assert converted["omega_rad_phz"] != params["omega_rad_phz"]
-        assert converted["B_rad_phz"] != params["B_rad_phz"]
-
-        # Check that conversions are correct
-        expected_omega = 100.0 * 2 * np.pi * 1e-3  # THz → rad/fs
-        expected_B = 0.39 * 2 * np.pi * _c * 1e-15  # cm⁻¹ → rad/fs
-
-        assert np.isclose(converted["omega_rad_phz"], expected_omega)
-        assert np.isclose(converted["B_rad_phz"], expected_B)
+        assert converted == params
 
     def test_typed_carrier_is_not_preconverted(self):
         """Leave neutral carrier input for the strict Frequency boundary."""
@@ -369,32 +366,29 @@ class TestAutoConvertParameters:
         assert converted == params
 
     def test_mixed_parameters(self):
-        """Test mix of parameters with and without units."""
+        """Convert unrelated quantities without touching typed frequencies."""
         params = {
-            "omega_rad_phz": 100.0,
-            "omega_rad_phz_units": "THz",
-            "V_max": 2,  # No units
+            "vibrational_frequency": 100.0,
+            "vibrational_frequency_units": "THz",
+            "V_max": 2,
             "mu0_Cm": 0.3,
             "mu0_Cm_units": "D",
-            "description": "mixed_test",  # No units
+            "description": "mixed_test",
         }
 
         converted = auto_convert_parameters(params)
 
-        # Parameters with units should be converted
-        assert converted["omega_rad_phz"] != params["omega_rad_phz"]
+        assert converted["vibrational_frequency"] == 100.0
+        assert converted["vibrational_frequency_units"] == "THz"
         assert converted["mu0_Cm"] != params["mu0_Cm"]
-
-        # Parameters without units should be unchanged
         assert converted["V_max"] == params["V_max"]
         assert converted["description"] == params["description"]
 
-    def test_invalid_unit_handling(self):
-        """Test handling of invalid units."""
+    def test_legacy_frequency_names_are_not_interpreted(self):
+        """Model validation, not this generic processor, rejects legacy keys."""
         params = {"omega_rad_phz": 100.0, "omega_rad_phz_units": "invalid_unit"}
 
-        with pytest.raises(ValueError, match="Failed to convert omega_rad_phz"):
-            auto_convert_parameters(params)
+        assert auto_convert_parameters(params) == params
 
 
 class TestPhysicalConsistency:
@@ -402,25 +396,12 @@ class TestPhysicalConsistency:
 
     def test_co2_parameters(self):
         """Test realistic CO2 molecule parameters."""
-        # Typical CO2 ν3 mode parameters
-        params = {
-            "omega_rad_phz": 2349.1,  # CO2 ν3 wavenumber
-            "omega_rad_phz_units": "cm^-1",
-            "B_rad_phz": 0.39021,  # CO2 rotational constant
-            "B_rad_phz_units": "cm^-1",
-            "mu0_Cm": 0.3,  # Typical dipole moment
-            "mu0_Cm_units": "D",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        # Check that values are in reasonable ranges
-        omega_rad_fs = converted["omega_rad_phz"]
-        B_rad_fs = converted["B_rad_phz"]
-        mu_cm = converted["mu0_Cm"]
+        omega_rad_fs = Frequency(2349.1, "cm^-1").angular_rad_per_fs
+        rotational_rad_fs = Frequency(0.39021, "cm^-1").angular_rad_per_fs
+        mu_cm = convert_dipole_moment(0.3, "D")
 
         # Vibrational frequency should be much larger than rotational
-        assert omega_rad_fs > B_rad_fs * 1000
+        assert omega_rad_fs > rotational_rad_fs * 1000
 
         # Dipole moment should be in reasonable range
         assert 1e-31 < mu_cm < 1e-29

@@ -20,6 +20,7 @@ from rovibrational_excitation.fields import (
     ScalarField,
     gaussian_fwhm,
 )
+from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.simulation.m_average import (
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,
@@ -46,10 +47,14 @@ def _runner_params(**overrides):
         "V_max": 1,
         "J_max": 2,
         "representation": "m_incoherent_average",
-        "omega_rad_phz": OMEGA_RAD_PER_FS,
-        "delta_omega_rad_phz": ANHARMONIC_SHIFT_RAD_PER_FS,
-        "B_rad_phz": ROTATION_RAD_PER_FS,
-        "alpha_rad_phz": VIBRATION_ROTATION_RAD_PER_FS,
+        "vibrational_frequency": OMEGA_RAD_PER_FS,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": ANHARMONIC_SHIFT_RAD_PER_FS,
+        "anharmonic_shift_units": "rad/fs",
+        "rotational_constant": ROTATION_RAD_PER_FS,
+        "rotational_constant_units": "rad/fs",
+        "vibration_rotation_coupling": VIBRATION_ROTATION_RAD_PER_FS,
+        "vibration_rotation_coupling_units": "rad/fs",
         "mu0_Cm": DIPOLE_C_M,
         "potential_type": "harmonic",
         "t_start": 0.0,
@@ -338,6 +343,7 @@ def test_m_average_accepts_coherent_vibrational_superposition_within_one_j():
 
 
 def _full_m_reference(params):
+    model_params = LinMolParameters.from_mapping(params)
     time_grid = TimeGrid.from_bounds(
         params["t_start"], params["t_end"], params["dt"]
     ).field_times_fs
@@ -356,10 +362,10 @@ def _full_m_reference(params):
         params["V_max"],
         params["J_max"],
         use_M=True,
-        omega=params["omega_rad_phz"],
-        delta_omega=params["delta_omega_rad_phz"],
-        B=params["B_rad_phz"],
-        alpha=params["alpha_rad_phz"],
+        omega=model_params.vibrational_frequency.angular_rad_per_fs,
+        delta_omega=model_params.anharmonic_shift.angular_rad_per_fs,
+        B=model_params.rotational_constant.angular_rad_per_fs,
+        alpha=model_params.vibration_rotation_coupling.angular_rad_per_fs,
         input_units="rad/fs",
         output_units="J",
     )
@@ -430,6 +436,35 @@ def test_block_weights_are_normalized_and_reduce_dense_work():
     full_dimension = (params["V_max"] + 1) * (params["J_max"] + 1) ** 2
     block_matrix_elements = sum(block.basis.size() ** 2 for block in blocks)
     assert block_matrix_elements < full_dimension**2
+
+
+def _model_frequency_value(rad_per_fs, unit):
+    factors = {
+        "THz": 2.0 * np.pi * 1.0e-3,
+        "cm^-1": 2.0 * np.pi * 2.99792458e8 * 1.0e-13,
+    }
+    return rad_per_fs / factors[unit]
+
+
+@pytest.mark.parametrize("unit", ["THz", "cm^-1"])
+def test_m_average_model_frequency_units_preserve_population(unit):
+    reference = _run_one(_runner_params())
+    actual = _run_one(
+        _runner_params(
+            vibrational_frequency=_model_frequency_value(OMEGA_RAD_PER_FS, unit),
+            vibrational_frequency_units=unit,
+            anharmonic_shift=_model_frequency_value(ANHARMONIC_SHIFT_RAD_PER_FS, unit),
+            anharmonic_shift_units=unit,
+            rotational_constant=_model_frequency_value(ROTATION_RAD_PER_FS, unit),
+            rotational_constant_units=unit,
+            vibration_rotation_coupling=_model_frequency_value(
+                VIBRATION_ROTATION_RAD_PER_FS, unit
+            ),
+            vibration_rotation_coupling_units=unit,
+        )
+    )
+
+    np.testing.assert_allclose(actual, reference, rtol=0.0, atol=3.0e-15)
 
 
 def test_m_average_dense_csr_population_parity():

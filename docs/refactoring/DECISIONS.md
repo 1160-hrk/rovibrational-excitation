@@ -1689,16 +1689,32 @@ key raises before allocation. Pulse phase construction receives canonical
 receives the equivalent center in cycles/fs because `rfftfreq` uses ordinary
 frequency. Field samples and propagation formulas are otherwise unchanged.
 
-This first bounded implementation unit covers generated-field carrier
-frequency. Neutral model frequency names and frozen model schemas follow in a
-separate characterized unit. `carrier_freq_sin_mod` is deliberately excluded:
-its current formula multiplies an FFT-frequency difference, so its dimensional
-meaning must be confirmed before renaming or conversion.
+The first bounded implementation unit covers generated-field carrier frequency.
+The second unit adds frozen `LinMolParameters`, `VibLadderParameters`, and
+`TwoLevelParameters`, validated before matrix allocation. LinMol and VibLadder
+now require neutral `vibrational_frequency` and `anharmonic_shift` value/unit
+pairs; LinMol also requires `rotational_constant` and
+`vibration_rotation_coupling` pairs. Old unit-encoded runner keys and their
+`_units` variants raise migration errors. Builders and fixed-M averaging receive
+the same canonical `rad/fs` numbers as before, while low-level basis formulas
+and propagation kernels are unchanged. The general `ParameterProcessor` does
+not pre-convert these typed fields or `energy_gap`, preventing double
+conversion against a stale unit label. This corrects the old TwoLevel runner
+path for noncanonical `energy_gap_units`; a processor-to-Hamiltonian regression
+test fixes the single-conversion behavior.
 
-Verification anchors: `tests/unit/test_unit_conversions.py` and
-`tests/contracts/test_simulation_contracts.py`. The complete CPU suite passes 809 tests with
-10 optional-GPU skips; branch coverage remains 70%. Ruff, formatting, strict
-mypy for 16 configured modules, sdist/wheel build, and Twine checks pass.
+`carrier_freq_sin_mod` is deliberately excluded: its current formula multiplies
+an FFT-frequency difference, so its dimensional meaning must be confirmed
+before renaming or conversion.
+
+Verification anchors: `tests/unit/test_unit_conversions.py`,
+`tests/contracts/test_model_validation_ownership.py`,
+`tests/test_simulation_models.py`, and
+`tests/physics/test_linear_molecule_reference.py`. The complete CPU suite passes
+834 tests with 10 optional-GPU skips; branch coverage remains 70%. Ruff,
+formatting, strict mypy for 17 configured modules, all 100 discovered-module
+imports, sdist/wheel build, and Twine checks pass. The local optimizer source,
+time grid, endpoint ownership, and indices are unchanged.
 
 ## Open decisions
 

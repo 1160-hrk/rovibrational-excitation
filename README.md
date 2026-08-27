@@ -239,7 +239,14 @@ amplitude      = 1.0e9                        # V/m
 
 # --- molecular constants ----------------------------------------
 V_max, J_max   = 2, 4
-omega_rad_phz   = 2349 * 2 * np.pi * 3e10 / 1e15
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 0.0
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.3902
+rotational_constant_units = "cm^-1"
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
 mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
 ```
 

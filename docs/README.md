@@ -86,7 +86,8 @@ python -m rovibrational_excitation.simulation.runner my_params.py
 ### CO2分子の励起シミュレーション
 ```python
 # PARAMETER_REFERENCE.mdの基本例をベースに
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # ν3 mode
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"            # ν3 mode
 mu0_Cm = 0.3 * 3.33564e-30                      # ~0.3 Debye
 V_max, J_max = 3, 5                              # 適度なサイズ
 ```

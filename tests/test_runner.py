@@ -57,7 +57,8 @@ def test_run_all_file_output():
         "polarization": [1.0, 0.0],
         "V_max": 0,
         "J_max": 0,
-        "omega_rad_phz": 1.0,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
         "mu0_Cm": 1.0,
         "initial_states": [0],
         "outdir": None,  # runner側で自動生成

@@ -67,7 +67,8 @@ description = "sweep_example"
 V_max, J_max = 5, 3
 t_start, t_end, dt = -100.0, 100.0, 0.1
 t_center = 0.0
-omega_rad_phz = 1.0
+vibrational_frequency = 1.0
+vibrational_frequency_units = "rad/fs"
 mu0_Cm = 1e-30
 
 # スイープパラメータ

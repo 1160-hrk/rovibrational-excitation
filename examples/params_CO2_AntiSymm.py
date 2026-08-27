@@ -54,10 +54,14 @@ J_max = 2
 # Morse / Harmonic 切替え
 potential_type = "harmonic"  # or "morse"
 
-omega_rad_phz = 2349.0 * 2 * np.pi * 3e10 * 1e-15  # ω₀ (rad/fs)
-delta_omega_rad_phz = 10.0 * (2 * np.pi * 3e10 * 1e-15)  # 非調和補正 (rad/fs)
-B_rad_phz = 0.3902 * (2 * np.pi * 3e10 * 1e-15)  # 回転定数 (rad/fs)
-alpha_rad_phz = 0.0  # 振動回転相互作用項を無視
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 10.0
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.3902
+rotational_constant_units = "cm^-1"
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
 
 # 双極子スケール
 debye_unit = 3.33564e-30  # 1 D → C·m

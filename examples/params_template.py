@@ -13,8 +13,6 @@ rovibrational-excitation パラメータファイル テンプレート
 詳細: docs/PARAMETER_REFERENCE.md を参照
 """
 
-import numpy as np
-
 # ============================================================================
 # 1. メタ情報（推奨）
 # ============================================================================
@@ -47,17 +45,21 @@ J_max = 5  # 最大回転量子数 - 通常 2～20
 # ============================================================================
 # 分子の物理定数
 # 例: CO2分子のν3振動モード
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # 振動周波数 [rad/fs]
+vibrational_frequency = 2349.0  # 0→1振動遷移の波数
+vibrational_frequency_units = "cm^-1"
 mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
 potential_type = "harmonic"  # "morse"では非ゼロの非調和性が必須
 
-# 回転定数 [rad/fs]
-B_rad_phz = 0.39 * 2 * np.pi * 3e10 / 1e15
-# 非調和性補正項 [rad/fs]
-# delta_omega_rad_phz = 0.001 * omega_rad_phz    # 非調和性
-delta_omega_rad_phz = 0
-# 振動-回転結合定数 [rad/fs]
-alpha_rad_phz = 0.0
+# 回転定数
+rotational_constant = 0.39
+rotational_constant_units = "cm^-1"
+# 隣接遷移周波数の準位ごとの減少量
+# anharmonic_shift = 10.0  # Morseでは非ゼロ必須
+anharmonic_shift = 0.0
+anharmonic_shift_units = "cm^-1"
+# 振動-回転結合定数
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
 
 # ============================================================================
 # 5. 必須パラメータ - 電場設定
@@ -136,8 +138,8 @@ return_time_psi = True  # 時間配列も返すか
 
 【周波数変換】
 - cm⁻¹ → rad/fs: wavenumber * 2π * 3e10 / 1e15
-- THz → rad/fs: freq_THz * 2π * 1000
-- eV → rad/fs: energy_eV * 1.519e6
+- THz → rad/fs: freq_THz * 2π * 1e-3
+- eV → rad/fs: energy_eV * 1.519
 
 【双極子モーメント変換】
 - Debye → C·m: dipole_D * 3.33564e-30

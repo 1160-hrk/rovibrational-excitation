@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from rovibrational_excitation.models.validation import (
@@ -21,10 +22,14 @@ def _linmol_params(**overrides):
         "basis_type": "linmol",
         "V_max": 1,
         "J_max": 1,
-        "omega_rad_phz": 1.0,
-        "delta_omega_rad_phz": 0.01,
-        "B_rad_phz": 0.001,
-        "alpha_rad_phz": 0.0,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": 0.01,
+        "anharmonic_shift_units": "rad/fs",
+        "rotational_constant": 0.001,
+        "rotational_constant_units": "rad/fs",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "rad/fs",
         "mu0_Cm": 1.0e-30,
         "potential_type": "harmonic",
         "initial_states": [0],
@@ -96,6 +101,104 @@ def test_model_validation_requires_explicit_model_and_initial_state():
         )
 
 
+def test_model_frequency_schema_requires_neutral_names_and_units():
+    params = {
+        "basis_type": "linmol",
+        "V_max": 1,
+        "J_max": 1,
+        "representation": "m_resolved",
+        "vibrational_frequency": 100.0,
+        "vibrational_frequency_units": "THz",
+        "anharmonic_shift": 1.0,
+        "anharmonic_shift_units": "THz",
+        "rotational_constant": 0.1,
+        "rotational_constant_units": "THz",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "THz",
+        "mu0_Cm": 1.0e-30,
+        "potential_type": "harmonic",
+        "initial_states": [0],
+    }
+
+    assert validate_model_parameters(params) == "linmol"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "vibrational_frequency_units",
+        "anharmonic_shift_units",
+        "rotational_constant_units",
+        "vibration_rotation_coupling_units",
+    ],
+)
+def test_model_frequency_schema_requires_each_unit(key):
+    params = _linmol_params(representation="m_resolved")
+    del params[key]
+
+    with pytest.raises(ModelConfigurationError, match=key):
+        validate_model_parameters(params)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("vibrational_frequency", np.nan),
+        ("vibrational_frequency", np.array([1.0])),
+        ("anharmonic_shift", True),
+        ("rotational_constant_units", "cycles_per_second"),
+    ],
+)
+def test_model_frequency_schema_rejects_invalid_quantities(key, value):
+    params = _linmol_params(representation="m_resolved")
+    params[key] = value
+
+    with pytest.raises(ModelConfigurationError, match=key):
+        validate_model_parameters(params)
+
+
+def test_model_schema_rejects_morse_with_zero_shift_before_construction():
+    params = _linmol_params(
+        representation="m_resolved",
+        potential_type="morse",
+        anharmonic_shift=0.0,
+    )
+
+    with pytest.raises(ModelConfigurationError, match="anharmonic_shift.*non-zero"):
+        validate_model_parameters(params)
+
+
+def test_model_frequency_schema_rejects_removed_unit_encoded_names():
+    with pytest.raises(ModelConfigurationError, match="omega_rad_phz was removed"):
+        validate_model_parameters(
+            _linmol_params(
+                omega_rad_phz=1.0,
+                representation="m_resolved",
+                vibrational_frequency=1.0,
+                vibrational_frequency_units="rad/fs",
+                anharmonic_shift=0.01,
+                anharmonic_shift_units="rad/fs",
+                rotational_constant=0.001,
+                rotational_constant_units="rad/fs",
+                vibration_rotation_coupling=0.0,
+                vibration_rotation_coupling_units="rad/fs",
+            )
+        )
+
+
+def test_twolevel_schema_rejects_unknown_energy_gap_unit_before_construction():
+    with pytest.raises(ModelConfigurationError, match="energy_gap_units"):
+        validate_model_parameters(
+            {
+                "basis_type": "twolevel",
+                "energy_gap": 0.2,
+                "energy_gap_units": "cycles_per_second",
+                "mu0_Cm": 3.0e-30,
+                "initial_states": [0],
+            }
+        )
+
+
 def test_simulation_boundary_translates_missing_model_selection():
     with pytest.raises(
         SimulationConfigurationError,
@@ -134,8 +237,10 @@ def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
             {
                 "basis_type": "vibladder",
                 "V_max": 2,
-                "omega_rad_phz": 0.2,
-                "delta_omega_rad_phz": 0.0,
+                "vibrational_frequency": 0.2,
+                "vibrational_frequency_units": "rad/fs",
+                "anharmonic_shift": 0.0,
+                "anharmonic_shift_units": "rad/fs",
                 "mu0_Cm": 3.0e-30,
                 "potential_type": "quadratic",
                 "initial_states": [0],

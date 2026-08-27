@@ -27,10 +27,14 @@ t_start, t_end, dt = -50.0, 50.0, 0.1
 
 # 物理パラメータ
 V_max, J_max = 3, 5
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
-delta_omega_rad_phz = 0.0
-B_rad_phz = 0.02
-alpha_rad_phz = 0.0
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 0.0
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.02
+rotational_constant_units = "rad/fs"
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "rad/fs"
 potential_type = "harmonic"
 mu0_Cm = 1.0e-30
 
@@ -135,10 +139,14 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `omega_rad_phz` | `float` | LinMol / VibLadder ✅ | rad/fs | 0→1振動遷移角周波数 | `0.14847` |
-| `delta_omega_rad_phz` | `float` | LinMol / VibLadder ✅ | rad/fs | 隣接遷移周波数の準位ごとの減少量 | `0.0` |
-| `B_rad_phz` | `float` | LinMol ✅ | rad/fs | 回転定数 | `0.02` |
-| `alpha_rad_phz` | `float` | LinMol ✅ | rad/fs | 振動-回転相互作用定数 | `0.0` |
+| `vibrational_frequency` | `float` | LinMol / VibLadder ✅ | 対応する `*_units` | 0→1振動遷移周波数 | `2349.0` |
+| `vibrational_frequency_units` | `str` | LinMol / VibLadder ✅ | - | 振動周波数の単位 | `"cm^-1"` |
+| `anharmonic_shift` | `float` | LinMol / VibLadder ✅ | 対応する `*_units` | 隣接遷移周波数の準位ごとの減少量 | `0.0` |
+| `anharmonic_shift_units` | `str` | LinMol / VibLadder ✅ | - | 非調和シフトの単位 | `"cm^-1"` |
+| `rotational_constant` | `float` | LinMol ✅ | 対応する `*_units` | 回転定数 | `0.3902` |
+| `rotational_constant_units` | `str` | LinMol ✅ | - | 回転定数の単位 | `"cm^-1"` |
+| `vibration_rotation_coupling` | `float` | LinMol ✅ | 対応する `*_units` | 振動-回転相互作用定数 | `0.0` |
+| `vibration_rotation_coupling_units` | `str` | LinMol ✅ | - | 振動-回転相互作用定数の単位 | `"cm^-1"` |
 | `potential_type` | `str` | LinMol / VibLadder ✅ | - | `"harmonic"` または `"morse"` | `"harmonic"` |
 | `mu0_Cm` | `float` | 全モデル ✅ | C·m | 双極子モーメント | `1e-30` |
 | `energy_gap` | `float` | TwoLevel ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
@@ -183,9 +191,9 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 
 #### 2.3 ハミルトニアンの定義
 
-振動エネルギーは `omega_rad_phz` を0→1遷移角周波数として、`E_v = (omega + delta_omega)(v + 1/2) - (delta_omega / 2)(v + 1/2)^2` で定義します。
+振動エネルギーは `vibrational_frequency` を0→1遷移周波数として受け取り、明示された単位から内部の角周波数へ一度だけ変換した後、`E_v = (omega + delta_omega)(v + 1/2) - (delta_omega / 2)(v + 1/2)^2` で定義します。
 
-`potential_type = "morse"` の場合、`delta_omega_rad_phz` は非ゼロ必須です。Morse準位パラメータは `omega_rad_phz` と `delta_omega_rad_phz` からケースごとに計算され、`V_max <= floor(N) - 1` を満たさない入力はエラーになります。
+`potential_type = "morse"` の場合、`anharmonic_shift` は非ゼロ必須です。Morse準位パラメータは正規化済みの `vibrational_frequency` と `anharmonic_shift` からケースごとに計算され、`V_max <= floor(N) - 1` を満たさない入力はエラーになります。
 
 #### 2.4 双極子行列設定
 
@@ -343,7 +351,8 @@ t_start, t_end, dt = -20.0, 20.0, 0.1
 V_max, J_max = 2, 2
 
 # 物理パラメータ
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # CO2 ν3 mode
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"  # CO2 ν3 mode
 mu0_Cm = 0.3 * 3.33564e-30                      # ~0.3 Debye
 
 # 電場パラメータ
@@ -378,7 +387,8 @@ description = "parameter_sweep"
 # 基本設定
 t_start, t_end, dt = -50.0, 50.0, 0.1
 V_max, J_max = 3, 3
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
 mu0_Cm = 0.3 * 3.33564e-30
 t_center = 0.0
 carrier_frequency = 2349.0
@@ -417,10 +427,14 @@ representation = "m_resolved"
 axes = "xy"
 
 # 物理パラメータ（CO2分子）
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
-delta_omega_rad_phz = 0.001 * omega_rad_phz    # 非調和性
-B_rad_phz = 0.39 * 2 * np.pi * 3e10 / 1e15     # 回転定数
-alpha_rad_phz = 0.0001 * B_rad_phz              # 振動-回転相互作用
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 2.349
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.39
+rotational_constant_units = "cm^-1"
+vibration_rotation_coupling = 0.000039
+vibration_rotation_coupling_units = "cm^-1"
 mu0_Cm = 0.3 * 3.33564e-30
 potential_type = "morse"
 

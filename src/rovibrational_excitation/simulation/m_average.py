@@ -20,6 +20,8 @@ from rovibrational_excitation.dynamics.problem import (
     SystemModel,
 )
 from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
+from rovibrational_excitation.models.parameters import LinMolParameters
+from rovibrational_excitation.models.validation import model_parameters_from_mapping
 
 _LINEAR_POLARIZATION_TOL = 128.0 * np.finfo(np.float64).eps
 
@@ -158,6 +160,9 @@ def build_m_average_blocks(
     params: dict[str, Any], *, execution_policy: ExecutionPolicy
 ) -> tuple[MBlockProblem, ...]:
     """Build the non-negative |M| representatives for an isotropic M mixture."""
+    model_params = model_parameters_from_mapping(params)
+    if not isinstance(model_params, LinMolParameters):
+        raise TypeError("M-average builder requires LinMolParameters")
     initial_states, initial_j = _reduced_initial_states(params)
     degeneracy = 2 * initial_j + 1
     amplitude = 1.0 / np.sqrt(len(initial_states))
@@ -166,13 +171,13 @@ def build_m_average_blocks(
 
     for abs_m in range(initial_j + 1):
         basis = FixedMLinMolBasis(
-            params["V_max"],
-            params["J_max"],
+            model_params.v_max,
+            model_params.j_max,
             M=abs_m,
-            omega=params["omega_rad_phz"],
-            delta_omega=params["delta_omega_rad_phz"],
-            B=params["B_rad_phz"],
-            alpha=params["alpha_rad_phz"],
+            omega=model_params.vibrational_frequency.angular_rad_per_fs,
+            delta_omega=model_params.anharmonic_shift.angular_rad_per_fs,
+            B=model_params.rotational_constant.angular_rad_per_fs,
+            alpha=model_params.vibration_rotation_coupling.angular_rad_per_fs,
             output_units="J",
             input_units="rad/fs",
         )
@@ -183,13 +188,13 @@ def build_m_average_blocks(
         multiplicity = 1 if abs_m == 0 else 2
         dipole = LinMolDipoleMatrix(
             basis,
-            mu0=params["mu0_Cm"],
-            potential_type=params["potential_type"],
+            mu0=model_params.dipole_c_m,
+            potential_type=model_params.potential_type,
             backend=execution_policy.backend.value,
             dense=dense,
         )
         reduced_indices = (
-            basis.V_array * (params["J_max"] + 1) + basis.J_array
+            basis.V_array * (model_params.j_max + 1) + basis.J_array
         ).astype(np.int64)
         blocks.append(
             MBlockProblem(

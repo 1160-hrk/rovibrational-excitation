@@ -5,8 +5,6 @@
 推奨案1（専用キーワードでスイープ制御）の使用例
 """
 
-import numpy as np
-
 # 計算の説明（結果ディレクトリ名に使用）
 description = "new_sweep_demo"
 
@@ -15,7 +13,14 @@ t_start, t_end, dt = -50.0, 50.0, 0.1  # [fs]
 
 # === 基本パラメータ（固定） ===
 V_max, J_max = 2, 2  # 量子数上限
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # 振動周波数 [rad/fs]
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 0.0
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.3902
+rotational_constant_units = "cm^-1"
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
 mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
 t_center = 0.0  # パルス中心時刻 [fs]
 carrier_frequency = 2349.0  # キャリア波数

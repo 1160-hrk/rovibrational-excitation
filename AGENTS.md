@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-27
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-042 unit 1 (generated carrier frequency)
+Verified structural checkpoint: D-042 unit 2 (frozen model frequency schemas)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the first D-042 frequency unit:
+Current local CPU baseline after the second D-042 frequency unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-809 passed, 10 GPU tests skipped (819 collected)
+834 passed, 10 GPU tests skipped (844 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -198,21 +198,20 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 97 discovered modules import, internal modules avoid root
+are removed, all 100 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue D-042 and Phase 4 by migrating model inputs to neutral names with
-   required units and frozen typed schemas. Preserve the characterized model
-   arrays and reject each old unit-encoded key explicitly.
-2. Continue accepted D-041 after completing required selection, LinMol
-   representation, scalar/Cartesian external-field injection, and the explicit
-   generated-field schema: implement frozen model parameter schemas, consume
-   them in a typed `SimulationCase`, and then enforce strict unknown- and
-   inapplicable-key rejection. Structural field-grid validation never resamples, and numerical
+1. Continue accepted D-041 by composing the completed time, field, execution,
+   selection, and frozen model boundaries into a typed `SimulationCase`; then
+   enforce strict unknown- and model-inapplicable-key rejection.
+2. Continue Phase 4 with remaining explicit quantity boundaries and
+   property-style round-trip tests. Do not migrate `carrier_freq_sin_mod` until
+   its dimensional meaning is explicitly resolved.
+   Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.
 3. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,

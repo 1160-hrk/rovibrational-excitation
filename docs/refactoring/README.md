@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 809 passed, 10 skipped (819 collected) |
+| Pytest | 834 passed, 10 skipped (844 collected) |
 | Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -51,22 +51,23 @@ physics changes are detected by tests.
 | Files failing Ruff format check | 0 |
 | Optimization module coverage | 8-90% |
 | Spectroscopy coverage | 90% |
-| `simulation/runner.py` coverage | 67% |
+| `simulation/runner.py` coverage | 68% |
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, coverage, and Ruff rows were last verified locally on 2026-08-27
-after the first D-042 unit introduced the immutable `Frequency` boundary and
-required generated `carrier_frequency` plus `carrier_frequency_units`. The previous unit introduced immutable
-scalar/Cartesian sampled fields and strict Python external-field injection.
-Generated fields retain the
-characterized pulse construction and produce exactly equal populations before
-and after projection to the typed field boundary. TwoLevel, M-resolved LinMol,
-and fixed-M incoherent averaging have exact generated/injected parity tests.
-Direct basis and optimization paths remain unchanged. Phase 3 had completed under
-P3.2-b by moving unchanged model-selection
-and required-input predicates to `models.validation`. The simulation boundary
-retains its exception type and all workflow validation, the top-level import
-graph has no cycles, and strict mypy now covers 16 named modules.
+after the second D-042 unit introduced frozen LinMol, VibLadder, and TwoLevel
+parameter schemas with neutral frequency names and required paired units. Model
+input is validated before matrix allocation and projected once to the unchanged
+low-level rad/fs constructors. PHz, THz, wavenumber, and rad/fs forms have
+Hamiltonian, dipole, and fixed-M propagation equivalence tests. The first D-042
+unit had required generated `carrier_frequency` plus
+`carrier_frequency_units`. Generated and injected field parity remains exact.
+Direct basis, propagation kernels, and optimization paths remain unchanged.
+Phase 3 had completed under P3.2-b by moving unchanged model-selection and
+required-input predicates to `models.validation`. The simulation boundary
+retains its exception type and workflow validation, all 100 discovered modules
+import, the top-level import graph has no cycles, and strict mypy now covers 17
+named modules.
 P3.2-a had audited the Phase 3 structure and removed the empty
 simulation manager, obsolete writable-array time-grid adapter, and two uncalled
 `ParameterProcessor` construction helpers. The cleanup routes callers through

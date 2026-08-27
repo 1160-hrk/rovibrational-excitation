@@ -113,8 +113,10 @@ def test_structurally_unsupported_policy_fails_during_simulation_preflight():
         {
             "basis_type": "vibladder",
             "V_max": 3,
-            "omega_rad_phz": 1.0,
-            "delta_omega_rad_phz": 0.01,
+            "vibrational_frequency": 1.0,
+            "vibrational_frequency_units": "rad/fs",
+            "anharmonic_shift": 0.01,
+            "anharmonic_shift_units": "rad/fs",
             "potential_type": "harmonic",
             "mu0_Cm": 2.0e-30,
             "initial_states": [0],

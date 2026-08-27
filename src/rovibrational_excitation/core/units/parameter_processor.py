@@ -24,21 +24,13 @@ class ParameterProcessor:
         self.converter = converter
         self.validator = validator
 
-        # Parameter groups for automatic processing
-        self.frequency_params = [
-            "omega_rad_phz",
-            "delta_omega_rad_phz",
-            "B_rad_phz",
-            "alpha_rad_phz",
-            "vibrational_frequency_rad_per_fs",
-            "rotational_constant_rad_per_fs",
-            "vibration_rotation_coupling_rad_per_fs",
-            "anharmonicity_correction_rad_per_fs",
-        ]
+        # Neutral frequency quantities are converted by typed model/field schemas.
+        self.frequency_params: list[str] = []
 
         self.dipole_params = ["mu0_Cm", "transition_dipole_moment"]
         self.field_params = ["amplitude"]
-        self.energy_params = ["energy_gap"]
+        # The typed TwoLevel schema owns energy-gap conversion and its unit label.
+        self.energy_params: list[str] = []
         self.time_params = [
             "duration",
             "t_center",

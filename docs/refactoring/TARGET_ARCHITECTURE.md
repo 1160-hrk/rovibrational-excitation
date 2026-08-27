@@ -444,11 +444,18 @@ Example:
 @dataclass(frozen=True)
 class VibLadderParameters:
     v_max: int
-    omega: Frequency
+    vibrational_frequency: Frequency
     anharmonic_shift: Frequency
     potential: Literal["harmonic", "morse"]
     dipole_scale: DipoleMoment
 ~~~
+
+The first frozen schemas now exist as `LinMolParameters`,
+`VibLadderParameters`, and `TwoLevelParameters`. Public mappings are validated
+before basis or dipole allocation. Each neutral model frequency requires a
+paired `*_units`; model builders consume only canonical
+`Frequency.angular_rad_per_fs`. Existing low-level basis constructors retain
+their angular-frequency arguments until Phase 6.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.

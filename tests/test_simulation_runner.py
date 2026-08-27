@@ -530,7 +530,8 @@ t_center = 0.0
 carrier_frequency = 1.0
 carrier_frequency_units = "PHz"
 mu0_Cm = 1e-30
-omega_rad_phz = 1.0
+vibrational_frequency = 1.0
+vibrational_frequency_units = "rad/fs"
 polarization = [[1.0, 0.0]]
 description = "integration_test"
 """

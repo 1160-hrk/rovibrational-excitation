@@ -1,5 +1,6 @@
 """Regression tests for model construction extracted from simulation.runner."""
 
+from dataclasses import FrozenInstanceError
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -15,7 +16,8 @@ from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import (
     ElectricField as RealElectricField,
 )
-from rovibrational_excitation.models import build_model
+from rovibrational_excitation.models import LinMolParameters, build_model
+from rovibrational_excitation.simulation.config import process_params
 from rovibrational_excitation.simulation.runner import _run_one
 
 _NUMPY_DENSE = ExecutionPolicy(backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE)
@@ -42,8 +44,10 @@ def _build_model(params):
             {
                 "basis_type": "vibladder",
                 "V_max": 2,
-                "omega_rad_phz": 1.0,
-                "delta_omega_rad_phz": 0.01,
+                "vibrational_frequency": 1.0,
+                "vibrational_frequency_units": "rad/fs",
+                "anharmonic_shift": 0.01,
+                "anharmonic_shift_units": "rad/fs",
                 "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
                 "initial_states": [0],
@@ -57,10 +61,14 @@ def _build_model(params):
                 "J_max": 1,
                 "representation": "m_resolved",
                 "axes": "xy",
-                "omega_rad_phz": 1.0,
-                "delta_omega_rad_phz": 0.01,
-                "B_rad_phz": 0.001,
-                "alpha_rad_phz": 0.0,
+                "vibrational_frequency": 1.0,
+                "vibrational_frequency_units": "rad/fs",
+                "anharmonic_shift": 0.01,
+                "anharmonic_shift_units": "rad/fs",
+                "rotational_constant": 0.001,
+                "rotational_constant_units": "rad/fs",
+                "vibration_rotation_coupling": 0.0,
+                "vibration_rotation_coupling_units": "rad/fs",
                 "potential_type": "harmonic",
                 "mu0_Cm": 1e-30,
                 "initial_states": [0],
@@ -78,6 +86,153 @@ def test_build_model_constructs_normalized_existing_components(params, expected_
     np.testing.assert_allclose(np.linalg.norm(model.state.data), 1.0)
 
 
+def _frequency_value(rad_per_fs, unit):
+    factors = {
+        "rad/fs": 1.0,
+        "PHz": 2.0 * np.pi,
+        "THz": 2.0 * np.pi * 1.0e-3,
+        "cm^-1": 2.0 * np.pi * 2.99792458e8 * 1.0e-13,
+    }
+    return rad_per_fs / factors[unit]
+
+
+def _linmol_frequency_params(unit):
+    return {
+        "basis_type": "linmol",
+        "V_max": 1,
+        "J_max": 1,
+        "representation": "m_resolved",
+        "axes": "xy",
+        "vibrational_frequency": _frequency_value(0.2, unit),
+        "vibrational_frequency_units": unit,
+        "anharmonic_shift": _frequency_value(0.01, unit),
+        "anharmonic_shift_units": unit,
+        "rotational_constant": _frequency_value(0.001, unit),
+        "rotational_constant_units": unit,
+        "vibration_rotation_coupling": _frequency_value(0.0001, unit),
+        "vibration_rotation_coupling_units": unit,
+        "mu0_Cm": 1.0e-30,
+        "potential_type": "morse",
+        "initial_states": [0],
+    }
+
+
+@pytest.mark.parametrize("unit", ["PHz", "THz", "cm^-1"])
+def test_linmol_frequency_units_preserve_model_arrays(unit):
+    reference = _build_model(_linmol_frequency_params("rad/fs"))
+    actual = _build_model(_linmol_frequency_params(unit))
+
+    np.testing.assert_array_equal(actual.basis.basis, reference.basis.basis)
+    np.testing.assert_allclose(
+        actual.hamiltonian.matrix,
+        reference.hamiltonian.matrix,
+        rtol=3.0e-15,
+        atol=0.0,
+    )
+    for axis in ("x", "y", "z"):
+        np.testing.assert_allclose(
+            actual.dipole.mu(axis),
+            reference.dipole.mu(axis),
+            rtol=4.0e-15,
+            atol=0.0,
+        )
+
+
+@pytest.mark.parametrize("unit", ["PHz", "THz", "cm^-1"])
+def test_vibladder_frequency_units_preserve_model_arrays(unit):
+    def params(selected_unit):
+        return {
+            "basis_type": "vibladder",
+            "V_max": 3,
+            "vibrational_frequency": _frequency_value(0.2, selected_unit),
+            "vibrational_frequency_units": selected_unit,
+            "anharmonic_shift": _frequency_value(0.01, selected_unit),
+            "anharmonic_shift_units": selected_unit,
+            "mu0_Cm": 1.0e-30,
+            "potential_type": "morse",
+            "initial_states": [0],
+        }
+
+    reference = _build_model(params("rad/fs"))
+    actual = _build_model(params(unit))
+
+    np.testing.assert_array_equal(actual.basis.basis, reference.basis.basis)
+    np.testing.assert_allclose(
+        actual.hamiltonian.matrix,
+        reference.hamiltonian.matrix,
+        rtol=3.0e-15,
+        atol=0.0,
+    )
+    np.testing.assert_allclose(
+        actual.dipole.mu("z"),
+        reference.dipole.mu("z"),
+        rtol=4.0e-15,
+        atol=0.0,
+    )
+
+
+def test_twolevel_runner_processing_does_not_double_convert_energy_gap():
+    params = {
+        "basis_type": "twolevel",
+        "energy_gap": 1.5,
+        "energy_gap_units": "eV",
+        "mu0_Cm": 1.0e-30,
+        "initial_states": [0],
+    }
+
+    reference = _build_model(params)
+    processed = _build_model(process_params(params))
+
+    np.testing.assert_array_equal(
+        processed.hamiltonian.matrix,
+        reference.hamiltonian.matrix,
+    )
+
+
+def test_linmol_parameters_are_frozen():
+    model_params = LinMolParameters.from_mapping(_linmol_frequency_params("rad/fs"))
+
+    with pytest.raises(FrozenInstanceError):
+        model_params.v_max = 4
+
+
+@pytest.mark.parametrize(
+    ("energy_gap", "energy_gap_units"),
+    [
+        (0.2 / (2.0 * np.pi), "PHz"),
+        (0.2 / (2.0 * np.pi * 1.0e-3), "THz"),
+        (0.2 / (2.0 * np.pi * 2.99792458e8 * 1.0e-13), "cm^-1"),
+    ],
+)
+def test_twolevel_energy_gap_units_preserve_model_arrays(energy_gap, energy_gap_units):
+    reference = _build_model(
+        {
+            "basis_type": "twolevel",
+            "energy_gap": 0.2,
+            "energy_gap_units": "rad/fs",
+            "mu0_Cm": 1.0e-30,
+            "initial_states": [0],
+        }
+    )
+    actual = _build_model(
+        {
+            "basis_type": "twolevel",
+            "energy_gap": energy_gap,
+            "energy_gap_units": energy_gap_units,
+            "mu0_Cm": 1.0e-30,
+            "initial_states": [0],
+        }
+    )
+
+    np.testing.assert_allclose(
+        actual.hamiltonian.matrix,
+        reference.hamiltonian.matrix,
+        rtol=3.0e-15,
+        atol=0.0,
+    )
+    np.testing.assert_array_equal(actual.dipole.mu("x"), reference.dipole.mu("x"))
+
+
 def test_linmol_resolved_representation_projects_to_existing_explicit_m_basis():
     params = {
         "basis_type": "linmol",
@@ -85,10 +240,14 @@ def test_linmol_resolved_representation_projects_to_existing_explicit_m_basis():
         "J_max": 1,
         "representation": "m_resolved",
         "axes": "zx",
-        "omega_rad_phz": 1.0,
-        "delta_omega_rad_phz": 0.01,
-        "alpha_rad_phz": 0.0,
-        "B_rad_phz": 0.001,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": 0.01,
+        "anharmonic_shift_units": "rad/fs",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "rad/fs",
+        "rotational_constant": 0.001,
+        "rotational_constant_units": "rad/fs",
         "mu0_Cm": 1e-30,
         "potential_type": "harmonic",
         "initial_states": [0],
@@ -107,10 +266,14 @@ def test_linmol_resolved_representation_requires_explicit_axes():
         "V_max": 0,
         "J_max": 0,
         "representation": "m_resolved",
-        "omega_rad_phz": 1.0,
-        "delta_omega_rad_phz": 0.0,
-        "alpha_rad_phz": 0.0,
-        "B_rad_phz": 0.0,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": 0.0,
+        "anharmonic_shift_units": "rad/fs",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "rad/fs",
+        "rotational_constant": 0.0,
+        "rotational_constant_units": "rad/fs",
         "mu0_Cm": 1e-30,
         "potential_type": "harmonic",
         "initial_states": [0],
@@ -126,10 +289,14 @@ def test_m_incoherent_average_cannot_build_one_pure_state_model():
         "V_max": 0,
         "J_max": 0,
         "representation": "m_incoherent_average",
-        "omega_rad_phz": 1.0,
-        "delta_omega_rad_phz": 0.0,
-        "alpha_rad_phz": 0.0,
-        "B_rad_phz": 0.0,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": 0.0,
+        "anharmonic_shift_units": "rad/fs",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "rad/fs",
+        "rotational_constant": 0.0,
+        "rotational_constant_units": "rad/fs",
         "mu0_Cm": 1e-30,
         "potential_type": "harmonic",
         "initial_states": [0],
@@ -146,10 +313,14 @@ def test_linmol_rejects_morse_with_zero_anharmonicity():
         "J_max": 1,
         "representation": "m_resolved",
         "axes": "xy",
-        "omega_rad_phz": 1.0,
-        "delta_omega_rad_phz": 0.0,
-        "alpha_rad_phz": 0.0,
-        "B_rad_phz": 0.001,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "anharmonic_shift": 0.0,
+        "anharmonic_shift_units": "rad/fs",
+        "vibration_rotation_coupling": 0.0,
+        "vibration_rotation_coupling_units": "rad/fs",
+        "rotational_constant": 0.001,
+        "rotational_constant_units": "rad/fs",
         "mu0_Cm": 1e-30,
         "potential_type": "morse",
         "initial_states": [0],
@@ -189,8 +360,10 @@ def test_build_model_constructs_coherent_superposition():
             {
                 "basis_type": "vibladder",
                 "V_max": 1,
-                "omega_rad_phz": 1.0,
-                "delta_omega_rad_phz": 0.0,
+                "vibrational_frequency": 1.0,
+                "vibrational_frequency_units": "rad/fs",
+                "anharmonic_shift": 0.0,
+                "anharmonic_shift_units": "rad/fs",
                 "potential_type": "harmonic",
             },
             "mu0_Cm",
@@ -230,8 +403,10 @@ def test_build_model_preserves_missing_parameter_error():
         {
             "basis_type": "vibladder",
             "V_max": 1,
-            "omega_rad_phz": 1.0,
-            "delta_omega_rad_phz": 0.0,
+            "vibrational_frequency": 1.0,
+            "vibrational_frequency_units": "rad/fs",
+            "anharmonic_shift": 0.0,
+            "anharmonic_shift_units": "rad/fs",
             "mu0_Cm": 1e-30,
             "potential_type": "harmonic",
         },
@@ -240,10 +415,14 @@ def test_build_model_preserves_missing_parameter_error():
             "V_max": 0,
             "J_max": 0,
             "representation": "m_incoherent_average",
-            "omega_rad_phz": 1.0,
-            "delta_omega_rad_phz": 0.0,
-            "B_rad_phz": 0.0,
-            "alpha_rad_phz": 0.0,
+            "vibrational_frequency": 1.0,
+            "vibrational_frequency_units": "rad/fs",
+            "anharmonic_shift": 0.0,
+            "anharmonic_shift_units": "rad/fs",
+            "rotational_constant": 0.0,
+            "rotational_constant_units": "rad/fs",
+            "vibration_rotation_coupling": 0.0,
+            "vibration_rotation_coupling_units": "rad/fs",
             "mu0_Cm": 1e-30,
             "potential_type": "harmonic",
         },

@@ -9,7 +9,12 @@ from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
 from .common import build_initial_state
-from .validation import LinMolRepresentation, validate_linmol_representation
+from .parameters import LinMolParameters
+from .validation import (
+    LinMolRepresentation,
+    model_parameters_from_mapping,
+    validate_linmol_representation,
+)
 
 
 def build_linmol(
@@ -17,35 +22,33 @@ def build_linmol(
 ) -> tuple[Any, Any, Any, Any]:
     """Build basis, initial state, Hamiltonian, and dipole without changing formulas."""
     representation = validate_linmol_representation(params)
+    model_params = model_parameters_from_mapping(params)
+    if not isinstance(model_params, LinMolParameters):
+        raise TypeError("linmol builder requires LinMolParameters")
     if representation is not LinMolRepresentation.M_RESOLVED:
         raise ValueError(
             "representation=m_incoherent_average is a multi-block workflow "
             "and cannot be built as one pure-state model; use the simulation runner"
         )
     basis = LinMolBasis(
-        params["V_max"],
-        params["J_max"],
+        model_params.v_max,
+        model_params.j_max,
         use_M=True,
-        omega=params["omega_rad_phz"],
-        delta_omega=params["delta_omega_rad_phz"],
-        B=params["B_rad_phz"],
-        alpha=params["alpha_rad_phz"],
+        omega=model_params.vibrational_frequency.angular_rad_per_fs,
+        delta_omega=model_params.anharmonic_shift.angular_rad_per_fs,
+        B=model_params.rotational_constant.angular_rad_per_fs,
+        alpha=model_params.vibration_rotation_coupling.angular_rad_per_fs,
         output_units="J",
         input_units="rad/fs",
     )
     state = build_initial_state(basis, params["initial_states"])
 
-    delta_omega = params["delta_omega_rad_phz"]
-    potential_type = params["potential_type"]
-    if potential_type == "morse" and delta_omega == 0.0:
-        raise ValueError(
-            "delta_omega_rad_phz must be non-zero when potential_type='morse'"
-        )
+    potential_type = model_params.potential_type
 
     hamiltonian = basis.generate_H0()
     dipole = LinMolDipoleMatrix(
         basis,
-        mu0=params["mu0_Cm"],
+        mu0=model_params.dipole_c_m,
         potential_type=potential_type,
         backend=execution_policy.backend.value,
         dense=execution_policy.dense,

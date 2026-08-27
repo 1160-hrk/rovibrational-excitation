@@ -24,6 +24,8 @@ class Frequency:
     def __post_init__(self) -> None:
         if isinstance(self.value, (bool, np.bool_)):
             raise TypeError("frequency value must be a finite scalar")
+        if np.asarray(self.value).ndim != 0:
+            raise TypeError("frequency value must be a finite scalar")
         try:
             value = float(self.value)
         except (TypeError, ValueError) as exc:

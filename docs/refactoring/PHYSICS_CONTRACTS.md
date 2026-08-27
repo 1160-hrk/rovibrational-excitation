@@ -230,8 +230,8 @@ Required simulation fields are model-specific:
 
 | Model | Required physical/model fields |
 |---|---|
-| LinMol | `V_max`, `J_max`, `omega_rad_phz`, `delta_omega_rad_phz`, `B_rad_phz`, `alpha_rad_phz`, `mu0_Cm`, `potential_type` |
-| VibLadder | `V_max`, `omega_rad_phz`, `delta_omega_rad_phz`, `mu0_Cm`, `potential_type` |
+| LinMol | `V_max`, `J_max`, `vibrational_frequency` + `_units`, `anharmonic_shift` + `_units`, `rotational_constant` + `_units`, `vibration_rotation_coupling` + `_units`, `mu0_Cm`, `potential_type` |
+| VibLadder | `V_max`, `vibrational_frequency` + `_units`, `anharmonic_shift` + `_units`, `mu0_Cm`, `potential_type` |
 | TwoLevel | `energy_gap`, `energy_gap_units`, `mu0_Cm` |
 
 Every simulation case also states `duration` explicitly. The removed
