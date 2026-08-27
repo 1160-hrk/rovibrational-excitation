@@ -6,7 +6,7 @@ import itertools
 from collections.abc import Iterator
 from typing import Any
 
-FIXED_VALUE_KEYS = {"polarization", "initial_states", "envelope_func"}
+FIXED_VALUE_KEYS = {"polarization", "initial_states"}
 
 
 def expand_cases(base: dict[str, Any]) -> Iterator[tuple[dict[str, Any], list[str]]]:

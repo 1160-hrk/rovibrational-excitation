@@ -30,13 +30,15 @@ duration_sweep = [20.0, 30.0, 40.0, 50.0] # 4ケース → 'duration' として�
 # これらのキーは常に固定値
 polarization = [1.0, 0.0]      # x偏光（1ケースのみ）
 initial_states = [0, 5]        # コヒーレント重ね合わせ（1ケースのみ）
-envelope_func = gaussian_fwhm   # 包絡線関数（1ケースのみ）
 ```
 
 現在の固定値キー一覧：
 - `polarization` - 偏光ベクトル
 - `initial_states` - 初期状態
-- `envelope_func` - 包絡線関数
+
+`envelope_kind` と `modulation_kind` は文字列なので通常は自動的に固定値です。
+複数種類を比較する場合だけ `envelope_kind_sweep` または
+`modulation_kind_sweep` を明示してください。
 
 ### 3. 通常のリスト → 長さで判定（従来通り）
 

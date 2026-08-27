@@ -1027,7 +1027,13 @@ The D-041 migration is divided into separately testable units:
    decomposed by inference. The full suite is 765 passed and 10 skipped with
    70% branch coverage; Ruff, format, 16-module strict mypy, build, and Twine
    checks pass;
-4. require generated-envelope and modulation discriminators;
+4. require generated-envelope and modulation discriminators — complete on
+   2026-08-27;
+   Verification: four supported legacy envelope functions and both sinusoidal
+   modulation types produce exactly equal sampled arrays; missing, removed,
+   unknown, and inapplicable selectors fail before construction. Custom and
+   two-width Voigt waveforms use external sampled-field injection. The full
+   suite is 785 passed and 10 skipped;
 5. consume the Phase 6 frozen model schemas in a typed `SimulationCase`;
 6. reject every unknown and inapplicable key at the final schema boundary;
 7. add an opt-in convergence-report service that never changes the requested

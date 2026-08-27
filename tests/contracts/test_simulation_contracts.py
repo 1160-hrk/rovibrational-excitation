@@ -12,7 +12,10 @@ from rovibrational_excitation.fields import (
     CartesianField,
     ElectricField,
     ScalarField,
+    gaussian,
     gaussian_fwhm,
+    lorentzian,
+    lorentzian_fwhm,
 )
 from rovibrational_excitation.io import CheckpointManager
 from rovibrational_excitation.simulation.config import load_params_file
@@ -38,6 +41,8 @@ def _base_case(**overrides):
         "dt": 0.05,
         "duration": 0.3,
         "t_center": 0.0,
+        "envelope_kind": "gaussian_fwhm",
+        "modulation_kind": "none",
         "carrier_freq": 0.1,
         "amplitude": 1.0e8,
         "polarization": [1.0, 0.0],
@@ -144,6 +149,75 @@ def test_validation_rejects_missing_duration():
         validate_simulation_case(params)
 
 
+@pytest.mark.parametrize("key", ["envelope_kind", "modulation_kind", "t_center"])
+def test_generated_field_requires_explicit_discriminators_and_center(key):
+    params = _base_case()
+    del params[key]
+
+    with pytest.raises(SimulationConfigurationError, match=key):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize(
+    ("removed_key", "value"),
+    [
+        ("envelope_func", gaussian_fwhm),
+        ("Sinusoidal_modulation", False),
+    ],
+)
+def test_generated_field_rejects_removed_shape_selectors(removed_key, value):
+    params = _base_case(**{removed_key: value})
+
+    with pytest.raises(SimulationConfigurationError, match=removed_key):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("envelope_kind", "voigt_fwhm"),
+        ("modulation_kind", "automatic"),
+    ],
+)
+def test_generated_field_rejects_unknown_discriminators(key, value):
+    with pytest.raises(SimulationConfigurationError, match=key):
+        validate_simulation_case(_base_case(**{key: value}))
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["amplitude_sin_mod", "carrier_freq_sin_mod", "type_mod_sin_mod"],
+)
+def test_sinusoidal_modulation_requires_all_non_additive_parameters(key):
+    params = _base_case(
+        modulation_kind="sinusoidal",
+        amplitude_sin_mod=0.2,
+        carrier_freq_sin_mod=0.03,
+        type_mod_sin_mod="phase",
+    )
+    del params[key]
+
+    with pytest.raises(SimulationConfigurationError, match=key):
+        validate_simulation_case(params)
+
+
+def test_no_modulation_rejects_sinusoidal_parameters():
+    with pytest.raises(SimulationConfigurationError, match="amplitude_sin_mod"):
+        validate_simulation_case(_base_case(amplitude_sin_mod=0.2))
+
+
+def test_sinusoidal_modulation_rejects_unknown_type():
+    params = _base_case(
+        modulation_kind="sinusoidal",
+        amplitude_sin_mod=0.2,
+        carrier_freq_sin_mod=0.03,
+        type_mod_sin_mod="frequency",
+    )
+
+    with pytest.raises(SimulationConfigurationError, match="type_mod_sin_mod"):
+        validate_simulation_case(params)
+
+
 def test_validation_rejects_unknown_potential_before_model_construction():
     params = _base_case(
         basis_type="vibladder",
@@ -234,6 +308,8 @@ _GENERATED_FIELD_KEYS = {
     "dt",
     "duration",
     "t_center",
+    "envelope_kind",
+    "modulation_kind",
     "carrier_freq",
     "amplitude",
     "polarization",
@@ -244,6 +320,93 @@ def _without_generated_field_keys(params):
     return {
         key: value for key, value in params.items() if key not in _GENERATED_FIELD_KEYS
     }
+
+
+@pytest.mark.parametrize(
+    ("envelope_kind", "envelope_func"),
+    [
+        ("gaussian", gaussian),
+        ("gaussian_fwhm", gaussian_fwhm),
+        ("lorentzian", lorentzian),
+        ("lorentzian_fwhm", lorentzian_fwhm),
+    ],
+)
+def test_generated_envelope_kind_preserves_existing_samples(
+    envelope_kind, envelope_func
+):
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    params = _base_case(envelope_kind=envelope_kind)
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    expected = ElectricField.from_time_grid(grid)
+    expected.add_dispersed_Efield(
+        envelope_func,
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
+        polarization=np.asarray(params["polarization"]),
+    )
+
+    actual = _generated_sampled_field(
+        params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+
+    np.testing.assert_array_equal(
+        actual.samples_v_per_m,
+        expected.get_scalar_field(),
+    )
+
+
+@pytest.mark.parametrize("modulation_type", ["phase", "amplitude"])
+@pytest.mark.parametrize(
+    ("phase_parameters", "expected_phase"),
+    [({}, 0.0), ({"phase_rad_sin_mod": 0.4}, 0.4)],
+)
+def test_sinusoidal_modulation_kind_preserves_existing_samples(
+    modulation_type, phase_parameters, expected_phase
+):
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    params = _base_case(
+        modulation_kind="sinusoidal",
+        amplitude_sin_mod=0.2,
+        carrier_freq_sin_mod=0.03,
+        type_mod_sin_mod=modulation_type,
+        **phase_parameters,
+    )
+    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
+    expected = ElectricField.from_time_grid(grid)
+    expected.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=params["duration"],
+        t_center=params["t_center"],
+        carrier_freq=params["carrier_freq"],
+        amplitude=params["amplitude"],
+        polarization=np.asarray(params["polarization"]),
+    )
+    expected.apply_sinusoidal_mod(
+        center_freq=params["carrier_freq"],
+        amplitude=params["amplitude_sin_mod"],
+        carrier_freq=params["carrier_freq_sin_mod"],
+        phase_rad=expected_phase,
+        type_mod=params["type_mod_sin_mod"],
+    )
+
+    actual = _generated_sampled_field(
+        params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+
+    np.testing.assert_array_equal(
+        actual.samples_v_per_m,
+        expected.get_scalar_field(),
+    )
 
 
 def test_external_scalar_field_matches_existing_generated_twolevel_calculation():
@@ -288,6 +451,8 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
         "dt": 0.05,
         "duration": 0.3,
         "t_center": 0.0,
+        "envelope_kind": "gaussian_fwhm",
+        "modulation_kind": "none",
         "carrier_freq": 0.1,
         "amplitude": 1.0e8,
         "polarization": [1.0, 1.0],
@@ -381,6 +546,8 @@ def _helicity_runner_case(**overrides):
         "dt": 0.05,
         "duration": 0.3,
         "t_center": 0.0,
+        "envelope_kind": "gaussian_fwhm",
+        "modulation_kind": "none",
         "carrier_freq": 0.1,
         "amplitude": 1.0e8,
         "polarization": np.array([1.0, 1.0j]) / np.sqrt(2.0),

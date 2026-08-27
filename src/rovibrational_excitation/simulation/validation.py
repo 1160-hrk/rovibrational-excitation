@@ -50,12 +50,14 @@ _GENERATED_REQUIRED = {
     "carrier_freq",
     "amplitude",
     "duration",
+    "t_center",
+    "envelope_kind",
+    "modulation_kind",
 }
 _GENERATED_FIELD_KEYS = {
     *_GENERATED_REQUIRED,
     "polarization",
     "envelope_func",
-    "t_center",
     "phase_rad",
     "gdd",
     "tod",
@@ -101,12 +103,79 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
         raise SimulationConfigurationError(f"{key} must be a finite number")
 
 
+_SINUSOIDAL_MODULATION_KEYS = frozenset(
+    {
+        "amplitude_sin_mod",
+        "carrier_freq_sin_mod",
+        "phase_rad_sin_mod",
+        "type_mod_sin_mod",
+    }
+)
+_SINUSOIDAL_MODULATION_REQUIRED = frozenset(
+    {
+        "amplitude_sin_mod",
+        "carrier_freq_sin_mod",
+        "type_mod_sin_mod",
+    }
+)
+
+
+def _validate_generated_field_schema(params: Mapping[str, Any]) -> None:
+    from rovibrational_excitation.fields.envelopes import get_generated_envelope
+
+    try:
+        get_generated_envelope(params["envelope_kind"])
+    except ValueError as exc:
+        raise SimulationConfigurationError(str(exc)) from exc
+
+    modulation_kind = params["modulation_kind"]
+    if not isinstance(modulation_kind, str) or modulation_kind not in {
+        "none",
+        "sinusoidal",
+    }:
+        raise SimulationConfigurationError(
+            "modulation_kind must be one of: none, sinusoidal"
+        )
+
+    supplied_modulation_keys = _SINUSOIDAL_MODULATION_KEYS & params.keys()
+    if modulation_kind == "none":
+        if supplied_modulation_keys:
+            names = ", ".join(sorted(supplied_modulation_keys))
+            raise SimulationConfigurationError(
+                f"{names} are not applicable when modulation_kind=none"
+            )
+        return
+
+    missing = sorted(_SINUSOIDAL_MODULATION_REQUIRED - params.keys())
+    if missing:
+        raise SimulationConfigurationError(
+            "Missing required sinusoidal modulation parameters: " + ", ".join(missing)
+        )
+    modulation_type = params["type_mod_sin_mod"]
+    if not isinstance(modulation_type, str) or modulation_type not in {
+        "phase",
+        "amplitude",
+    }:
+        raise SimulationConfigurationError(
+            "type_mod_sin_mod must be one of: phase, amplitude"
+        )
+
+
 def validate_simulation_case(
     params: Mapping[str, Any],
     *,
     field: ScalarField | CartesianField | None = None,
 ) -> PropagationOptions:
     """Validate one generated or externally sampled simulation case."""
+    removed_field_selectors = {
+        key for key in ("envelope_func", "Sinusoidal_modulation") if key in params
+    }
+    if removed_field_selectors:
+        names = ", ".join(sorted(removed_field_selectors))
+        raise SimulationConfigurationError(
+            f"{names} were removed; use envelope_kind and modulation_kind, "
+            "or inject an external sampled field for a custom waveform"
+        )
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params
     }
@@ -158,6 +227,9 @@ def validate_simulation_case(
         raise SimulationConfigurationError(
             "Missing required simulation parameters: " + ", ".join(missing)
         )
+
+    if field is None:
+        _validate_generated_field_schema(params)
 
     if field is not None:
         if expects_cartesian and not isinstance(field, CartesianField):

@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-24
+Last verified: 2026-08-27
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-041 unit 3 (sampled-field injection)
+Verified structural checkpoint: D-041 unit 4 (generated-field schema)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -129,14 +129,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the third D-041 sampled-field unit:
+Current local CPU baseline after the fourth D-041 generated-field unit:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-765 passed, 10 GPU tests skipped (775 collected)
+785 passed, 10 GPU tests skipped (795 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -209,10 +209,10 @@ The next work is:
    Characterize converter round trips and warning/fallback behavior before any
    implementation replacement.
 2. Continue accepted D-041 after completing required selection, LinMol
-   representation, and scalar/Cartesian external-field injection: implement
-   the explicit generated-field schema;
-   frozen model parameter schemas; and strict unknown/inapplicable-key
-   rejection. Structural field-grid validation never resamples, and numerical
+   representation, scalar/Cartesian external-field injection, and the explicit
+   generated-field schema: implement frozen model parameter schemas, consume
+   them in a typed `SimulationCase`, and then enforce strict unknown- and
+   inapplicable-key rejection. Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.
 3. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,

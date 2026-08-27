@@ -893,6 +893,17 @@ Cartesian samples. A missing decomposition therefore raises if that
 approximation is requested, while exact Cartesian RK4 and split propagation
 need only the two real components.
 
+Generated pulses require the serialization-safe `envelope_kind` and
+`modulation_kind` discriminators. Supported generated envelopes are `gaussian`,
+`gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`; `duration` retains the
+unchanged width meaning of the selected legacy function. `t_center` is required.
+Voigt and arbitrary callables are not guessed into the one-width schema and use
+external sampled-field injection instead. `modulation_kind` is `none` or
+`sinusoidal`; the latter requires amplitude, carrier frequency, and
+phase/amplitude type, while its additive phase retains the safe zero default.
+The removed `envelope_func` and mixed-case `Sinusoidal_modulation` keys raise
+migration errors.
+
 Generated pulses are evaluated by the characterized legacy generator and then
 copied exactly into the typed field. Tests require bitwise-equal populations for
 generated and externally injected TwoLevel, M-resolved LinMol, and M-averaged

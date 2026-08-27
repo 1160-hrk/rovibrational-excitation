@@ -94,11 +94,19 @@ sample_stride = 1
 
 | パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
 |-----------|---|------|------|------|-----|
-| `duration` | `float` | ✅ | fs | パルス幅（FWHM） | `20.0` |
-| `t_center` | `float` | ❌ | fs | パルス中心時刻（既定値 `0.0`） | `0.0` |
+| `envelope_kind` | `str` | ✅ | - | 包絡線の種類（下表） | `"gaussian_fwhm"` |
+| `duration` | `float` | ✅ | fs | 包絡線の幅（意味は種類ごとに異なる） | `20.0` |
+| `t_center` | `float` | ✅ | fs | パルス中心時刻（暗黙値なし） | `0.0` |
+| `modulation_kind` | `str` | ✅ | - | `"none"` または `"sinusoidal"` | `"none"` |
 | `carrier_freq` | `float` | ✅ | PHz | キャリア周波数(位相radは含まない) | `0.14847` |
 | `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
 | `polarization` | `list` | generated `m_resolved` ✅ | - | Jones偏光ベクトル [x, y] | `[1.0, 0.0]` |
+
+通常 runner が受け付ける包絡線は `gaussian`（`duration` は標準偏差）、
+`gaussian_fwhm`（FWHM）、`lorentzian`（半値半幅）、`lorentzian_fwhm`（FWHM）です。
+Voigt は2個の幅が必要なため、この単一 `duration` スキーマでは受け付けません。Voigt、
+任意 callable、任意波形は、正確な `TimeGrid` を持つ `ScalarField` または
+`CartesianField` として Python API に注入してください。runner は補間・再標本化しません。
 
 `duration` は必須です。旧名 `pulse_duration` は削除済みで、自動変換せず
 時間発展前に移行エラーになります。
@@ -144,7 +152,6 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 
 | パラメータ | 型 | デフォルト | 単位 | 説明 | 例 |
 |-----------|---|-----------|------|------|-----|
-| `envelope_func` | `callable` | `gaussian_fwhm` | - | 包絡線関数 | `gaussian_fwhm` |
 | `gdd` | `float` | `0.0` | fs² | 群遅延分散（2次） | `1000.0` |
 | `tod` | `float` | `0.0` | fs³ | 群遅延分散（3次） | `50000.0` |
 | `phase_rad` | `float` | `0.0` | rad | キャリア位相 | `np.pi/4` |
@@ -153,11 +160,16 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 
 | パラメータ | 型 | デフォルト | 説明 | 例 |
 |-----------|---|-----------|------|-----|
-| `Sinusoidal_modulation` | `bool` | `False` | 正弦波変調を使用するか | `True` |
+| `modulation_kind` | `str` | 必須 | `"none"` または `"sinusoidal"` | `"sinusoidal"` |
 | `amplitude_sin_mod` | `float` | - | 変調振幅 | `0.1` |
 | `carrier_freq_sin_mod` | `float` | - | 変調キャリア周波数 | `0.01` |
 | `phase_rad_sin_mod` | `float` | `0.0` | 変調位相 | `np.pi/2` |
-| `type_mod_sin_mod` | `str` | `"phase"` | 変調タイプ | `"phase"` or `"amplitude"` |
+| `type_mod_sin_mod` | `str` | sinusoidal時は必須 | 変調タイプ | `"phase"` or `"amplitude"` |
+
+`modulation_kind="sinusoidal"` では `amplitude_sin_mod`、`carrier_freq_sin_mod`、
+`type_mod_sin_mod` をすべて明示します。`phase_rad_sin_mod` だけは加算的な不在値
+`0.0` を既定値として保持します。`modulation_kind="none"` と正弦変調用キーの併記は
+エラーです。旧 `Sinusoidal_modulation` は削除済みで、自動変換しません。
 
 #### 2.3 ハミルトニアンの定義
 
@@ -221,7 +233,6 @@ split法はスパース入力を受け付けますが、相互作用の固有ベ
 |-----|------|-----|
 | `polarization` | 偏光ベクトル | `[1.0, 0.0]` |
 | `initial_states` | 初期状態 | `[0, 5]` |
-| `envelope_func` | 包絡線関数 | `gaussian_fwhm` |
 
 #### 3.2 明示的スイープ指定
 
@@ -326,6 +337,8 @@ omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # CO2 ν3 mode
 mu0_Cm = 0.3 * 3.33564e-30                      # ~0.3 Debye
 
 # 電場パラメータ
+envelope_kind = "gaussian_fwhm"
+modulation_kind = "none"
 duration = 10.0
 t_center = 0.0
 carrier_freq = omega_rad_phz
@@ -358,6 +371,8 @@ omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15
 mu0_Cm = 0.3 * 3.33564e-30
 t_center = 0.0
 carrier_freq = omega_rad_phz
+envelope_kind = "gaussian_fwhm"
+modulation_kind = "none"
 
 # スイープパラメータ
 duration = [10.0, 20.0, 30.0]           # 3ケース
@@ -378,7 +393,6 @@ initial_states = [0]
 高度な機能を使用した設定例
 """
 import numpy as np
-from rovibrational_excitation.fields import voigt_fwhm
 
 description = "advanced_simulation"
 
@@ -399,7 +413,8 @@ mu0_Cm = 0.3 * 3.33564e-30
 potential_type = "morse"
 
 # 電場パラメータ（成形パルス）
-envelope_func = voigt_fwhm
+# Voigtや任意波形は外部 sampled field として Python API に注入する
+envelope_kind = "gaussian_fwhm"
 duration = 50.0
 t_center = 0.0
 carrier_freq = omega_rad_phz
@@ -410,7 +425,7 @@ gdd = 1000.0                                    # 群遅延分散
 tod = 50000.0                                   # 3次分散
 
 # 正弦波変調
-Sinusoidal_modulation = True
+modulation_kind = "sinusoidal"
 amplitude_sin_mod = 0.1
 carrier_freq_sin_mod = 0.01
 phase_rad_sin_mod = np.pi/2

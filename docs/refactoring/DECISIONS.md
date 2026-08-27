@@ -1633,7 +1633,7 @@ Consequences:
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first three bounded units are complete in this checkpoint. Normal
+Implementation: the first four bounded units are complete in this checkpoint. Normal
 simulation requires `basis_type`, `initial_states`, and LinMol `representation`;
 `m_resolved` additionally requires `axes`. The removed normal-simulation `use_M`
 key raises migration guidance. `ScalarField` and `CartesianField` own defensive,
@@ -1645,9 +1645,14 @@ without numerical transformation. TwoLevel, VibLadder, and M averaging receive
 `ScalarField`; M-resolved LinMol receives `CartesianField`. Optional explicit
 scalar/Jones decomposition metadata preserves the existing generated
 `helicity_projected` path; a general Cartesian field does not invent that
-decomposition. Generated-field schema and frozen model schemas remain pending.
+decomposition. Generated fields now require `envelope_kind`, `t_center`, and
+`modulation_kind`; the four existing three-argument envelope functions preserve
+their exact sampled arrays. Sinusoidal selection requires amplitude, frequency,
+and `phase`/`amplitude` type, while additive phases and dispersion retain zero
+defaults. Custom and Voigt waveforms use explicit sampled-field injection.
+Frozen model schemas remain pending.
 
-Verification: the full CPU suite passes 765 tests with 10 optional-GPU skips;
+Verification: the full CPU suite passes 785 tests with 10 optional-GPU skips;
 branch coverage is 70%. Ruff, formatting, cache-free strict mypy for 16 named
 modules, sdist/wheel build, and Twine checks pass. The local optimizer source,
 time grid, endpoint ownership, and indices are unchanged.

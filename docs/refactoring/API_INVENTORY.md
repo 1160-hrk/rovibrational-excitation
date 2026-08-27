@@ -193,9 +193,10 @@ versioned so historical calculations remain interpretable.
 3. The mutable global `parameter_processor` heuristically converts recognized
    unit-suffixed values.
 4. `expand_cases` treats most iterable values as sweep dimensions; only
-   `polarization`, `initial_states`, and `envelope_func` are fixed-value
-   exceptions.
-5. `validate_simulation_case` runs only after expansion; it requires algorithm,
+   `polarization` and `initial_states` are fixed-value exceptions.
+5. `validate_simulation_case` runs only after expansion; generated cases require
+   named envelope and modulation discriminators and reject removed callable or
+   mixed-case selectors. It also requires algorithm,
    backend, storage, trajectory, stride, scaling, and renormalization choices,
    constructs one `PropagationOptions`, and performs capability preflight.
 6. `build_model` requires that validated `ExecutionPolicy`, dispatches through a

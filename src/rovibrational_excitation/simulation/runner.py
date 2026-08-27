@@ -127,7 +127,6 @@ def _generated_sampled_field(
         CartesianField,
         ElectricField,
         ScalarField,
-        gaussian_fwhm,
     )
 
     polarization = _deserialize_pol(params.get("polarization", [1.0, 0.0]))
@@ -136,11 +135,13 @@ def _generated_sampled_field(
 
         polarization = canonicalize_fixed_linear_polarization(polarization)
 
+    from rovibrational_excitation.fields.envelopes import get_generated_envelope
+
     generated = ElectricField.from_time_grid(time_grid)
     generated.add_dispersed_Efield(
-        envelope_func=params.get("envelope_func", gaussian_fwhm),
+        envelope_func=get_generated_envelope(params["envelope_kind"]),
         duration=params["duration"],
-        t_center=params.get("t_center", 0.0),
+        t_center=params["t_center"],
         carrier_freq=params["carrier_freq"],
         amplitude=params["amplitude"],
         polarization=polarization,
@@ -148,13 +149,13 @@ def _generated_sampled_field(
         gdd=params.get("gdd", 0.0),
         tod=params.get("tod", 0.0),
     )
-    if params.get("Sinusoidal_modulation", False):
+    if params["modulation_kind"] == "sinusoidal":
         generated.apply_sinusoidal_mod(
             center_freq=params["carrier_freq"],
             amplitude=params["amplitude_sin_mod"],
             carrier_freq=params["carrier_freq_sin_mod"],
             phase_rad=params.get("phase_rad_sin_mod", 0.0),
-            type_mod=params.get("type_mod_sin_mod", "phase"),
+            type_mod=params["type_mod_sin_mod"],
         )
 
     if expects_cartesian:

@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 765 passed, 10 skipped (775 collected) |
+| Pytest | 785 passed, 10 skipped (795 collected) |
 | Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -54,9 +54,11 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 67% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, coverage, and Ruff rows were last verified locally on 2026-08-24
-after the third D-041 unit introduced immutable scalar/Cartesian sampled
-fields and strict Python external-field injection. Generated fields retain the
+The pytest, coverage, and Ruff rows were last verified locally on 2026-08-27
+after the fourth D-041 unit introduced explicit generated-envelope and
+modulation discriminators. The previous unit introduced immutable
+scalar/Cartesian sampled fields and strict Python external-field injection.
+Generated fields retain the
 characterized pulse construction and produce exactly equal populations before
 and after projection to the typed field boundary. TwoLevel, M-resolved LinMol,
 and fixed-M incoherent averaging have exact generated/injected parity tests.

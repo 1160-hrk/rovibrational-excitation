@@ -63,8 +63,10 @@ alpha_rad_phz = 0.0
 # 5. 必須パラメータ - 電場設定
 # ============================================================================
 # 基本レーザーパルス設定
+envelope_kind = "gaussian_fwhm"  # durationをFWHMとして使うガウス包絡線
 duration = 20.0  # パルス幅（FWHM） [fs]
 t_center = 0.0  # パルス中心時刻 [fs]
+modulation_kind = "none"  # "sinusoidal"を選ぶ場合は変調パラメータが必須
 carrier_freq = omega_rad_phz  # キャリア周波数 [rad/fs] - 通常は共鳴周波数
 amplitude = 1e9  # 電場振幅 [V/m] - 1e8～1e12の範囲
 
@@ -72,7 +74,7 @@ amplitude = 1e9  # 電場振幅 [V/m] - 1e8～1e12の範囲
 polarization = [1.0, 0.0]  # [x, y] 偏光ベクトル - (1,0)=x偏光, (0,1)=y偏光
 
 # オプション: 高度な電場設定
-# envelope_func = gaussian_fwhm      # 包絡線関数（デフォルト）
+# envelope_kind は上で明示必須。任意波形は ScalarField/CartesianField として注入
 # phase_rad = 0.0                    # キャリア位相 [rad]
 # gdd = 0.0                          # 群遅延分散（2次） [fs²]
 # tod = 0.0                          # 群遅延分散（3次） [fs³]
@@ -123,7 +125,7 @@ return_time_psi = True  # 時間配列も返すか
 # duration = [10.0, 20.0]           # 2ケース
 # amplitude_sweep = [1e8, 1e9]      # 2ケース → 合計 2×2 = 4ケース
 
-# 注意: polarization, initial_states, envelope_func は常に固定値として扱われます
+# 注意: polarization, initial_states は常に固定値として扱われます
 
 # ============================================================================
 # 参考情報

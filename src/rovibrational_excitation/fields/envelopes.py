@@ -6,12 +6,14 @@
 ガウシアン、ローレンツィアン、フォークト関数などを提供。
 """
 
+from collections.abc import Callable
 from typing import Union
 
 import numpy as np
 from scipy.special import wofz
 
 ArrayLike = Union[np.ndarray, float]
+EnvelopeFunction = Callable[[ArrayLike, float, float], ArrayLike]
 
 
 def gaussian(x: ArrayLike, xc: float, sigma: float) -> ArrayLike:
@@ -147,3 +149,24 @@ def voigt_fwhm(x: ArrayLike, xc: float, fwhm_g: float, fwhm_l: float) -> ArrayLi
     sigma = fwhm_g / (2 * np.sqrt(2 * np.log(2)))
     gamma = fwhm_l / 2
     return voigt(x, xc, sigma, gamma)
+
+
+_GENERATED_ENVELOPES: dict[str, EnvelopeFunction] = {
+    "gaussian": gaussian,
+    "gaussian_fwhm": gaussian_fwhm,
+    "lorentzian": lorentzian,
+    "lorentzian_fwhm": lorentzian_fwhm,
+}
+SUPPORTED_GENERATED_ENVELOPE_KINDS = frozenset(_GENERATED_ENVELOPES)
+
+
+def get_generated_envelope(kind: str) -> EnvelopeFunction:
+    """Return a supported three-argument envelope for generated simulations."""
+    try:
+        return _GENERATED_ENVELOPES[kind]
+    except (KeyError, TypeError) as exc:
+        supported = ", ".join(sorted(SUPPORTED_GENERATED_ENVELOPE_KINDS))
+        raise ValueError(
+            f"envelope_kind must be one of: {supported}; "
+            "inject an external sampled field for custom or Voigt envelopes"
+        ) from exc

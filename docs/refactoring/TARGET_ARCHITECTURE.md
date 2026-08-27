@@ -523,6 +523,13 @@ pulses are projected into these types only after the existing generator has
 produced its exact arrays. Python injection enters through
 `simulation.runner.run_simulation_case`.
 
+Generated simulation fields use named, serialization-safe discriminators.
+`envelope_kind` resolves only the four existing three-argument envelopes:
+`gaussian`, `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`.
+`modulation_kind` is explicitly `none` or `sinusoidal`. Custom callables and
+the two-width Voigt functions cross the already-sampled injection boundary;
+construction never invents a second width or silently falls back to Gaussian.
+
 The two routes are mutually exclusive. External injection rejects pulse
 generation keys and performs no resampling or correction. Optional
 scalar/Jones decomposition metadata is carried only when explicitly known; it
