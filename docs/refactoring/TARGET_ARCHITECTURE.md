@@ -536,6 +536,12 @@ read-only copy of real V/m samples and owns the canonical `TimeGrid`. Generated
 pulses are projected into these types only after the existing generator has
 produced its exact arrays. Python injection enters through
 `simulation.runner.run_simulation_case`.
+Both routes now converge at `simulation.case.SimulationCase` after samples are
+fixed and before model matrices are allocated. The frozen case owns the model
+parameter schema, immutable initial-state indices, sampled field and canonical
+time grid, representation/axes, and propagation controls. Model construction
+receives the frozen schema directly and does not inspect the original simulation
+mapping.
 
 Generated simulation fields use named, serialization-safe discriminators.
 `envelope_kind` resolves only the four existing three-argument envelopes:

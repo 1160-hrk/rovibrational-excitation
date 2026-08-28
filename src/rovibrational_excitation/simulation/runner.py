@@ -42,8 +42,10 @@ from ..io import (
 from ..io import (
     update_summary as _update_summary,
 )
-from ..models import build_model
+from ..models import LinMolParameters
+from ..models.factory import build_model_from_parameters
 from ..models.validation import LinMolRepresentation
+from .case import SimulationCase
 from .config import (
     load_params_file as _load_params_file,
 )
@@ -235,16 +237,29 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
     else:
         time_grid = field.time_grid
         E = field
+    simulation_case = SimulationCase.from_validated_mapping(
+        params,
+        field=E,
+        options=options,
+    )
+    time_grid = simulation_case.time_grid
+    E = simulation_case.field
     t_E = time_grid.field_times_fs
 
-    if use_m_average:
+    if simulation_case.uses_m_average:
         from .m_average import propagate_m_average
 
+        model_parameters = simulation_case.model_parameters
+        if not isinstance(model_parameters, LinMolParameters):
+            raise RuntimeError("M-average case does not contain LinMolParameters")
         result = propagate_m_average(
-            params,
+            model_parameters,
+            simulation_case.initial_states,
             E,
             time_grid=time_grid,
-            options=options,
+            options=simulation_case.options,
+            validate_units=simulation_case.validate_units,
+            verbose=simulation_case.verbose,
         )
         if params.get("save", True):
             outdir = Path(params["outdir"])
@@ -267,7 +282,13 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
                 json.dump(_json_safe(params), f, indent=2)
         return result.population
 
-    model = build_model(params, execution_policy=execution_policy)
+    model = build_model_from_parameters(
+        simulation_case.model_parameters,
+        initial_states=simulation_case.initial_states,
+        representation=simulation_case.representation,
+        axes=simulation_case.axes,
+        execution_policy=execution_policy,
+    )
     problem = PropagationProblem(
         model=model.to_system_model(),
         field=E,
@@ -281,19 +302,19 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
     backend = options.backend_name
     algorithm_name = options.algorithm_name
     sparse = options.sparse
-    split_interaction = params.get("split_interaction", "cartesian")
+    split_interaction = simulation_case.split_interaction
     prop = SchrodingerPropagator(
         backend=backend,
         algorithm=algorithm_name,
         split_interaction=split_interaction,
-        validate_units=params.get("validate_units", True),
+        validate_units=simulation_case.validate_units,
         renorm=options.renorm,
         sparse=sparse,
     )
     propagation_result = prop.propagate(
         problem,
         options=options,
-        verbose=params.get("verbose", False),
+        verbose=simulation_case.verbose,
         split_interaction=(
             split_interaction if algorithm_name == "split_operator" else None
         ),

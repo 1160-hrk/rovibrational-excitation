@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -119,11 +119,13 @@ class MAveragePropagationResult:
 
 
 def _reduced_initial_states(
-    params: dict[str, Any],
+    v_max: int,
+    j_max: int,
+    initial_states: Any,
 ) -> tuple[list[tuple[int, int]], int]:
-    j_count = params["J_max"] + 1
-    dimension = (params["V_max"] + 1) * j_count
-    raw_indices = list(params["initial_states"])
+    j_count = j_max + 1
+    dimension = (v_max + 1) * j_count
+    raw_indices = list(initial_states)
     if not raw_indices:
         raise ValueError("initial_states must contain at least one state index")
 
@@ -153,7 +155,11 @@ def _reduced_initial_states(
 
 def validate_m_average_initial_states(params: dict[str, Any]) -> None:
     """Validate reduced initial-state semantics without building any matrices."""
-    _reduced_initial_states(params)
+    _reduced_initial_states(
+        params["V_max"],
+        params["J_max"],
+        params["initial_states"],
+    )
 
 
 def build_m_average_blocks(
@@ -163,7 +169,25 @@ def build_m_average_blocks(
     model_params = model_parameters_from_mapping(params)
     if not isinstance(model_params, LinMolParameters):
         raise TypeError("M-average builder requires LinMolParameters")
-    initial_states, initial_j = _reduced_initial_states(params)
+    return build_m_average_blocks_from_parameters(
+        model_params,
+        params["initial_states"],
+        execution_policy=execution_policy,
+    )
+
+
+def build_m_average_blocks_from_parameters(
+    model_params: LinMolParameters,
+    raw_initial_states: Any,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[MBlockProblem, ...]:
+    """Build M blocks from the frozen model schema and immutable state indices."""
+    initial_states, initial_j = _reduced_initial_states(
+        model_params.v_max,
+        model_params.j_max,
+        raw_initial_states,
+    )
     degeneracy = 2 * initial_j + 1
     amplitude = 1.0 / np.sqrt(len(initial_states))
     dense = execution_policy.dense
@@ -212,34 +236,33 @@ def build_m_average_blocks(
 
 
 def propagate_m_average(
-    params: dict[str, Any],
+    model_params: LinMolParameters,
+    initial_states: Any,
     electric_field: Any,
     *,
     time_grid: TimeGrid,
     options: PropagationOptions,
+    validate_units: bool,
+    verbose: bool,
 ) -> MAveragePropagationResult:
     """Propagate fixed-M blocks and incoherently sum reduced populations."""
-    removed_options = {
-        key for key in ("auto_timestep", "target_accuracy") if key in params
-    }
-    if removed_options:
-        names = ", ".join(sorted(removed_options))
-        raise ValueError(
-            f"{names} were removed; define the ElectricField grid explicitly"
-        )
-    blocks = build_m_average_blocks(params, execution_policy=options.execution)
+    blocks = build_m_average_blocks_from_parameters(
+        model_params,
+        initial_states,
+        execution_policy=options.execution,
+    )
     sparse = options.sparse
     algorithm_name = options.algorithm_name
-    split_interaction = "cartesian"
+    split_interaction: Literal["cartesian"] = "cartesian"
     propagator = SchrodingerPropagator(
         backend=options.backend_name,
         algorithm=algorithm_name,
         split_interaction=split_interaction,
-        validate_units=params.get("validate_units", True),
+        validate_units=validate_units,
         renorm=options.renorm,
         sparse=sparse,
     )
-    reduced_dimension = (params["V_max"] + 1) * (params["J_max"] + 1)
+    reduced_dimension = (model_params.v_max + 1) * (model_params.j_max + 1)
     time_reference: np.ndarray | None = None
     population: np.ndarray | None = None
     trajectories: list[np.ndarray] = []
@@ -261,7 +284,7 @@ def propagate_m_average(
         propagation_result = propagator.propagate(
             problem,
             options=options,
-            verbose=params.get("verbose", False),
+            verbose=verbose,
             split_interaction=(
                 split_interaction if algorithm_name == "split_operator" else None
             ),

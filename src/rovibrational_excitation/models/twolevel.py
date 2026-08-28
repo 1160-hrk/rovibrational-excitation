@@ -20,12 +20,26 @@ def build_twolevel(
     model_params = model_parameters_from_mapping(params)
     if not isinstance(model_params, TwoLevelParameters):
         raise TypeError("twolevel builder requires TwoLevelParameters")
+    return build_twolevel_from_parameters(
+        model_params,
+        params["initial_states"],
+        execution_policy=execution_policy,
+    )
+
+
+def build_twolevel_from_parameters(
+    model_params: TwoLevelParameters,
+    initial_states: Any,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any, Any]:
+    """Build from the frozen schema without re-reading a configuration mapping."""
     basis = TwoLevelBasis(
         energy_gap=model_params.energy_gap,
         input_units=model_params.energy_gap_units,
         output_units="J",
     )
-    state = build_initial_state(basis, params["initial_states"])
+    state = build_initial_state(basis, initial_states)
     hamiltonian = basis.generate_H0()
     dipole = TwoLevelDipoleMatrix(
         basis,

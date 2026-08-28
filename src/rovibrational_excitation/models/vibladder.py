@@ -20,12 +20,26 @@ def build_vibladder(
     model_params = model_parameters_from_mapping(params)
     if not isinstance(model_params, VibLadderParameters):
         raise TypeError("vibladder builder requires VibLadderParameters")
+    return build_vibladder_from_parameters(
+        model_params,
+        params["initial_states"],
+        execution_policy=execution_policy,
+    )
+
+
+def build_vibladder_from_parameters(
+    model_params: VibLadderParameters,
+    initial_states: Any,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any, Any]:
+    """Build from the frozen schema without re-reading a configuration mapping."""
     basis = VibLadderBasis(
         model_params.v_max,
         omega=model_params.vibrational_frequency.angular_rad_per_fs,
         delta_omega=model_params.anharmonic_shift.angular_rad_per_fs,
     )
-    state = build_initial_state(basis, params["initial_states"])
+    state = build_initial_state(basis, initial_states)
     hamiltonian = basis.generate_H0()
     dipole = VibLadderDipoleMatrix(
         basis,

@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-27
+Last verified: 2026-08-28
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-042 unit 2 (frozen model frequency schemas)
+Verified structural checkpoint: D-041 unit 5 (immutable SimulationCase)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -198,16 +198,15 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 100 discovered modules import, internal modules avoid root
+are removed, all 101 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue accepted D-041 by composing the completed time, field, execution,
-   selection, and frozen model boundaries into a typed `SimulationCase`; then
-   enforce strict unknown- and model-inapplicable-key rejection.
+1. Complete accepted D-041 by enforcing strict unknown- and
+   model/field/algorithm-inapplicable-key rejection at the `SimulationCase` boundary.
 2. Continue Phase 4 with remaining explicit quantity boundaries and
    property-style round-trip tests. Do not migrate `carrier_freq_sin_mod` until
    its dimensional meaning is explicitly resolved.

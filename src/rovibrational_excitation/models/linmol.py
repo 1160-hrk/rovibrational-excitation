@@ -30,6 +30,20 @@ def build_linmol(
             "representation=m_incoherent_average is a multi-block workflow "
             "and cannot be built as one pure-state model; use the simulation runner"
         )
+    return build_linmol_from_parameters(
+        model_params,
+        params["initial_states"],
+        execution_policy=execution_policy,
+    )
+
+
+def build_linmol_from_parameters(
+    model_params: LinMolParameters,
+    initial_states: Any,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any, Any]:
+    """Build from the frozen schema without re-reading a configuration mapping."""
     basis = LinMolBasis(
         model_params.v_max,
         model_params.j_max,
@@ -41,7 +55,7 @@ def build_linmol(
         output_units="J",
         input_units="rad/fs",
     )
-    state = build_initial_state(basis, params["initial_states"])
+    state = build_initial_state(basis, initial_states)
 
     potential_type = model_params.potential_type
 

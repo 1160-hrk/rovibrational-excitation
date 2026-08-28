@@ -87,6 +87,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/fields/sampled.py",
         "src/rovibrational_excitation/core/states.py",
         "src/rovibrational_excitation/core/units/constants.py",
+        "src/rovibrational_excitation/simulation/case.py",
         "src/rovibrational_excitation/models/parameters.py",
         "src/rovibrational_excitation/models/validation.py",
     ]

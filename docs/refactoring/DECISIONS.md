@@ -1633,7 +1633,7 @@ Consequences:
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first four bounded units are complete in this checkpoint. Normal
+Implementation: the first five bounded units are complete in this checkpoint. Normal
 simulation requires `basis_type`, `initial_states`, and LinMol `representation`;
 `m_resolved` additionally requires `axes`. The removed normal-simulation `use_M`
 key raises migration guidance. `ScalarField` and `CartesianField` own defensive,
@@ -1656,12 +1656,16 @@ Generated fields now require `envelope_kind`, `t_center`, and
 their exact sampled arrays. Sinusoidal selection requires amplitude, frequency,
 and `phase`/`amplitude` type, while additive phases and dispersion retain zero
 defaults. Custom and Voigt waveforms use explicit sampled-field injection.
-Frozen model schemas remain pending.
+The generated and externally injected routes now converge to the immutable
+`simulation.case.SimulationCase` after field sampling and before matrix
+allocation. It owns the frozen model schema, immutable initial-state indices,
+sampled field and `TimeGrid`, representation, axes, and propagation controls.
+Model and fixed-M builders consume the frozen schema without re-reading raw input.
 
-Verification: the full CPU suite passes 785 tests with 10 optional-GPU skips;
-branch coverage is 70%. Ruff, formatting, cache-free strict mypy for 16 named
-modules, sdist/wheel build, and Twine checks pass. The local optimizer source,
-time grid, endpoint ownership, and indices are unchanged.
+Verification: the full CPU suite passes 836 tests with 10 optional-GPU skips;
+branch coverage is 70%. Ruff, formatting, strict mypy for 18 named modules,
+sdist/wheel build, and Twine checks pass. The local optimizer source, time grid,
+endpoint ownership, and indices are unchanged.
 
 ### D-042: Frequency inputs use neutral names and explicit units
 

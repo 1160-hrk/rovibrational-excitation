@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-27
+Last verified: 2026-08-28
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 834 passed, 10 skipped (844 collected) |
+| Pytest | 836 passed, 10 skipped (846 collected) |
 | Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -54,20 +54,20 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 68% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, coverage, and Ruff rows were last verified locally on 2026-08-27
-after the second D-042 unit introduced frozen LinMol, VibLadder, and TwoLevel
-parameter schemas with neutral frequency names and required paired units. Model
-input is validated before matrix allocation and projected once to the unchanged
-low-level rad/fs constructors. PHz, THz, wavenumber, and rad/fs forms have
-Hamiltonian, dipole, and fixed-M propagation equivalence tests. The first D-042
-unit had required generated `carrier_frequency` plus
-`carrier_frequency_units`. Generated and injected field parity remains exact.
-Direct basis, propagation kernels, and optimization paths remain unchanged.
-Phase 3 had completed under P3.2-b by moving unchanged model-selection and
-required-input predicates to `models.validation`. The simulation boundary
-retains its exception type and workflow validation, all 100 discovered modules
-import, the top-level import graph has no cycles, and strict mypy now covers 17
-named modules.
+The pytest, coverage, and Ruff rows were last verified locally on 2026-08-28
+after D-041 unit 5 introduced the immutable `SimulationCase`. Generated and
+externally injected fields now converge to that boundary before allocation;
+normal model and fixed-M construction consume the frozen model schema directly.
+Exact field/population references remain unchanged, and strict mypy now covers
+18 named modules. The preceding D-042 unit introduced frozen LinMol,
+VibLadder, and TwoLevel parameter schemas with neutral frequency names and
+required paired units. Model input is validated before allocation and projected
+once to the unchanged low-level rad/fs constructors. PHz, THz, wavenumber, and
+rad/fs forms retain Hamiltonian, dipole, and fixed-M propagation equivalence.
+Generated and injected field parity remains exact. Direct basis, propagation
+kernels, optimization paths, and `LocalOptimizerLegacyGridV1` remain unchanged.
+Phase 3 completed under P3.2-b; all discovered modules import and the top-level
+import graph has no cycles.
 P3.2-a had audited the Phase 3 structure and removed the empty
 simulation manager, obsolete writable-array time-grid adapter, and two uncalled
 `ParameterProcessor` construction helpers. The cleanup routes callers through

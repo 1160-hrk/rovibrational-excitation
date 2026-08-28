@@ -1052,7 +1052,11 @@ The D-041 migration is divided into separately testable units:
    unknown, and inapplicable selectors fail before construction. Custom and
    two-width Voigt waveforms use external sampled-field injection. The full
    suite is 785 passed and 10 skipped;
-5. consume the Phase 6 frozen model schemas in a typed `SimulationCase`;
+5. consume the Phase 6 frozen model schemas in a typed `SimulationCase` —
+   complete on 2026-08-28;
+   Verification: both field routes converge to one immutable case before
+   allocation; model and fixed-M builders consume its frozen schema directly;
+   836 tests pass with 10 optional-GPU skips and branch coverage remains 70%;
 6. reject every unknown and inapplicable key at the final schema boundary;
 7. add an opt-in convergence-report service that never changes the requested
    time grid.

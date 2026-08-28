@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -54,11 +54,13 @@ def _energy_or_frequency_unit(params: Mapping[str, Any], key: str) -> str:
     return value
 
 
-def _potential_type(params: Mapping[str, Any]) -> str:
+def _potential_type(params: Mapping[str, Any]) -> Literal["harmonic", "morse"]:
     value = params["potential_type"]
-    if value not in {"harmonic", "morse"}:
-        raise ValueError("potential_type must be 'harmonic' or 'morse'")
-    return str(value)
+    if value == "harmonic":
+        return "harmonic"
+    if value == "morse":
+        return "morse"
+    raise ValueError("potential_type must be 'harmonic' or 'morse'")
 
 
 def _frequency(params: Mapping[str, Any], key: str) -> Frequency:
@@ -80,7 +82,7 @@ class LinMolParameters:
     rotational_constant: Frequency
     vibration_rotation_coupling: Frequency
     dipole_c_m: float
-    potential_type: str
+    potential_type: Literal["harmonic", "morse"]
 
     @classmethod
     def from_mapping(cls, params: Mapping[str, Any]) -> LinMolParameters:
@@ -115,7 +117,7 @@ class VibLadderParameters:
     vibrational_frequency: Frequency
     anharmonic_shift: Frequency
     dipole_c_m: float
-    potential_type: str
+    potential_type: Literal["harmonic", "morse"]
 
     @classmethod
     def from_mapping(cls, params: Mapping[str, Any]) -> VibLadderParameters:
