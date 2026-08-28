@@ -923,6 +923,11 @@ Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit
 convergence calculation with a caller-selected tolerance. It reports the
 comparison and never changes the requested field or propagation interval.
+The standard calculation compares equal-shaped coarse- and fine-grid observable
+values using `max(abs(observable_coarse - observable_fine))`. The caller must
+name and provide the observable, both grids, and a finite nonnegative tolerance
+in the observable's units. There is no library-selected relative tolerance,
+hidden safety factor, automatic refinement, or pass-triggered rerun.
 
 ## 12. Required physics test matrix
 

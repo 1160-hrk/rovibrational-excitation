@@ -1064,7 +1064,14 @@ The D-041 migration is divided into separately testable units:
    mistaken for Python parameters; 852 tests pass with 10 optional-GPU skips
    and branch coverage remains 70%;
 7. add an opt-in convergence-report service that never changes the requested
-   time grid.
+   time grid — complete on 2026-08-28;
+   Verification: generated and external scalar routes require identical
+   endpoints and a strictly smaller fine field-grid step; calculation
+   parameters otherwise match; the caller supplies the named observable and
+   finite nonnegative tolerance; reports use maximum absolute difference and
+   read-only observable values. No result is written and no grid is modified.
+   The full suite is 872 passed with 10 optional-GPU skips, branch coverage
+   remains 70%, and strict mypy covers 21 named modules.
 
 Every unit characterizes the old valid-case projection first. None may route
 normal-simulation time construction through `LocalOptimizerLegacyGridV1` or

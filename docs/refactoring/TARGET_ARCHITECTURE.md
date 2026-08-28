@@ -567,6 +567,16 @@ preserves the legacy generated `helicity_projected` approximation and is never
 invented for arbitrary Cartesian samples. Numerical convergence assessment is
 a separate application service, not a configuration fallback.
 
+That service is concretely
+`simulation.convergence.assess_simulation_convergence`. It executes two
+otherwise identical cases on caller-selected same-endpoint grids, applies the
+same caller-provided observable to both population results, and returns an
+immutable `ConvergenceReport`. Its standard metric is maximum absolute
+elementwise difference. Observable name, observable function, and finite
+nonnegative tolerance are required; generated cases differ only by `dt`, while
+external cases differ only by same-kind sampled fields. It cannot write,
+resample, refine, retry, or replace the requested calculation.
+
 Each model package owns a frozen parameter dataclass. Validation is complete
 before matrix allocation, while derived quantities such as Morse `N` remain
 instance-local properties. LinMol representation is a required enum-like

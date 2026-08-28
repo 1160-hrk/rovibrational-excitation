@@ -37,7 +37,7 @@ def deserialize_polarization(value: Any) -> np.ndarray:
         if isinstance(component, dict):
             real = component.get("r", component.get("real", 0))
             imaginary = component.get("i", component.get("imag", 0))
-            return complex(real, imaginary)
+            return complex(real, imaginary)  # type: ignore[arg-type]
         if isinstance(component, float | int | complex):
             return complex(component)
         raise TypeError(f"Invalid polarization component: {type(component)}")

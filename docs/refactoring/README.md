@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 852 passed, 10 skipped (862 collected) |
+| Pytest | 872 passed, 10 skipped (882 collected) |
 | Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -51,11 +51,14 @@ physics changes are detected by tests.
 | Files failing Ruff format check | 0 |
 | Optimization module coverage | 8-90% |
 | Spectroscopy coverage | 90% |
-| `simulation/runner.py` coverage | 68% |
+| `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, coverage, and Ruff rows were last verified locally on 2026-08-28
-after D-041 unit 6 made the final normal-simulation mapping strict. Unknown
+after D-041 unit 7 added explicit, report-only convergence assessment. The
+caller supplies both grids, the named observable, and tolerance; maximum
+absolute difference is reported without changing either calculation. Unit 6
+made the final normal-simulation mapping strict. Unknown
 keys, model/field/algorithm-inapplicable keys, dummy scalar polarization, and
 misplaced split selectors now fail before allocation. Imported Python modules
 are excluded from parameter mappings, while non-module helper values remain
@@ -63,7 +66,7 @@ visible to strict validation. Generated and externally injected fields converge
 to the immutable `SimulationCase`; normal model and fixed-M construction consume
 the frozen model schema directly.
 Exact field/population references remain unchanged, and strict mypy now covers
-18 named modules. The preceding D-042 unit introduced frozen LinMol,
+21 named modules. The preceding D-042 unit introduced frozen LinMol,
 VibLadder, and TwoLevel parameter schemas with neutral frequency names and
 required paired units. Model input is validated before allocation and projected
 once to the unchanged low-level rad/fs constructors. PHz, THz, wavenumber, and

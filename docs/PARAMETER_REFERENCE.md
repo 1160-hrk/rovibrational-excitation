@@ -492,6 +492,51 @@ sample_stride = 5       # メモリ節約
 - **基本単位**: C·m
 - **変換**: Debye → C·m: `μ_D × 3.33564e-30`
 
+## 時間刻みの収束判定
+
+時間グリッドの構造が正しいことと、選んだ `dt` で目的の観測量が
+収束していることは別です。`assess_simulation_convergence` は、呼出し側が
+指定した粗い計算と細かい計算をそのまま実行し、観測量の最大絶対差だけを
+報告します。`dt` の変更、電場の再サンプリング、再試行、結果ファイルの
+保存は行いません。
+
+生成電場では、完全な厳格シミュレーション設定を2つ用意し、`dt` だけを
+変えます。開始時刻と終了時刻は厳密に一致し、細かい側の `dt` は粗い側
+より小さくなければなりません。
+
+```python
+from copy import deepcopy
+
+from rovibrational_excitation.simulation.convergence import (
+    assess_simulation_convergence,
+)
+
+# coarse_params は通常計算に必要な全パラメータを含む辞書
+coarse_params["save"] = False
+fine_params = deepcopy(coarse_params)
+fine_params["dt"] = coarse_params["dt"] / 2
+
+report = assess_simulation_convergence(
+    coarse_params,
+    fine_params,
+    observable_name="final_population",
+    observable=lambda population: population[-1],
+    tolerance=1.0e-6,
+)
+
+print(report.max_absolute_difference)
+print(report.converged)
+```
+
+判定式は
+`max(abs(coarse_observable - fine_observable)) <= tolerance` です。
+`tolerance` の単位は観測量と同じで、既定値や暗黙の相対許容差はありません。
+観測量は空でない有限数値を返し、粗い計算と細かい計算で同じ形にする必要が
+あります。外部電場では `coarse_field` と `fine_field` も渡します。両方とも
+`ScalarField`、または両方とも `CartesianField` でなければならず、設定辞書は
+同一、電場の `TimeGrid` だけを変えます。返された観測量配列は読み取り専用
+です。
+
 ## パフォーマンス最適化
 
 ### 高速化のコツ
@@ -558,4 +603,4 @@ checkpoint_interval = 5 # チェックポイント頻度を上げる
 
 - [スイープ仕様](SWEEP_SPECIFICATION.md) - パラメータスイープの詳細
 - [パッケージAPI](../src/rovibrational_excitation/) - モジュール詳細
-- [examples/](../examples/) - パラメータファイル例 
+- [examples/](../examples/) - パラメータファイル例

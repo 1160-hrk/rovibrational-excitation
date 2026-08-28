@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-28
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-041 unit 6 (strict simulation schema)
+Verified structural checkpoint: D-041 unit 7 (explicit convergence report)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -88,6 +88,9 @@ The authoritative details and formulas are in
   controls and an observable calculation report.
 - Spectroscopy experimental conditions are required, and Doppler broadening is
   derived from the actual uniform frequency-grid spacing.
+- Simulation convergence is an opt-in comparison of caller-selected coarse and
+  fine grids. It uses a caller-named observable, a caller-selected tolerance,
+  and maximum absolute difference; it never changes or resamples either grid.
 
 Changing any item above requires explicit user approval and a regression test.
 
@@ -129,14 +132,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after the second D-042 frequency unit:
+Current local CPU baseline after D-041 unit 7:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-834 passed, 10 GPU tests skipped (844 collected)
+872 passed, 10 GPU tests skipped (882 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -198,25 +201,23 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 101 discovered modules import, internal modules avoid root
+are removed, all 102 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Complete accepted D-041 with the opt-in convergence-report service. It must
-   compare caller-selected grids, report the result, and never change a grid.
-2. Continue Phase 4 with remaining explicit quantity boundaries and
+1. Continue Phase 4 with remaining explicit quantity boundaries and
    property-style round-trip tests. Do not migrate `carrier_freq_sin_mod` until
    its dimensional meaning is explicitly resolved.
    Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.
-3. Reduce exact transition debt only with the Phase 6 model consolidation. The
+2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two
    `models -> dynamics.problem` imports; never broaden or hide them.
-4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
-5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
-6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-7. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+3. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
+4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
+5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
+6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.

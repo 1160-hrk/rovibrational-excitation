@@ -6,7 +6,7 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .serialization import json_safe
 
@@ -53,7 +53,7 @@ class CheckpointManager:
             return None
         try:
             with self.checkpoint_file.open() as file:
-                return json.load(file)
+                return cast(dict[str, Any], json.load(file))
         except Exception as exc:
             print(f"⚠ チェックポイント読み込み失敗: {exc}")
             return None

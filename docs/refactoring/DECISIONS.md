@@ -1626,14 +1626,14 @@ Consequences:
   under D-001.
 - The migration is split into test-protected commits: required selection,
   representation, field types/injection, generated-field schema, model
-  schemas, and finally strict unknown-key rejection.
+  schemas, strict unknown-key rejection, and explicit convergence reporting.
 - No numerical kernel, local-optimizer time array, segment index, endpoint,
   Hamiltonian sign, physical threshold, or model formula changes as part of
   these input-boundary migrations.
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first six bounded units are complete in this checkpoint.
+Implementation: all seven bounded units are complete in this checkpoint.
 Normal simulation requires `basis_type`, `initial_states`, and LinMol
 `representation`; `m_resolved` additionally requires `axes`. The removed `use_M`
 key raises migration guidance. `ScalarField` and `CartesianField` own defensive,
@@ -1671,8 +1671,18 @@ is rejected by RK4, scalar models, and M averaging. Optional runner controls
 loading excludes imported module objects but deliberately retains scalar helper
 values so a misspelled or undeclared input cannot disappear before validation.
 
-Verification: the full CPU suite passes 852 tests with 10 optional-GPU skips;
-branch coverage is 70%. Ruff, formatting, strict mypy for 18 named modules,
+`simulation.convergence.assess_simulation_convergence` is the separate,
+opt-in accuracy service. It requires caller-supplied coarse and fine cases, a
+nonempty observable name, a callable observable, and a finite nonnegative
+tolerance. Generated cases may differ only in `dt`; injected cases may differ
+only in their same-kind `ScalarField` or `CartesianField` and its `TimeGrid`.
+Endpoints must match exactly and the fine field-grid step must be strictly
+smaller. The report stores defensive read-only observable values and evaluates
+`max(abs(coarse - fine)) <= tolerance`. It forces no output writes, never
+resamples or changes a field, never chooses a new step, and never reruns a case.
+
+Verification: the full CPU suite passes 872 tests with 10 optional-GPU skips;
+branch coverage is 70%. Ruff, formatting, strict mypy for 21 named modules,
 sdist/wheel build, and Twine checks pass. The local optimizer source, time grid,
 endpoint ownership, and indices are unchanged.
 

@@ -3,7 +3,7 @@
 Last verified: 2026-08-28
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: sixth D-041 strict-simulation-schema unit
+Latest API checkpoint: seventh D-041 explicit-convergence-report unit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -213,6 +213,13 @@ versioned so historical calculations remain interpretable.
 9. The same options object reaches model construction and propagation before
    writing an unversioned NPZ/JSON result. Scalar `E` is stored one-dimensional
    and Cartesian `E` is stored with shape `(n_samples, 2)`.
+
+Accuracy assessment is a separate public application service at
+`simulation.convergence.assess_simulation_convergence`. It compares two
+otherwise identical generated or externally injected cases and returns an
+immutable `ConvergenceReport`; it is not part of config loading and cannot
+select, repair, or replace a time grid. `ConvergenceConfigurationError` reports
+invalid comparisons before propagation.
 
 This entire route is temporary. Python-file execution, heuristic conversion,
 implicit sweep inference, and unversioned output are not part of the target
