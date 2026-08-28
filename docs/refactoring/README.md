@@ -43,8 +43,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 872 passed, 10 skipped (882 collected) |
-| Measured branch coverage | 70% |
+| Pytest | 904 passed, 10 skipped (914 collected) |
+| Measured branch coverage | 71% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
 | Ruff safely auto-fixable findings | 0 |
@@ -55,8 +55,12 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, coverage, and Ruff rows were last verified locally on 2026-08-28
-after D-041 unit 7 added explicit, report-only convergence assessment. The
-caller supplies both grids, the named observable, and tolerance; maximum
+after P4.3-c characterized every advertised direct unit-converter round trip
+and the remaining legacy unit warning/fallback paths without changing source
+behavior. O-011 now isolates the field-modulation, dispersion-coefficient, and
+intensity-convention questions that require an explicit physical decision.
+The preceding D-041 unit 7 added explicit, report-only convergence assessment.
+The caller supplies both grids, the named observable, and tolerance; maximum
 absolute difference is reported without changing either calculation. Unit 6
 made the final normal-simulation mapping strict. Unknown
 keys, model/field/algorithm-inapplicable keys, dummy scalar polarization, and

@@ -1892,6 +1892,33 @@ The user accepted items 1-7, explicit external-field injection with strict
 grid validation, and frozen model parameter schemas. D-041 is authoritative
 for the staged implementation.
 
+### O-011: Remaining field-modulation and legacy unit semantics
+
+Status: Open; implementation replacement is blocked on these physical choices.
+
+P4.3-c fixes observed legacy behavior with characterization tests but does not
+endorse it as the target contract. The following meanings require an explicit
+user decision:
+
+1. `carrier_freq_sin_mod` multiplies FFT `f - f0` in cycles/fs, so it is
+   time-like despite its name and docstring. Decide whether it is today's exact
+   spectral slope, a physical delay requiring `2*pi`, or a modulation period.
+2. The factor is `amplitude * sin(...) + amplitude`; phase mode clips it to
+   plus or minus `1e4`, while amplitude mode takes its absolute value. Zero
+   amplitude therefore removes the field. Confirm or replace these semantics.
+3. Dispersion uses `gdd * delta_omega**2 + tod * delta_omega**3`. Decide
+   whether these are physical derivatives requiring Taylor factors `1/2` and
+   `1/6`, or already-scaled polynomial coefficients.
+4. Intensity conversion uses `E_peak = sqrt(2 * I * mu_0 * c)`. Confirm that
+   input is cycle-averaged intensity and field amplitude is the peak value.
+
+D-021 already requires invalid units and internal strict-validation failures to
+raise. Raw unit-ambiguous attributes and invented diagnostic scales cannot be
+successful fallbacks. Decide only whether legacy range heuristics remain in a
+separate opt-in diagnostic report or are deleted.
+
+Verification: `tests/contracts/test_unit_boundary_characterization.py`.
+
 ## Decision template
 
 Copy this template for a new entry:

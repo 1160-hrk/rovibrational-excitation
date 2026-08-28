@@ -899,9 +899,25 @@ double-conversion path. The complete CPU suite passes 834 tests with 10
 optional-GPU skips; branch coverage is 70%, and Ruff, formatting, strict mypy
 for 17 modules, all 100 module imports, build, and Twine gates pass.
 
+P4.3-c characterized the remaining legacy conversion boundary on 2026-08-28
+without replacing it. Every advertised direct frequency, energy, dipole,
+electric-field, time, GDD, and TOD unit now has a round-trip test through its
+canonical unit. Frequency-to-Hamiltonian conversion is tested across every
+advertised frequency/energy unit pair, and all intensity aliases are fixed to
+the current peak-electric-field convention. The tests also preserve, as
+explicit debt rather than accepted target behavior, the general parameter
+processor's stale unit labels and non-strict warning path, and the propagation
+validator's context fallback, 1000 fs diagnostic fallback, broad exception
+downgrade, and raw dipole-attribute fallback. No converter, validator,
+generated-field formula, numerical kernel, optimizer grid, or result changed.
+O-011 records the physical meanings that must be resolved before replacing
+these legacy boundaries.
+The complete CPU suite passes 904 tests with 10 optional-GPU skips, and measured
+branch coverage is 71%.
+
 Remaining Phase 4 work:
 
-- finish explicit quantity types and property-style unit round trips;
+- resolve O-011 and finish explicit quantity types;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 
@@ -918,7 +934,8 @@ Acceptance:
 - no mutable object parameter changes during conversion;
 - dimensional and nondimensional reference observables/time agree;
 - one documented internal dimensional unit exists per quantity;
-- all current supported input units have round-trip tests.
+- all current supported direct input units have round-trip tests (completed by
+  P4.3-c).
 
 ## 8. Phase 5 — numerical dynamics engine
 

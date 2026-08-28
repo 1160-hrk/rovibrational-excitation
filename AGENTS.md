@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-28
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-041 unit 7 (explicit convergence report)
+Verified structural checkpoint: P4.3-c (legacy unit-boundary characterization)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -132,14 +132,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after D-041 unit 7:
+Current local CPU baseline after P4.3-c:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-872 passed, 10 GPU tests skipped (882 collected)
+904 passed, 10 GPU tests skipped (914 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -187,7 +187,7 @@ Measured at `613ce93`:
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
 - Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
-- Current branch coverage: 70%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 71%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -208,9 +208,12 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 with remaining explicit quantity boundaries and
-   property-style round-trip tests. Do not migrate `carrier_freq_sin_mod` until
-   its dimensional meaning is explicitly resolved.
+1. Resolve O-011, then continue Phase 4 with remaining explicit quantity
+   boundaries. P4.3-c already characterizes every advertised direct converter
+   round trip and the legacy unit warning/fallback paths. Do not migrate
+   `carrier_freq_sin_mod`, sinusoidal modulation, GDD/TOD coefficients, or the
+   intensity convention until their physical meanings are explicitly
+   resolved.
    Structural field-grid validation never resamples, and numerical
    adequacy is a separate explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
