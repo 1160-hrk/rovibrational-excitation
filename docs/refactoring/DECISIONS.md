@@ -1919,6 +1919,25 @@ separate opt-in diagnostic report or are deleted.
 
 Verification: `tests/contracts/test_unit_boundary_characterization.py`.
 
+### O-012: Active and archival example quality scope
+
+Status: Open; repository-wide cleanup scope requires a support decision.
+
+A P4.3-c audit found 597 Ruff findings, 526 automatically fixable findings, and
+33 files that Ruff would reformat when README code blocks, benchmarks, scripts,
+notebooks, and archived examples are included. `src/` and `tests/` remain clean.
+
+Choose one support contract:
+
+1. Recommended: active examples, benchmarks, and scripts must run and pass
+   lint/format; `examples/archives/` is explicitly historical and excluded from
+   active gates until it is removed or moved outside the supported tree.
+2. Treat every tracked example, including archives, as supported and clean all
+   597 findings before release.
+
+This decision changes repository maintenance scope only. Any example API or
+numerical update remains a separately tested behavior change.
+
 ## Decision template
 
 Copy this template for a new entry:

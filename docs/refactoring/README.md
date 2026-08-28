@@ -46,9 +46,10 @@ physics changes are detected by tests.
 | Pytest | 904 passed, 10 skipped (914 collected) |
 | Measured branch coverage | 71% |
 | Mandatory CI coverage floor | 47% |
-| Ruff findings | 0 |
-| Ruff safely auto-fixable findings | 0 |
-| Files failing Ruff format check | 0 |
+| Ruff findings (`src/`, `tests/`) | 0 |
+| Files failing format (`src/`, `tests/`) | 0 |
+| Repository-wide Ruff findings | 597 (526 fixable) |
+| Repository-wide files requiring format | 33 |
 | Optimization module coverage | 8-90% |
 | Spectroscopy coverage | 90% |
 | `simulation/runner.py` coverage | 69% |
@@ -59,6 +60,7 @@ after P4.3-c characterized every advertised direct unit-converter round trip
 and the remaining legacy unit warning/fallback paths without changing source
 behavior. O-011 now isolates the field-modulation, dispersion-coefficient, and
 intensity-convention questions that require an explicit physical decision.
+O-012 records the separate active-versus-archival example support decision.
 The preceding D-041 unit 7 added explicit, report-only convergence assessment.
 The caller supplies both grids, the named observable, and tolerance; maximum
 absolute difference is reported without changing either calculation. Unit 6

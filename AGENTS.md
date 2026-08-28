@@ -186,7 +186,9 @@ Measured at `613ce93`:
 - Statement/branch coverage report: 47% total.
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
-- Current after P1.6 local validation: 0 format failures and 0 Ruff findings.
+- Current `src/` plus `tests/` validation: 0 format failures and 0 Ruff findings.
+- Repository-wide P4.3-c audit: 597 Ruff findings (526 fixable) and 33 files
+  would be reformatted, primarily outside `src/` and `tests/`; see O-012.
 - Current branch coverage: 71%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
@@ -224,3 +226,5 @@ The next work is:
 4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
 5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
 6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+7. Resolve O-012 before a repository-wide lint cleanup; active examples and
+   archival examples must not acquire an implicit support status.
