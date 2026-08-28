@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+from types import ModuleType
 from typing import Any
 
 from rovibrational_excitation.core.units.parameter_processor import parameter_processor
@@ -17,7 +18,10 @@ def load_params_file(path: str) -> dict[str, Any]:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # type: ignore[arg-type]
     params = {
-        name: getattr(module, name) for name in dir(module) if not name.startswith("__")
+        name: value
+        for name in dir(module)
+        if not name.startswith("__")
+        and not isinstance(value := getattr(module, name), ModuleType)
     }
 
     print(f"📊 Loading parameters from {path}")

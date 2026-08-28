@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-28
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: D-041 unit 5 (immutable SimulationCase)
+Verified structural checkpoint: D-041 unit 6 (strict simulation schema)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -78,8 +78,8 @@ The authoritative details and formulas are in
 - A Morse potential with zero anharmonicity is invalid.
 - The Morse level parameter is derived per model instance; it must not be
   global state or a fixed `N=200`.
-- TwoLevel and VibLadder use scalar coupling and are physically independent of
-  the supplied polarization direction. LinMol uses Cartesian coupling.
+- TwoLevel and VibLadder use scalar coupling and reject the inapplicable
+  `polarization` input. LinMol M-resolved coupling is Cartesian.
 - Density matrices must be finite, square, Hermitian, positive semidefinite,
   and have positive real trace within the documented scale-aware tolerance.
 - Liouville propagation currently supports NumPy dense RK4 only.
@@ -205,8 +205,8 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Complete accepted D-041 by enforcing strict unknown- and
-   model/field/algorithm-inapplicable-key rejection at the `SimulationCase` boundary.
+1. Complete accepted D-041 with the opt-in convergence-report service. It must
+   compare caller-selected grids, report the result, and never change a grid.
 2. Continue Phase 4 with remaining explicit quantity boundaries and
    property-style round-trip tests. Do not migrate `carrier_freq_sin_mod` until
    its dimensional meaning is explicitly resolved.

@@ -543,6 +543,16 @@ time grid, representation/axes, and propagation controls. Model construction
 receives the frozen schema directly and does not inspect the original simulation
 mapping.
 
+The final mapping boundary is closed rather than permissive: an unknown name is
+an error, and known names are accepted only by the model, field route, and
+algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and
+therefore reject `polarization`. M-resolved LinMol generated fields require
+`polarization`; M averaging may only use its documented fixed-linear input.
+`split_interaction` exists only for M-resolved LinMol with
+`algorithm="split_operator"`; all other combinations reject it. Removed names
+retain dedicated migration errors. Python config loading filters imported module
+objects only, leaving other names visible to this strict boundary.
+
 Generated simulation fields use named, serialization-safe discriminators.
 `envelope_kind` resolves only the four existing three-argument envelopes:
 `gaussian`, `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`.

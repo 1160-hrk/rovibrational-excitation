@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 836 passed, 10 skipped (846 collected) |
+| Pytest | 852 passed, 10 skipped (862 collected) |
 | Measured branch coverage | 70% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings | 0 |
@@ -55,9 +55,13 @@ physics changes are detected by tests.
 | RK4 Schrödinger coverage report | 20% |
 
 The pytest, coverage, and Ruff rows were last verified locally on 2026-08-28
-after D-041 unit 5 introduced the immutable `SimulationCase`. Generated and
-externally injected fields now converge to that boundary before allocation;
-normal model and fixed-M construction consume the frozen model schema directly.
+after D-041 unit 6 made the final normal-simulation mapping strict. Unknown
+keys, model/field/algorithm-inapplicable keys, dummy scalar polarization, and
+misplaced split selectors now fail before allocation. Imported Python modules
+are excluded from parameter mappings, while non-module helper values remain
+visible to strict validation. Generated and externally injected fields converge
+to the immutable `SimulationCase`; normal model and fixed-M construction consume
+the frozen model schema directly.
 Exact field/population references remain unchanged, and strict mypy now covers
 18 named modules. The preceding D-042 unit introduced frozen LinMol,
 VibLadder, and TwoLevel parameter schemas with neutral frequency names and

@@ -26,6 +26,8 @@ from rovibrational_excitation.io import deserialize_polarization
 from rovibrational_excitation.models.validation import (
     LinMolRepresentation,
     ModelConfigurationError,
+    known_model_input_keys,
+    model_parameter_keys,
     validate_linmol_representation,
     validate_model_parameters,
 )
@@ -43,6 +45,33 @@ _EXECUTION_REQUIRED = {
     "sample_stride",
     "nondimensional",
     "renorm",
+}
+_SELECTION_KEYS = {"basis_type", "initial_states", "representation", "axes"}
+_WORKFLOW_KEYS = {
+    "description",
+    "save",
+    "outdir",
+    "validate_units",
+    "verbose",
+    "split_interaction",
+}
+_PREPROCESSED_UNIT_KEYS = {
+    "mu0_Cm_units",
+    "amplitude_units",
+    "duration_units",
+    "t_center_units",
+    "t_start_units",
+    "t_end_units",
+    "dt_units",
+}
+_REMOVED_SIMULATION_KEYS = {
+    "carrier_freq",
+    "auto_timestep",
+    "target_accuracy",
+    "pulse_duration",
+    "dense",
+    "sparse",
+    "use_M",
 }
 _GENERATED_REQUIRED = {
     "t_start",
@@ -68,6 +97,12 @@ _GENERATED_FIELD_KEYS = {
     "carrier_freq_sin_mod",
     "phase_rad_sin_mod",
     "type_mod_sin_mod",
+    "amplitude_units",
+    "duration_units",
+    "t_center_units",
+    "t_start_units",
+    "t_end_units",
+    "dt_units",
 }
 _FINITE_PARAMETERS = {
     "t_start",
@@ -83,8 +118,19 @@ _FINITE_PARAMETERS = {
     "energy_gap",
     "amplitude_sin_mod",
     "carrier_freq_sin_mod",
+    "phase_rad",
     "phase_rad_sin_mod",
 }
+
+_KNOWN_SIMULATION_KEYS = frozenset(
+    _SELECTION_KEYS
+    | _EXECUTION_REQUIRED
+    | _GENERATED_FIELD_KEYS
+    | _WORKFLOW_KEYS
+    | _PREPROCESSED_UNIT_KEYS
+    | _REMOVED_SIMULATION_KEYS
+    | set(known_model_input_keys())
+)
 
 
 def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
@@ -207,10 +253,33 @@ def validate_simulation_case(
             f"{names} were removed; use required storage='dense' or storage='csr'"
         )
 
+    unknown = [key for key in params if key not in _KNOWN_SIMULATION_KEYS]
+    if unknown:
+        names = ", ".join(
+            sorted(key if isinstance(key, str) else repr(key) for key in unknown)
+        )
+        raise SimulationConfigurationError("Unknown simulation parameters: " + names)
+
     try:
         basis_type = validate_model_parameters(params)
     except ModelConfigurationError as exc:
         raise SimulationConfigurationError(str(exc)) from exc
+
+    inapplicable_model = sorted(
+        (known_model_input_keys() - model_parameter_keys(basis_type)) & params.keys()
+    )
+    if inapplicable_model:
+        raise SimulationConfigurationError(
+            f"Model parameters not applicable to basis_type={basis_type}: "
+            + ", ".join(inapplicable_model)
+        )
+    if basis_type != "linmol":
+        inapplicable_selection = sorted({"representation", "axes"} & params.keys())
+        if inapplicable_selection:
+            raise SimulationConfigurationError(
+                f"Parameters not applicable to basis_type={basis_type}: "
+                + ", ".join(inapplicable_selection)
+            )
     representation = (
         validate_linmol_representation(params) if basis_type == "linmol" else None
     )
@@ -238,6 +307,16 @@ def validate_simulation_case(
         raise SimulationConfigurationError(
             "Missing required simulation parameters: " + ", ".join(missing)
         )
+
+    for key in ("validate_units", "verbose", "save"):
+        if key in params and not isinstance(params[key], bool):
+            raise SimulationConfigurationError(f"{key} must be a bool")
+
+    if field is None and not expects_cartesian and basis_type != "linmol":
+        if "polarization" in params:
+            raise SimulationConfigurationError(
+                f"polarization is not applicable to scalar model {basis_type}"
+            )
 
     if field is None:
         _validate_generated_field_schema(params)
@@ -320,6 +399,34 @@ def validate_simulation_case(
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
+    split_selector_is_applicable = (
+        representation is LinMolRepresentation.M_RESOLVED
+        and options.algorithm is PropagationAlgorithm.SPLIT_OPERATOR
+    )
+    if split_selector_is_applicable:
+        if "split_interaction" not in params:
+            raise SimulationConfigurationError(
+                "split_interaction is required for m_resolved LinMol "
+                "split_operator propagation"
+            )
+        if params["split_interaction"] not in {
+            "cartesian",
+            "helicity_projected",
+        }:
+            raise SimulationConfigurationError(
+                "split_interaction must be 'cartesian' or 'helicity_projected'"
+            )
+    elif "split_interaction" in params:
+        if options.algorithm is PropagationAlgorithm.RK4:
+            reason = "algorithm=rk4 does not use a split interaction"
+        elif representation is LinMolRepresentation.M_INCOHERENT_AVERAGE:
+            reason = "m_incoherent_average uses its scalar split interaction"
+        else:
+            reason = f"scalar model {basis_type} has no Cartesian split selector"
+        raise SimulationConfigurationError(
+            f"split_interaction is not applicable: {reason}"
+        )
+
     state_path = (
         StatePath.INCOHERENT_ENSEMBLE
         if representation is LinMolRepresentation.M_INCOHERENT_AVERAGE
@@ -361,11 +468,4 @@ def validate_simulation_case(
         except ValueError as exc:
             raise SimulationConfigurationError(str(exc)) from exc
 
-    if params.get("split_interaction", "cartesian") not in {
-        "cartesian",
-        "helicity_projected",
-    }:
-        raise SimulationConfigurationError(
-            "split_interaction must be 'cartesian' or 'helicity_projected'"
-        )
     return options

@@ -1057,7 +1057,12 @@ The D-041 migration is divided into separately testable units:
    Verification: both field routes converge to one immutable case before
    allocation; model and fixed-M builders consume its frozen schema directly;
    836 tests pass with 10 optional-GPU skips and branch coverage remains 70%;
-6. reject every unknown and inapplicable key at the final schema boundary;
+6. reject every unknown and inapplicable key at the final schema boundary —
+   complete on 2026-08-28;
+   Verification: model, generated/external-field, polarization, and algorithm
+   applicability are discriminated before allocation; imported modules are not
+   mistaken for Python parameters; 852 tests pass with 10 optional-GPU skips
+   and branch coverage remains 70%;
 7. add an opt-in convergence-report service that never changes the requested
    time grid.
 

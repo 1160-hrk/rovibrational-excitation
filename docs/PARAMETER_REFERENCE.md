@@ -126,9 +126,9 @@ Voigt は2個の幅が必要なため、この単一 `duration` スキーマで�
 時間発展前に移行エラーになります。
 
 `polarization` は生成電場を使う `m_resolved` LinMol で必須です。
-TwoLevel と VibLadder は偏光自由度を持たないため省略でき、スカラー電場との
-結合結果は偏光方向に依存しません。指定した場合は移行期間中の生成入力として
-規格化・検証されますが、typed scalar fieldには偏光を保持しません。
+TwoLevel と VibLadder は偏光自由度を持たないため指定せず、指定した場合は
+適用不能キーとしてエラーになります。両モデルは内部の固定 x 成分から生成した
+スカラー電場と結合し、typed scalar field に Jones 偏光を保持しません。
 
 LinMol の `representation="m_incoherent_average"` も偏光を省略できます。
 指定する場合は固定直線偏光だけを受け付け、その方向には依存しません。ただしこれは
@@ -212,7 +212,7 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 |-----------|---|-------------|------|-----|
 | `axes` | `str` | `m_resolved` で必須 | 電場-双極子の軸対応。M平均では指定不可 | `"xy"`, `"zx"` |
 | `algorithm` | `str` | ✅ | 時間発展法 | `"rk4"`, `"split_operator"` |
-| `split_interaction` | `str` | `"cartesian"` | split相互作用モデル | `"cartesian"`, `"helicity_projected"` |
+| `split_interaction` | `str` | M-resolved LinMol の split 法で必須 | split相互作用モデル | `"cartesian"`, `"helicity_projected"` |
 | `renorm` | `bool` | ✅ | 各ステップで状態を再規格化するか | `False` |
 | `nondimensional` | `bool` | ✅ | 無次元化して時間発展するか | `False` |
 | `validate_units` | `bool` | `True` | 物理単位を検証するか | `False` |
@@ -225,7 +225,10 @@ LinMol の `representation="m_incoherent_average"` も偏光を省略できま�
 
 runner は保存結果との対応を保証するため、常に物理時間 `t_p` を生成します。
 `return_traj = False` の場合、`t_p` は `[t_end]`、population は `(1, n_states)` です。
-`split_interaction = "cartesian"` はRK4と同じ実Cartesian電場を使用します。
+`split_interaction` は `algorithm="split_operator"` かつ
+`basis_type="linmol"`, `representation="m_resolved"` の場合だけ指定します。
+RK4、TwoLevel、VibLadder、M平均で指定するとエラーです。
+`split_interaction = "cartesian"` は RK4 と同じ実 Cartesian 電場を使用します。
 `"helicity_projected"` は片方向遷移演算子とその随伴を使う明示的な近似です。
 split法はスパース入力を受け付けますが、相互作用の固有ベクトルは密行列なので、
 `storage = "csr"` はsplit法のスパースメモリスケーリングを意味しません。
@@ -234,7 +237,9 @@ split法はスパース入力を受け付けますが、相互作用の固有ベ
 #### 2.6 出力設定
 
 単位名が不正な場合、値を未変換のまま継続せず `ValueError` になります。必須値の欠落、
-非有限値、ゼロ偏光、モデルに不正な整数値も時間発展前にエラーになります。
+非有限値、ゼロ偏光、モデルに不正な整数値も時間発展前にエラーになります。未知キー、
+別モデルの物理パラメータ、生成電場と外部電場の混在、アルゴリズムに適用不能なキーも、
+無視せず該当キーを示してエラーになります。
 
 | パラメータ | 型 | デフォルト | 説明 | 例 |
 |-----------|---|-----------|------|-----|
@@ -249,7 +254,7 @@ split法はスパース入力を受け付けますが、相互作用の固有ベ
 
 | キー | 説明 | 例 |
 |-----|------|-----|
-| `polarization` | 偏光ベクトル | `[1.0, 0.0]` |
+| `polarization` | 適用可能な LinMol での偏光ベクトル | `[1.0, 0.0]` |
 | `initial_states` | 初期状態 | `[0, 5]` |
 
 #### 3.2 明示的スイープ指定

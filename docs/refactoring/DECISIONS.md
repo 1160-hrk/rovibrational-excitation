@@ -1633,9 +1633,9 @@ Consequences:
 - `LocalOptimizerLegacyGridV1` remains governed exclusively by D-027 and is not
   reconstructed through the new normal-simulation field boundary.
 
-Implementation: the first five bounded units are complete in this checkpoint. Normal
-simulation requires `basis_type`, `initial_states`, and LinMol `representation`;
-`m_resolved` additionally requires `axes`. The removed normal-simulation `use_M`
+Implementation: the first six bounded units are complete in this checkpoint.
+Normal simulation requires `basis_type`, `initial_states`, and LinMol
+`representation`; `m_resolved` additionally requires `axes`. The removed `use_M`
 key raises migration guidance. `ScalarField` and `CartesianField` own defensive,
 read-only, real V/m samples and the exact canonical `TimeGrid`.
 `simulation.runner.run_simulation_case` accepts one externally sampled field and
@@ -1662,7 +1662,16 @@ allocation. It owns the frozen model schema, immutable initial-state indices,
 sampled field and `TimeGrid`, representation, axes, and propagation controls.
 Model and fixed-M builders consume the frozen schema without re-reading raw input.
 
-Verification: the full CPU suite passes 836 tests with 10 optional-GPU skips;
+The final mapping rejects unknown names and parameters that belong to another
+model, field route, or algorithm. TwoLevel and VibLadder reject a dummy
+`polarization`; only generated M-resolved LinMol requires it. Public
+`split_interaction` is required only for M-resolved LinMol split propagation and
+is rejected by RK4, scalar models, and M averaging. Optional runner controls
+`save`, `validate_units`, and `verbose` require actual booleans. Python parameter
+loading excludes imported module objects but deliberately retains scalar helper
+values so a misspelled or undeclared input cannot disappear before validation.
+
+Verification: the full CPU suite passes 852 tests with 10 optional-GPU skips;
 branch coverage is 70%. Ruff, formatting, strict mypy for 18 named modules,
 sdist/wheel build, and Twine checks pass. The local optimizer source, time grid,
 endpoint ownership, and indices are unchanged.

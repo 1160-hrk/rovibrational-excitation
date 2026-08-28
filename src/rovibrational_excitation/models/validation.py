@@ -113,6 +113,20 @@ _REMOVED_FREQUENCY_KEYS.update(
 )
 
 
+def model_parameter_keys(basis_type: str) -> frozenset[str]:
+    """Return the physically defining keys applicable to one model kind."""
+    try:
+        return frozenset(_MODEL_REQUIRED[basis_type])
+    except KeyError:
+        raise ModelConfigurationError(f"Unknown basis_type: {basis_type}") from None
+
+
+def known_model_input_keys() -> frozenset[str]:
+    """Return all current and explicitly removed model-input names."""
+    current = set().union(*_MODEL_REQUIRED.values())
+    return frozenset(current | _REMOVED_FREQUENCY_KEYS.keys())
+
+
 def _construct_model_parameters(
     basis_type: str, params: Mapping[str, Any]
 ) -> ModelParameters:

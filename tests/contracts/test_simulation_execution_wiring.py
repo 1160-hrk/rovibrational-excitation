@@ -37,7 +37,6 @@ def _twolevel_case(**overrides):
         "carrier_frequency": 0.1,
         "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
-        "polarization": [1.0, 0.0],
         "initial_states": [0],
         "backend": "numpy",
         "storage": "dense",

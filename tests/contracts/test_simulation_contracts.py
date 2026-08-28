@@ -47,7 +47,6 @@ def _base_case(**overrides):
         "carrier_frequency": 0.1,
         "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
-        "polarization": [1.0, 0.0],
         "initial_states": [0],
         "save": False,
         "backend": "numpy",
@@ -76,14 +75,6 @@ def test_time_grid_rejects_span_that_solver_would_truncate():
         TimeGrid.from_bounds(-1.0, 1.0, 0.3)
 
 
-def test_scalar_model_generated_field_does_not_require_polarization():
-    explicit = _base_case()
-    implicit = _base_case()
-    implicit.pop("polarization")
-
-    np.testing.assert_array_equal(_run_one(implicit), _run_one(explicit))
-
-
 @pytest.mark.parametrize(
     "model_overrides",
     [
@@ -100,16 +91,18 @@ def test_scalar_model_generated_field_does_not_require_polarization():
     ],
 )
 @pytest.mark.parametrize("nondimensional", [False, True])
-def test_scalar_models_are_independent_of_input_polarization(
-    model_overrides, nondimensional
-):
-    x_polarized = _base_case(nondimensional=nondimensional, **model_overrides)
-    y_polarized = {**x_polarized, "polarization": [0.0, 1.0]}
+def test_scalar_models_propagate_without_polarization(model_overrides, nondimensional):
+    params = _base_case(nondimensional=nondimensional)
+    if model_overrides:
+        params.pop("energy_gap")
+        params.pop("energy_gap_units")
+        params.update(model_overrides)
 
-    population_x = _run_one(x_polarized)
-    population_y = _run_one(y_polarized)
+    population = _run_one(params)
 
-    np.testing.assert_allclose(population_x, population_y, rtol=1e-12, atol=1e-12)
+    expected_size = 3 if model_overrides else 2
+    assert population.shape[1] == expected_size
+    assert np.all(np.isfinite(population))
 
 
 def test_final_state_only_uses_final_physical_time_and_state_axis(tmp_path):
@@ -432,7 +425,7 @@ def test_generated_envelope_kind_preserves_existing_samples(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
-        polarization=np.asarray(params["polarization"]),
+        polarization=np.array([1.0, 0.0]),
     )
 
     actual = _generated_sampled_field(
@@ -475,7 +468,7 @@ def test_sinusoidal_modulation_kind_preserves_existing_samples(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
-        polarization=np.asarray(params["polarization"]),
+        polarization=np.array([1.0, 0.0]),
     )
     expected.apply_sinusoidal_mod(
         center_freq=Frequency(
@@ -513,7 +506,7 @@ def test_external_scalar_field_matches_existing_generated_twolevel_calculation()
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
-        polarization=np.asarray(params["polarization"]),
+        polarization=np.array([1.0, 0.0]),
     )
     field = ScalarField(grid, generated.get_scalar_field())
 

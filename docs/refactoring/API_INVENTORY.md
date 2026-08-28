@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-24
+Last verified: 2026-08-28
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: third D-041 sampled-field injection unit
+Latest API checkpoint: sixth D-041 strict-simulation-schema unit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -188,20 +188,22 @@ versioned so historical calculations remain interpretable.
 ### 4.1 Current simulation parameter path
 
 1. `rve-simulate PARAMFILE` calls `run_all_with_checkpoint`.
-2. `load_params_file` executes arbitrary Python and collects every non-dunder
-   module attribute.
+2. `load_params_file` executes arbitrary Python and collects non-dunder values,
+   excluding imported module objects. Other helper names remain visible and
+   must be valid schema keys rather than disappearing implicitly.
 3. The mutable global `parameter_processor` heuristically converts recognized
    unit-suffixed values.
 4. `expand_cases` treats most iterable values as sweep dimensions; only
    `polarization` and `initial_states` are fixed-value exceptions.
-5. `validate_simulation_case` runs only after expansion; generated cases require
-   named envelope and modulation discriminators and reject removed callable or
-   mixed-case selectors. It also requires algorithm,
-   backend, storage, trajectory, stride, scaling, and renormalization choices,
-   constructs one `PropagationOptions`, and performs capability preflight.
-6. `build_model` requires that validated `ExecutionPolicy`, dispatches through a
-   local dictionary, and returns `ModelComponents` plus scalar/Cartesian
-   coupling metadata.
+5. `validate_simulation_case` runs only after expansion. Its closed key set
+   rejects unknown names and model/field/algorithm-inapplicable parameters.
+   Generated cases require named envelope and modulation discriminators. It
+   also requires algorithm, backend, storage, trajectory, stride, scaling, and
+   renormalization choices, constructs one `PropagationOptions`, and performs
+   capability preflight.
+6. The immutable `SimulationCase` owns a frozen model schema and validated
+   `ExecutionPolicy`; model construction returns `ModelComponents` plus
+   scalar/Cartesian coupling metadata without re-reading the raw mapping.
 7. `runner._run_one` constructs one immutable `TimeGrid`, generates the legacy
    pulse unchanged, and freezes its exact values as `ScalarField` or
    `CartesianField` before propagation.
