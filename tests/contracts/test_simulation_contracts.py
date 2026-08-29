@@ -261,14 +261,20 @@ def test_generated_field_rejects_unknown_discriminators(key, value):
 
 @pytest.mark.parametrize(
     "key",
-    ["amplitude_sin_mod", "carrier_freq_sin_mod", "type_mod_sin_mod"],
+    [
+        "modulation_depth",
+        "modulation_delay",
+        "modulation_delay_units",
+        "modulation_mode",
+    ],
 )
 def test_sinusoidal_modulation_requires_all_non_additive_parameters(key):
     params = _base_case(
         modulation_kind="sinusoidal",
-        amplitude_sin_mod=0.2,
-        carrier_freq_sin_mod=0.03,
-        type_mod_sin_mod="phase",
+        modulation_depth=0.2,
+        modulation_delay=30.0,
+        modulation_delay_units="fs",
+        modulation_mode="phase",
     )
     del params[key]
 
@@ -277,19 +283,61 @@ def test_sinusoidal_modulation_requires_all_non_additive_parameters(key):
 
 
 def test_no_modulation_rejects_sinusoidal_parameters():
-    with pytest.raises(SimulationConfigurationError, match="amplitude_sin_mod"):
-        validate_simulation_case(_base_case(amplitude_sin_mod=0.2))
+    with pytest.raises(SimulationConfigurationError, match="modulation_depth"):
+        validate_simulation_case(_base_case(modulation_depth=0.2))
 
 
 def test_sinusoidal_modulation_rejects_unknown_type():
     params = _base_case(
         modulation_kind="sinusoidal",
-        amplitude_sin_mod=0.2,
-        carrier_freq_sin_mod=0.03,
-        type_mod_sin_mod="frequency",
+        modulation_depth=0.2,
+        modulation_delay=30.0,
+        modulation_delay_units="fs",
+        modulation_mode="frequency",
     )
 
-    with pytest.raises(SimulationConfigurationError, match="type_mod_sin_mod"):
+    with pytest.raises(SimulationConfigurationError, match="modulation_mode"):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize(
+    "legacy_key",
+    [
+        "amplitude_sin_mod",
+        "carrier_freq_sin_mod",
+        "phase_rad_sin_mod",
+        "type_mod_sin_mod",
+    ],
+)
+def test_sinusoidal_modulation_rejects_legacy_keys(legacy_key):
+    with pytest.raises(SimulationConfigurationError, match=legacy_key):
+        validate_simulation_case(_base_case(**{legacy_key: 0.2}))
+
+
+def test_sinusoidal_modulation_rejects_invalid_delay_unit():
+    params = _base_case(
+        modulation_kind="sinusoidal",
+        modulation_depth=0.2,
+        modulation_delay=30.0,
+        modulation_delay_units="not-a-time-unit",
+        modulation_mode="phase",
+    )
+
+    with pytest.raises(SimulationConfigurationError, match="modulation_delay"):
+        validate_simulation_case(params)
+
+
+@pytest.mark.parametrize("depth", [-0.01, 1.01])
+def test_amplitude_modulation_rejects_depth_outside_unit_interval(depth):
+    params = _base_case(
+        modulation_kind="sinusoidal",
+        modulation_depth=depth,
+        modulation_delay=30.0,
+        modulation_delay_units="fs",
+        modulation_mode="amplitude",
+    )
+
+    with pytest.raises(SimulationConfigurationError, match=r"0 <= depth <= 1"):
         validate_simulation_case(params)
 
 
@@ -444,18 +492,19 @@ def test_generated_envelope_kind_preserves_existing_samples(
 @pytest.mark.parametrize("modulation_type", ["phase", "amplitude"])
 @pytest.mark.parametrize(
     ("phase_parameters", "expected_phase"),
-    [({}, 0.0), ({"phase_rad_sin_mod": 0.4}, 0.4)],
+    [({}, 0.0), ({"modulation_phase_rad": 0.4}, 0.4)],
 )
-def test_sinusoidal_modulation_kind_preserves_existing_samples(
+def test_sinusoidal_modulation_kind_matches_field_api(
     modulation_type, phase_parameters, expected_phase
 ):
     from rovibrational_excitation.simulation.runner import _generated_sampled_field
 
     params = _base_case(
         modulation_kind="sinusoidal",
-        amplitude_sin_mod=0.2,
-        carrier_freq_sin_mod=0.03,
-        type_mod_sin_mod=modulation_type,
+        modulation_depth=0.2,
+        modulation_delay=30.0,
+        modulation_delay_units="fs",
+        modulation_mode=modulation_type,
         **phase_parameters,
     )
     grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
@@ -474,10 +523,10 @@ def test_sinusoidal_modulation_kind_preserves_existing_samples(
         center_freq=Frequency(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
-        amplitude=params["amplitude_sin_mod"],
-        carrier_freq=params["carrier_freq_sin_mod"],
+        modulation_depth=params["modulation_depth"],
+        delay_fs=params["modulation_delay"],
         phase_rad=expected_phase,
-        type_mod=params["type_mod_sin_mod"],
+        mode=params["modulation_mode"],
     )
 
     actual = _generated_sampled_field(
@@ -490,6 +539,47 @@ def test_sinusoidal_modulation_kind_preserves_existing_samples(
     np.testing.assert_array_equal(
         actual.samples_v_per_m,
         expected.get_scalar_field(),
+    )
+
+
+def test_sinusoidal_modulation_delay_units_are_physically_equivalent():
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    fs_params = _base_case(
+        modulation_kind="sinusoidal",
+        modulation_depth=0.2,
+        modulation_delay=30.0,
+        modulation_delay_units="fs",
+        modulation_phase_rad=0.4,
+        modulation_mode="phase",
+    )
+    ps_params = {
+        **fs_params,
+        "modulation_delay": 0.03,
+        "modulation_delay_units": "ps",
+    }
+    grid = TimeGrid.from_bounds(
+        fs_params["t_start"], fs_params["t_end"], fs_params["dt"]
+    )
+
+    field_fs = _generated_sampled_field(
+        fs_params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+    field_ps = _generated_sampled_field(
+        ps_params,
+        time_grid=grid,
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+
+    np.testing.assert_allclose(
+        field_fs.samples_v_per_m,
+        field_ps.samples_v_per_m,
+        rtol=2e-15,
+        atol=0.0,
     )
 
 

@@ -78,6 +78,14 @@ external units -> validated domain object -> one conversion boundary
 
 No parameter may be converted more than once. Conversion functions must not
 mutate caller-owned arrays or model parameters.
+Intensity inputs are cycle-averaged. Their canonical conversion returns peak
+electric-field amplitude as `sqrt(2*I*mu_0*c)`.
+
+Strict propagation-unit validation checks only formal access to canonical units,
+compatible matrix/sample shapes, and a finite positive field-grid step. It does
+not classify values by a typical molecular range and does not catch failures as
+warnings or fall back to raw unit-ambiguous attributes. Numerical adequacy is
+reported only by an explicit convergence calculation.
 
 Frequency-bearing public inputs use a neutral quantity name and a required
 `*_units` field. `Frequency` converts a finite scalar exactly once to canonical
@@ -905,13 +913,25 @@ need only the two real components.
 Generated pulses require the serialization-safe `envelope_kind` and
 `modulation_kind` discriminators. Supported generated envelopes are `gaussian`,
 `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`; `duration` retains the
-unchanged width meaning of the selected legacy function. `t_center` is required.
+unchanged width meaning of the selected envelope function. `t_center` is required.
 Voigt and arbitrary callables are not guessed into the one-width schema and use
-external sampled-field injection instead. `modulation_kind` is `none` or
-`sinusoidal`; the latter requires amplitude, carrier frequency, and
-phase/amplitude type, while its additive phase retains the safe zero default.
-The removed `envelope_func` and mixed-case `Sinusoidal_modulation` keys raise
-migration errors.
+external sampled-field injection instead.
+
+`modulation_kind` is `none` or `sinusoidal`. Sinusoidal modulation requires
+a finite depth, a physical delay with an explicit time unit, and `phase` or
+`amplitude` mode; its additive phase defaults safely to zero. With FFT
+frequencies `f` and `f0` in cycles/fs, its argument is
+`2*pi*delay_fs*(f-f0)+phase`. Phase mode applies
+`exp(-i*depth*sin(argument))`; amplitude mode applies
+`1+depth*sin(argument)` and requires `0 <= depth <= 1`. Zero depth is an
+exact identity. No clip, absolute-value repair, or implicit normalization is
+allowed.
+
+Physical dispersion uses
+`GDD*delta_omega**2/2 + TOD*delta_omega**3/6`, where
+`delta_omega=2*pi*(f-f0)`, with the existing `exp(-i*phase)` convention.
+The removed `envelope_func`, mixed-case `Sinusoidal_modulation`, and four
+legacy `*_sin_mod` keys raise migration errors.
 
 Generated pulses are evaluated by the characterized legacy generator and then
 copied exactly into the typed field. Tests require bitwise-equal populations for

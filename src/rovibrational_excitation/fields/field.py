@@ -306,20 +306,20 @@ class ElectricField:
     def apply_sinusoidal_mod(
         self,
         center_freq: float,
-        amplitude: float,
-        carrier_freq: float,
+        modulation_depth: float,
+        delay_fs: float,
         phase_rad: float = 0.0,
-        type_mod: str = "phase",
+        mode: str = "phase",
     ):
         """正弦波変調を適用"""
         self.Efield = apply_sinusoidal_mod(
             self.tlist,
             self.Efield,
             center_freq,
-            amplitude,
-            carrier_freq,
+            modulation_depth,
+            delay_fs,
             phase_rad,
-            type_mod,
+            mode,
         )
         if self._scalar_field is not None:
             scalar_2d = self._scalar_field.reshape(-1, 1)
@@ -327,10 +327,10 @@ class ElectricField:
                 self.tlist,
                 scalar_2d,
                 center_freq,
-                amplitude,
-                carrier_freq,
+                modulation_depth,
+                delay_fs,
                 phase_rad,
-                type_mod,
+                mode,
             ).reshape(-1)
 
     def apply_binned_mod(

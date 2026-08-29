@@ -8,7 +8,6 @@ unit conversion with automatic parameter detection and processing.
 from typing import Any
 
 from .converters import converter
-from .validators import validator
 
 
 class ParameterProcessor:
@@ -22,7 +21,6 @@ class ParameterProcessor:
     def __init__(self):
         """Initialize parameter processor."""
         self.converter = converter
-        self.validator = validator
 
         # Neutral frequency quantities are converted by typed model/field schemas.
         self.frequency_params: list[str] = []
@@ -40,9 +38,7 @@ class ParameterProcessor:
             "coherence_relaxation_time_ps",
         ]
 
-    def auto_convert_parameters(
-        self, params: dict[str, Any], validate: bool = False, strict: bool = True
-    ) -> dict[str, Any]:
+    def auto_convert_parameters(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Automatically convert parameters with unit specifications to standard units.
 
@@ -53,8 +49,6 @@ class ParameterProcessor:
         ----------
         params : Dict[str, Any]
             Parameter dictionary potentially containing unit specifications
-        validate : bool, optional
-            Whether to validate converted values, default False
 
         Returns
         -------
@@ -62,7 +56,6 @@ class ParameterProcessor:
             Parameter dictionary with values converted to standard units
         """
         converted_params = params.copy()
-        warnings = []
 
         # Process frequency parameters
         for param in self.frequency_params:
@@ -79,17 +72,8 @@ class ParameterProcessor:
                         f"✓ Converted {param}: {original_value} {unit} → {converted_value:.6g} rad/fs"
                     )
 
-                    if validate:
-                        valid, val_warnings = self.validator.validate_frequency(
-                            converted_value, "rad/fs", "molecular"
-                        )
-                        warnings.extend(val_warnings)
-
                 except ValueError as e:
-                    if strict:
-                        raise ValueError(f"Failed to convert {param}: {e}") from e
-                    print(f"⚠ Warning: {e}")
-                    warnings.append(str(e))
+                    raise ValueError(f"Failed to convert {param}: {e}") from e
 
         # Process dipole moment parameters
         for param in self.dipole_params:
@@ -106,17 +90,8 @@ class ParameterProcessor:
                         f"✓ Converted {param}: {original_value} {unit} → {converted_value:.6g} C·m"
                     )
 
-                    if validate:
-                        valid, val_warnings = self.validator.validate_dipole_moment(
-                            converted_value, "C*m", "molecular"
-                        )
-                        warnings.extend(val_warnings)
-
                 except ValueError as e:
-                    if strict:
-                        raise ValueError(f"Failed to convert {param}: {e}") from e
-                    print(f"⚠ Warning: {e}")
-                    warnings.append(str(e))
+                    raise ValueError(f"Failed to convert {param}: {e}") from e
 
         # Process electric field parameters
         for param in self.field_params:
@@ -133,17 +108,8 @@ class ParameterProcessor:
                         f"✓ Converted {param}: {original_value} {unit} → {converted_value:.6g} V/m"
                     )
 
-                    if validate:
-                        valid, val_warnings = self.validator.validate_electric_field(
-                            converted_value, "V/m", "moderate"
-                        )
-                        warnings.extend(val_warnings)
-
                 except ValueError as e:
-                    if strict:
-                        raise ValueError(f"Failed to convert {param}: {e}") from e
-                    print(f"⚠ Warning: {e}")
-                    warnings.append(str(e))
+                    raise ValueError(f"Failed to convert {param}: {e}") from e
 
         # Process energy parameters
         for param in self.energy_params:
@@ -160,17 +126,8 @@ class ParameterProcessor:
                         f"✓ Converted {param}: {original_value} {unit} → {converted_value:.6g} J"
                     )
 
-                    if validate:
-                        valid, val_warnings = self.validator.validate_energy(
-                            converted_value, "J", "molecular"
-                        )
-                        warnings.extend(val_warnings)
-
                 except ValueError as e:
-                    if strict:
-                        raise ValueError(f"Failed to convert {param}: {e}") from e
-                    print(f"⚠ Warning: {e}")
-                    warnings.append(str(e))
+                    raise ValueError(f"Failed to convert {param}: {e}") from e
 
         # Process time parameters
         for param in self.time_params:
@@ -198,22 +155,8 @@ class ParameterProcessor:
                             f"✓ Converted {param}: {original_value} {unit} → {converted_value:.6g} fs"
                         )
 
-                    if validate:
-                        target_unit = "ps" if "ps" in param else "fs"
-                        valid, val_warnings = self.validator.validate_time(
-                            converted_params[param], target_unit, "fast"
-                        )
-                        warnings.extend(val_warnings)
-
                 except ValueError as e:
-                    if strict:
-                        raise ValueError(f"Failed to convert {param}: {e}") from e
-                    print(f"⚠ Warning: {e}")
-                    warnings.append(str(e))
-
-        # Store warnings for access
-        if warnings:
-            converted_params["_conversion_warnings"] = warnings
+                    raise ValueError(f"Failed to convert {param}: {e}") from e
 
         return converted_params
 

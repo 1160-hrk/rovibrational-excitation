@@ -409,7 +409,7 @@ def test_propagation_error_cases():
         def __init__(self):
             pass
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError, match="get_mu_x_SI"):
         SchrodingerPropagator()._propagate_array(H0, ef, BadDipole(), psi0)
 
 

@@ -1739,6 +1739,90 @@ formatting, strict mypy for 17 configured modules, all 100 discovered-module
 imports, sdist/wheel build, and Twine checks pass. The local optimizer source,
 time grid, endpoint ownership, and indices are unchanged.
 
+### D-043: Spectral modifiers and unit validation use physical explicit semantics
+
+Status: Accepted on 2026-08-29.
+
+Scope: spectral modulation, dispersion, intensity conversion, and strict unit
+validation.
+
+Sinusoidal spectral modulation uses ordinary FFT frequency `f` and center
+`f0` in cycles/fs. Its time-like input is a physical delay `tau`, supplied
+as a finite scalar with an explicit time unit and converted once to fs. The
+argument is
+
+~~~text
+theta(f) = 2*pi*tau*(f - f0) + phi0
+~~~
+
+Phase modulation multiplies the spectrum by
+`exp(-i*A*sin(theta))`. Amplitude modulation multiplies it by
+`1 + m*sin(theta)` and requires `0 <= m <= 1`. Zero depth is an exact
+identity and bypasses the FFT. Clipping, absolute-value repair, and the legacy
+offset `A*sin(theta) + A` are forbidden. The old
+`amplitude_sin_mod`, `carrier_freq_sin_mod`, `phase_rad_sin_mod`, and
+`type_mod_sin_mod` configuration keys raise a migration error.
+
+GDD and TOD are physical spectral-phase derivatives. With
+`delta_omega = 2*pi*(f - f0)`, the applied phase is
+
+~~~text
+Phi(delta_omega) =
+    (GDD/2) * delta_omega**2 + (TOD/6) * delta_omega**3
+~~~
+
+and the existing Fourier sign convention applies `exp(-i*Phi)`.
+
+Intensity inputs are cycle-averaged intensities. Conversion returns peak
+electric-field amplitude through
+`E_peak = sqrt(2*I*mu_0*c)`; aliases share this same convention.
+
+Propagation-unit validation is structural and strict. It requires formal
+canonical accessors for Hamiltonian J, dipole C*m, time fs, and field V/m and
+checks compatible shapes and a finite positive field-grid step. It contains no
+typical-value ranges, invented 1000 fs scale, one-fifth time-step recommendation,
+interaction threshold, raw-attribute fallback, warning-only exception
+downgrade, clipping, or repair. General parameter conversion has no
+`strict=False` or heuristic `validate=True` path; a failed known conversion
+raises.
+
+Verification anchors:
+`tests/test_electric_field.py`,
+`tests/unit/test_unit_conversions.py`,
+`tests/contracts/test_simulation_contracts.py`, and
+`tests/contracts/test_unit_boundary_characterization.py`.
+The complete CPU suite passes 924 tests with 10 optional-GPU skips and measured
+branch coverage is 72%.
+
+Implementation commit: pending.
+
+### D-044: Supported examples are executable; historical examples are archival
+
+Status: Accepted on 2026-08-29.
+
+Scope: `examples/`, `benchmarks/`, `scripts/`, launcher behavior, and CI.
+
+The supported example set is the three top-level typed examples listed in
+`examples/README.md`. They use the current public simulation boundary, finish
+in seconds, write no result files, and run in CI through
+`scripts/smoke_examples.py`. The launcher scans only top-level
+`example_*.py` files and never descends into helpers or archives.
+
+Former v0.2 examples, dedicated optimization helpers, parameter modules, and
+notebooks are historical migration material under
+`examples/archives/v0_2_scripts/`. Legacy local-optimizer scripts with
+undefined experiment-specific constants and the external C++ RK4 example were
+archived without guessing values or changing their calculation logic.
+`examples/archives/` is excluded from Ruff and smoke execution.
+
+Active examples, benchmarks, and scripts must pass Ruff lint/format and Python
+compilation. CI enforces those gates and executes all supported examples.
+Moving an archived example back into the supported set requires migration to
+the current public API, a bounded quick execution, and inclusion in the smoke
+runner.
+
+Implementation commit: pending.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -1894,49 +1978,21 @@ for the staged implementation.
 
 ### O-011: Remaining field-modulation and legacy unit semantics
 
-Status: Open; implementation replacement is blocked on these physical choices.
+Status: Resolved by D-043 on 2026-08-29.
 
-P4.3-c fixes observed legacy behavior with characterization tests but does not
-endorse it as the target contract. The following meanings require an explicit
-user decision:
-
-1. `carrier_freq_sin_mod` multiplies FFT `f - f0` in cycles/fs, so it is
-   time-like despite its name and docstring. Decide whether it is today's exact
-   spectral slope, a physical delay requiring `2*pi`, or a modulation period.
-2. The factor is `amplitude * sin(...) + amplitude`; phase mode clips it to
-   plus or minus `1e4`, while amplitude mode takes its absolute value. Zero
-   amplitude therefore removes the field. Confirm or replace these semantics.
-3. Dispersion uses `gdd * delta_omega**2 + tod * delta_omega**3`. Decide
-   whether these are physical derivatives requiring Taylor factors `1/2` and
-   `1/6`, or already-scaled polynomial coefficients.
-4. Intensity conversion uses `E_peak = sqrt(2 * I * mu_0 * c)`. Confirm that
-   input is cycle-averaged intensity and field amplitude is the peak value.
-
-D-021 already requires invalid units and internal strict-validation failures to
-raise. Raw unit-ambiguous attributes and invented diagnostic scales cannot be
-successful fallbacks. Decide only whether legacy range heuristics remain in a
-separate opt-in diagnostic report or are deleted.
-
-Verification: `tests/contracts/test_unit_boundary_characterization.py`.
+The spectral slope is a physical delay with an explicit time unit; sinusoidal
+phase/amplitude multipliers, GDD/TOD Taylor factors, cycle-averaged intensity,
+peak field amplitude, and strict structural unit validation are fixed by
+D-043. Legacy range heuristics and warning/raw-attribute fallbacks are deleted.
 
 ### O-012: Active and archival example quality scope
 
-Status: Open; repository-wide cleanup scope requires a support decision.
+Status: Resolved by D-044 on 2026-08-29.
 
-A P4.3-c audit found 597 Ruff findings, 526 automatically fixable findings, and
-33 files that Ruff would reformat when README code blocks, benchmarks, scripts,
-notebooks, and archived examples are included. `src/` and `tests/` remain clean.
-
-Choose one support contract:
-
-1. Recommended: active examples, benchmarks, and scripts must run and pass
-   lint/format; `examples/archives/` is explicitly historical and excluded from
-   active gates until it is removed or moved outside the supported tree.
-2. Treat every tracked example, including archives, as supported and clean all
-   597 findings before release.
-
-This decision changes repository maintenance scope only. Any example API or
-numerical update remains a separately tested behavior change.
+Active examples, benchmarks, and scripts are linted and formatted; all three
+supported examples execute in CI. Historical files live under
+`examples/archives/` and are explicitly excluded until independently migrated
+to the current public API.
 
 ## Decision template
 

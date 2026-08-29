@@ -224,7 +224,11 @@ class UnitConverter:
     def convert_electric_field(
         self, value: Union[float, np.ndarray], from_unit: str, to_unit: str = "V/m"
     ) -> Union[float, np.ndarray]:
-        """Convert electric field between units."""
+        """Convert electric field between units.
+
+        Intensity inputs are cycle-averaged intensities. They are converted to
+        peak electric-field amplitude with ``E_peak = sqrt(2*I*mu0*c)``.
+        """
         # Check if it's an intensity unit
         if from_unit in self._intensity_to_field:
             # Convert intensity to field in V/m

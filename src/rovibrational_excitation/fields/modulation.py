@@ -17,49 +17,60 @@ def apply_sinusoidal_mod(
     tlist: np.ndarray,
     Efield: np.ndarray,
     center_freq: float,
-    amplitude: float,
-    carrier_freq: float,
+    modulation_depth: float,
+    delay_fs: float,
     phase_rad: float = 0.0,
-    type_mod: str = "phase",
+    mode: str = "phase",
 ) -> np.ndarray:
-    """
-    正弦波変調を適用
+    """Apply sinusoidal spectral phase or amplitude modulation.
 
-    Parameters
-    ----------
-    tlist : np.ndarray
-        時間配列
-    Efield : np.ndarray
-        電場配列
-    center_freq : float
-        中心周波数（rad/fs）
-    amplitude : float
-        変調振幅
-    carrier_freq : float
-        キャリア周波数（rad/fs）
-    phase_rad : float, optional
-        位相（rad）, デフォルト: 0.0
-    type_mod : str, optional
-        "phase" または "amplitude", デフォルト: "phase"
-
-    Returns
-    -------
-    np.ndarray
-        変調後の電場
+    ``center_freq`` is in cycles/fs and ``delay_fs`` is a physical delay. The
+    argument is ``2*pi*delay_fs*(f-center_freq) + phase_rad``. A zero
+    modulation depth is the identity for both modes.
     """
-    freq = rfftfreq(len(tlist), d=(tlist[1] - tlist[0]))
-    E_freq = rfft(Efield, axis=0)
-    factor = (
-        amplitude * np.sin(carrier_freq * (freq - center_freq) + phase_rad) + amplitude
-    )
-    factor = factor.reshape((len(freq), 1))
-    if type_mod == "phase":
-        factor = np.clip(factor, -1e4, 1e4)  # 位相のクリッピング
-        E_freq_mod = E_freq * np.exp(-1j * factor)
-    else:
-        factor = np.abs(factor)
-        E_freq_mod = E_freq * factor
-    return np.asarray(irfft(E_freq_mod, axis=0, n=len(tlist)))
+    if mode not in {"phase", "amplitude"}:
+        raise ValueError("mode must be 'phase' or 'amplitude'")
+    raw_scalars = (center_freq, modulation_depth, delay_fs, phase_rad)
+    if any(isinstance(value, (bool, np.bool_)) for value in raw_scalars):
+        raise TypeError("modulation parameters must be finite scalars")
+    try:
+        center_freq, modulation_depth, delay_fs, phase_rad = map(float, raw_scalars)
+    except (TypeError, ValueError) as exc:
+        raise TypeError("modulation parameters must be finite scalars") from exc
+    if not np.all(np.isfinite((center_freq, modulation_depth, delay_fs, phase_rad))):
+        raise ValueError("modulation parameters must be finite")
+    if mode == "amplitude" and not 0.0 <= modulation_depth <= 1.0:
+        raise ValueError("amplitude modulation_depth must satisfy 0 <= depth <= 1")
+
+    times = np.asarray(tlist, dtype=np.float64)
+    field = np.asarray(Efield)
+    if times.ndim != 1 or times.size < 2:
+        raise ValueError("tlist must be one-dimensional with at least 2 points")
+    if field.ndim not in {1, 2}:
+        raise ValueError("Efield must be a 1D or 2D array")
+    if field.shape[0] != times.size:
+        raise ValueError("Efield first dimension must match tlist length")
+    dt = times[1] - times[0]
+    if (
+        not np.isfinite(dt)
+        or dt <= 0
+        or not np.allclose(np.diff(times), dt, rtol=1e-10, atol=1e-12)
+    ):
+        raise ValueError("tlist must be finite, increasing, and uniformly spaced")
+    if np.iscomplexobj(field) or not np.all(np.isfinite(field)):
+        raise ValueError("Efield must be finite and real")
+    if modulation_depth == 0.0:
+        return np.array(field, copy=True)
+
+    freq = rfftfreq(times.size, d=dt)
+    spectrum = rfft(field, axis=0)
+    argument = 2.0 * pi * delay_fs * (freq - center_freq) + phase_rad
+    modulation = modulation_depth * np.sin(argument)
+    if field.ndim == 2:
+        modulation = modulation.reshape((freq.size, 1))
+
+    multiplier = np.exp(-1j * modulation) if mode == "phase" else 1.0 + modulation
+    return np.asarray(irfft(spectrum * multiplier, axis=0, n=times.size))
 
 
 def apply_dispersion(
@@ -105,8 +116,8 @@ def apply_dispersion(
 
         # 位相計算
         phase = (
-            gdd * (2 * pi * (freq - center_freq)) ** 2
-            + tod * (2 * pi * (freq - center_freq)) ** 3
+            0.5 * gdd * (2 * pi * (freq - center_freq)) ** 2
+            + (tod / 6.0) * (2 * pi * (freq - center_freq)) ** 3
         )
 
         # Efieldの次元に合わせて位相を調整
@@ -127,8 +138,8 @@ def apply_dispersion(
 
         # 位相計算
         phase = (
-            gdd * (2 * pi * (freq - center_freq)) ** 2
-            + tod * (2 * pi * (freq - center_freq)) ** 3
+            0.5 * gdd * (2 * pi * (freq - center_freq)) ** 2
+            + (tod / 6.0) * (2 * pi * (freq - center_freq)) ** 3
         )
 
         # Efieldの次元に合わせて位相を調整

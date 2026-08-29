@@ -296,7 +296,6 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             raise ValueError("_return_context requires return_time_psi=True")
         coupling_mode = kwargs.get("coupling_mode", "cartesian")
         coupling_axis = kwargs.get("coupling_axis")
-        verbose = kwargs.get("verbose", False)
         algorithm = kwargs.get("algorithm", self.algorithm)
         sparse = kwargs.get("sparse", self.sparse)
         split_interaction = kwargs.get("split_interaction", self.split_interaction)
@@ -336,13 +335,7 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
             )
 
         if self.validate_units:
-            warnings = validator.validate_propagation_units(
-                hamiltonian, dipole_matrix, efield
-            )
-            if warnings:
-                self._last_validation_warnings = warnings
-                if verbose:
-                    self.print_validation_warnings()
+            validator.validate_propagation_units(hamiltonian, dipole_matrix, efield)
 
         # Prepare arguments
         H0, mu_x, mu_y, Ex, Ey, pol, E_scalar, dt_calc, scales_calc = (

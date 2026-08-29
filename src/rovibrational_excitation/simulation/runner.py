@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from ..core.time import TimeGrid
-from ..core.units import Frequency
+from ..core.units import Frequency, TimeQuantity
 from ..fields import SampledField
 from ..io import (
     CheckpointManager,
@@ -158,12 +158,16 @@ def _generated_sampled_field(
         carrier_freq_units="rad/fs",
     )
     if params["modulation_kind"] == "sinusoidal":
+        modulation_delay = TimeQuantity(
+            params["modulation_delay"],
+            params["modulation_delay_units"],
+        )
         generated.apply_sinusoidal_mod(
             center_freq=carrier_frequency.cycles_per_fs,
-            amplitude=params["amplitude_sin_mod"],
-            carrier_freq=params["carrier_freq_sin_mod"],
-            phase_rad=params.get("phase_rad_sin_mod", 0.0),
-            type_mod=params["type_mod_sin_mod"],
+            modulation_depth=params["modulation_depth"],
+            delay_fs=modulation_delay.femtoseconds,
+            phase_rad=params.get("modulation_phase_rad", 0.0),
+            mode=params["modulation_mode"],
         )
 
     if expects_cartesian:

@@ -72,13 +72,7 @@ class MixedStatePropagator(PropagatorBase[DensityState | IncoherentEnsemble]):
         dipole_matrix = problem.model.dipole
 
         if self.validate_units:
-            warnings = validator.validate_propagation_units(
-                hamiltonian, dipole_matrix, efield
-            )
-            if warnings:
-                self._last_validation_warnings = warnings
-                if verbose:
-                    self.print_validation_warnings()
+            validator.validate_propagation_units(hamiltonian, dipole_matrix, efield)
 
         if isinstance(initial_state, DensityState):
             from .liouville import LiouvillePropagator

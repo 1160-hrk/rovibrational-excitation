@@ -8,7 +8,8 @@ to ensure physical quantities are correctly converted to standard units.
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.units import Frequency
+from rovibrational_excitation.core.units import Frequency, TimeQuantity
+from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.core.units.parameter_processor import parameter_processor
 
@@ -423,10 +424,22 @@ class TestPhysicalConsistency:
         # Convert intensity to field and back
         intensity = 1e12  # W/cm²
         field = convert_electric_field(intensity, "W/cm^2")
+        expected_peak = np.sqrt(2.0 * intensity * 1.0e4 * CONSTANTS.MU0 * CONSTANTS.C)
+        assert field == pytest.approx(expected_peak)
 
         # Field should be positive and reasonable
         assert field > 0
         assert 1e6 < field < 1e12  # Reasonable range for strong fields
+
+
+def test_time_quantity_converts_once_to_femtoseconds():
+    quantity = TimeQuantity(0.013, "ps")
+    assert quantity.femtoseconds == pytest.approx(13.0)
+
+
+def test_time_quantity_rejects_unknown_unit():
+    with pytest.raises(ValueError, match="invalid time unit"):
+        TimeQuantity(1.0, "fortnight")
 
 
 if __name__ == "__main__":

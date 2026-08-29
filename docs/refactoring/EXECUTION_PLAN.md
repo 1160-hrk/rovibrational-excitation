@@ -899,25 +899,31 @@ double-conversion path. The complete CPU suite passes 834 tests with 10
 optional-GPU skips; branch coverage is 70%, and Ruff, formatting, strict mypy
 for 17 modules, all 100 module imports, build, and Twine gates pass.
 
-P4.3-c characterized the remaining legacy conversion boundary on 2026-08-28
-without replacing it. Every advertised direct frequency, energy, dipole,
-electric-field, time, GDD, and TOD unit now has a round-trip test through its
-canonical unit. Frequency-to-Hamiltonian conversion is tested across every
-advertised frequency/energy unit pair, and all intensity aliases are fixed to
-the current peak-electric-field convention. The tests also preserve, as
-explicit debt rather than accepted target behavior, the general parameter
-processor's stale unit labels and non-strict warning path, and the propagation
-validator's context fallback, 1000 fs diagnostic fallback, broad exception
-downgrade, and raw dipole-attribute fallback. No converter, validator,
-generated-field formula, numerical kernel, optimizer grid, or result changed.
-O-011 records the physical meanings that must be resolved before replacing
-these legacy boundaries.
-The complete CPU suite passes 904 tests with 10 optional-GPU skips, and measured
-branch coverage is 71%.
+P4.3-c characterized the remaining legacy conversion boundary on 2026-08-28.
+Every advertised direct frequency, energy, dipole, electric-field, time, GDD,
+and TOD unit has a canonical round-trip test. Frequency-to-Hamiltonian
+conversion covers every advertised frequency/energy pair, and intensity aliases
+share one peak-field convention. The complete CPU suite passed 904 tests with
+10 optional-GPU skips and measured branch coverage was 71%.
+
+P4.3-d implements D-043 on 2026-08-29. Spectral modulation now takes an
+explicit physical delay, uses the accepted phase/amplitude multipliers, and
+makes zero depth an exact identity. GDD/TOD use physical Taylor factors, and
+intensity is documented and tested as cycle-averaged input to peak field.
+The warning/range validator, fixed 1000 fs estimate, raw dipole fallback,
+exception downgrade, and non-strict parameter conversion path are deleted.
+Strict propagation validation checks canonical accessors and structural
+consistency without guessing a physical scale. Local optimizer source, grids,
+indices, and numerical kernels remain unchanged. The complete CPU suite passes
+924 tests with 10 optional-GPU skips; measured branch coverage is 72%, and
+active Ruff, formatting, mypy, smoke-example, build, and Twine gates pass.
 
 Remaining Phase 4 work:
 
-- resolve O-011 and finish explicit quantity types;
+- replace or delete the remaining general `ParameterProcessor` value mutation
+  so converted values cannot retain stale input-unit labels;
+- extend typed quantity boundaries to remaining public time, field, dipole, GDD,
+  and TOD inputs;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 
@@ -1140,8 +1146,10 @@ Tasks:
 - decide O-008 and reduce root exports;
 - rewrite README and Japanese README against the actual API;
 - execute documentation code snippets;
-- update every supported example;
-- move unsupported examples to an explicit archive or delete them;
+- update every supported example — completed early under D-044 with three
+  typed smoke examples;
+- move unsupported examples to an explicit archive or delete them — completed
+  early under D-044 for the former v0.2 script set;
 - update version to 0.3.0;
 - produce migration notes stating that backward compatibility is intentionally
   broken;

@@ -196,62 +196,36 @@ def test_parameter_processor_currently_converts_values_but_keeps_input_labels():
     assert params["mu0_Cm"] == 0.3
 
 
-def test_parameter_processor_strict_false_keeps_invalid_value_and_reports_warning():
-    params = {"amplitude": 5.0, "amplitude_units": "not-a-unit"}
-
-    converted = ParameterProcessor().auto_convert_parameters(params, strict=False)
-
-    assert converted["amplitude"] == 5.0
-    assert converted["amplitude_units"] == "not-a-unit"
-    assert converted["_conversion_warnings"] == [
-        "Unknown electric field/intensity unit: not-a-unit"
-    ]
-
-
-def test_parameter_processor_strict_true_rejects_invalid_known_parameter_unit():
+def test_parameter_processor_rejects_invalid_known_parameter_unit():
     params = {"amplitude": 5.0, "amplitude_units": "not-a-unit"}
 
     with pytest.raises(ValueError, match="Failed to convert amplitude"):
-        ParameterProcessor().auto_convert_parameters(params, strict=True)
+        ParameterProcessor().auto_convert_parameters(params)
 
 
-def test_validator_unknown_context_currently_falls_back_and_warns():
-    valid, warnings = UnitValidator().validate_frequency(
-        1.0,
-        "rad/fs",
-        context="misspelled-context",
-    )
+def test_parameter_processor_has_no_non_strict_fallback_option():
+    params = {"amplitude": 5.0, "amplitude_units": "not-a-unit"}
 
-    assert valid is False
-    assert warnings == ["Unknown context 'misspelled-context', using 'molecular'"]
+    with pytest.raises(TypeError, match="unexpected keyword argument 'strict'"):
+        ParameterProcessor().auto_convert_parameters(params, strict=False)
 
 
-def test_propagation_validator_currently_uses_1000_fs_for_unknown_h0_units():
+def test_propagation_validator_rejects_noncanonical_expected_units():
     class Hamiltonian:
         def get_matrix(self, units):
             assert units == "J"
             return np.diag([0.0, 1.0e-20])
 
-    class RawDipole:
-        mu_x = np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]])
-        mu_y = np.zeros((2, 2))
-
-    class Field:
-        dt = 300.0
-        Efield = np.full((3, 2), 1.0e8)
-
-    warnings = UnitValidator().validate_propagation_units(
-        Hamiltonian(),
-        RawDipole(),
-        Field(),
-        expected_H0_units="not-a-unit",
-    )
-
-    assert "Unknown energy unit: not-a-unit" in warnings
-    assert any("1000.000 fs" in warning for warning in warnings)
+    with pytest.raises(ValueError, match="expected_H0_units must be 'J'"):
+        UnitValidator().validate_propagation_units(
+            Hamiltonian(),
+            object(),
+            object(),
+            expected_H0_units="not-a-unit",
+        )
 
 
-def test_propagation_validator_currently_downgrades_internal_error_to_warning():
+def test_propagation_validator_propagates_internal_accessor_error():
     class Hamiltonian:
         def get_matrix(self, _units):
             return np.diag([0.0, 1.0e-20])
@@ -260,21 +234,67 @@ def test_propagation_validator_currently_downgrades_internal_error_to_warning():
         def get_mu_x_SI(self):
             raise RuntimeError("broken SI accessor")
 
-    warnings = UnitValidator().validate_propagation_units(
-        Hamiltonian(),
-        BrokenDipole(),
-        object(),
-    )
+    with pytest.raises(RuntimeError, match="broken SI accessor"):
+        UnitValidator().validate_propagation_units(
+            Hamiltonian(),
+            BrokenDipole(),
+            object(),
+        )
 
-    assert warnings == ["単位検証中にエラーが発生しました: broken SI accessor"]
 
-
-def test_propagation_validator_currently_falls_back_to_raw_dipole_attribute():
+def test_propagation_validator_rejects_raw_dipole_attribute_fallback():
     raw = np.array([[0.0, 2.0], [2.0, 0.0]])
 
     class RawDipole:
         mu_x = raw
 
-    extracted = UnitValidator()._get_dipole_component(RawDipole(), "x")
+    class Hamiltonian:
+        def get_matrix(self, _units):
+            return np.diag([0.0, 1.0e-20])
 
-    assert extracted is raw
+    with pytest.raises(TypeError, match="get_mu_x_SI"):
+        UnitValidator().validate_propagation_units(Hamiltonian(), RawDipole(), object())
+
+
+def test_propagation_validator_accepts_canonical_structural_boundary():
+    class Hamiltonian:
+        def get_matrix(self, units):
+            assert units == "J"
+            return np.diag([0.0, 1.0e-20])
+
+    class Dipole:
+        def get_mu_x_SI(self):
+            return np.zeros((2, 2))
+
+        def get_mu_y_SI(self):
+            return np.zeros((2, 2))
+
+    class Field:
+        dt = 0.5
+
+        def get_time_SI(self):
+            return np.array([0.0, 0.5, 1.0])
+
+        def get_Efield_SI(self):
+            return np.zeros((3, 2))
+
+    assert (
+        UnitValidator().validate_propagation_units(Hamiltonian(), Dipole(), Field())
+        is None
+    )
+
+
+def test_propagation_validator_rejects_shape_mismatch():
+    class Hamiltonian:
+        def get_matrix(self, _units):
+            return np.zeros((3, 3))
+
+    class Dipole:
+        def get_mu_x_SI(self):
+            return np.zeros((2, 2))
+
+        def get_mu_y_SI(self):
+            return np.zeros((3, 3))
+
+    with pytest.raises(ValueError, match=r"mu_x.*must have shape"):
+        UnitValidator().validate_propagation_units(Hamiltonian(), Dipole(), object())

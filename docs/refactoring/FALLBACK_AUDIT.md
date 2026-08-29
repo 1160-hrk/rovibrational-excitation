@@ -35,14 +35,11 @@ recorded.
 
 ## P1: fix before API stabilization
 
-1. core/units/validators.py catches broad exceptions and converts validation
-   failures to warnings. It also falls back from SI accessors to raw mu_axis
-   attributes, which can bypass unit conversion. Split diagnostic warnings
-   from strict propagation validation; strict mode must raise. P4.3-c now
-   characterizes the context fallback, fixed 1000 fs fallback, broad exception
-   downgrade, and raw-attribute fallback in
-   `test_unit_boundary_characterization.py`; this makes the future removal
-   reviewable but does not accept those paths as target behavior.
+1. Resolved by D-043. `core/units/validators.py` now requires canonical
+   accessors and structural consistency and raises the original failure. The
+   context ranges, fixed 1000 fs estimate, broad exception downgrade, and raw
+   `mu_axis` fallback are deleted. Numerical adequacy remains an explicit
+   convergence report.
 2. optimization/local.py silently disables eigenvalue lookahead on any
    exception and silently ignores target-weight indexing errors. These alter
    the optimization objective or update rule. Replace them with validated

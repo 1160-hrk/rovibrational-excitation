@@ -8,6 +8,7 @@ import pytest
 from rovibrational_excitation.fields import (
     ElectricField,
     apply_dispersion,
+    apply_sinusoidal_mod,
     gaussian,
     gaussian_fwhm,
     lorentzian,
@@ -186,10 +187,10 @@ def test_electricfield_modulation():
     # 正弦波変調を適用
     ef.apply_sinusoidal_mod(
         center_freq=1.0,
-        amplitude=0.1,
-        carrier_freq=0.5,
+        modulation_depth=0.1,
+        delay_fs=0.5,
         phase_rad=0.0,
-        type_mod="phase",
+        mode="phase",
     )
 
     # 変調後もパルスが存在
@@ -266,6 +267,72 @@ def test_apply_dispersion():
 
     # 分散により波形が変化
     assert not np.allclose(Efield, Efield_disp)
+
+
+def test_dispersion_uses_physical_gdd_and_tod_taylor_coefficients():
+    tlist = np.linspace(-6.0, 6.0, 121)
+    field = np.exp(-((tlist / 2.0) ** 2)).astype(np.complex128)
+    center_freq, gdd_fs2, tod_fs3 = 0.11, 4.0, 9.0
+
+    freq = np.fft.fftfreq(tlist.size, d=tlist[1] - tlist[0])
+    delta_omega = 2.0 * np.pi * (freq - center_freq)
+    phase = 0.5 * gdd_fs2 * delta_omega**2 + tod_fs3 * delta_omega**3 / 6.0
+    expected = np.fft.ifft(np.fft.fft(field) * np.exp(-1j * phase))
+    actual = apply_dispersion(tlist, field, center_freq, gdd_fs2, tod_fs3)
+
+    np.testing.assert_allclose(actual, expected, rtol=2e-15, atol=2e-15)
+
+
+def test_sinusoidal_phase_modulation_matches_physical_delay_formula():
+    tlist = np.linspace(-20.0, 20.0, 401)
+    field = np.exp(-((tlist / 4.0) ** 2))
+    center_freq = 0.12
+    depth = 0.7
+    delay_fs = 13.0
+    phase_rad = 0.3
+
+    freq = np.fft.rfftfreq(tlist.size, d=tlist[1] - tlist[0])
+    argument = 2.0 * np.pi * delay_fs * (freq - center_freq) + phase_rad
+    multiplier = np.exp(-1j * depth * np.sin(argument))
+    expected = np.fft.irfft(np.fft.rfft(field) * multiplier, n=tlist.size)
+    actual = apply_sinusoidal_mod(
+        tlist,
+        field,
+        center_freq,
+        depth,
+        delay_fs,
+        phase_rad,
+        "phase",
+    )
+
+    np.testing.assert_allclose(actual, expected, rtol=2e-15, atol=2e-15)
+
+
+@pytest.mark.parametrize("mode", ["phase", "amplitude"])
+def test_zero_sinusoidal_modulation_depth_is_identity(mode):
+    tlist = np.linspace(-4.0, 4.0, 81)
+    field = np.column_stack((np.cos(tlist), np.sin(tlist)))
+    actual = apply_sinusoidal_mod(tlist, field, 0.1, 0.0, 10.0, 0.2, mode)
+    np.testing.assert_array_equal(actual, field)
+
+
+def test_sinusoidal_amplitude_modulation_matches_depth_formula():
+    tlist = np.linspace(-8.0, 8.0, 161)
+    field = np.exp(-((tlist / 3.0) ** 2))
+    freq = np.fft.rfftfreq(tlist.size, d=tlist[1] - tlist[0])
+    argument = 2.0 * np.pi * 7.0 * (freq - 0.08) + 0.4
+    multiplier = 1.0 + 0.6 * np.sin(argument)
+    expected = np.fft.irfft(np.fft.rfft(field) * multiplier, n=tlist.size)
+    actual = apply_sinusoidal_mod(tlist, field, 0.08, 0.6, 7.0, 0.4, "amplitude")
+    np.testing.assert_allclose(actual, expected, rtol=2e-15, atol=2e-15)
+
+
+@pytest.mark.parametrize("depth", [-0.01, 1.01])
+def test_sinusoidal_amplitude_modulation_rejects_depth_outside_unit_interval(depth):
+    tlist = np.linspace(-1.0, 1.0, 21)
+    field = np.ones(tlist.size)
+    with pytest.raises(ValueError, match="0 <= depth <= 1"):
+        apply_sinusoidal_mod(tlist, field, 0.1, depth, 1.0, mode="amplitude")
 
 
 def test_electricfield_spectrum_analysis():

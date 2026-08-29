@@ -9,6 +9,7 @@ from .constants import PhysicalConstants
 from .converters import UnitConverter, converter
 from .frequency import Frequency
 from .parameter_processor import ParameterProcessor, parameter_processor
+from .time_quantity import TimeQuantity
 from .validators import UnitValidator, validator
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "UnitConverter",
     "Frequency",
     "converter",
+    "TimeQuantity",
     "UnitValidator",
     "validator",
     "ParameterProcessor",

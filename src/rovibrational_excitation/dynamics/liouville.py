@@ -160,7 +160,6 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         return_time_rho = kwargs.get("return_time_rho", False)
         return_context = kwargs.get("_return_context", False)
         sample_stride = kwargs.get("sample_stride", 1)
-        verbose = kwargs.get("verbose", False)
         nondimensional = kwargs.get("nondimensional", False)
         if return_context and not return_time_rho:
             raise ValueError("_return_context requires return_time_rho=True")
@@ -211,13 +210,7 @@ class LiouvillePropagator(PropagatorBase[DensityState]):
         rho0 = initial_state
 
         if self.validate_units:
-            warnings = validator.validate_propagation_units(
-                hamiltonian, dipole_matrix, efield
-            )
-            if warnings:
-                self._last_validation_warnings = warnings
-                if verbose:
-                    self.print_validation_warnings()
+            validator.validate_propagation_units(hamiltonian, dipole_matrix, efield)
 
         # Prepare arguments using the same utility as SchrodingerPropagator
         H0, mu_x, mu_y, Ex, Ey, _, _, dt_calc, scales_calc = prepare_propagation_args(

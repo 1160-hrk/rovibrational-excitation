@@ -9,7 +9,7 @@ import numpy as np
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.core.units import Frequency
+from rovibrational_excitation.core.units import Frequency, TimeQuantity
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
@@ -72,6 +72,10 @@ _REMOVED_SIMULATION_KEYS = {
     "dense",
     "sparse",
     "use_M",
+    "amplitude_sin_mod",
+    "carrier_freq_sin_mod",
+    "phase_rad_sin_mod",
+    "type_mod_sin_mod",
 }
 _GENERATED_REQUIRED = {
     "t_start",
@@ -92,11 +96,11 @@ _GENERATED_FIELD_KEYS = {
     "phase_rad",
     "gdd",
     "tod",
-    "Sinusoidal_modulation",
-    "amplitude_sin_mod",
-    "carrier_freq_sin_mod",
-    "phase_rad_sin_mod",
-    "type_mod_sin_mod",
+    "modulation_depth",
+    "modulation_delay",
+    "modulation_delay_units",
+    "modulation_phase_rad",
+    "modulation_mode",
     "amplitude_units",
     "duration_units",
     "t_center_units",
@@ -116,10 +120,10 @@ _FINITE_PARAMETERS = {
     "tod",
     "mu0_Cm",
     "energy_gap",
-    "amplitude_sin_mod",
-    "carrier_freq_sin_mod",
+    "modulation_depth",
+    "modulation_delay",
     "phase_rad",
-    "phase_rad_sin_mod",
+    "modulation_phase_rad",
 }
 
 _KNOWN_SIMULATION_KEYS = frozenset(
@@ -149,17 +153,19 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
 
 _SINUSOIDAL_MODULATION_KEYS = frozenset(
     {
-        "amplitude_sin_mod",
-        "carrier_freq_sin_mod",
-        "phase_rad_sin_mod",
-        "type_mod_sin_mod",
+        "modulation_depth",
+        "modulation_delay",
+        "modulation_delay_units",
+        "modulation_phase_rad",
+        "modulation_mode",
     }
 )
 _SINUSOIDAL_MODULATION_REQUIRED = frozenset(
     {
-        "amplitude_sin_mod",
-        "carrier_freq_sin_mod",
-        "type_mod_sin_mod",
+        "modulation_depth",
+        "modulation_delay",
+        "modulation_delay_units",
+        "modulation_mode",
     }
 )
 
@@ -205,13 +211,27 @@ def _validate_generated_field_schema(params: Mapping[str, Any]) -> None:
         raise SimulationConfigurationError(
             "Missing required sinusoidal modulation parameters: " + ", ".join(missing)
         )
-    modulation_type = params["type_mod_sin_mod"]
+    try:
+        TimeQuantity(
+            params["modulation_delay"],
+            params["modulation_delay_units"],
+        )
+    except (TypeError, ValueError) as exc:
+        raise SimulationConfigurationError(
+            "invalid modulation_delay/modulation_delay_units: " + str(exc)
+        ) from exc
+
+    modulation_type = params["modulation_mode"]
     if not isinstance(modulation_type, str) or modulation_type not in {
         "phase",
         "amplitude",
     }:
         raise SimulationConfigurationError(
-            "type_mod_sin_mod must be one of: phase, amplitude"
+            "modulation_mode must be one of: phase, amplitude"
+        )
+    if modulation_type == "amplitude" and not 0.0 <= params["modulation_depth"] <= 1.0:
+        raise SimulationConfigurationError(
+            "amplitude modulation_depth must satisfy 0 <= depth <= 1"
         )
 
 
@@ -232,6 +252,18 @@ def validate_simulation_case(
             f"{names} were removed; use envelope_kind, modulation_kind, and "
             "carrier_frequency with carrier_frequency_units, or inject an "
             "external sampled field for a custom waveform"
+        )
+    legacy_modulation = {
+        "amplitude_sin_mod",
+        "carrier_freq_sin_mod",
+        "phase_rad_sin_mod",
+        "type_mod_sin_mod",
+    } & params.keys()
+    if legacy_modulation:
+        names = ", ".join(sorted(legacy_modulation))
+        raise SimulationConfigurationError(
+            f"{names} were removed; use modulation_depth, modulation_delay with "
+            "modulation_delay_units, modulation_phase_rad, and modulation_mode"
         )
     removed_options = {
         key for key in ("auto_timestep", "target_accuracy") if key in params
