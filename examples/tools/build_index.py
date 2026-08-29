@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import os
 import sys
-from pathlib import Path
 import textwrap
-
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
@@ -12,7 +11,7 @@ README_PATH = EXAMPLES_DIR / "README.md"
 
 def extract_docstring(path: Path) -> str:
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             src = f.read()
         # very light-weight extraction
         if '"""' in src:
@@ -31,14 +30,14 @@ def extract_docstring(path: Path) -> str:
 def extract_tags(path: Path) -> list[str]:
     tags: list[str] = []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for _ in range(40):
                 line = f.readline()
                 if not line:
                     break
                 if "tags:" in line.lower():
                     _, rhs = line.split(":", 1)
-                    tags = [t.strip().lower() for t in rhs.split(',') if t.strip()]
+                    tags = [t.strip().lower() for t in rhs.split(",") if t.strip()]
                     break
     except Exception:
         pass
@@ -188,5 +187,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
