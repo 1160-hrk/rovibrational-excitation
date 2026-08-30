@@ -30,7 +30,8 @@ def _linmol_params(**overrides):
         "rotational_constant_units": "rad/fs",
         "vibration_rotation_coupling": 0.0,
         "vibration_rotation_coupling_units": "rad/fs",
-        "mu0_Cm": 1.0e-30,
+        "dipole_scale": 1.0e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
     }
@@ -51,7 +52,8 @@ def test_linmol_representation_is_required_and_use_m_is_removed():
                 "basis_type": "twolevel",
                 "energy_gap": 0.2,
                 "energy_gap_units": "rad/fs",
-                "mu0_Cm": 3.0e-30,
+                "dipole_scale": 3.0e-30,
+                "dipole_scale_units": "C*m",
                 "initial_states": [0],
                 "use_M": False,
             }
@@ -96,7 +98,8 @@ def test_model_validation_requires_explicit_model_and_initial_state():
                 "basis_type": "twolevel",
                 "energy_gap": 0.2,
                 "energy_gap_units": "rad/fs",
-                "mu0_Cm": 3.0e-30,
+                "dipole_scale": 3.0e-30,
+                "dipole_scale_units": "C*m",
             }
         )
 
@@ -115,7 +118,8 @@ def test_model_frequency_schema_requires_neutral_names_and_units():
         "rotational_constant_units": "THz",
         "vibration_rotation_coupling": 0.0,
         "vibration_rotation_coupling_units": "THz",
-        "mu0_Cm": 1.0e-30,
+        "dipole_scale": 1.0e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
     }
@@ -193,7 +197,8 @@ def test_twolevel_schema_rejects_unknown_energy_gap_unit_before_construction():
                 "basis_type": "twolevel",
                 "energy_gap": 0.2,
                 "energy_gap_units": "cycles_per_second",
-                "mu0_Cm": 3.0e-30,
+                "dipole_scale": 3.0e-30,
+                "dipole_scale_units": "C*m",
                 "initial_states": [0],
             }
         )
@@ -214,7 +219,8 @@ def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
         "basis_type": "TwoLevel",
         "energy_gap": 0.2,
         "energy_gap_units": "rad/fs",
-        "mu0_Cm": 3.0e-30,
+        "dipole_scale": 3.0e-30,
+        "dipole_scale_units": "C*m",
         "initial_states": [0],
     }
 
@@ -231,7 +237,7 @@ def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
         ({"basis_type": "unknown"}, "Unknown basis_type: unknown"),
         (
             {"basis_type": "twolevel"},
-            "Missing required model parameters: energy_gap, energy_gap_units, mu0_Cm",
+            "Missing required model parameters: dipole_scale, dipole_scale_units, energy_gap, energy_gap_units",
         ),
         (
             {
@@ -241,7 +247,8 @@ def test_model_validation_is_owned_by_models_and_normalizes_the_existing_key():
                 "vibrational_frequency_units": "rad/fs",
                 "anharmonic_shift": 0.0,
                 "anharmonic_shift_units": "rad/fs",
-                "mu0_Cm": 3.0e-30,
+                "dipole_scale": 3.0e-30,
+                "dipole_scale_units": "C*m",
                 "potential_type": "quadratic",
                 "initial_states": [0],
             },
@@ -257,8 +264,21 @@ def test_model_validation_preserves_existing_failures(params, message):
 def test_simulation_boundary_translates_model_error_without_changing_message():
     with pytest.raises(
         SimulationConfigurationError,
-        match="Missing required model parameters: energy_gap, energy_gap_units, mu0_Cm",
+        match="Missing required model parameters: dipole_scale, dipole_scale_units, energy_gap, energy_gap_units",
     ) as captured:
         validate_simulation_case({"basis_type": "twolevel"})
 
     assert isinstance(captured.value.__cause__, ModelConfigurationError)
+
+
+def test_model_validation_rejects_removed_unit_encoded_dipole_key():
+    params = {
+        "basis_type": "twolevel",
+        "energy_gap": 0.2,
+        "energy_gap_units": "rad/fs",
+        "mu0_Cm": 3.0e-30,
+        "initial_states": [0],
+    }
+
+    with pytest.raises(ModelConfigurationError, match="mu0_Cm was removed"):
+        validate_model_parameters(params)

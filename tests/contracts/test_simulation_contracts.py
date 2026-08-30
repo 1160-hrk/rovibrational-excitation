@@ -36,7 +36,8 @@ def _base_case(**overrides):
         "basis_type": "twolevel",
         "energy_gap": 0.2,
         "energy_gap_units": "rad/fs",
-        "mu0_Cm": 3.0e-30,
+        "dipole_scale": 3.0e-30,
+        "dipole_scale_units": "C*m",
         "t_start": -0.5,
         "t_end": 0.5,
         "dt": 0.05,
@@ -124,9 +125,9 @@ def test_final_state_only_uses_final_physical_time_and_state_axis(tmp_path):
 
 def test_validation_rejects_missing_physical_parameter_before_building():
     params = _base_case()
-    del params["mu0_Cm"]
+    del params["dipole_scale"]
 
-    with pytest.raises(SimulationConfigurationError, match="mu0_Cm"):
+    with pytest.raises(SimulationConfigurationError, match="dipole_scale"):
         validate_simulation_case(params)
 
 
@@ -623,7 +624,8 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
         "rotational_constant_units": "rad/fs",
         "vibration_rotation_coupling": 0.0,
         "vibration_rotation_coupling_units": "rad/fs",
-        "mu0_Cm": 3.0e-30,
+        "dipole_scale": 3.0e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
         "t_start": -0.5,
@@ -725,7 +727,8 @@ def _helicity_runner_case(**overrides):
         "rotational_constant_units": "rad/fs",
         "vibration_rotation_coupling": 0.0,
         "vibration_rotation_coupling_units": "rad/fs",
-        "mu0_Cm": 3.0e-30,
+        "dipole_scale": 3.0e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
         "t_start": -0.5,

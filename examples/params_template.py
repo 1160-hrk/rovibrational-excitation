@@ -47,7 +47,8 @@ J_max = 5  # 最大回転量子数 - 通常 2～20
 # 例: CO2分子のν3振動モード
 vibrational_frequency = 2349.0  # 0→1振動遷移の波数
 vibrational_frequency_units = "cm^-1"
-mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
+dipole_scale = 0.3  # 双極子スケール
+dipole_scale_units = "D"  # 単位は必須。C*m, ea0 も選択可
 potential_type = "harmonic"  # "morse"では非ゼロの非調和性が必須
 
 # 回転定数

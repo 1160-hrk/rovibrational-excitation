@@ -35,7 +35,8 @@ def _build_model(params):
                 "basis_type": "twolevel",
                 "energy_gap": 1.0,
                 "energy_gap_units": "rad/fs",
-                "mu0_Cm": 1e-30,
+                "dipole_scale": 1e-30,
+                "dipole_scale_units": "C*m",
                 "initial_states": [0],
             },
             2,
@@ -49,7 +50,8 @@ def _build_model(params):
                 "anharmonic_shift": 0.01,
                 "anharmonic_shift_units": "rad/fs",
                 "potential_type": "harmonic",
-                "mu0_Cm": 1e-30,
+                "dipole_scale": 1e-30,
+                "dipole_scale_units": "C*m",
                 "initial_states": [0],
             },
             3,
@@ -70,7 +72,8 @@ def _build_model(params):
                 "vibration_rotation_coupling": 0.0,
                 "vibration_rotation_coupling_units": "rad/fs",
                 "potential_type": "harmonic",
-                "mu0_Cm": 1e-30,
+                "dipole_scale": 1e-30,
+                "dipole_scale_units": "C*m",
                 "initial_states": [0],
             },
             8,
@@ -111,7 +114,8 @@ def _linmol_frequency_params(unit):
         "rotational_constant_units": unit,
         "vibration_rotation_coupling": _frequency_value(0.0001, unit),
         "vibration_rotation_coupling_units": unit,
-        "mu0_Cm": 1.0e-30,
+        "dipole_scale": 1.0e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "morse",
         "initial_states": [0],
     }
@@ -148,7 +152,8 @@ def test_vibladder_frequency_units_preserve_model_arrays(unit):
             "vibrational_frequency_units": selected_unit,
             "anharmonic_shift": _frequency_value(0.01, selected_unit),
             "anharmonic_shift_units": selected_unit,
-            "mu0_Cm": 1.0e-30,
+            "dipole_scale": 1.0e-30,
+            "dipole_scale_units": "C*m",
             "potential_type": "morse",
             "initial_states": [0],
         }
@@ -176,7 +181,8 @@ def test_twolevel_runner_processing_does_not_double_convert_energy_gap():
         "basis_type": "twolevel",
         "energy_gap": 1.5,
         "energy_gap_units": "eV",
-        "mu0_Cm": 1.0e-30,
+        "dipole_scale": 1.0e-30,
+        "dipole_scale_units": "C*m",
         "initial_states": [0],
     }
 
@@ -210,7 +216,8 @@ def test_twolevel_energy_gap_units_preserve_model_arrays(energy_gap, energy_gap_
             "basis_type": "twolevel",
             "energy_gap": 0.2,
             "energy_gap_units": "rad/fs",
-            "mu0_Cm": 1.0e-30,
+            "dipole_scale": 1.0e-30,
+            "dipole_scale_units": "C*m",
             "initial_states": [0],
         }
     )
@@ -219,7 +226,8 @@ def test_twolevel_energy_gap_units_preserve_model_arrays(energy_gap, energy_gap_
             "basis_type": "twolevel",
             "energy_gap": energy_gap,
             "energy_gap_units": energy_gap_units,
-            "mu0_Cm": 1.0e-30,
+            "dipole_scale": 1.0e-30,
+            "dipole_scale_units": "C*m",
             "initial_states": [0],
         }
     )
@@ -248,7 +256,8 @@ def test_linmol_resolved_representation_projects_to_existing_explicit_m_basis():
         "vibration_rotation_coupling_units": "rad/fs",
         "rotational_constant": 0.001,
         "rotational_constant_units": "rad/fs",
-        "mu0_Cm": 1e-30,
+        "dipole_scale": 1e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
     }
@@ -274,7 +283,8 @@ def test_linmol_resolved_representation_requires_explicit_axes():
         "vibration_rotation_coupling_units": "rad/fs",
         "rotational_constant": 0.0,
         "rotational_constant_units": "rad/fs",
-        "mu0_Cm": 1e-30,
+        "dipole_scale": 1e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
     }
@@ -297,7 +307,8 @@ def test_m_incoherent_average_cannot_build_one_pure_state_model():
         "vibration_rotation_coupling_units": "rad/fs",
         "rotational_constant": 0.0,
         "rotational_constant_units": "rad/fs",
-        "mu0_Cm": 1e-30,
+        "dipole_scale": 1e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "initial_states": [0],
     }
@@ -321,7 +332,8 @@ def test_linmol_rejects_morse_with_zero_anharmonicity():
         "vibration_rotation_coupling_units": "rad/fs",
         "rotational_constant": 0.001,
         "rotational_constant_units": "rad/fs",
-        "mu0_Cm": 1e-30,
+        "dipole_scale": 1e-30,
+        "dipole_scale_units": "C*m",
         "potential_type": "morse",
         "initial_states": [0],
     }
@@ -335,7 +347,8 @@ def test_build_model_constructs_coherent_superposition():
         {
             "basis_type": "twolevel",
             "energy_gap": 1.0,
-            "mu0_Cm": 1e-30,
+            "dipole_scale": 1e-30,
+            "dipole_scale_units": "C*m",
             "initial_states": [0, 1],
             "energy_gap_units": "rad/fs",
         }
@@ -349,12 +362,26 @@ def test_build_model_constructs_coherent_superposition():
     ("params", "missing"),
     [
         (
-            {"basis_type": "twolevel", "energy_gap_units": "rad/fs", "mu0_Cm": 1e-30},
+            {
+                "basis_type": "twolevel",
+                "energy_gap_units": "rad/fs",
+                "dipole_scale": 1e-30,
+                "dipole_scale_units": "C*m",
+            },
             "energy_gap",
         ),
         (
+            {
+                "basis_type": "twolevel",
+                "energy_gap": 1.0,
+                "energy_gap_units": "rad/fs",
+                "dipole_scale": 1e-30,
+            },
+            "dipole_scale_units",
+        ),
+        (
             {"basis_type": "twolevel", "energy_gap": 1.0, "energy_gap_units": "rad/fs"},
-            "mu0_Cm",
+            "dipole_scale",
         ),
         (
             {
@@ -366,7 +393,7 @@ def test_build_model_constructs_coherent_superposition():
                 "anharmonic_shift_units": "rad/fs",
                 "potential_type": "harmonic",
             },
-            "mu0_Cm",
+            "dipole_scale",
         ),
     ],
 )
@@ -398,7 +425,8 @@ def test_build_model_preserves_missing_parameter_error():
             "basis_type": "twolevel",
             "energy_gap": 1.0,
             "energy_gap_units": "rad/fs",
-            "mu0_Cm": 1e-30,
+            "dipole_scale": 1e-30,
+            "dipole_scale_units": "C*m",
         },
         {
             "basis_type": "vibladder",
@@ -407,7 +435,8 @@ def test_build_model_preserves_missing_parameter_error():
             "vibrational_frequency_units": "rad/fs",
             "anharmonic_shift": 0.0,
             "anharmonic_shift_units": "rad/fs",
-            "mu0_Cm": 1e-30,
+            "dipole_scale": 1e-30,
+            "dipole_scale_units": "C*m",
             "potential_type": "harmonic",
         },
         {
@@ -423,7 +452,8 @@ def test_build_model_preserves_missing_parameter_error():
             "rotational_constant_units": "rad/fs",
             "vibration_rotation_coupling": 0.0,
             "vibration_rotation_coupling_units": "rad/fs",
-            "mu0_Cm": 1e-30,
+            "dipole_scale": 1e-30,
+            "dipole_scale_units": "C*m",
             "potential_type": "harmonic",
         },
     ],
@@ -481,7 +511,8 @@ def test_runner_uses_interval_duration_and_one_backend(
     params = {
         "basis_type": "twolevel",
         "energy_gap": 1.0,
-        "mu0_Cm": 1e-30,
+        "dipole_scale": 1e-30,
+        "dipole_scale_units": "C*m",
         "energy_gap_units": "rad/fs",
         "t_start": 2.0,
         "t_end": 6.0,
@@ -538,3 +569,29 @@ def test_runner_uses_interval_duration_and_one_backend(
     assert propagate_kwargs["verbose"] is True
     assert problem.coupling_mode == "scalar"
     assert problem.coupling_kwargs == {"coupling_axis": "x"}
+
+
+def test_model_dipole_scale_units_preserve_dipole_array():
+    canonical = {
+        "basis_type": "twolevel",
+        "energy_gap": 0.2,
+        "energy_gap_units": "rad/fs",
+        "dipole_scale": 1.0e-30,
+        "dipole_scale_units": "C*m",
+        "initial_states": [0],
+    }
+    in_debye = {
+        **canonical,
+        "dipole_scale": 1.0e-30 / 3.33564e-30,
+        "dipole_scale_units": "D",
+    }
+
+    reference = _build_model(canonical)
+    actual = _build_model(in_debye)
+
+    np.testing.assert_allclose(
+        actual.dipole.mu("z"),
+        reference.dipole.mu("z"),
+        rtol=2.0e-15,
+        atol=0.0,
+    )

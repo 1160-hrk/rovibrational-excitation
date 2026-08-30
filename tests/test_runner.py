@@ -59,7 +59,8 @@ def test_run_all_file_output():
         "J_max": 0,
         "vibrational_frequency": 1.0,
         "vibrational_frequency_units": "rad/fs",
-        "mu0_Cm": 1.0,
+        "dipole_scale": 1.0,
+        "dipole_scale_units": "C*m",
         "initial_states": [0],
         "outdir": None,  # runner側で自動生成
         "save": True,

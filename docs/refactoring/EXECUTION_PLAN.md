@@ -919,6 +919,13 @@ indices, and numerical kernels remain unchanged. The complete CPU suite passes
 active Ruff, formatting, mypy, smoke-example, build, and Twine gates pass.
 
 Remaining Phase 4 work:
+P4.3-e implements D-045 in bounded units beginning 2026-08-30. Unit 1 adds
+frozen scalar boundaries for dipole, peak field, GDD, and TOD without changing
+converter formulas. Unit 2 replaces the unit-encoded normal-simulation
+`mu0_Cm` input with required `dipole_scale/dipole_scale_units`, converts
+once to C*m in the frozen model schema, and keeps low-level model and dipole
+formulas unchanged.
+
 
 - replace or delete the remaining general `ParameterProcessor` value mutation
   so converted values cannot retain stale input-unit labels;

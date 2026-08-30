@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from rovibrational_excitation.core.units import Frequency
+from rovibrational_excitation.core.units import DipoleMoment, Frequency
 from rovibrational_excitation.core.units.converters import converter
 
 
@@ -71,6 +71,15 @@ def _frequency(params: Mapping[str, Any], key: str) -> Frequency:
         raise ValueError(f"invalid {key}/{unit_key}: {exc}") from exc
 
 
+def _dipole_scale(params: Mapping[str, Any]) -> float:
+    try:
+        return DipoleMoment(
+            params["dipole_scale"], params["dipole_scale_units"]
+        ).coulomb_meters
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid dipole_scale/dipole_scale_units: {exc}") from exc
+
+
 @dataclass(frozen=True, slots=True)
 class LinMolParameters:
     """Validated linear-molecule parameters before basis allocation."""
@@ -96,7 +105,7 @@ class LinMolParameters:
                 params,
                 "vibration_rotation_coupling",
             ),
-            dipole_c_m=_finite_scalar(params, "mu0_Cm"),
+            dipole_c_m=_dipole_scale(params),
             potential_type=_potential_type(params),
         )
         if (
@@ -125,7 +134,7 @@ class VibLadderParameters:
             v_max=_nonnegative_integer(params, "V_max"),
             vibrational_frequency=_frequency(params, "vibrational_frequency"),
             anharmonic_shift=_frequency(params, "anharmonic_shift"),
-            dipole_c_m=_finite_scalar(params, "mu0_Cm"),
+            dipole_c_m=_dipole_scale(params),
             potential_type=_potential_type(params),
         )
         if (
@@ -151,5 +160,5 @@ class TwoLevelParameters:
         return cls(
             energy_gap=_finite_scalar(params, "energy_gap"),
             energy_gap_units=_energy_or_frequency_unit(params, "energy_gap_units"),
-            dipole_c_m=_finite_scalar(params, "mu0_Cm"),
+            dipole_c_m=_dipole_scale(params),
         )

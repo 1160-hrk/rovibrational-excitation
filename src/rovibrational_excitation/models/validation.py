@@ -69,17 +69,24 @@ _MODEL_REQUIRED = {
         "rotational_constant_units",
         "vibration_rotation_coupling",
         "vibration_rotation_coupling_units",
-        "mu0_Cm",
+        "dipole_scale",
+        "dipole_scale_units",
         "potential_type",
     },
-    "twolevel": {"energy_gap", "energy_gap_units", "mu0_Cm"},
+    "twolevel": {
+        "energy_gap",
+        "energy_gap_units",
+        "dipole_scale",
+        "dipole_scale_units",
+    },
     "vibladder": {
         "V_max",
         "vibrational_frequency",
         "vibrational_frequency_units",
         "anharmonic_shift",
         "anharmonic_shift_units",
-        "mu0_Cm",
+        "dipole_scale",
+        "dipole_scale_units",
         "potential_type",
     },
 }
@@ -109,6 +116,12 @@ _REMOVED_FREQUENCY_KEYS.update(
     {
         f"{key}_units": replacement
         for key, replacement in tuple(_REMOVED_FREQUENCY_KEYS.items())
+    }
+)
+_REMOVED_FREQUENCY_KEYS.update(
+    {
+        "mu0_Cm": "dipole_scale with dipole_scale_units",
+        "mu0_Cm_units": "dipole_scale with dipole_scale_units",
     }
 )
 

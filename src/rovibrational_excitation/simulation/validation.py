@@ -56,7 +56,6 @@ _WORKFLOW_KEYS = {
     "split_interaction",
 }
 _PREPROCESSED_UNIT_KEYS = {
-    "mu0_Cm_units",
     "amplitude_units",
     "duration_units",
     "t_center_units",
@@ -118,7 +117,7 @@ _FINITE_PARAMETERS = {
     "t_center",
     "gdd",
     "tod",
-    "mu0_Cm",
+    "dipole_scale",
     "energy_gap",
     "modulation_depth",
     "modulation_delay",

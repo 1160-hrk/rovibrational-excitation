@@ -55,7 +55,8 @@ def _runner_params(**overrides):
         "rotational_constant_units": "rad/fs",
         "vibration_rotation_coupling": VIBRATION_ROTATION_RAD_PER_FS,
         "vibration_rotation_coupling_units": "rad/fs",
-        "mu0_Cm": DIPOLE_C_M,
+        "dipole_scale": DIPOLE_C_M,
+        "dipole_scale_units": "C*m",
         "potential_type": "harmonic",
         "t_start": 0.0,
         "t_end": 0.04,
@@ -369,7 +370,9 @@ def _full_m_reference(params):
         input_units="rad/fs",
         output_units="J",
     )
-    dipole = LinMolDipoleMatrix(basis, mu0=params["mu0_Cm"], potential_type="harmonic")
+    dipole = LinMolDipoleMatrix(
+        basis, mu0=model_params.dipole_c_m, potential_type="harmonic"
+    )
     propagator = SchrodingerPropagator(validate_units=False)
     full_population = None
     initial_j = 1
