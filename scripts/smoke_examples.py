@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -21,9 +20,9 @@ def main() -> int:
     launcher = [sys.executable, str(ROOT / "examples" / "launcher.py")]
 
     cases = [
-        ["--run", "examples/example_rovibrational_excitation.py", "--quick"],
-        ["--run", "examples/example_twolevel_2d_map.py", "--quick"],
-        ["--run", "examples/example_nondimensional_propagation.py", "--quick"],
+        ["--run", "example_typed_twolevel", "--quick"],
+        ["--run", "example_typed_spectral_modulation", "--quick"],
+        ["--run", "example_external_scalar_field", "--quick"],
     ]
 
     failed = 0
@@ -41,5 +40,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

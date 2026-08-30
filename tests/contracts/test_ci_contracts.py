@@ -50,8 +50,10 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     jobs = _workflow()["jobs"]
 
     quality = _commands(jobs["quality"])
-    assert "ruff check --no-fix src tests" in quality
-    assert "ruff format --check src tests" in quality
+    active_scope = "src tests examples benchmarks scripts"
+    assert f"ruff check --no-fix {active_scope}" in quality
+    assert f"ruff format --check {active_scope}" in quality
+    assert "python scripts/smoke_examples.py" in quality
     assert "mypy" in quality
 
     coverage = _commands(jobs["coverage"])
@@ -103,3 +105,18 @@ def test_build_metadata_uses_supported_spdx_license_and_runtime_dependencies():
     assert pyproject["project"]["license"] == "MIT"
     assert "sympy" in pyproject["project"]["dependencies"]
     assert "ruff==0.16.2" in pyproject["project"]["optional-dependencies"]["dev"]
+
+
+def test_supported_examples_are_explicit_and_archives_are_excluded():
+    examples = ROOT / "examples"
+    supported = {path.name for path in examples.glob("example_*.py")}
+
+    assert supported == {
+        "example_external_scalar_field.py",
+        "example_typed_spectral_modulation.py",
+        "example_typed_twolevel.py",
+    }
+    assert (examples / "archives" / "v0_2_scripts").is_dir()
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert pyproject["tool"]["ruff"]["extend-exclude"] == ["examples/archives"]

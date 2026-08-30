@@ -45,9 +45,9 @@ Every current root `__all__` name therefore has an explicit disposition. Only
 ### 2.2 Other accessible root attributes
 
 `__version__` and `__author__` are accessible but absent from `__all__`.
-`core`, `dipole`, `fields`, `simulation`, `spectroscopy`, and `visualization` are
-bound by eager root imports. All except `simulation` have explicit package
-initializers; `simulation` currently remains a namespace package.
+`core`, `dipole`, `fields`, `simulation`, `spectroscopy`, and
+`visualization` are bound by eager root imports. Each now has an explicit
+package initializer. `simulation` narrowly exports `run_simulation_case`.
 
 | Current name | Target | Disposition |
 |---|---|---|
@@ -169,10 +169,11 @@ callers import functions from their owning modules.
 | `optimization` | `run_local_optimization`, `run_krotov_optimization`, `run_grape_optimization`, `ALGO_REGISTRY` | typed functions under `optimization`; private registry | run functions target public in subpackage; registry internal |
 | `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical/polarization/pathway policy accepted by D-023 through D-025, scientific references pending O-007 |
 
-`cli` and `simulation` have no explicit `__all__`. `cli/__init__.py` exists but
-is empty, and `simulation` remains a namespace package. `visualization` has an
-explicit empty initializer so root import does not load Matplotlib. `io` has a
-narrow facade but is not re-exported from the package root.
+`cli/__init__.py` remains empty. `simulation.__all__` contains only
+`run_simulation_case`; specialized validation, convergence, sweep, and runner
+helpers remain module-level internals. `visualization` has an explicit empty
+initializer so root import does not load Matplotlib. `io` has a narrow facade
+but is not re-exported from the package root.
 
 ## 4. Console scripts and configuration routes
 
@@ -272,43 +273,27 @@ shared capability registry before construction. Public solver `propagate()` meth
 
 ## 6. Examples and documentation callers
 
-The active inventory contains 31 Python files under `examples/` after excluding
-`results/`, `figures/`, `archives/`, notebook checkpoints, and `__pycache__`.
-They divide into:
+D-044 reduces the supported set to three top-level typed examples:
 
-| Group | Files | Disposition |
-|---|---:|---|
-| direct simulation/spectroscopy examples named `example_*.py` | 21 | reduce to small tested canonical examples; migrate useful scientific cases |
-| parameter/config examples named `params_*.py` | 4 | replace with versioned declarative config examples |
-| launcher and reusable optimization system | 2 | migrate only if still needed after typed CLI |
-| runner/tool/utility helpers | 4 | package reusable code or delete duplicate example infrastructure |
+| Example | Boundary exercised |
+|---|---|
+| `example_typed_twolevel.py` | generated scalar field and dense NumPy RK4 |
+| `example_typed_spectral_modulation.py` | unit-aware delay, phase modulation, GDD, and TOD |
+| `example_external_scalar_field.py` | exact `TimeGrid` and external `ScalarField` injection |
 
-A static import execution check loaded 121 package import statements without
-executing example bodies. One active file is definitely broken:
+`examples/launcher.py` lists only those files. All three import the public
+`simulation.run_simulation_case` facade, write no output, check population
+normalization, and execute through `scripts/smoke_examples.py` in CI.
 
-- `examples/example_default_units.py` imports nonexistent
-  `get_default_units`, `set_default_units`, `auto_convert_parameters`,
-  `apply_default_units`, and `print_unit_help` from `core.units`.
+Former v0.2 examples, parameter modules, notebook, and dedicated helpers are
+under `examples/archives/v0_2_scripts/`. Additional optimizer scripts with
+undefined experiment-specific constants and the external C++ RK4 example are
+also archived without inferred fixes. Archived files are historical migration
+evidence, are excluded from Ruff and execution, and are not public API callers.
 
-It should be deleted or rewritten around the final typed unit/config API in
-Phase 4/8; recreating these legacy globals is forbidden.
-
-Other stale references are documentation-level rather than active example
-imports:
-
-- root package docstring: five nonexistent spectroscopy APIs listed in
-  section 2.2;
-- root `README.md`: `rve.generate_H0_LinMol`,
-  `rovibrational_excitation.core.states.StateVector`, and
-  `rve.schrodinger_propagation`.
-
-Direct propagation examples still call the removed loose-argument/conditional-return API. They are known broken migration callers, are not production paths, and must be rewritten or deleted with executable smoke tests in Phase 8; compatibility shims must not be restored for them.
-
-Examples import deep implementation paths such as
-`dynamics.schrodinger`, `core.units.constants`, and
-`dipole.<model>`. Their current import success does not make those paths target
-public APIs. Phase 8 must run canonical examples as smoke tests against only
-the final supported surface.
+The stale root package docstring and root README APIs remain Phase 8
+documentation debt; archiving old examples does not recreate any compatibility
+shim.
 
 ## 7. P0.1 acceptance record
 

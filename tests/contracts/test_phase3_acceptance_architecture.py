@@ -8,6 +8,10 @@ from pathlib import Path
 from rovibrational_excitation.core.units.parameter_processor import (
     ParameterProcessor,
 )
+from rovibrational_excitation.simulation import run_simulation_case
+from rovibrational_excitation.simulation.runner import (
+    run_simulation_case as runner_entry,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src" / "rovibrational_excitation"
@@ -16,6 +20,10 @@ PACKAGE = ROOT / "src" / "rovibrational_excitation"
 def test_obsolete_simulation_placeholders_and_time_shim_are_removed():
     assert not (PACKAGE / "simulation" / "manager.py").exists()
     assert not (PACKAGE / "simulation" / "timegrid.py").exists()
+
+
+def test_simulation_package_exposes_one_normal_case_entry_point():
+    assert run_simulation_case is runner_entry
 
 
 def test_parameter_processor_does_not_construct_operators_or_fields():

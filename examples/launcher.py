@@ -5,20 +5,16 @@ import runpy
 import sys
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES_DIR = PROJECT_ROOT
+EXAMPLES_DIR = PROJECT_ROOT / "examples"
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 
 def iter_examples():
-    for py in (EXAMPLES_DIR).rglob("*.py"):
-        if "__pycache__" in py.parts:
-            continue
-        if py.name == "launcher.py":
-            continue
-        if "tools" in py.parts:
-            continue
-        yield py
+    """Yield only top-level runnable examples, never helpers or archives."""
+    yield from sorted(EXAMPLES_DIR.glob("example_*.py"))
 
 
 def list_examples(filter_expr: str | None = None):
@@ -36,9 +32,9 @@ def list_examples(filter_expr: str | None = None):
             elif key == "tag":
                 # naive: look for 'tags:' near the top
                 try:
-                    with open(p, "r", encoding="utf-8") as f:
+                    with open(p, encoding="utf-8") as f:
                         head = f.read(5120).lower()
-                    if f"tags:" not in head or val not in head:
+                    if "tags:" not in head or val not in head:
                         continue
                 except Exception:
                     continue
@@ -46,12 +42,13 @@ def list_examples(filter_expr: str | None = None):
                 if val not in text:
                     continue
         items.append(rel)
-    items.sort()
-    return items
+    return sorted(items)
 
 
 def run_example(name: str, quick: bool = False):
-    # resolve path
+    if name == "quickstart":
+        name = "example_typed_twolevel"
+
     target = None
     for p in iter_examples():
         rel = p.relative_to(PROJECT_ROOT).as_posix()
@@ -77,7 +74,9 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--list", action="store_true", help="List examples")
     group.add_argument("--run", type=str, help="Run an example by name or path")
-    parser.add_argument("--filter", type=str, default=None, help="Filter: name=<kw>|tag=<kw>")
+    parser.add_argument(
+        "--filter", type=str, default=None, help="Filter: name=<kw>|tag=<kw>"
+    )
     parser.add_argument("--quick", action="store_true", help="Run in quick mode")
     args = parser.parse_args()
 
@@ -100,5 +99,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-28
+Last verified: 2026-08-30
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-c (legacy unit-boundary characterization)
+Verified structural checkpoint: P4.3-d (strict physical unit boundary)
 Latest infrastructure checkpoint: `62e6bfd`
 
 ## Purpose
@@ -132,14 +132,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-c:
+Current local CPU baseline after P4.3-d:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-904 passed, 10 GPU tests skipped (914 collected)
+925 passed, 10 GPU tests skipped (935 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -186,10 +186,10 @@ Measured at `613ce93`:
 - Statement/branch coverage report: 47% total.
 - Ruff: 1,143 findings, of which 925 are automatically fixable.
 - Ruff formatter baseline: 63 files would be reformatted.
-- Current `src/` plus `tests/` validation: 0 format failures and 0 Ruff findings.
-- Repository-wide P4.3-c audit: 597 Ruff findings (526 fixable) and 33 files
-  would be reformatted, primarily outside `src/` and `tests/`; see O-012.
-- Current branch coverage: 71%; the initial mandatory CI floor is 47%.
+- Current active source, tests, examples, benchmarks, and scripts: 0 format
+  failures and 0 Ruff findings; historical `examples/archives/` is excluded by
+  D-044.
+- Current branch coverage: 72%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -210,14 +210,13 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Resolve O-011, then continue Phase 4 with remaining explicit quantity
-   boundaries. P4.3-c already characterizes every advertised direct converter
-   round trip and the legacy unit warning/fallback paths. Do not migrate
-   `carrier_freq_sin_mod`, sinusoidal modulation, GDD/TOD coefficients, or the
-   intensity convention until their physical meanings are explicitly
-   resolved.
-   Structural field-grid validation never resamples, and numerical
-   adequacy is a separate explicit convergence report.
+1. Continue Phase 4 by replacing or deleting the general
+   `ParameterProcessor` value mutation that can retain stale input-unit labels,
+   then extend typed quantity boundaries to remaining public time, field,
+   dipole, GDD, and TOD inputs. D-043 has resolved spectral modulation,
+   dispersion, intensity, and strict propagation validation. Structural
+   field-grid validation never resamples, and numerical adequacy remains a
+   separate explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two
@@ -226,5 +225,6 @@ The next work is:
 4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
 5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
 6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
-7. Resolve O-012 before a repository-wide lint cleanup; active examples and
-   archival examples must not acquire an implicit support status.
+7. Preserve the D-044 support boundary: active examples, benchmarks, and
+   scripts remain executable and linted; archived examples remain historical
+   until individually migrated and smoke-tested.

@@ -43,25 +43,26 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 904 passed, 10 skipped (914 collected) |
-| Measured branch coverage | 71% |
+| Pytest | 925 passed, 10 skipped (935 collected) |
+| Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
-| Ruff findings (`src/`, `tests/`) | 0 |
-| Files failing format (`src/`, `tests/`) | 0 |
-| Repository-wide Ruff findings | 597 (526 fixable) |
-| Repository-wide files requiring format | 33 |
+| Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
+| Files failing format (same active scope) | 0 |
+| Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 8-90% |
 | Spectroscopy coverage | 90% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-The pytest, coverage, and Ruff rows were last verified locally on 2026-08-28
-after P4.3-c characterized every advertised direct unit-converter round trip
-and the remaining legacy unit warning/fallback paths without changing source
-behavior. O-011 now isolates the field-modulation, dispersion-coefficient, and
-intensity-convention questions that require an explicit physical decision.
-O-012 records the separate active-versus-archival example support decision.
-The preceding D-041 unit 7 added explicit, report-only convergence assessment.
+These rows were last verified locally on 2026-08-30. P4.3-d implements D-043:
+spectral modulation uses a unit-aware physical
+delay and explicit phase/amplitude multipliers, GDD/TOD use physical Taylor
+coefficients, intensity is cycle-averaged input to peak field, and unit
+validation has no heuristic warning or raw-attribute fallback. D-044 reduces
+the supported example set to three typed smoke-tested scripts; former v0.2
+scripts are explicit archives. Active source, tests, examples, benchmarks, and
+scripts are Ruff-clean and format-clean. The preceding D-041 unit 7 added
+explicit, report-only convergence assessment.
 The caller supplies both grids, the named observable, and tolerance; maximum
 absolute difference is reported without changing either calculation. Unit 6
 made the final normal-simulation mapping strict. Unknown

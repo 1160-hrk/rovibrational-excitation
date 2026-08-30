@@ -1,0 +1,45 @@
+"""Two-level propagation with unit-aware spectral modulation.
+
+Tags: beginner, propagation, modulation, smoke
+"""
+
+import numpy as np
+
+from rovibrational_excitation.simulation import run_simulation_case
+
+PARAMS = {
+    "basis_type": "twolevel",
+    "energy_gap": 0.2,
+    "energy_gap_units": "rad/fs",
+    "mu0_Cm": 3.0e-30,
+    "t_start": -10.0,
+    "t_end": 10.0,
+    "dt": 0.1,
+    "duration": 4.0,
+    "t_center": 0.0,
+    "envelope_kind": "gaussian_fwhm",
+    "modulation_kind": "sinusoidal",
+    "modulation_depth": 0.3,
+    "modulation_delay": 0.01,
+    "modulation_delay_units": "ps",
+    "modulation_phase_rad": 0.2,
+    "modulation_mode": "phase",
+    "carrier_frequency": 0.05,
+    "carrier_frequency_units": "PHz",
+    "amplitude": 1.0e8,
+    "gdd": 2.0,
+    "tod": 3.0,
+    "initial_states": [0],
+    "backend": "numpy",
+    "storage": "dense",
+    "algorithm": "rk4",
+    "return_traj": True,
+    "sample_stride": 1,
+    "nondimensional": False,
+    "renorm": False,
+    "save": False,
+}
+
+population = run_simulation_case(PARAMS, field=None)
+np.testing.assert_allclose(population.sum(axis=1), 1.0, rtol=1e-9, atol=1e-11)
+print("final populations:", population[-1])
