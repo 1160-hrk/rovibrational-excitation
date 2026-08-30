@@ -8,7 +8,14 @@ to ensure physical quantities are correctly converted to standard units.
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.units import Frequency, TimeQuantity
+from rovibrational_excitation.core.units import (
+    DipoleMoment,
+    ElectricFieldAmplitude,
+    Frequency,
+    GroupDelayDispersion,
+    ThirdOrderDispersion,
+    TimeQuantity,
+)
 from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.core.units.parameter_processor import parameter_processor
@@ -440,6 +447,48 @@ def test_time_quantity_converts_once_to_femtoseconds():
 def test_time_quantity_rejects_unknown_unit():
     with pytest.raises(ValueError, match="invalid time unit"):
         TimeQuantity(1.0, "fortnight")
+
+
+def test_scalar_quantity_types_convert_once_to_canonical_units():
+    dipole = DipoleMoment(0.3, "D")
+    amplitude = ElectricFieldAmplitude(1.0, "MV/cm")
+    gdd = GroupDelayDispersion(2.0, "ps^2")
+    tod = ThirdOrderDispersion(3.0, "ps^3")
+
+    assert dipole.coulomb_meters == pytest.approx(0.3 * _debye)
+    assert amplitude.volts_per_meter == pytest.approx(1.0e8)
+    assert gdd.femtoseconds_squared == pytest.approx(2.0e6)
+    assert tod.femtoseconds_cubed == pytest.approx(3.0e9)
+
+
+def test_intensity_quantity_uses_cycle_average_to_peak_field_contract():
+    quantity = ElectricFieldAmplitude(1.0e12, "W/cm^2")
+    expected = np.sqrt(2.0 * 1.0e16 * CONSTANTS.MU0 * CONSTANTS.C)
+
+    assert quantity.volts_per_meter == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("factory", "unit"),
+    [
+        (DipoleMoment, "not-a-dipole-unit"),
+        (ElectricFieldAmplitude, "not-a-field-unit"),
+        (GroupDelayDispersion, "not-a-gdd-unit"),
+        (ThirdOrderDispersion, "not-a-tod-unit"),
+    ],
+)
+def test_scalar_quantity_types_reject_unknown_units(factory, unit):
+    with pytest.raises(ValueError, match="invalid"):
+        factory(1.0, unit)
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [DipoleMoment, ElectricFieldAmplitude, GroupDelayDispersion, ThirdOrderDispersion],
+)
+def test_scalar_quantity_types_reject_nonfinite_values(factory):
+    with pytest.raises(ValueError, match="finite"):
+        factory(np.nan, "C*m")
 
 
 if __name__ == "__main__":

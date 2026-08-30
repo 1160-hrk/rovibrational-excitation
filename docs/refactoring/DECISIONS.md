@@ -1823,6 +1823,48 @@ runner.
 
 Implementation commits: `e58a009` (active utility formatting), `22c0313`
 (content-preserving archive moves), and `ea07387` (facade, examples, and CI).
+### D-045: Public scalar quantities require units; internal values are canonical
+
+Status: Accepted on 2026-08-30.
+
+Scope: normal-simulation configuration, model dipole scale, generated-field
+time/amplitude/dispersion inputs, parameter loading, and saved parameters.
+
+Every user-supplied scalar physical quantity at the normal-simulation boundary
+has an explicit unit. Each time value has its own required pair:
+`t_start/t_start_units`, `t_end/t_end_units`, `dt/dt_units`,
+`duration/duration_units`, and `t_center/t_center_units`. Generated amplitude
+requires `amplitude/amplitude_units`. The public model dipole input is the
+neutral `dipole_scale/dipole_scale_units`; the unit-encoded `mu0_Cm` key is
+removed from the normal-simulation schema. Existing frequency pairs and
+`modulation_delay/modulation_delay_units` remain required.
+
+If GDD or TOD is supplied, its matching `gdd_units` or `tod_units` is
+required; a unit without its value is also an error. Omission of both members
+retains the accepted exact zero modifier. Radian-only phase inputs remain
+explicitly unit-bearing in their names (`phase_rad` and
+`modulation_phase_rad`).
+
+Caller-owned mappings are never rewritten. Python files, direct mappings,
+CLI, batch, and checkpoint routes preserve the submitted values and unit
+labels for saving and provenance. Frozen typed quantities convert each value
+exactly once to the internal canonical system: fs, V/m peak field, C*m,
+fs^2, fs^3, and rad/fs. Numerical consumers receive only canonical values and
+never inspect source-unit strings.
+
+The generic `ParameterProcessor`, its singleton, print-based conversion, and
+route-dependent preprocessing are removed after all consumers use the typed
+boundary. Direct and batch execution of the same value/unit mapping must
+produce identical sampled fields, Hamiltonians, and populations. Numerical
+kernels, optimizer grids and indices, and external sampled-field injection are
+unchanged.
+
+Implementation is staged. The first unit adds frozen scalar quantity types
+around the existing converter formulas; subsequent units replace generated
+field and model mappings before deleting the processor.
+
+Implementation commit: pending.
+
 
 ## Open decisions
 
