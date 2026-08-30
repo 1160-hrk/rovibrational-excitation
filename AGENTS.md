@@ -2,8 +2,8 @@
 
 Last verified: 2026-08-30
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-d (strict physical unit boundary)
-Latest infrastructure checkpoint: `62e6bfd`
+Verified structural checkpoint: P4.3-d plus D-044 executable examples
+Latest infrastructure checkpoint: `ea07387`
 
 ## Purpose
 

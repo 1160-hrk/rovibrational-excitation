@@ -1794,7 +1794,7 @@ Verification anchors:
 The complete CPU suite passes 924 tests with 10 optional-GPU skips and measured
 branch coverage is 72%.
 
-Implementation commit: pending.
+Implementation commit: `bae1e69`.
 
 ### D-044: Supported examples are executable; historical examples are archival
 
@@ -1821,7 +1821,8 @@ Moving an archived example back into the supported set requires migration to
 the current public API, a bounded quick execution, and inclusion in the smoke
 runner.
 
-Implementation commit: pending.
+Implementation commits: `e58a009` (active utility formatting), `22c0313`
+(content-preserving archive moves), and `ea07387` (facade, examples, and CI).
 
 ## Open decisions
 
