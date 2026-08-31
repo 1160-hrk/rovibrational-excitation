@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-28
+Last verified: 2026-08-31
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: seventh D-041 explicit-convergence-report unit
+Latest API checkpoint: D-045 typed generated-field unit boundary
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -83,7 +83,7 @@ not treated as intentional API.
 | `core` | no re-exported names yet | narrow generic state/operator/time/unit surface pending O-008 | target public package created in P3.1-a |
 | `core.operators` | `Hamiltonian` is directly importable; no package `__all__` yet | generic unit-aware operator owner | target public module; root re-export remains temporary |
 | `core.basis` | `BasisBase`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; model bases to their `models.*` owners | temporary public; `Hamiltonian` removed in P3.1-a |
-| `core.units` | `PhysicalConstants`, `UnitConverter`, `Frequency`, `TimeQuantity`, `DipoleMoment`, `ElectricFieldAmplitude`, `GroupDelayDispersion`, `ThirdOrderDispersion`, `converter`, `UnitValidator`, `validator`, `ParameterProcessor`, `parameter_processor` | immutable constants and frozen explicit conversion boundaries under `core.units`; typed config handles parameter conversion | quantity types target public; processor and singleton objects temporary and delete |
+| `core.units` | `PhysicalConstants`, `UnitConverter`, `Frequency`, `TimeQuantity`, `DipoleMoment`, `ElectricFieldAmplitude`, `GroupDelayDispersion`, `ThirdOrderDispersion`, `converter`, `UnitValidator`, `validator` | immutable constants and frozen explicit conversion boundaries under `core.units`; typed config handles parameter conversion | target public quantity and pure-conversion surface; generic processor deleted by D-045 |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 | `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
 | `core.states` | `PureState`, `IncoherentEnsemble`, `DensityState` | explicit immutable initial-state kinds | target public module; all propagator facades migrated in P2.2 |
@@ -179,7 +179,7 @@ but is not re-exported from the package root.
 
 | Script | Current route | Input and construction path | Target | Disposition |
 |---|---|---|---|---|
-| `rve-simulate` | `cli.simulate:main` | Python file executed by `simulation.config.load_params_file` -> implicit unit conversion -> iterable sweep expansion -> per-case validation -> `models.build_model` -> `SchrodingerPropagator` | versioned typed simulation config and one shared model/field builder | target public command; replace input contract |
+| `rve-simulate` | `cli.simulate:main` | Python file executed by `simulation.config.load_params_file` -> unchanged value/unit mapping -> iterable sweep expansion -> per-case validation -> `models.build_model` -> `SchrodingerPropagator` | versioned typed simulation config and one shared model/field builder | target public command; replace input contract |
 | `rve-optimize` | `cli.optimize:main` | YAML `safe_load` -> dotted overrides -> private `_build_basis` and `_build_dipole` -> `optimization.ALGO_REGISTRY` -> algorithm function | versioned typed optimization config reusing the same model/field builders | target public command; replace orchestration internals |
 
 Both command names should remain. Backward compatibility for current config
@@ -192,27 +192,27 @@ versioned so historical calculations remain interpretable.
 2. `load_params_file` executes arbitrary Python and collects non-dunder values,
    excluding imported module objects. Other helper names remain visible and
    must be valid schema keys rather than disappearing implicitly.
-3. The mutable global `parameter_processor` heuristically converts recognized
-   unit-suffixed values.
-4. `expand_cases` treats most iterable values as sweep dimensions; only
+3. `expand_cases` treats most iterable values as sweep dimensions; only
    `polarization` and `initial_states` are fixed-value exceptions.
-5. `validate_simulation_case` runs only after expansion. Its closed key set
+4. `validate_simulation_case` runs only after expansion. Its closed key set
    rejects unknown names and model/field/algorithm-inapplicable parameters.
    Generated cases require named envelope and modulation discriminators. It
    also requires algorithm, backend, storage, trajectory, stride, scaling, and
    renormalization choices, constructs one `PropagationOptions`, and performs
-   capability preflight.
-6. The immutable `SimulationCase` owns a frozen model schema and validated
+   capability preflight. Generated-field values are converted exactly once by
+   frozen `GeneratedFieldParameters`; the caller mapping remains unchanged.
+5. The immutable `SimulationCase` owns a frozen model schema and validated
    `ExecutionPolicy`; model construction returns `ModelComponents` plus
    scalar/Cartesian coupling metadata without re-reading the raw mapping.
-7. `runner._run_one` constructs one immutable `TimeGrid`, generates the legacy
+6. `runner._run_one` consumes the canonical typed time grid, generates the legacy
    pulse unchanged, and freezes its exact values as `ScalarField` or
    `CartesianField` before propagation.
-8. Python callers may instead use
+7. Python callers may instead use
    `simulation.runner.run_simulation_case(params, field=...)`; generated-field
    keys are then rejected, and the injected field owns the exact `TimeGrid`.
-9. The same options object reaches model construction and propagation before
-   writing an unversioned NPZ/JSON result. Scalar `E` is stored one-dimensional
+8. The same options object reaches model construction and propagation before
+   writing an unversioned NPZ/JSON result. The JSON preserves submitted value/unit
+   pairs; scalar `E` is stored one-dimensional
    and Cartesian `E` is stored with shape `(n_samples, 2)`.
 
 Accuracy assessment is a separate public application service at
@@ -222,9 +222,8 @@ immutable `ConvergenceReport`; it is not part of config loading and cannot
 select, repair, or replace a time grid. `ConvergenceConfigurationError` reports
 invalid comparisons before propagation.
 
-This entire route is temporary. Python-file execution, heuristic conversion,
-implicit sweep inference, and unversioned output are not part of the target
-contract.
+This entire route is temporary. Python-file execution, implicit sweep inference,
+and unversioned output are not part of the target contract.
 
 ### 4.2 Current optimization path and divergence
 
@@ -263,7 +262,7 @@ visualization failure.
 | `dynamics.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |
 | `optimization.ALGO_REGISTRY` | `local`, `krotov`, `grape` | package and example optimization runners | private typed optimization dispatch | internal |
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
-| `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | simulation config and tests | typed schema conversion at boundary | internal singleton, then delete |
+| removed `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | no remaining callers after D-045 | typed schema conversion at boundary | deleted by D-045 |
 | removed `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found by P3.2-a acceptance audit | constructors remain owned by operator/field and the config boundary | deleted in P3.2-a; removal also eliminates `core -> fields` reverse dependency |
 | `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | one explicit field constructor contract | temporary public method; consolidate in Phase 4 |
 

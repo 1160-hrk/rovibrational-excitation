@@ -1,5 +1,7 @@
 """Regression tests for simulation-level contracts."""
 
+import json
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,6 +22,7 @@ from rovibrational_excitation.fields import (
 )
 from rovibrational_excitation.io import CheckpointManager
 from rovibrational_excitation.simulation.config import load_params_file
+from rovibrational_excitation.simulation.generated import GeneratedFieldParameters
 from rovibrational_excitation.simulation.runner import (
     _run_one,
     run_all_with_checkpoint,
@@ -39,15 +42,21 @@ def _base_case(**overrides):
         "dipole_scale": 3.0e-30,
         "dipole_scale_units": "C*m",
         "t_start": -0.5,
+        "t_start_units": "fs",
         "t_end": 0.5,
+        "t_end_units": "fs",
         "dt": 0.05,
+        "dt_units": "fs",
         "duration": 0.3,
+        "duration_units": "fs",
         "t_center": 0.0,
+        "t_center_units": "fs",
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
         "carrier_frequency": 0.1,
         "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
+        "amplitude_units": "V/m",
         "initial_states": [0],
         "save": False,
         "backend": "numpy",
@@ -211,17 +220,15 @@ def test_generated_carrier_frequency_units_preserve_the_same_field(value, unit):
         carrier_frequency=value,
         carrier_frequency_units=unit,
     )
-    grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
-
     reference = _generated_sampled_field(
         reference_params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(reference_params),
         use_m_average=False,
         expects_cartesian=False,
     )
     actual = _generated_sampled_field(
         params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(params),
         use_m_average=False,
         expects_cartesian=False,
     )
@@ -232,6 +239,149 @@ def test_generated_carrier_frequency_units_preserve_the_same_field(value, unit):
         rtol=2.0e-15,
         atol=2.0e-7,
     )
+
+
+@pytest.mark.parametrize(
+    ("value_key", "unit_key"),
+    [
+        ("t_start", "t_start_units"),
+        ("t_end", "t_end_units"),
+        ("dt", "dt_units"),
+        ("duration", "duration_units"),
+        ("t_center", "t_center_units"),
+        ("amplitude", "amplitude_units"),
+    ],
+)
+def test_generated_physical_inputs_require_value_and_unit(value_key, unit_key):
+    missing_unit = _base_case()
+    missing_unit.pop(unit_key)
+    with pytest.raises(SimulationConfigurationError, match=unit_key):
+        validate_simulation_case(missing_unit)
+
+    missing_value = _base_case()
+    missing_value.pop(value_key)
+    with pytest.raises(SimulationConfigurationError, match=value_key):
+        validate_simulation_case(missing_value)
+
+
+@pytest.mark.parametrize(
+    ("value_key", "unit_key"), [("gdd", "gdd_units"), ("tod", "tod_units")]
+)
+def test_optional_dispersion_requires_value_and_unit_together(value_key, unit_key):
+    value_only = _base_case(**{value_key: 1.0})
+    with pytest.raises(SimulationConfigurationError, match=unit_key):
+        validate_simulation_case(value_only)
+
+    unit_only = _base_case(**{unit_key: "fs^2" if value_key == "gdd" else "fs^3"})
+    with pytest.raises(SimulationConfigurationError, match=value_key):
+        validate_simulation_case(unit_only)
+
+
+def test_generated_units_share_one_conversion_boundary_without_mutating_input():
+    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+
+    canonical = _base_case(
+        gdd=2.0,
+        gdd_units="fs^2",
+        tod=3.0,
+        tod_units="fs^3",
+    )
+    alternate = {
+        **canonical,
+        "t_start": -0.0005,
+        "t_start_units": "ps",
+        "t_end": 0.0005,
+        "t_end_units": "ps",
+        "dt": 0.00005,
+        "dt_units": "ps",
+        "duration": 0.0003,
+        "duration_units": "ps",
+        "t_center": 0.0,
+        "t_center_units": "ps",
+        "amplitude": 1.0,
+        "amplitude_units": "MV/cm",
+        "gdd": 2.0e-6,
+        "gdd_units": "ps^2",
+        "tod": 3.0e-9,
+        "tod_units": "ps^3",
+    }
+    original = deepcopy(alternate)
+
+    canonical_field = _generated_sampled_field(
+        canonical,
+        generated_parameters=GeneratedFieldParameters.from_mapping(canonical),
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+    alternate_field = _generated_sampled_field(
+        alternate,
+        generated_parameters=GeneratedFieldParameters.from_mapping(alternate),
+        use_m_average=False,
+        expects_cartesian=False,
+    )
+    canonical_population = _run_one(canonical)
+    alternate_population = _run_one(alternate)
+
+    np.testing.assert_allclose(
+        alternate_field.samples_v_per_m,
+        canonical_field.samples_v_per_m,
+        rtol=5.0e-15,
+        atol=2.0e-7,
+    )
+    np.testing.assert_allclose(alternate_population, canonical_population, rtol=5e-14)
+    assert alternate == original
+
+
+def test_saved_parameters_keep_the_caller_value_and_unit_pairs(tmp_path):
+    params = _base_case(
+        t_start=-0.0005,
+        t_start_units="ps",
+        t_end=0.0005,
+        t_end_units="ps",
+        dt=0.00005,
+        dt_units="ps",
+        duration=0.0003,
+        duration_units="ps",
+        t_center=0.0,
+        t_center_units="ps",
+        amplitude=1.0,
+        amplitude_units="MV/cm",
+        save=True,
+        outdir=str(tmp_path),
+    )
+
+    _run_one(params)
+
+    saved = json.loads((tmp_path / "parameters.json").read_text())
+    for key in (
+        "t_start",
+        "t_start_units",
+        "t_end",
+        "t_end_units",
+        "dt",
+        "dt_units",
+        "duration",
+        "duration_units",
+        "t_center",
+        "t_center_units",
+        "amplitude",
+        "amplitude_units",
+    ):
+        assert saved[key] == params[key]
+
+
+def test_batch_runner_does_not_preconvert_value_and_unit_pairs():
+    params = _base_case(amplitude=1.0, amplitude_units="MV/cm")
+
+    with patch(
+        "rovibrational_excitation.simulation.runner._run_one",
+        return_value=np.array([[1.0, 0.0]]),
+    ) as run_one:
+        run_all_with_checkpoint(params, save=False, checkpoint_interval=1)
+
+    expanded = run_one.call_args.args[0]
+    assert expanded["amplitude"] == 1.0
+    assert expanded["amplitude_units"] == "MV/cm"
 
 
 @pytest.mark.parametrize(
@@ -430,15 +580,25 @@ def test_runner_parameter_template_matches_current_required_contract():
 
 _GENERATED_FIELD_KEYS = {
     "t_start",
+    "t_start_units",
     "t_end",
+    "t_end_units",
     "dt",
+    "dt_units",
     "duration",
+    "duration_units",
     "t_center",
+    "t_center_units",
     "envelope_kind",
     "modulation_kind",
     "carrier_frequency",
     "carrier_frequency_units",
     "amplitude",
+    "amplitude_units",
+    "gdd",
+    "gdd_units",
+    "tod",
+    "tod_units",
     "polarization",
 }
 
@@ -479,7 +639,7 @@ def test_generated_envelope_kind_preserves_existing_samples(
 
     actual = _generated_sampled_field(
         params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(params),
         use_m_average=False,
         expects_cartesian=False,
     )
@@ -532,7 +692,7 @@ def test_sinusoidal_modulation_kind_matches_field_api(
 
     actual = _generated_sampled_field(
         params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(params),
         use_m_average=False,
         expects_cartesian=False,
     )
@@ -559,19 +719,15 @@ def test_sinusoidal_modulation_delay_units_are_physically_equivalent():
         "modulation_delay": 0.03,
         "modulation_delay_units": "ps",
     }
-    grid = TimeGrid.from_bounds(
-        fs_params["t_start"], fs_params["t_end"], fs_params["dt"]
-    )
-
     field_fs = _generated_sampled_field(
         fs_params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(fs_params),
         use_m_average=False,
         expects_cartesian=False,
     )
     field_ps = _generated_sampled_field(
         ps_params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(ps_params),
         use_m_average=False,
         expects_cartesian=False,
     )
@@ -629,15 +785,21 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
         "potential_type": "harmonic",
         "initial_states": [0],
         "t_start": -0.5,
+        "t_start_units": "fs",
         "t_end": 0.5,
+        "t_end_units": "fs",
         "dt": 0.05,
+        "dt_units": "fs",
         "duration": 0.3,
+        "duration_units": "fs",
         "t_center": 0.0,
+        "t_center_units": "fs",
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
         "carrier_frequency": 0.1,
         "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
+        "amplitude_units": "V/m",
         "polarization": [1.0, 1.0],
         "backend": "numpy",
         "storage": "dense",
@@ -698,7 +860,7 @@ def test_generated_cartesian_field_retains_legacy_helicity_inputs():
 
     field = _generated_sampled_field(
         params,
-        time_grid=grid,
+        generated_parameters=GeneratedFieldParameters.from_mapping(params),
         use_m_average=False,
         expects_cartesian=True,
     )
@@ -732,15 +894,21 @@ def _helicity_runner_case(**overrides):
         "potential_type": "harmonic",
         "initial_states": [0],
         "t_start": -0.5,
+        "t_start_units": "fs",
         "t_end": 0.5,
+        "t_end_units": "fs",
         "dt": 0.05,
+        "dt_units": "fs",
         "duration": 0.3,
+        "duration_units": "fs",
         "t_center": 0.0,
+        "t_center_units": "fs",
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
         "carrier_frequency": 0.1,
         "carrier_frequency_units": "PHz",
         "amplitude": 1.0e8,
+        "amplitude_units": "V/m",
         "polarization": np.array([1.0, 1.0j]) / np.sqrt(2.0),
         "backend": "numpy",
         "storage": "dense",

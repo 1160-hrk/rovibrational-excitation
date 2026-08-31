@@ -918,19 +918,25 @@ indices, and numerical kernels remain unchanged. The complete CPU suite passes
 924 tests with 10 optional-GPU skips; measured branch coverage is 72%, and
 active Ruff, formatting, mypy, smoke-example, build, and Twine gates pass.
 
-Remaining Phase 4 work:
 P4.3-e implements D-045 in bounded units beginning 2026-08-30. Unit 1 adds
 frozen scalar boundaries for dipole, peak field, GDD, and TOD without changing
 converter formulas. Unit 2 replaces the unit-encoded normal-simulation
 `mu0_Cm` input with required `dipole_scale/dipole_scale_units`, converts
 once to C*m in the frozen model schema, and keeps low-level model and dipole
-formulas unchanged.
+formulas unchanged. Unit 3, completed on 2026-08-31, adds frozen
+`GeneratedFieldParameters`. Every generated-field time and amplitude has a
+required paired unit; optional GDD/TOD require both members or neither.
+Validation converts once to fs, V/m, rad/fs, fs^2, and fs^3 before calling the
+unchanged waveform formulas. Unit 4 removes the general
+`ParameterProcessor`; direct mappings, Python files, batch expansion, and
+saved parameters retain the original value/unit pairs. Cross-unit waveform and
+population references pass, the full CPU suite passes 937 tests with 10
+optional-GPU skips, and strict mypy passes for all 23 configured modules.
 
+Remaining Phase 4 work:
 
-- replace or delete the remaining general `ParameterProcessor` value mutation
-  so converted values cannot retain stale input-unit labels;
-- extend typed quantity boundaries to remaining public time, field, dipole, GDD,
-  and TOD inputs;
+- audit physical scalar inputs outside normal simulation and migrate only
+  boundaries that still combine a bare value with an implicit unit;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

@@ -47,13 +47,18 @@ def test_run_all_file_output():
     params = {
         "description": "testfile",
         "t_start": -1.0,
+        "t_start_units": "fs",
         "t_end": 1.0,
+        "t_end_units": "fs",
         "dt": 0.1,  # 十分な数の点数を確保
         "duration": 1.0,
+        "duration_units": "fs",
         "t_center": 0.0,
+        "t_center_units": "fs",
         "carrier_frequency": 1.0,
         "carrier_frequency_units": "PHz",
         "amplitude": 0.1,
+        "amplitude_units": "V/m",
         "polarization": [1.0, 0.0],
         "V_max": 0,
         "J_max": 0,

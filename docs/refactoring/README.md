@@ -43,7 +43,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 925 passed, 10 skipped (935 collected) |
+| Pytest | 937 passed, 10 skipped (947 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -54,7 +54,14 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-30. P4.3-d implements D-043:
+These rows were last verified locally on 2026-08-31. P4.3-e implements D-045:
+every normal-simulation scalar physical input now has an explicit paired unit,
+and frozen quantity schemas convert once to fs, V/m, C*m, fs^2, fs^3, or
+rad/fs. Direct mappings, Python files, batch expansion, and saved parameter
+JSON retain the caller values and labels. The stale-label `ParameterProcessor`
+and its route-dependent value mutation are deleted. Equivalent ps/MV/cm and
+canonical fs/V/m inputs retain sampled-field and population agreement.
+P4.3-d implements D-043:
 spectral modulation uses a unit-aware physical
 delay and explicit phase/amplitude multipliers, GDD/TOD use physical Taylor
 coefficients, intensity is cycle-averaged input to peak field, and unit
@@ -73,7 +80,7 @@ visible to strict validation. Generated and externally injected fields converge
 to the immutable `SimulationCase`; normal model and fixed-M construction consume
 the frozen model schema directly.
 Exact field/population references remain unchanged, and strict mypy now covers
-21 named modules. The preceding D-042 unit introduced frozen LinMol,
+23 named modules. The preceding D-042 unit introduced frozen LinMol,
 VibLadder, and TwoLevel parameter schemas with neutral frequency names and
 required paired units. Model input is validated before allocation and projected
 once to the unchanged low-level rad/fs constructors. PHz, THz, wavenumber, and

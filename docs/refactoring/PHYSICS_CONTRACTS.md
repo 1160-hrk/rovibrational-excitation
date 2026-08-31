@@ -83,16 +83,16 @@ electric-field amplitude as `sqrt(2*I*mu_0*c)`.
 
 Strict propagation-unit validation checks only formal access to canonical units,
 compatible matrix/sample shapes, and a finite positive field-grid step. It does
-not classify values by a typical molecular range and does not catch failures as
+not classify values by a typical molecular range, downgrade failures to
+warnings, or fall back to raw unit-ambiguous attributes. Numerical adequacy is
+reported only by an explicit convergence calculation.
+
 Public normal-simulation scalar inputs retain their submitted value and an
 individual explicit unit in the caller-owned mapping. The mapping is never
 rewritten during loading or execution and is saved with those original pairs.
 Frozen typed values convert once to the internal canonical system: time in fs,
 peak electric field in V/m, dipole moment in C*m, GDD in fs^2, TOD in fs^3,
 and angular frequency in rad/fs. Numerical code receives only canonical values.
-
-warnings or fall back to raw unit-ambiguous attributes. Numerical adequacy is
-reported only by an explicit convergence calculation.
 
 Frequency-bearing public inputs use a neutral quantity name and a required
 `*_units` field. `Frequency` converts a finite scalar exactly once to canonical

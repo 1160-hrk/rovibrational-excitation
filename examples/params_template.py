@@ -24,8 +24,11 @@ description = "template_simulation"  # 結果ディレクトリ名にも使用
 # 時間軸の範囲と刻み（単位: fs）
 # ヒント: 計算時間を短くするには範囲を狭く、精度を上げるには刻みを細かく
 t_start = -50.0  # 開始時刻 [fs]
+t_start_units = "fs"
 t_end = 50.0  # 終了時刻 [fs]
+t_end_units = "fs"
 dt = 0.1  # 時間刻み [fs] - 通常 0.05～0.2
+dt_units = "fs"
 
 # ============================================================================
 # 3. 必須パラメータ - 量子系設定
@@ -68,11 +71,14 @@ vibration_rotation_coupling_units = "cm^-1"
 # 基本レーザーパルス設定
 envelope_kind = "gaussian_fwhm"  # durationをFWHMとして使うガウス包絡線
 duration = 20.0  # パルス幅（FWHM） [fs]
+duration_units = "fs"
 t_center = 0.0  # パルス中心時刻 [fs]
+t_center_units = "fs"
 modulation_kind = "none"  # "sinusoidal"を選ぶ場合は変調パラメータが必須
 carrier_frequency = 2349.0  # キャリア周波数（通常周波数の波数表現）
 carrier_frequency_units = "cm^-1"  # 単位は必須。THz, PHz, Hz, rad/fs も選択可
 amplitude = 1e9  # 電場振幅 [V/m] - 1e8～1e12の範囲
+amplitude_units = "V/m"
 
 # 偏光設定（固定値キー - リストでもスイープされない）
 polarization = [1.0, 0.0]  # [x, y] 偏光ベクトル - (1,0)=x偏光, (0,1)=y偏光
@@ -80,8 +86,10 @@ polarization = [1.0, 0.0]  # [x, y] 偏光ベクトル - (1,0)=x偏光, (0,1)=y�
 # オプション: 高度な電場設定
 # envelope_kind は上で明示必須。任意波形は ScalarField/CartesianField として注入
 # phase_rad = 0.0                    # キャリア位相 [rad]
-# gdd = 0.0                          # 群遅延分散（2次） [fs²]
-# tod = 0.0                          # 群遅延分散（3次） [fs³]
+# gdd = 0.0                          # 値と単位を対で指定
+# gdd_units = "fs^2"
+# tod = 0.0
+# tod_units = "fs^3"
 
 # ============================================================================
 # 6. 必須パラメータ - 初期状態

@@ -18,7 +18,6 @@ from rovibrational_excitation.core.units import (
 )
 from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.core.units.parameter_processor import parameter_processor
 
 # 現在のAPIに合わせてマッピング
 convert_frequency = converter.convert_frequency
@@ -26,7 +25,6 @@ convert_dipole_moment = converter.convert_dipole_moment
 convert_electric_field = converter.convert_electric_field
 convert_energy = converter.convert_energy
 convert_time = converter.convert_time
-auto_convert_parameters = parameter_processor.auto_convert_parameters
 
 # Physical constants for validation
 _c = 2.99792458e10  # speed of light [cm/s]
@@ -277,126 +275,6 @@ class TestTimeConversions:
         # s → fs
         result_s = convert_time(value, "s")
         assert np.isclose(result_s, 1e15)
-
-
-class TestAutoConvertParameters:
-    """Test automatic parameter conversion."""
-
-    def test_typed_model_quantities_are_not_preconverted(self):
-        """Leave values and unit labels together for the typed schemas."""
-        params = {
-            "vibrational_frequency": 100.0,
-            "vibrational_frequency_units": "THz",
-            "anharmonic_shift": 12.3,
-            "anharmonic_shift_units": "cm^-1",
-            "rotational_constant": 0.39,
-            "rotational_constant_units": "cm^-1",
-            "vibration_rotation_coupling": 0.003,
-            "vibration_rotation_coupling_units": "cm^-1",
-            "energy_gap": 1.5,
-            "energy_gap_units": "eV",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        assert converted == params
-
-    def test_typed_carrier_is_not_preconverted(self):
-        """Leave neutral carrier input for the strict Frequency boundary."""
-        params = {
-            "carrier_frequency": 100.0,
-            "carrier_frequency_units": "THz",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        assert converted == params
-
-    def test_dipole_parameter_conversion(self):
-        """Test automatic dipole parameter conversion."""
-        params = {
-            "mu0_Cm": 0.3,
-            "mu0_Cm_units": "D",
-            "transition_dipole_moment": 1.0,
-            "transition_dipole_moment_units": "ea0",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        # Check conversions
-        expected_mu0 = 0.3 * _debye
-        expected_tdm = 1.0 * _e * _a0
-
-        assert np.isclose(converted["mu0_Cm"], expected_mu0)
-        assert np.isclose(converted["transition_dipole_moment"], expected_tdm)
-
-    def test_electric_field_parameter_conversion(self):
-        """Test automatic electric field parameter conversion."""
-        params = {"amplitude": 1e12, "amplitude_units": "W/cm^2"}
-
-        converted = auto_convert_parameters(params)
-
-        # Should be converted to V/m
-        assert converted["amplitude"] != params["amplitude"]
-        assert converted["amplitude"] > 0
-
-    def test_time_parameter_conversion(self):
-        """Test automatic time parameter conversion."""
-        params = {
-            "duration": 50,
-            "duration_units": "ps",
-            "coherence_relaxation_time_ps": 100,
-            "coherence_relaxation_time_ps_units": "ns",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        # duration should be converted to fs
-        assert np.isclose(converted["duration"], 50 * 1000)  # ps → fs
-
-        # coherence time should stay in ps
-        assert np.isclose(
-            converted["coherence_relaxation_time_ps"], 100 * 1000
-        )  # ns → ps
-
-    def test_no_conversion_needed(self):
-        """Test parameters without unit specifications."""
-        params = {
-            "omega_rad_phz": 100.0,  # No _units specified
-            "V_max": 2,
-            "J_max": 10,
-            "description": "test",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        # Should be unchanged
-        assert converted == params
-
-    def test_mixed_parameters(self):
-        """Convert unrelated quantities without touching typed frequencies."""
-        params = {
-            "vibrational_frequency": 100.0,
-            "vibrational_frequency_units": "THz",
-            "V_max": 2,
-            "mu0_Cm": 0.3,
-            "mu0_Cm_units": "D",
-            "description": "mixed_test",
-        }
-
-        converted = auto_convert_parameters(params)
-
-        assert converted["vibrational_frequency"] == 100.0
-        assert converted["vibrational_frequency_units"] == "THz"
-        assert converted["mu0_Cm"] != params["mu0_Cm"]
-        assert converted["V_max"] == params["V_max"]
-        assert converted["description"] == params["description"]
-
-    def test_legacy_frequency_names_are_not_interpreted(self):
-        """Model validation, not this generic processor, rejects legacy keys."""
-        params = {"omega_rad_phz": 100.0, "omega_rad_phz_units": "invalid_unit"}
-
-        assert auto_convert_parameters(params) == params
 
 
 class TestPhysicalConsistency:

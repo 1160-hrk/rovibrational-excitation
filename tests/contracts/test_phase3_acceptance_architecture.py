@@ -5,9 +5,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from rovibrational_excitation.core.units.parameter_processor import (
-    ParameterProcessor,
-)
 from rovibrational_excitation.simulation import run_simulation_case
 from rovibrational_excitation.simulation.runner import (
     run_simulation_case as runner_entry,
@@ -26,9 +23,8 @@ def test_simulation_package_exposes_one_normal_case_entry_point():
     assert run_simulation_case is runner_entry
 
 
-def test_parameter_processor_does_not_construct_operators_or_fields():
-    assert not hasattr(ParameterProcessor, "create_hamiltonian_from_params")
-    assert not hasattr(ParameterProcessor, "create_efield_from_params")
+def test_generic_parameter_processor_is_removed():
+    assert not (PACKAGE / "core" / "units" / "parameter_processor.py").exists()
 
 
 def test_internal_modules_do_not_import_root_convenience_names():

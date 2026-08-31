@@ -1823,9 +1823,10 @@ runner.
 
 Implementation commits: `e58a009` (active utility formatting), `22c0313`
 (content-preserving archive moves), and `ea07387` (facade, examples, and CI).
+
 ### D-045: Public scalar quantities require units; internal values are canonical
 
-Status: Accepted on 2026-08-30.
+Status: Accepted on 2026-08-30; implemented on 2026-08-31.
 
 Scope: normal-simulation configuration, model dipole scale, generated-field
 time/amplitude/dispersion inputs, parameter loading, and saved parameters.
@@ -1853,17 +1854,29 @@ fs^2, fs^3, and rad/fs. Numerical consumers receive only canonical values and
 never inspect source-unit strings.
 
 The generic `ParameterProcessor`, its singleton, print-based conversion, and
-route-dependent preprocessing are removed after all consumers use the typed
-boundary. Direct and batch execution of the same value/unit mapping must
-produce identical sampled fields, Hamiltonians, and populations. Numerical
-kernels, optimizer grids and indices, and external sampled-field injection are
-unchanged.
+route-dependent preprocessing are removed now that all normal-simulation
+consumers use the typed boundary. Direct and batch execution of the same
+value/unit mapping must produce identical sampled fields, Hamiltonians, and
+populations. Numerical kernels, optimizer grids and indices, and external
+sampled-field injection are unchanged.
 
-Implementation is staged. The first unit adds frozen scalar quantity types
-around the existing converter formulas; subsequent units replace generated
-field and model mappings before deleting the processor.
+The implementation is divided into four bounded units:
 
-Implementation commit: pending.
+1. frozen dipole, peak-field, GDD, and TOD values wrap unchanged converter
+   formulas;
+2. frozen model schemas require and canonicalize
+   `dipole_scale/dipole_scale_units`;
+3. `GeneratedFieldParameters` requires a unit for each public time and
+   amplitude value, conditionally requires GDD/TOD pairs, and sends canonical
+   values to the unchanged `ElectricField` waveform operations;
+4. parameter files and mappings retain submitted values and labels, saved
+   `parameters.json` retains those pairs, and the obsolete
+   `ParameterProcessor` is deleted.
+
+Regression tests cover missing pairs, cross-unit sampled-field and population
+equivalence, non-mutation, saved provenance, and batch-route preservation.
+Implementation commits: `b56eea2`, `3590667`, and the D-045
+generated-field checkpoint containing this update.
 
 
 ## Open decisions

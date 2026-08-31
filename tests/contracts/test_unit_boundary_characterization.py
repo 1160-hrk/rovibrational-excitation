@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.units import ParameterProcessor, UnitValidator
+from rovibrational_excitation.core.units import UnitValidator
 from rovibrational_excitation.core.units.converters import converter
 
 _SUPPORTED_UNITS = {
@@ -171,43 +171,6 @@ def test_all_intensity_aliases_use_the_same_current_peak_field_convention(
     assert converter.convert_electric_field(intensity, unit, "V/m") == pytest.approx(
         reference
     )
-
-
-def test_parameter_processor_currently_converts_values_but_keeps_input_labels():
-    params = {
-        "duration": 2.0,
-        "duration_units": "ps",
-        "amplitude": 1.0,
-        "amplitude_units": "MV/cm",
-        "mu0_Cm": 0.3,
-        "mu0_Cm_units": "D",
-    }
-
-    converted = ParameterProcessor().auto_convert_parameters(params)
-
-    assert converted["duration"] == 2.0e3
-    assert converted["duration_units"] == "ps"
-    assert converted["amplitude"] == 1.0e8
-    assert converted["amplitude_units"] == "MV/cm"
-    assert converted["mu0_Cm"] == pytest.approx(0.3 * 3.33564e-30)
-    assert converted["mu0_Cm_units"] == "D"
-    assert params["duration"] == 2.0
-    assert params["amplitude"] == 1.0
-    assert params["mu0_Cm"] == 0.3
-
-
-def test_parameter_processor_rejects_invalid_known_parameter_unit():
-    params = {"amplitude": 5.0, "amplitude_units": "not-a-unit"}
-
-    with pytest.raises(ValueError, match="Failed to convert amplitude"):
-        ParameterProcessor().auto_convert_parameters(params)
-
-
-def test_parameter_processor_has_no_non_strict_fallback_option():
-    params = {"amplitude": 5.0, "amplitude_units": "not-a-unit"}
-
-    with pytest.raises(TypeError, match="unexpected keyword argument 'strict'"):
-        ParameterProcessor().auto_convert_parameters(params, strict=False)
 
 
 def test_propagation_validator_rejects_noncanonical_expected_units():

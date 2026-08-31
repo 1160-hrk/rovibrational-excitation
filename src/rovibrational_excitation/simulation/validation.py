@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.core.units import Frequency, TimeQuantity
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
     StatePath,
@@ -32,9 +31,19 @@ from rovibrational_excitation.models.validation import (
     validate_model_parameters,
 )
 
+from .generated import GeneratedFieldParameters
+
 
 class SimulationConfigurationError(ValueError):
     """Raised before propagation when a simulation case is invalid."""
+
+
+@dataclass(frozen=True, slots=True)
+class _ValidatedSimulationConfiguration:
+    """Internal result shared by validation and execution."""
+
+    options: PropagationOptions
+    generated_field: GeneratedFieldParameters | None
 
 
 _EXECUTION_REQUIRED = {
@@ -55,14 +64,6 @@ _WORKFLOW_KEYS = {
     "verbose",
     "split_interaction",
 }
-_PREPROCESSED_UNIT_KEYS = {
-    "amplitude_units",
-    "duration_units",
-    "t_center_units",
-    "t_start_units",
-    "t_end_units",
-    "dt_units",
-}
 _REMOVED_SIMULATION_KEYS = {
     "carrier_freq",
     "auto_timestep",
@@ -78,13 +79,19 @@ _REMOVED_SIMULATION_KEYS = {
 }
 _GENERATED_REQUIRED = {
     "t_start",
+    "t_start_units",
     "t_end",
+    "t_end_units",
     "dt",
+    "dt_units",
     "carrier_frequency",
     "carrier_frequency_units",
     "amplitude",
+    "amplitude_units",
     "duration",
+    "duration_units",
     "t_center",
+    "t_center_units",
     "envelope_kind",
     "modulation_kind",
 }
@@ -94,18 +101,14 @@ _GENERATED_FIELD_KEYS = {
     "envelope_func",
     "phase_rad",
     "gdd",
+    "gdd_units",
     "tod",
+    "tod_units",
     "modulation_depth",
     "modulation_delay",
     "modulation_delay_units",
     "modulation_phase_rad",
     "modulation_mode",
-    "amplitude_units",
-    "duration_units",
-    "t_center_units",
-    "t_start_units",
-    "t_end_units",
-    "dt_units",
 }
 _FINITE_PARAMETERS = {
     "t_start",
@@ -130,7 +133,6 @@ _KNOWN_SIMULATION_KEYS = frozenset(
     | _EXECUTION_REQUIRED
     | _GENERATED_FIELD_KEYS
     | _WORKFLOW_KEYS
-    | _PREPROCESSED_UNIT_KEYS
     | _REMOVED_SIMULATION_KEYS
     | set(known_model_input_keys())
 )
@@ -150,95 +152,11 @@ def _require_finite_scalar(params: Mapping[str, Any], key: str) -> None:
         raise SimulationConfigurationError(f"{key} must be a finite number")
 
 
-_SINUSOIDAL_MODULATION_KEYS = frozenset(
-    {
-        "modulation_depth",
-        "modulation_delay",
-        "modulation_delay_units",
-        "modulation_phase_rad",
-        "modulation_mode",
-    }
-)
-_SINUSOIDAL_MODULATION_REQUIRED = frozenset(
-    {
-        "modulation_depth",
-        "modulation_delay",
-        "modulation_delay_units",
-        "modulation_mode",
-    }
-)
-
-
-def _validate_generated_field_schema(params: Mapping[str, Any]) -> None:
-    from rovibrational_excitation.fields.envelopes import get_generated_envelope
-
-    try:
-        get_generated_envelope(params["envelope_kind"])
-    except ValueError as exc:
-        raise SimulationConfigurationError(str(exc)) from exc
-
-    try:
-        Frequency(
-            params["carrier_frequency"],
-            params["carrier_frequency_units"],
-        )
-    except (TypeError, ValueError) as exc:
-        raise SimulationConfigurationError(
-            "invalid carrier_frequency/carrier_frequency_units: " + str(exc)
-        ) from exc
-
-    modulation_kind = params["modulation_kind"]
-    if not isinstance(modulation_kind, str) or modulation_kind not in {
-        "none",
-        "sinusoidal",
-    }:
-        raise SimulationConfigurationError(
-            "modulation_kind must be one of: none, sinusoidal"
-        )
-
-    supplied_modulation_keys = _SINUSOIDAL_MODULATION_KEYS & params.keys()
-    if modulation_kind == "none":
-        if supplied_modulation_keys:
-            names = ", ".join(sorted(supplied_modulation_keys))
-            raise SimulationConfigurationError(
-                f"{names} are not applicable when modulation_kind=none"
-            )
-        return
-
-    missing = sorted(_SINUSOIDAL_MODULATION_REQUIRED - params.keys())
-    if missing:
-        raise SimulationConfigurationError(
-            "Missing required sinusoidal modulation parameters: " + ", ".join(missing)
-        )
-    try:
-        TimeQuantity(
-            params["modulation_delay"],
-            params["modulation_delay_units"],
-        )
-    except (TypeError, ValueError) as exc:
-        raise SimulationConfigurationError(
-            "invalid modulation_delay/modulation_delay_units: " + str(exc)
-        ) from exc
-
-    modulation_type = params["modulation_mode"]
-    if not isinstance(modulation_type, str) or modulation_type not in {
-        "phase",
-        "amplitude",
-    }:
-        raise SimulationConfigurationError(
-            "modulation_mode must be one of: phase, amplitude"
-        )
-    if modulation_type == "amplitude" and not 0.0 <= params["modulation_depth"] <= 1.0:
-        raise SimulationConfigurationError(
-            "amplitude modulation_depth must satisfy 0 <= depth <= 1"
-        )
-
-
-def validate_simulation_case(
+def _resolve_simulation_case(
     params: Mapping[str, Any],
     *,
     field: ScalarField | CartesianField | None = None,
-) -> PropagationOptions:
+) -> _ValidatedSimulationConfiguration:
     """Validate one generated or externally sampled simulation case."""
     removed_field_selectors = {
         key
@@ -339,6 +257,13 @@ def validate_simulation_case(
             "Missing required simulation parameters: " + ", ".join(missing)
         )
 
+    generated_field: GeneratedFieldParameters | None = None
+    if field is None:
+        try:
+            generated_field = GeneratedFieldParameters.from_mapping(params)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise SimulationConfigurationError(str(exc)) from exc
+
     for key in ("validate_units", "verbose", "save"):
         if key in params and not isinstance(params[key], bool):
             raise SimulationConfigurationError(f"{key} must be a bool")
@@ -348,9 +273,6 @@ def validate_simulation_case(
             raise SimulationConfigurationError(
                 f"polarization is not applicable to scalar model {basis_type}"
             )
-
-    if field is None:
-        _validate_generated_field_schema(params)
 
     if field is not None:
         if expects_cartesian and not isinstance(field, CartesianField):
@@ -367,15 +289,6 @@ def validate_simulation_case(
 
     polarization: np.ndarray | None = None
     if field is None:
-        try:
-            TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
-        except (TypeError, ValueError) as exc:
-            raise SimulationConfigurationError(str(exc)) from exc
-
-        duration = params["duration"]
-        if duration <= 0:
-            raise SimulationConfigurationError("duration must be positive")
-
         if "polarization" in params:
             try:
                 polarization = deserialize_polarization(params["polarization"])
@@ -499,4 +412,16 @@ def validate_simulation_case(
         except ValueError as exc:
             raise SimulationConfigurationError(str(exc)) from exc
 
-    return options
+    return _ValidatedSimulationConfiguration(
+        options=options,
+        generated_field=generated_field,
+    )
+
+
+def validate_simulation_case(
+    params: Mapping[str, Any],
+    *,
+    field: ScalarField | CartesianField | None = None,
+) -> PropagationOptions:
+    """Validate one generated or externally sampled case and return its options."""
+    return _resolve_simulation_case(params, field=field).options

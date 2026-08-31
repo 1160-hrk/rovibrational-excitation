@@ -1,5 +1,8 @@
 # テストスイートの現状レポート
 
+> Historical pre-refactor snapshot. The current authoritative baseline is
+> `docs/refactoring/README.md`; counts and paths below are intentionally not current.
+
 ## 1. 概要
 
 - **総テスト数**: 313

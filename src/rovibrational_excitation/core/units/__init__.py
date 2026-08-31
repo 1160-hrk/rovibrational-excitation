@@ -8,7 +8,6 @@ conversions, and validation throughout the codebase.
 from .constants import PhysicalConstants
 from .converters import UnitConverter, converter
 from .frequency import Frequency
-from .parameter_processor import ParameterProcessor, parameter_processor
 from .scalar_quantities import (
     DipoleMoment,
     ElectricFieldAmplitude,
@@ -30,6 +29,4 @@ __all__ = [
     "ThirdOrderDispersion",
     "UnitValidator",
     "validator",
-    "ParameterProcessor",
-    "parameter_processor",
 ]

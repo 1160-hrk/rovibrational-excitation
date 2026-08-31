@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-30
+Last verified: 2026-08-31
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-d plus D-044 executable examples
+Verified structural checkpoint: P4.3-e D-045 typed generated fields
 Latest infrastructure checkpoint: `ea07387`
 
 ## Purpose
@@ -65,6 +65,9 @@ The authoritative details and formulas are in
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
   dense/CSR storage, trajectory, stride, scaling, and renormalization policy.
+- Every normal-simulation scalar physical input requires its own explicit unit.
+  Caller value/unit pairs are saved unchanged; frozen boundaries convert once
+  to the documented internal canonical units.
 - Public propagation requires explicit Cartesian axes or one scalar coupling
   axis and accepts no unrestricted keyword arguments.
 - Split-operator calls require the constructor interaction mode again; omission
@@ -132,14 +135,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-d:
+Current local CPU baseline after P4.3-e:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-925 passed, 10 GPU tests skipped (935 collected)
+937 passed, 10 GPU tests skipped (947 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -210,13 +213,13 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 by replacing or deleting the general
-   `ParameterProcessor` value mutation that can retain stale input-unit labels,
-   then extend typed quantity boundaries to remaining public time, field,
-   dipole, GDD, and TOD inputs. D-043 has resolved spectral modulation,
-   dispersion, intensity, and strict propagation validation. Structural
-   field-grid validation never resamples, and numerical adequacy remains a
-   separate explicit convergence report.
+1. Continue Phase 4 with a read-only audit of physical scalar inputs outside
+   normal simulation. D-045 has deleted `ParameterProcessor`; normal simulation
+   now requires explicit value/unit pairs, preserves them for provenance, and
+   converts once through frozen boundaries. Migrate another boundary only after
+   characterizing its current units and numerical behavior. Structural
+   field-grid validation never resamples, and numerical adequacy remains a separate
+   explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

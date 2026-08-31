@@ -17,7 +17,6 @@ from rovibrational_excitation.fields import (
     ElectricField as RealElectricField,
 )
 from rovibrational_excitation.models import LinMolParameters, build_model
-from rovibrational_excitation.simulation.config import process_params
 from rovibrational_excitation.simulation.runner import _run_one
 
 _NUMPY_DENSE = ExecutionPolicy(backend=ArrayBackend.NUMPY, storage=MatrixStorage.DENSE)
@@ -173,25 +172,6 @@ def test_vibladder_frequency_units_preserve_model_arrays(unit):
         reference.dipole.mu("z"),
         rtol=4.0e-15,
         atol=0.0,
-    )
-
-
-def test_twolevel_runner_processing_does_not_double_convert_energy_gap():
-    params = {
-        "basis_type": "twolevel",
-        "energy_gap": 1.5,
-        "energy_gap_units": "eV",
-        "dipole_scale": 1.0e-30,
-        "dipole_scale_units": "C*m",
-        "initial_states": [0],
-    }
-
-    reference = _build_model(params)
-    processed = _build_model(process_params(params))
-
-    np.testing.assert_array_equal(
-        processed.hamiltonian.matrix,
-        reference.hamiltonian.matrix,
     )
 
 
@@ -461,15 +441,21 @@ def test_build_model_preserves_missing_parameter_error():
 def test_runner_zero_field_preserves_population_after_model_split(model_params):
     params = {
         "t_start": 0.0,
+        "t_start_units": "fs",
         "t_end": 0.2,
+        "t_end_units": "fs",
         "dt": 0.1,
+        "dt_units": "fs",
         "duration": 0.1,
+        "duration_units": "fs",
         "t_center": 0.1,
+        "t_center_units": "fs",
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
         "carrier_frequency": 1.0,
         "carrier_frequency_units": "PHz",
         "amplitude": 0.0,
+        "amplitude_units": "V/m",
         "initial_states": [0],
         "save": False,
         "backend": "numpy",
@@ -515,15 +501,21 @@ def test_runner_uses_interval_duration_and_one_backend(
         "dipole_scale_units": "C*m",
         "energy_gap_units": "rad/fs",
         "t_start": 2.0,
+        "t_start_units": "fs",
         "t_end": 6.0,
+        "t_end_units": "fs",
         "dt": 1.0,
+        "dt_units": "fs",
         "carrier_frequency": 1.0,
         "carrier_frequency_units": "PHz",
         "duration": 2.0,
+        "duration_units": "fs",
         "t_center": 0.0,
+        "t_center_units": "fs",
         "envelope_kind": "gaussian_fwhm",
         "modulation_kind": "none",
         "amplitude": 0.0,
+        "amplitude_units": "V/m",
         "phase_rad": 0.37,
         "initial_states": [0],
         "backend": "numpy",

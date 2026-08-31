@@ -24,8 +24,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ..core.time import TimeGrid
-from ..core.units import Frequency, TimeQuantity
 from ..fields import SampledField
 from ..io import (
     CheckpointManager,
@@ -49,9 +47,7 @@ from .case import SimulationCase
 from .config import (
     load_params_file as _load_params_file,
 )
-from .config import (
-    process_params as _process_params,
-)
+from .generated import GeneratedFieldParameters
 from .sweep import expand_cases as _expand_cases
 from .sweep import label as _label
 
@@ -121,7 +117,7 @@ def _parallel_run_safe(
 def _generated_sampled_field(
     params: Mapping[str, Any],
     *,
-    time_grid: TimeGrid,
+    generated_parameters: GeneratedFieldParameters,
     use_m_average: bool,
     expects_cartesian: bool,
 ) -> SampledField:
@@ -140,34 +136,31 @@ def _generated_sampled_field(
 
     from rovibrational_excitation.fields.envelopes import get_generated_envelope
 
-    carrier_frequency = Frequency(
-        params["carrier_frequency"],
-        params["carrier_frequency_units"],
-    )
+    time_grid = generated_parameters.time_grid
     generated = ElectricField.from_time_grid(time_grid)
     generated.add_dispersed_Efield(
-        envelope_func=get_generated_envelope(params["envelope_kind"]),
-        duration=params["duration"],
-        t_center=params["t_center"],
-        carrier_freq=carrier_frequency.angular_rad_per_fs,
-        amplitude=params["amplitude"],
+        envelope_func=get_generated_envelope(generated_parameters.envelope_kind),
+        duration=generated_parameters.duration_fs,
+        t_center=generated_parameters.t_center_fs,
+        carrier_freq=generated_parameters.carrier_angular_rad_per_fs,
+        amplitude=generated_parameters.amplitude_v_per_m,
         polarization=polarization,
-        phase_rad=params.get("phase_rad", 0.0),
-        gdd=params.get("gdd", 0.0),
-        tod=params.get("tod", 0.0),
+        phase_rad=generated_parameters.phase_rad,
+        gdd=generated_parameters.gdd_fs2,
+        tod=generated_parameters.tod_fs3,
+        duration_units="fs",
+        t_center_units="fs",
         carrier_freq_units="rad/fs",
+        gdd_units="fs^2",
+        tod_units="fs^3",
     )
-    if params["modulation_kind"] == "sinusoidal":
-        modulation_delay = TimeQuantity(
-            params["modulation_delay"],
-            params["modulation_delay_units"],
-        )
+    if generated_parameters.modulation_kind == "sinusoidal":
         generated.apply_sinusoidal_mod(
-            center_freq=carrier_frequency.cycles_per_fs,
-            modulation_depth=params["modulation_depth"],
-            delay_fs=modulation_delay.femtoseconds,
-            phase_rad=params.get("modulation_phase_rad", 0.0),
-            mode=params["modulation_mode"],
+            center_freq=generated_parameters.carrier_cycles_per_fs,
+            modulation_depth=generated_parameters.modulation_depth,
+            delay_fs=generated_parameters.modulation_delay_fs,
+            phase_rad=generated_parameters.modulation_phase_rad,
+            mode=generated_parameters.modulation_mode,
         )
 
     if expects_cartesian:
@@ -216,9 +209,10 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
     from rovibrational_excitation.dynamics.scaling.reporting import analyze_regime
     from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 
-    from .validation import validate_simulation_case
+    from .validation import _resolve_simulation_case
 
-    options = validate_simulation_case(params, field=field)
+    validated = _resolve_simulation_case(params, field=field)
+    options = validated.options
     execution_policy = options.execution
     use_m_average = (
         params["basis_type"].lower() == "linmol"
@@ -229,12 +223,13 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
         and params["representation"] == LinMolRepresentation.M_RESOLVED.value
     )
     if field is None:
-        time_grid = TimeGrid.from_bounds(
-            params["t_start"], params["t_end"], params["dt"]
-        )
+        generated_parameters = validated.generated_field
+        if generated_parameters is None:
+            raise RuntimeError("validated generated field parameters are unavailable")
+        time_grid = generated_parameters.time_grid
         E = _generated_sampled_field(
             params,
-            time_grid=time_grid,
+            generated_parameters=generated_parameters,
             use_m_average=use_m_average,
             expects_cartesian=expects_cartesian,
         )
@@ -395,17 +390,8 @@ def run_all_with_checkpoint(
         param_file_path = Path(params)
     elif isinstance(params, Mapping):
         print("📊 Loading parameters from dict")
-        raw_dict = dict(params)
-
-        # Apply default units and automatic conversion
-        # デフォルト単位を適用（後方互換性のため一時的にスキップ）
-        dict_with_defaults = raw_dict.copy()
-        base_dict = _process_params(dict_with_defaults)
-
-        if raw_dict != base_dict:
-            print("📋 Unit processing completed.")
-        else:
-            print("📋 No unit processing needed.")
+        base_dict = dict(params)
+        print("📋 Values and explicit unit labels loaded unchanged.")
         description = base_dict.get("description", "run")
         param_file_path = None
     else:
