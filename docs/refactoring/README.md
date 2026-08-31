@@ -19,6 +19,7 @@ tests, and the decision log.
 | `TARGET_ARCHITECTURE.md` | Target package tree, dependency rules, typed contracts, old-to-new mapping | Any architecture or ownership change |
 | `EXECUTION_PLAN.md` | Ordered phases, task IDs, acceptance criteria, commit rules | At the start and completion of every phase |
 | `API_INVENTORY.md` | Current exports, CLI/config routes, factories, examples, and v0.3 disposition | Any public/internal entry-point change |
+| `UNIT_BOUNDARY_AUDIT.md` | Remaining explicit-unit debt, safe order, and user-confirmation items | Any physical input boundary migration |
 | `VALIDATION_INVENTORY.md` | P1.2-B audit of standalone diagnostics, replacements, and unresolved scale-policy constants | Any legacy validation disposition or recovered scientific intent |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 

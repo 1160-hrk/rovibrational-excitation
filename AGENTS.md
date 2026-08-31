@@ -24,7 +24,8 @@ Before changing source code, read these files in order:
 3. `docs/refactoring/TARGET_ARCHITECTURE.md`
 4. `docs/refactoring/EXECUTION_PLAN.md`
 5. `docs/refactoring/FALLBACK_AUDIT.md`
-6. The source files and tests directly involved in the requested phase
+6. `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`
+7. The source files and tests directly involved in the requested phase
 
 `docs/refactoring/README.md` records the current baseline and document status.
 
@@ -214,7 +215,7 @@ workflow validation and translates model errors at its boundary.
 The next work is:
 
 1. Continue Phase 4 with a read-only audit of physical scalar inputs outside
-   normal simulation. D-045 has deleted `ParameterProcessor`; normal simulation
+   normal simulation, using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-045 has deleted `ParameterProcessor`; normal simulation
    now requires explicit value/unit pairs, preserves them for provenance, and
    converts once through frozen boundaries. Migrate another boundary only after
    characterizing its current units and numerical behavior. Structural

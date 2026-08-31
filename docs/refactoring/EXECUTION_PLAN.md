@@ -935,8 +935,8 @@ optional-GPU skips, and strict mypy passes for all 23 configured modules.
 
 Remaining Phase 4 work:
 
-- audit physical scalar inputs outside normal simulation and migrate only
-  boundaries that still combine a bare value with an implicit unit;
+- use `UNIT_BOUNDARY_AUDIT.md` to migrate physical scalar inputs outside
+  normal simulation only after characterizing their current units and behavior;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 
