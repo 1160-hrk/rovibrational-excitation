@@ -1875,8 +1875,7 @@ The implementation is divided into four bounded units:
 
 Regression tests cover missing pairs, cross-unit sampled-field and population
 equivalence, non-mutation, saved provenance, and batch-route preservation.
-Implementation commits: `b56eea2`, `3590667`, and the D-045
-generated-field checkpoint containing this update.
+Implementation commits: `b56eea2`, `3590667`, and `60629f1`.
 
 
 ## Open decisions
