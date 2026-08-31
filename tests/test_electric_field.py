@@ -36,6 +36,10 @@ def test_electricfield_basic():
         t_center=5,
         carrier_freq=0.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -55,6 +59,10 @@ def test_electricfield_basic():
             t_center=5,
             carrier_freq=0.0,
             amplitude=1.0,
+            amplitude_units="V/m",
+            duration_units="fs",
+            t_center_units="fs",
+            carrier_freq_units="PHz",
             polarization=np.array([1.0, 0.0, 0.0]),
         )
     # エラー: get_scalar_and_pol（可変偏光時）
@@ -114,6 +122,10 @@ def test_electricfield_multiple_pulses():
         t_center=-2.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -125,6 +137,10 @@ def test_electricfield_multiple_pulses():
         t_center=2.0,
         carrier_freq=1.0,
         amplitude=0.5,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -146,6 +162,10 @@ def test_electricfield_variable_polarization():
         t_center=-2.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -156,6 +176,10 @@ def test_electricfield_variable_polarization():
         t_center=2.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([0.0, 1.0]),
     )
 
@@ -177,9 +201,15 @@ def test_electricfield_dispersion():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         gdd=0.1,
+        gdd_units="fs^2",
         tod=0.01,
+        tod_units="fs^3",
         const_polarisation=True,
     )
 
@@ -189,6 +219,179 @@ def test_electricfield_dispersion():
     # スペクトル確認
     freq, E_freq = ef.get_Efield_spectrum()
     assert freq.shape[0] == E_freq.shape[0]
+
+
+def test_dispersed_field_canonical_samples_are_frozen():
+    """Unit-boundary changes must not alter generated pulse samples."""
+    field = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    field.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=1.4,
+        t_center=0.2,
+        carrier_freq=0.17,
+        amplitude=2.3e8,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
+        polarization=np.array([0.6, 0.8]),
+        phase_rad=0.31,
+        gdd=0.27,
+        gdd_units="fs^2",
+        tod=-0.04,
+        tod_units="fs^3",
+        const_polarisation=True,
+    )
+
+    expected = np.array(
+        [
+            [1.0988396859751078e6, 1.4651195813001459e6],
+            [3.4393162968382901e6, 4.5857550624510581e6],
+            [1.5927317040046394e7, 2.1236422720061876e7],
+            [5.3793443804035798e7, 7.1724591738714412e7],
+            [1.1397001998575211e8, 1.5196002664766946e8],
+            [1.1588126083909900e8, 1.5450834778546536e8],
+            [2.9771780987964757e7, 3.9695707983953036e7],
+            [-1.4374504539510943e7, -1.9166006052681237e7],
+            [-3.4539675614331835e6, -4.6052900819108728e6],
+        ]
+    )
+    expected_scalar = np.array(
+        [
+            1.8313994766251908e6,
+            5.7321938280637925e6,
+            2.6545528400077313e7,
+            8.9655739673392996e7,
+            1.8995003330958685e8,
+            1.9313543473183170e8,
+            4.9619634979941264e7,
+            -2.3957507565851577e7,
+            -5.7566126023886381e6,
+        ]
+    )
+
+    np.testing.assert_allclose(field.get_Efield(), expected, rtol=2e-15, atol=1e-8)
+    np.testing.assert_allclose(
+        field.get_scalar_field(), expected_scalar, rtol=2e-15, atol=1e-8
+    )
+
+
+def _explicit_pulse_kwargs() -> dict:
+    return {
+        "duration": 1.4,
+        "duration_units": "fs",
+        "t_center": 0.2,
+        "t_center_units": "fs",
+        "carrier_freq": 0.17,
+        "carrier_freq_units": "PHz",
+        "amplitude": 2.3e8,
+        "amplitude_units": "V/m",
+        "polarization": np.array([0.6, 0.8]),
+    }
+
+
+@pytest.mark.parametrize(
+    "missing_unit",
+    ["duration_units", "t_center_units", "carrier_freq_units", "amplitude_units"],
+)
+def test_dispersed_field_requires_every_primary_unit(missing_unit):
+    field = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    kwargs = _explicit_pulse_kwargs()
+    del kwargs[missing_unit]
+
+    with pytest.raises(TypeError, match=missing_unit):
+        field.add_dispersed_Efield(gaussian_fwhm, **kwargs)
+    np.testing.assert_array_equal(field.get_Efield(), np.zeros((9, 2)))
+
+
+def test_dispersed_field_converts_all_inputs_once_to_canonical_units():
+    canonical = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    canonical.add_dispersed_Efield(
+        gaussian_fwhm,
+        **_explicit_pulse_kwargs(),
+        gdd=0.27,
+        gdd_units="fs^2",
+        tod=-0.04,
+        tod_units="fs^3",
+        phase_rad=0.31,
+        const_polarisation=True,
+    )
+
+    converted = ElectricField(np.linspace(-0.002, 0.002, 9), time_units="ps")
+    converted.add_dispersed_Efield(
+        gaussian_fwhm,
+        duration=0.0014,
+        duration_units="ps",
+        t_center=0.0002,
+        t_center_units="ps",
+        carrier_freq=170.0,
+        carrier_freq_units="THz",
+        amplitude=2.3,
+        amplitude_units="MV/cm",
+        polarization=np.array([0.6, 0.8]),
+        gdd=2.7e-7,
+        gdd_units="ps^2",
+        tod=-4.0e-11,
+        tod_units="ps^3",
+        phase_rad=0.31,
+        const_polarisation=True,
+    )
+
+    np.testing.assert_allclose(converted.get_time_SI(), canonical.get_time_SI())
+    np.testing.assert_allclose(
+        converted.get_Efield(), canonical.get_Efield(), rtol=1e-14, atol=1e-8
+    )
+    np.testing.assert_allclose(
+        converted.get_scalar_field(),
+        canonical.get_scalar_field(),
+        rtol=1e-14,
+        atol=1e-8,
+    )
+
+
+@pytest.mark.parametrize(
+    "pair_override",
+    [
+        {"gdd": 0.1},
+        {"gdd_units": "fs^2"},
+        {"tod": 0.01},
+        {"tod_units": "fs^3"},
+    ],
+)
+def test_dispersed_field_rejects_unpaired_dispersion_input(pair_override):
+    field = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    kwargs = {**_explicit_pulse_kwargs(), **pair_override}
+
+    with pytest.raises(ValueError, match="must be provided together"):
+        field.add_dispersed_Efield(gaussian_fwhm, **kwargs)
+    np.testing.assert_array_equal(field.get_Efield(), np.zeros((9, 2)))
+    assert field._constant_pol is None
+
+
+def test_dispersed_field_omitted_dispersion_is_exact_explicit_zero():
+    omitted = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    omitted.add_dispersed_Efield(gaussian_fwhm, **_explicit_pulse_kwargs())
+    explicit = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    explicit.add_dispersed_Efield(
+        gaussian_fwhm,
+        **_explicit_pulse_kwargs(),
+        gdd=0.0,
+        gdd_units="fs^2",
+        tod=0.0,
+        tod_units="fs^3",
+    )
+
+    np.testing.assert_array_equal(omitted.get_Efield(), explicit.get_Efield())
+
+
+def test_dispersed_field_rejects_intensity_as_amplitude_units():
+    field = ElectricField(np.linspace(-2.0, 2.0, 9), time_units="fs")
+    kwargs = {**_explicit_pulse_kwargs(), "amplitude_units": "W/cm^2"}
+
+    with pytest.raises(ValueError, match="electric-field amplitude"):
+        field.add_dispersed_Efield(gaussian_fwhm, **kwargs)
+    np.testing.assert_array_equal(field.get_Efield(), np.zeros((9, 2)))
+    assert field._constant_pol is None
 
 
 def test_electricfield_modulation():
@@ -203,6 +406,10 @@ def test_electricfield_modulation():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -397,6 +604,10 @@ def test_electricfield_spectrum_analysis():
         t_center=0.0,
         carrier_freq=carrier_freq,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -433,6 +644,10 @@ def test_electricfield_edge_cases():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )

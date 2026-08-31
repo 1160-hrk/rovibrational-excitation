@@ -67,6 +67,10 @@ def test_nondimensionalization_unit_options():
         t_center=0.0,
         carrier_freq=0.1,
         amplitude=1e8,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -128,6 +132,7 @@ def test_time_unit_handling():
         carrier_freq=0.1,
         carrier_freq_units="PHz",
         amplitude=1e8,
+        amplitude_units="V/m",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -142,6 +147,7 @@ def test_time_unit_handling():
         carrier_freq=0.1 / 1e-15,
         carrier_freq_units="Hz",
         amplitude=1e8,
+        amplitude_units="V/m",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -223,6 +229,10 @@ def test_physical_regime_analysis():
         t_center=0.0,
         carrier_freq=0.159,
         amplitude=1e7,  # 弱い電場
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -234,6 +244,10 @@ def test_physical_regime_analysis():
         t_center=0.0,
         carrier_freq=0.159,
         amplitude=1e10,  # 強い電場
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 

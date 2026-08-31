@@ -56,6 +56,10 @@ def test_nondimensionalize_system_basic():
         t_center=0.0,
         carrier_freq=0.1,
         amplitude=1e8,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -187,6 +191,10 @@ def test_nondimensionalize_with_realistic_system():
         t_center=0.0,
         carrier_freq=0.159,
         amplitude=1e9,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 

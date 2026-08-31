@@ -163,6 +163,10 @@ def test_high_level_circular_modes_use_explicit_physics_contracts():
         t_center=0.0,
         carrier_freq=0.16,
         amplitude=2.0e8,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 1.0j]) / np.sqrt(2.0),
         const_polarisation=True,
     )

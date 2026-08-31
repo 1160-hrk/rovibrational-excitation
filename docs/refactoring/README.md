@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 945 passed, 10 skipped (955 collected) |
+| Pytest | 957 passed, 10 skipped (967 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,12 +55,13 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-31. P4.3-g unit 2 implements
-D-048: direct low-level field construction requires a time unit, converts once
-to internal fs, and stores fields only in V/m. Equivalent seconds and fs input
-produce the same canonical arrays; optimizer grids, indices, and values are
-unchanged. Unit 1 implements D-047: arbitrary low-level field arrays require a
-direct amplitude unit and convert once to V/m.
+These rows were last verified locally on 2026-08-31. P4.3-g unit 3 implements
+D-049 and completes the low-level field-unit boundary: generated pulses require
+time, carrier, and direct amplitude units, while GDD/TOD are complete optional
+pairs or exact zero. Frozen nonzero-dispersion samples remain unchanged and
+cross-unit waveforms agree within conversion roundoff. Unit 2 implements D-048
+for direct construction and canonical fs/V/m storage; unit 1 implements D-047
+for arbitrary arrays. Optimizer grids, indices, and values remain unchanged.
 P4.3-f implements D-046:
 spectroscopy conditions, wavenumber grids, and device resolution now require
 exact unit labels and numerical code consumes frozen canonical values. All

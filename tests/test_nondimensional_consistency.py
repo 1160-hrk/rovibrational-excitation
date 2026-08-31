@@ -59,6 +59,10 @@ class TestNondimensionalConsistency:
             t_center=tc,
             carrier_freq=self.omega01 / (2 * np.pi),
             amplitude=amplitude,
+            amplitude_units="V/m",
+            duration_units="fs",
+            t_center_units="fs",
+            carrier_freq_units="PHz",
             polarization=polarization,
             const_polarisation=True,
         )

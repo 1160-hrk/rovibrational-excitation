@@ -144,6 +144,7 @@ def run_krotov_optimization(
         t_center_units="fs",
         carrier_freq_units="PHz",
         amplitude=params.get("amplitude_initial", DEFAULT_PARAMS["amplitude_initial"]),
+        amplitude_units="V/m",
         polarization=params.get("pol_initial", DEFAULT_PARAMS["pol_initial"]),
         phase_rad=0.0,
         gdd=params.get("gdd_initial", DEFAULT_PARAMS["gdd_initial"]),

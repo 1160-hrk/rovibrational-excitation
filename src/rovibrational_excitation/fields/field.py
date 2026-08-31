@@ -208,19 +208,36 @@ class ElectricField:
         t_center: float,
         carrier_freq: float,
         *,
-        duration_units: str = "fs",
-        t_center_units: str = "fs",
-        carrier_freq_units: str = "PHz",
-        amplitude: float = 1.0,
+        duration_units: str,
+        t_center_units: str,
+        carrier_freq_units: str,
+        amplitude: float,
+        amplitude_units: str,
         polarization: np.ndarray = np.array([1.0, 0.0]),
         phase_rad: float = 0.0,
-        gdd: float = 0.0,
-        tod: float = 0.0,
-        gdd_units: str = "fs^2",
-        tod_units: str = "fs^3",
+        gdd: float | None = None,
+        tod: float | None = None,
+        gdd_units: str | None = None,
+        tod_units: str | None = None,
         const_polarisation: bool | None = None,
     ) -> None:
-        """分散付き電場パルスを追加"""
+        """Add a dispersed pulse after one explicit conversion to fs and V/m.
+
+        ``duration_units``, ``t_center_units``, ``carrier_freq_units``, and
+        ``amplitude_units`` are required. ``amplitude_units`` accepts direct
+        electric-field amplitude units only, not intensity. GDD and TOD each
+        require both their value and unit when present; omitting both members
+        of a pair applies the exact zero modifier.
+        """
+        if amplitude_units not in converter.get_supported_units("field_amplitude"):
+            raise ValueError(
+                "amplitude_units must be a supported electric-field amplitude unit"
+            )
+        if (gdd is None) != (gdd_units is None):
+            raise ValueError("gdd and gdd_units must be provided together")
+        if (tod is None) != (tod_units is None):
+            raise ValueError("tod and tod_units must be provided together")
+
         polarization = np.array(polarization, dtype=np.complex128)
         if polarization.shape != (2,):
             raise ValueError("polarization must be a 2-element vector")
@@ -248,10 +265,17 @@ class ElectricField:
         # 単位変換
         duration_fs = float(converter.convert_time(duration, duration_units, "fs"))
         t_center_fs = float(converter.convert_time(t_center, t_center_units, "fs"))
+        amplitude_v_per_m = float(
+            converter.convert_electric_field(amplitude, amplitude_units, "V/m")
+        )
 
         # GDD / TOD unit conversion to fs^2, fs^3
-        gdd_fs2 = float(converter.convert_gdd(gdd, gdd_units, "fs^2"))
-        tod_fs3 = float(converter.convert_tod(tod, tod_units, "fs^3"))
+        gdd_fs2 = (
+            0.0 if gdd is None else float(converter.convert_gdd(gdd, gdd_units, "fs^2"))
+        )
+        tod_fs3 = (
+            0.0 if tod is None else float(converter.convert_tod(tod, tod_units, "fs^3"))
+        )
 
         if carrier_freq_units == "PHz":  # cycles per fs
             cycles_per_fs = carrier_freq
@@ -263,7 +287,9 @@ class ElectricField:
             cycles_per_fs = rad_per_fs / (2 * pi)
 
         # 包絡線とキャリア波の構築
-        envelope = envelope_func(self.tlist, t_center_fs, duration_fs) * amplitude
+        envelope = (
+            envelope_func(self.tlist, t_center_fs, duration_fs) * amplitude_v_per_m
+        )
         carrier = np.exp(
             1j * (2 * pi * cycles_per_fs * (self.tlist - t_center_fs) + phase_rad)
         )

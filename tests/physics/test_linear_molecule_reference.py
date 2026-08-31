@@ -206,6 +206,10 @@ def _resolved_propagation(initial, polarization, *, sparse=False):
         t_center=0.04,
         carrier_freq=0.0,
         amplitude=8.0e8,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.asarray(polarization),
     )
     basis = LinMolBasis(
@@ -363,6 +367,10 @@ def _full_m_reference(params):
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
     basis = LinMolBasis(
@@ -508,6 +516,10 @@ def test_m_average_external_scalar_field_matches_generated_field_exactly():
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.asarray(params["polarization"]),
     )
     field = ScalarField(grid, generated.get_scalar_field())

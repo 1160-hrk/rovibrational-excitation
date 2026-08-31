@@ -143,6 +143,10 @@ def _constant_field(polarization: np.ndarray) -> ElectricField:
         t_center=0.0,
         carrier_freq=0.0,
         amplitude=FIELD_V_PER_M,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=polarization,
         const_polarisation=True,
     )

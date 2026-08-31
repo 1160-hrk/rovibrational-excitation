@@ -3,7 +3,7 @@
 Last verified: 2026-08-31
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-048 canonical low-level field construction
+Latest API checkpoint: D-049 explicit low-level generated-pulse units
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -106,8 +106,9 @@ tests that have not yet migrated.
 `add_arbitrary_Efield` requires a direct field-amplitude unit and stores V/m;
 intensity labels are inapplicable to signed arbitrary samples. Direct
 construction requires `time_units`, converts to fs, and has no constructor
-field-unit selector because stored fields are always V/m. Generated-pulse unit
-defaults remain P4.3-g migration work.
+field-unit selector because stored fields are always V/m.
+`add_dispersed_Efield` requires duration, center, carrier, and direct amplitude
+units. Optional GDD/TOD require complete value/unit pairs or exact omission.
 
 The modulation helpers remain public under `fields` only if Phase 4/5 tests
 establish their units and sampling contracts. Until then their stability is

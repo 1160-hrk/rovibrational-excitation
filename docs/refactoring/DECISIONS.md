@@ -1963,7 +1963,39 @@ calls are unchanged. The raw-array nondimensionalization boundary continues to
 require its own time label and receives the field's canonical fs values.
 
 P4.3-g remains incomplete only for generated low-level pulse amplitude and
-optional dispersion unit pairing. Implementation commit: this checkpoint.
+optional dispersion unit pairing. Implementation commit: `8d3e1e6`.
+
+### D-049: Low-level generated pulses require explicit physical units
+
+Status: Accepted and implemented on 2026-08-31 as P4.3-g unit 3.
+
+Scope: `ElectricField.add_dispersed_Efield`, its active source, test, and
+benchmark callers, and the existing Krotov initial-pulse adapter.
+
+Every low-level generated pulse now requires `duration_units`,
+`t_center_units`, `carrier_freq_units`, and `amplitude_units`; `amplitude`
+itself is also required. Each quantity is converted once to the existing
+canonical fs, fs, cycles/fs, and V/m representation before waveform
+evaluation. Only direct electric-field amplitude labels are accepted.
+Intensity labels raise because they do not preserve a caller-defined signed
+amplitude without an additional physical reconstruction rule.
+
+GDD and TOD remain independent optional effects. Each accepts either a complete
+value/unit pair or no pair. Complete pairs convert once to fs^2 or fs^3;
+omission gives the same exact zero used previously. Partial pairs raise before
+polarization state or field samples are mutated.
+
+The envelope functions, carrier phase, `2*pi` handling, dispersion Taylor
+coefficients, FFT implementation, polarization inference, scalar split field,
+and addition order are unchanged. A frozen nonzero-GDD/TOD sample reference is
+unchanged at double precision. Equivalent ps/THz/MV/cm/ps^2/ps^3 and canonical
+inputs agree within conversion roundoff. The Krotov adapter merely labels its
+existing amplitude V/m; its defaults, field values, update indices, and V=0 to
+V=3 integration reference are unchanged.
+
+This completes P4.3-g. Optimization-specific initial-pulse defaults and unit
+encoded parameter names remain the separately characterized P4.3-h work.
+Implementation commit: this checkpoint.
 
 
 ## Open decisions

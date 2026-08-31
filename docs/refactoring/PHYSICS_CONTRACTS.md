@@ -954,6 +954,16 @@ without another caller unit choice. Field-scale output requires an explicit
 direct amplitude unit. The legacy-named `get_time_SI()` returns canonical fs,
 not seconds; `get_time_in_units()` is the explicit conversion boundary.
 
+Low-level `add_dispersed_Efield` calls require explicit units for duration,
+center time, carrier frequency, and amplitude. Inputs are converted once to
+fs, fs, cycles/fs, and V/m before the unchanged envelope, carrier, and
+dispersion formulas run. Amplitude accepts direct electric-field units only;
+cycle-averaged intensity cannot label an already defined signed amplitude.
+GDD and TOD are independent optional value/unit pairs. Supplying either member
+without the other is an error; omitting both members of a pair applies exactly
+zero fs^2 or fs^3. No pulse sample, polarization decision, FFT operation, or
+optimizer time grid is repaired or inferred by this boundary.
+
 Generated pulses require the serialization-safe `envelope_kind` and
 `modulation_kind` discriminators. Supported generated envelopes are `gaussian`,
 `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`; `duration` retains the

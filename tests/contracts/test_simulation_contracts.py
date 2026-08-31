@@ -634,6 +634,10 @@ def test_generated_envelope_kind_preserves_existing_samples(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -678,6 +682,10 @@ def test_sinusoidal_modulation_kind_matches_field_api(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
     expected.apply_sinusoidal_mod(
@@ -753,6 +761,10 @@ def test_external_scalar_field_matches_existing_generated_twolevel_calculation()
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
     field = ScalarField(grid, generated.get_scalar_field())
@@ -821,6 +833,10 @@ def test_external_cartesian_field_matches_existing_generated_linmol_calculation(
             params["carrier_frequency"], params["carrier_frequency_units"]
         ).cycles_per_fs,
         amplitude=params["amplitude"],
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.asarray(params["polarization"]),
     )
     components = generated.get_Efield()

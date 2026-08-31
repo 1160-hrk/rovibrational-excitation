@@ -94,6 +94,10 @@ def test_full_simulation_workflow():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -148,6 +152,10 @@ def test_multi_level_excitation():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1e8,  # 弱い電場で安定性を確保
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -187,6 +195,10 @@ def test_different_basis_types():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -242,6 +254,10 @@ def test_mixed_vs_pure_states():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -427,6 +443,10 @@ def test_population_dynamics():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.05,  # より弱い電場で安定性を確保
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -478,6 +498,10 @@ def test_coherent_vs_incoherent():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.2,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -541,6 +565,10 @@ def test_field_strength_scaling():
             t_center=0.0,
             carrier_freq=1.0,  # 共鳴周波数に調整
             amplitude=amp,
+            amplitude_units="V/m",
+            duration_units="fs",
+            t_center_units="fs",
+            carrier_freq_units="PHz",
             polarization=np.array([1.0, 0.0]),
             const_polarisation=True,
         )
@@ -601,6 +629,10 @@ def test_numerical_precision():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.01,  # 弱い電場
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )

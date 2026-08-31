@@ -167,6 +167,10 @@ def test_schrodinger_propagation_with_constant_polarization():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,  # 弱い電場で安定性を確保
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -206,6 +210,10 @@ def test_schrodinger_propagation_with_variable_polarization():
         t_center=-1.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -216,6 +224,10 @@ def test_schrodinger_propagation_with_variable_polarization():
         t_center=1.0,
         carrier_freq=1.0,
         amplitude=1.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([0.0, 1.0]),
     )
 
@@ -239,6 +251,10 @@ def test_schrodinger_propagation_with_time_return():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -286,6 +302,10 @@ def test_mixed_state_propagation_detailed():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -324,6 +344,10 @@ def test_mixed_state_propagation_with_time():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -356,6 +380,10 @@ def test_propagation_sample_stride():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )

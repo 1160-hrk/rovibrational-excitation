@@ -277,6 +277,10 @@ def _high_level_time_problem():
         t_center=0.0,
         carrier_freq=0.0,
         amplitude=0.0,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )

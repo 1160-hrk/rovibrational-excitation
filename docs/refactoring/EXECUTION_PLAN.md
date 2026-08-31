@@ -960,10 +960,19 @@ is labeled fs without changing local-optimizer points, endpoints, slices,
 indices, values, or RK4 calls. The complete CPU suite remains 945 passed with
 10 optional-GPU skips.
 
+P4.3-g unit 3 implements D-049 on 2026-08-31 and completes the low-level
+field-unit boundary. Generated pulses require duration, center, carrier, and
+amplitude units; amplitude accepts direct field units only. GDD and TOD require
+a complete value/unit pair when present and otherwise retain exact zero.
+Canonical nonzero-dispersion samples are frozen, and cross-unit pulse outputs
+agree within double-precision conversion roundoff. No waveform formula,
+polarization path, optimizer grid, update index, or Krotov reference changes.
+The complete CPU suite passes 957 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- finish generated low-level pulse amplitude and optional dispersion quantity
-  units using `UNIT_BOUNDARY_AUDIT.md`;
+- continue P4.3-h with the separately characterized Krotov initial-pulse
+  parameter boundary from `UNIT_BOUNDARY_AUDIT.md`;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

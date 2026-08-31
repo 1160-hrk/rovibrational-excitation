@@ -69,6 +69,10 @@ def test_large_system_performance():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1e9,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -113,6 +117,10 @@ def test_very_large_system():
         t_center=0.0,
         carrier_freq=omega / (2 * np.pi),
         amplitude=1e9,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -156,6 +164,10 @@ def test_long_time_evolution():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1e7,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -200,6 +212,10 @@ def test_memory_efficiency():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -240,6 +256,10 @@ def test_stride_performance():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=1e9,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )
@@ -290,6 +310,10 @@ def test_numerical_stability_large_system():
         t_center=0.0,
         carrier_freq=omega / (2 * np.pi),  # 弱い場で数値誤差を最小化
         amplitude=1e8,  # 弱い相互作用
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
     )
 
@@ -349,6 +373,10 @@ def test_electric_field_performance():
             t_center=i * 2 - 4,
             carrier_freq=1.0 + i * 0.1,
             amplitude=0.1,
+            amplitude_units="V/m",
+            duration_units="fs",
+            t_center_units="fs",
+            carrier_freq_units="PHz",
             polarization=np.array([1.0, 0.0]),
             const_polarisation=True,
         )
@@ -379,6 +407,10 @@ def test_backend_performance_comparison():
         t_center=0.0,
         carrier_freq=1.0,
         amplitude=0.1,
+        amplitude_units="V/m",
+        duration_units="fs",
+        t_center_units="fs",
+        carrier_freq_units="PHz",
         polarization=np.array([1.0, 0.0]),
         const_polarisation=True,
     )

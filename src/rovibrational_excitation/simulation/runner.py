@@ -151,6 +151,7 @@ def _generated_sampled_field(
         duration_units="fs",
         t_center_units="fs",
         carrier_freq_units="rad/fs",
+        amplitude_units="V/m",
         gdd_units="fs^2",
         tod_units="fs^3",
     )
