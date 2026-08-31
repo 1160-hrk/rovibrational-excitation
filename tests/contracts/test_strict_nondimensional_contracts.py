@@ -15,7 +15,7 @@ HBAR = 1.054571817e-34
 
 
 def _constant_field(values: np.ndarray) -> ElectricField:
-    field = ElectricField(np.linspace(0.0, 0.2, 5))
+    field = ElectricField(np.linspace(0.0, 0.2, 5), time_units="fs")
     field.add_arbitrary_Efield(
         np.asarray(values, dtype=float),
         field_units="V/m",
@@ -25,7 +25,7 @@ def _constant_field(values: np.ndarray) -> ElectricField:
 
 def test_array_api_requires_explicit_hamiltonian_and_time_units():
     zero = np.zeros((2, 2))
-    field = ZeroField(np.linspace(0.0, 0.2, 5))
+    field = ZeroField(np.linspace(0.0, 0.2, 5), time_units="fs")
     with pytest.raises(TypeError, match="H0_units"):
         nondimensionalize_system(zero, zero, zero, field)
 
@@ -81,7 +81,7 @@ def test_gapless_driven_system_uses_interaction_energy():
 
 
 def test_regular_electric_field_that_is_identically_zero_is_rejected():
-    field = ElectricField(np.linspace(0.0, 0.2, 5))
+    field = ElectricField(np.linspace(0.0, 0.2, 5), time_units="fs")
     h0 = np.diag([0.0, 2.0e-21])
     mu = np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]])
 
@@ -92,7 +92,7 @@ def test_regular_electric_field_that_is_identically_zero_is_rejected():
 
 
 def test_explicit_zero_field_has_inactive_field_scale_and_zero_coupling():
-    field = ZeroField(np.linspace(0.0, 0.2, 5))
+    field = ZeroField(np.linspace(0.0, 0.2, 5), time_units="fs")
     h0 = np.diag([1.0e-21, 3.0e-21])
     mu = np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]])
 
@@ -119,7 +119,7 @@ def test_driven_problem_with_zero_coupling_operator_is_rejected():
 
 
 def test_all_zero_generator_requires_high_level_trivial_evolution():
-    field = ZeroField(np.linspace(0.0, 0.2, 5))
+    field = ZeroField(np.linspace(0.0, 0.2, 5), time_units="fs")
     zero = np.zeros((2, 2))
 
     with pytest.raises(ValueError, match="no characteristic energy"):
@@ -152,7 +152,7 @@ class _TwoLevelDipole:
 
 def test_centering_restores_absolute_wavefunction_phase():
     tlist = np.linspace(0.0, 2.0, 201)
-    field = ElectricField(tlist)
+    field = ElectricField(tlist, time_units="fs")
     field.add_arbitrary_Efield(
         np.tile([1.0e8, 0.0], (tlist.size, 1)),
         field_units="V/m",
@@ -225,7 +225,7 @@ def test_nonhermitian_coupling_operator_is_rejected():
 
 def test_auto_timestep_is_rejected_instead_of_resampling():
     tlist = np.linspace(0.0, 0.2, 5)
-    field = ElectricField(tlist)
+    field = ElectricField(tlist, time_units="fs")
     field.add_arbitrary_Efield(
         np.tile([1.0e8, 0.0], (tlist.size, 1)),
         field_units="V/m",

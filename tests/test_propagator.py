@@ -81,7 +81,7 @@ class DummyDipoleOffDiag:
 
 def test_schrodinger_propagation():
     tlist = np.linspace(0, 1, 3)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 1.0
     LinMolBasis(
         V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
@@ -95,7 +95,7 @@ def test_schrodinger_propagation():
 
 def test_mixed_state_propagation():
     tlist = np.linspace(0, 1, 3)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 1.0
     LinMolBasis(
         V_max=0, J_max=1, use_M=False, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
@@ -158,7 +158,7 @@ def test_liouville_propagation():
 def test_schrodinger_propagation_with_constant_polarization():
     """一定偏光でのSchrodinger伝播テスト（Split-Operator使用）"""
     tlist = np.linspace(-5, 5, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 一定偏光のパルスを追加（より弱い電場で安定性を確保）
     ef.add_dispersed_Efield(
@@ -197,7 +197,7 @@ def test_schrodinger_propagation_with_constant_polarization():
 def test_schrodinger_propagation_with_variable_polarization():
     """可変偏光でのSchrodinger伝播テスト（RK4使用）"""
     tlist = np.linspace(-5, 5, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 第1パルス（x偏光）
     ef.add_dispersed_Efield(
@@ -232,7 +232,7 @@ def test_schrodinger_propagation_with_variable_polarization():
 def test_schrodinger_propagation_with_time_return():
     """時間配列も返すSchrodinger伝播テスト"""
     tlist = np.linspace(-2, 2, 51)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -258,7 +258,7 @@ def test_schrodinger_propagation_with_time_return():
 def test_schrodinger_propagation_different_axes():
     """異なる軸設定でのテスト"""
     tlist = np.linspace(-1, 1, 21)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 0.1  # Ex
     ef.Efield[:, 1] = 0.05  # Ey
 
@@ -279,7 +279,7 @@ def test_schrodinger_propagation_different_axes():
 def test_mixed_state_propagation_detailed():
     """詳細なmixed state伝播テスト"""
     tlist = np.linspace(-2, 2, 51)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -317,7 +317,7 @@ def test_mixed_state_propagation_detailed():
 def test_mixed_state_propagation_with_time():
     """時間配列も返すmixed state伝播テスト"""
     tlist = np.linspace(-2, 2, 51)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -349,7 +349,7 @@ def test_mixed_state_propagation_with_time():
 def test_propagation_sample_stride():
     """サンプリングストライドのテスト"""
     tlist = np.linspace(-2, 2, 101)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -381,7 +381,7 @@ def test_propagation_sample_stride():
 def test_propagation_backend_consistency():
     """バックエンド間の一貫性テスト"""
     tlist = np.linspace(-1, 1, 21)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 0.1
 
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
@@ -395,7 +395,7 @@ def test_propagation_backend_consistency():
 def test_propagation_error_cases():
     """エラー処理のテスト"""
     tlist = np.linspace(-1, 1, 21)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 0.1
 
     H0 = Hamiltonian(np.diag([0.0, 1.0]), units="J")
@@ -416,7 +416,7 @@ def test_propagation_error_cases():
 def test_propagation_large_system():
     """大きなシステムでのテスト"""
     tlist = np.linspace(-1, 1, 21)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     ef.Efield[:, 0] = 0.01
 
     # 4次元システム

@@ -1930,9 +1930,40 @@ and RK4 consumption are byte-for-byte untouched. The Krotov V=0 to V=3
 integration reference and all local optimizer time/index characterizations
 remain green.
 
-P4.3-g remains incomplete: constructor unit defaults and generated low-level
-pulse amplitude/GDD/TOD pairs are separate units. Implementation commit: this
-checkpoint commit.
+P4.3-g remains incomplete: constructor units and generated low-level pulse
+amplitude/GDD/TOD pairs are separate units. Implementation commit: `dbeadae`.
+
+### D-048: Low-level field construction has one canonical storage unit system
+
+Status: Accepted and implemented on 2026-08-31 as P4.3-g unit 2.
+
+Scope: `ElectricField` and `ZeroField` direct construction,
+`ElectricField.from_time_grid`, field-scale reporting, and the two uncalled
+construction helpers.
+
+Direct construction requires the caller to label `tlist` with `time_units`.
+The array is converted once to fs and validated there. Construction accepts no
+`field_units`: there is no field-valued constructor input to label, and the
+zero-initialized field plus every subsequently stored sample use V/m.
+`from_time_grid` is the canonical path and therefore consumes its fs values
+without exposing a redundant unit selector.
+
+Field-scale reporting requires the desired direct amplitude unit and reports
+both the fixed V/m scale and that requested representation. Intensity labels
+raise. The uncalled `create_from_SI` and `create_with_units` alternatives are
+removed so there is one constructor contract. The legacy `get_time_SI` name is
+retained for now but is documented accurately as returning fs; explicit output
+conversion uses `get_time_in_units`.
+
+All active source, tests, and benchmark callers now state their time unit.
+Cross-unit tests prove that equivalent seconds and fs inputs produce the same
+canonical time and field arrays. Optimization-created grids are explicitly fs;
+the local optimizer's odd length, endpoints, slices, indices, values, and RK4
+calls are unchanged. The raw-array nondimensionalization boundary continues to
+require its own time label and receives the field's canonical fs values.
+
+P4.3-g remains incomplete only for generated low-level pulse amplitude and
+optional dispersion unit pairing. Implementation commit: this checkpoint.
 
 
 ## Open decisions

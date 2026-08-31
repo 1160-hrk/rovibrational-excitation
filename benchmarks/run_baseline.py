@@ -89,7 +89,7 @@ def _field(
     if field_points < 3 or field_points % 2 == 0:
         raise ValueError("field_points must be an odd integer >= 3")
     time_fs = np.linspace(0.0, 4.0, field_points)
-    field = ElectricField(time_fs)
+    field = ElectricField(time_fs, time_units="fs")
     field.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.5,

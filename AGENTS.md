@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-31
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-g unit 1 D-047 arbitrary field units
+Verified structural checkpoint: P4.3-g unit 2 D-048 field construction units
 Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
@@ -62,6 +62,8 @@ The authoritative details and formulas are in
 - The electric-field sampling interval is half of one propagation step:
   `propagation_dt = 2 * field_dt`.
 - An RK4 field grid contains `2 * n_steps + 1` points.
+- Low-level field construction requires `time_units`, converts time to fs, and
+  stores field samples only in V/m; it has no constructor field-unit selector.
 - Typed trajectories always include the exact endpoint; if stride does not
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
@@ -142,7 +144,7 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-g unit 1:
+Current local CPU baseline after P4.3-g unit 2:
 
 ~~~bash
 pytest -q
@@ -220,12 +222,12 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue P4.3-g with the low-level `ElectricField` constructor and generated
-   pulse boundary using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-047 already
-   covers arbitrary arrays. Characterize constructor defaults and pulse
-   amplitude/GDD/TOD pairing before changing those signatures. Structural
-   field-grid validation never resamples, and numerical adequacy remains a
-   separate explicit convergence report.
+1. Continue P4.3-g with the generated low-level pulse boundary using
+   `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-047 covers arbitrary arrays and
+   D-048 covers direct construction. Characterize pulse amplitude and optional
+   GDD/TOD pairing before changing that signature. Structural field-grid
+   validation never resamples, and numerical adequacy remains a separate
+   explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

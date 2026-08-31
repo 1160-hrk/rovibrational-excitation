@@ -136,7 +136,7 @@ def _flat_envelope(
 def _constant_field(polarization: np.ndarray) -> ElectricField:
     intervals = round(FINAL_TIME_FS / FIELD_DT_FS)
     time_fs = np.linspace(0.0, FINAL_TIME_FS, intervals + 1)
-    field = ElectricField(time_fs)
+    field = ElectricField(time_fs, time_units="fs")
     field.add_dispersed_Efield(
         _flat_envelope,
         duration=1.0,

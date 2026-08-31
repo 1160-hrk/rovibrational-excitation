@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-28
+Last verified: 2026-08-31
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -55,9 +55,12 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-31. P4.3-g unit 1 implements
-D-047: arbitrary low-level field arrays require a direct amplitude unit and
-convert once to V/m; optimizer grids, indices, and values are unchanged.
+These rows were last verified locally on 2026-08-31. P4.3-g unit 2 implements
+D-048: direct low-level field construction requires a time unit, converts once
+to internal fs, and stores fields only in V/m. Equivalent seconds and fs input
+produce the same canonical arrays; optimizer grids, indices, and values are
+unchanged. Unit 1 implements D-047: arbitrary low-level field arrays require a
+direct amplitude unit and convert once to V/m.
 P4.3-f implements D-046:
 spectroscopy conditions, wavenumber grids, and device resolution now require
 exact unit labels and numerical code consumes frozen canonical values. All

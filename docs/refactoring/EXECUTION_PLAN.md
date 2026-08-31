@@ -950,10 +950,20 @@ value, time point, endpoint slice, segment index, or propagation call. The
 complete CPU suite passes 945 tests with 10 optional-GPU skips. Constructor
 defaults and generated low-level pulse quantities remain later P4.3-g units.
 
+P4.3-g unit 2 implements D-048 on 2026-08-31. Direct `ElectricField` and
+`ZeroField` construction now requires `time_units`, converts once to internal
+fs, and accepts no meaningless constructor `field_units`. Stored fields remain
+V/m. `from_time_grid` is explicitly canonical; requested field-scale output
+requires a direct amplitude unit; two uncalled alternate constructors are
+removed. Seconds/fs construction parity passes. Every optimizer-created grid
+is labeled fs without changing local-optimizer points, endpoints, slices,
+indices, values, or RK4 calls. The complete CPU suite remains 945 passed with
+10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- finish the characterized low-level `ElectricField` constructor and
-  generated-pulse quantity units using `UNIT_BOUNDARY_AUDIT.md`;
+- finish generated low-level pulse amplitude and optional dispersion quantity
+  units using `UNIT_BOUNDARY_AUDIT.md`;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

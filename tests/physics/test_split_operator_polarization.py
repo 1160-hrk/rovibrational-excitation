@@ -156,7 +156,7 @@ def test_high_level_circular_modes_use_explicit_physics_contracts():
     )
     hamiltonian = basis.generate_H0()
     dipole = LinMolDipoleMatrix(basis, mu0=1.0e-30, potential_type="harmonic")
-    field = ElectricField(np.linspace(0.0, 0.2, 201))
+    field = ElectricField(np.linspace(0.0, 0.2, 201), time_units="fs")
     field.add_dispersed_Efield(
         _flat_envelope,
         duration=1.0,

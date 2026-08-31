@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-08-31
-Current checkpoint: P4.3-g unit 1 D-047 arbitrary field arrays
+Current checkpoint: P4.3-g unit 2 D-048 low-level field construction
 
 ## Purpose
 
@@ -89,8 +89,10 @@ polarization, phase-matching, radiation, and PFID reference tests remain green.
 
 ### Current state
 
-- `ElectricField(tlist, time_units="fs", field_units="V/m")` silently supplies
-  both units.
+- Direct `ElectricField` and `ZeroField` construction is Class A under D-048:
+  `time_units` is required, input is converted once to internal fs, and stored
+  field samples have the fixed V/m unit. There is no constructor field value
+  and therefore no `field_units` argument.
 - `add_dispersed_Efield` defaults duration, center, carrier, GDD, and TOD
   units. Its `amplitude` value is used as V/m without an amplitude-unit
   argument.
@@ -101,16 +103,19 @@ polarization, phase-matching, radiation, and PFID reference tests remain green.
 
 ### Recommended P4.3-g contract
 
-- Remove unit defaults from direct `ElectricField` construction.
-- Keep `from_time_grid` as an explicitly canonical constructor.
+- Remove unit defaults from direct `ElectricField` construction. Completed by
+  P4.3-g unit 2.
+- Keep `from_time_grid` as an explicitly canonical constructor. Completed by
+  P4.3-g unit 2.
 - Require an `amplitude_units` argument and convert amplitude exactly once.
 - Require GDD/TOD value and unit together when present; omission of both
   retains the accepted exact-zero modifier.
 - Require `field_units` on arbitrary field-array injection. Internal
   optimizer calls pass `"V/m"` explicitly. Completed by P4.3-g unit 1.
 
-Characterization must cover every current constructor and waveform reference
-before changing signatures.
+Constructor characterization covers missing, unsupported, seconds, fs, and
+canonical `TimeGrid` inputs. Generated waveform characterization must remain
+green before changing the remaining pulse signature.
 
 ## Optimization
 
@@ -177,7 +182,7 @@ normal-simulation model schemas.
 
 ## Recommended implementation order
 
-1. Finish low-level electric-field constructor and pulse units (P4.3-g).
+1. Finish generated low-level electric-field pulse units (P4.3-g).
 2. Krotov initial-pulse explicit units (P4.3-h).
 3. Local field-limit/seed key rename only after characterization.
 4. Optimization model consolidation in the planned model/optimization phases.

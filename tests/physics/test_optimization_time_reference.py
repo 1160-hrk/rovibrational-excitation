@@ -96,7 +96,7 @@ def test_legacy_krotov_backward_is_reversed_field_with_negative_dt() -> None:
 
 def test_current_electric_field_rejects_the_old_decreasing_time_container() -> None:
     with pytest.raises(ValueError, match="strictly increasing"):
-        ElectricField(tlist=np.linspace(1.0, 0.0, 5))
+        ElectricField(tlist=np.linspace(1.0, 0.0, 5), time_units="fs")
 
 
 class _ArrayDipole:
@@ -134,7 +134,7 @@ def test_explicit_backward_direction_reproduces_legacy_krotov_kernel() -> None:
         sparse=False,
         backend="numpy",
     )
-    efield = ElectricField(tlist=np.linspace(0.0, 0.4, 5))
+    efield = ElectricField(tlist=np.linspace(0.0, 0.4, 5), time_units="fs")
     efield.Efield[:, 0] = forward_field
     times, actual = SchrodingerPropagator(
         validate_units=False,
@@ -163,7 +163,7 @@ def test_backward_direction_rejects_ambiguous_or_unsupported_modes(
     h0 = Hamiltonian(np.diag([0.0, 0.7]), units="rad/fs")
     zeros = np.zeros((2, 2), dtype=np.complex128)
     dipole = _ArrayDipole(zeros, zeros)
-    efield = ElectricField(tlist=np.linspace(0.0, 0.4, 5))
+    efield = ElectricField(tlist=np.linspace(0.0, 0.4, 5), time_units="fs")
     psi = np.array([1.0 + 0.0j, 0.0 + 0.0j])
     propagator = SchrodingerPropagator(validate_units=False)
 

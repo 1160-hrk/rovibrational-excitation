@@ -87,7 +87,7 @@ def test_full_simulation_workflow():
 
     # 4. 電場セットアップ
     tlist = np.linspace(-10, 10, 201)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=2.0,
@@ -141,7 +141,7 @@ def test_multi_level_excitation():
 
     # 共鳴電場（より弱い電場で安定性を確保）
     tlist = np.linspace(-5, 5, 101)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=5.0,
@@ -180,7 +180,7 @@ def test_multi_level_excitation():
 def test_different_basis_types():
     """異なる基底タイプでの一貫性テスト"""
     tlist = np.linspace(-2, 2, 51)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=1.0,
@@ -235,7 +235,7 @@ def test_mixed_vs_pure_states():
     dipole = LinMolDipoleMatrix(basis, mu0=1e-30, potential_type="harmonic")
 
     tlist = np.linspace(-2, 2, 1001)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=1.0,
@@ -299,7 +299,7 @@ def test_liouville_vs_schrodinger():
     dipole = MockDipole(basis)
 
     tlist = np.linspace(-1, 1, 21)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.Efield[:, 0] = 1e3  # type: ignore
 
     # Schrodinger方程式（正規化なしで比較）
@@ -371,7 +371,7 @@ def test_energy_conservation():
 
     # 電場なし
     tlist = np.linspace(0, 5, 51)
-    efield = ZeroField(tlist)
+    efield = ZeroField(tlist, time_units="fs")
     # 電場は追加しない（ゼロのまま）
 
     # 重ね合わせ状態で開始
@@ -420,7 +420,7 @@ def test_population_dynamics():
 
     # 共鳴パルス（より弱い電場で安定性を確保）
     tlist = np.linspace(-5, 5, 201)  # より少ない時間点で安定性を確保
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=2.0,
@@ -471,7 +471,7 @@ def test_coherent_vs_incoherent():
     dipole = MockDipole(basis)
 
     tlist = np.linspace(-2, 2, 51)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=1.0,
@@ -534,7 +534,7 @@ def test_field_strength_scaling():
     excited_populations = []
 
     for amp in amplitudes:
-        efield = ElectricField(tlist)
+        efield = ElectricField(tlist, time_units="fs")
         efield.add_dispersed_Efield(
             gaussian,
             duration=1.0,
@@ -594,7 +594,7 @@ def test_numerical_precision():
 
     # 長時間伝播
     tlist = np.linspace(-10, 10, 501)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian,
         duration=1.0,

@@ -199,7 +199,7 @@ def test_reduced_basis_cannot_be_silently_treated_as_m_zero_dipole():
 
 def _resolved_propagation(initial, polarization, *, sparse=False):
     time_grid = TimeGrid.from_bounds(0.0, 0.08, 0.001).field_times_fs
-    field = ElectricField(time_grid)
+    field = ElectricField(time_grid, time_units="fs")
     field.add_dispersed_Efield(
         gaussian_fwhm,
         duration=0.06,
@@ -354,7 +354,7 @@ def _full_m_reference(params):
     time_grid = TimeGrid.from_bounds(
         params["t_start"], params["t_end"], params["dt"]
     ).field_times_fs
-    field = ElectricField(time_grid)
+    field = ElectricField(time_grid, time_units="fs")
     field.add_dispersed_Efield(
         gaussian_fwhm,
         duration=params["duration"],

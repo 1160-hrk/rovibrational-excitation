@@ -52,7 +52,7 @@ class TestNondimensionalConsistency:
         tc = (time4Efield[-1] + time4Efield[0]) / 2
         polarization = np.array([1, 0])
 
-        Efield = ElectricField(tlist=time4Efield)
+        Efield = ElectricField(tlist=time4Efield, time_units="fs")
         Efield.add_dispersed_Efield(
             envelope_func=gaussian,
             duration=duration,

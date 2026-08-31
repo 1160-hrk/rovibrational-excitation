@@ -24,7 +24,7 @@ def dummy_envelope(tlist, t_center, duration):
 
 def test_electricfield_basic():
     tlist = np.linspace(0, 10, 11)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
     # 初期化
     assert ef.Efield.shape == (11, 2)
     ef.init_Efield()
@@ -58,7 +58,7 @@ def test_electricfield_basic():
             polarization=np.array([1.0, 0.0, 0.0]),
         )
     # エラー: get_scalar_and_pol（可変偏光時）
-    ef2 = ElectricField(tlist)
+    ef2 = ElectricField(tlist, time_units="fs")
     with pytest.raises(ValueError):
         ef2.get_scalar_and_pol()
 
@@ -66,7 +66,12 @@ def test_electricfield_basic():
 def test_electricfield_initialization():
     """初期化のテスト"""
     tlist = np.linspace(-5, 5, 101)
-    ef = ElectricField(tlist)
+    with pytest.raises(TypeError, match="time_units"):
+        ElectricField(tlist)
+    with pytest.raises(TypeError, match="field_units"):
+        ElectricField(tlist, time_units="fs", field_units="V/m")
+
+    ef = ElectricField(tlist, time_units="fs")
 
     # 属性の確認
     assert ef.dt == (tlist[1] - tlist[0])
@@ -78,11 +83,29 @@ def test_electricfield_initialization():
     assert ef._constant_pol is None
     assert ef._scalar_field is None
 
+    seconds = ElectricField(tlist * 1.0e-15, time_units="s")
+    np.testing.assert_allclose(seconds.get_time_SI(), ef.get_time_SI())
+    with pytest.raises(ValueError, match="Unknown time unit"):
+        ElectricField(tlist, time_units="fortnight")
+
+    with pytest.raises(TypeError, match="field_units"):
+        ef.get_field_scale_info()
+    scale_info = ef.get_field_scale_info(field_units="MV/cm")
+    assert scale_info == {
+        "scale_V_per_m": 0.0,
+        "scale_MV_per_cm": 0.0,
+        "scale_GV_per_m": 0.0,
+        "scale_in_requested_units": 0.0,
+        "requested_units": "MV/cm",
+    }
+    with pytest.raises(ValueError, match="electric-field amplitude"):
+        ef.get_field_scale_info(field_units="W/cm^2")
+
 
 def test_electricfield_multiple_pulses():
     """複数パルスの追加テスト"""
     tlist = np.linspace(-10, 10, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 第1パルス（x偏光）
     ef.add_dispersed_Efield(
@@ -114,7 +137,7 @@ def test_electricfield_multiple_pulses():
 def test_electricfield_variable_polarization():
     """可変偏光のテスト"""
     tlist = np.linspace(-10, 10, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 第1パルス（x偏光）
     ef.add_dispersed_Efield(
@@ -145,7 +168,7 @@ def test_electricfield_variable_polarization():
 def test_electricfield_dispersion():
     """分散効果のテスト"""
     tlist = np.linspace(-10, 10, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # GDD, TODありのパルス
     ef.add_dispersed_Efield(
@@ -171,7 +194,7 @@ def test_electricfield_dispersion():
 def test_electricfield_modulation():
     """変調機能のテスト"""
     tlist = np.linspace(-10, 10, 201)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # ベースパルス
     ef.add_dispersed_Efield(
@@ -200,7 +223,7 @@ def test_electricfield_modulation():
 def test_electricfield_arbitrary_field():
     """任意電場追加のテスト"""
     tlist = np.linspace(-5, 5, 101)
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 任意の電場を作成
     arbitrary_field = np.zeros((101, 2))
@@ -231,8 +254,8 @@ def test_arbitrary_field_units_convert_once_to_v_per_m():
             3.0e8 * np.cos(2 * np.pi * tlist),
         )
     )
-    canonical = ElectricField(tlist)
-    converted = ElectricField(tlist)
+    canonical = ElectricField(tlist, time_units="fs")
+    converted = ElectricField(tlist, time_units="fs")
 
     canonical.add_arbitrary_Efield(field_v_per_m, field_units="V/m")
     converted.add_arbitrary_Efield(field_v_per_m / 1.0e8, field_units="MV/cm")
@@ -240,7 +263,7 @@ def test_arbitrary_field_units_convert_once_to_v_per_m():
     np.testing.assert_allclose(converted.get_Efield_SI(), canonical.get_Efield_SI())
     for invalid_units in ("tesla", "W/cm^2"):
         with pytest.raises(ValueError, match="field_units must be"):
-            ElectricField(tlist).add_arbitrary_Efield(
+            ElectricField(tlist, time_units="fs").add_arbitrary_Efield(
                 field_v_per_m,
                 field_units=invalid_units,
             )
@@ -364,7 +387,7 @@ def test_sinusoidal_amplitude_modulation_rejects_depth_outside_unit_interval(dep
 def test_electricfield_spectrum_analysis():
     """スペクトル解析のテスト"""
     tlist = np.linspace(-10, 10, 1001)  # 高分解能
-    ef = ElectricField(tlist)
+    ef = ElectricField(tlist, time_units="fs")
 
     # 既知周波数のパルス
     carrier_freq = 2.0
@@ -394,16 +417,16 @@ def test_electricfield_edge_cases():
     """エッジケースのテスト"""
     # 短い時間軸
     tlist_short = np.linspace(0, 1, 3)
-    ef_short = ElectricField(tlist_short)
+    ef_short = ElectricField(tlist_short, time_units="fs")
     assert ef_short.Efield.shape == (3, 2)
 
     # 長い時間軸
     tlist_long = np.linspace(-100, 100, 10001)
-    ef_long = ElectricField(tlist_long)
+    ef_long = ElectricField(tlist_long, time_units="fs")
     assert ef_long.Efield.shape == (10001, 2)
 
     # ゼロ振幅
-    ef_zero = ElectricField(np.linspace(-1, 1, 11))
+    ef_zero = ElectricField(np.linspace(-1, 1, 11), time_units="fs")
     ef_zero.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,

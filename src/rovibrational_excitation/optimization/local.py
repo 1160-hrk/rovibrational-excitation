@@ -337,7 +337,7 @@ def run_local_optimization(
         full_field[field_write_slice, 1] = ey
 
         segment_slice = time_grid.segment_propagation_slice(start, end)
-        ef_seg = ElectricField(tlist=tlist[segment_slice])
+        ef_seg = ElectricField(tlist=tlist[segment_slice], time_units="fs")
         ef_seg.add_arbitrary_Efield(
             full_field[segment_slice, :],
             field_units="V/m",
@@ -358,14 +358,16 @@ def run_local_optimization(
         psi_traj_seg = result[1]
         psi_curr = psi_traj_seg[-1]
 
-    ef_total = ElectricField(tlist=tlist)
+    ef_total = ElectricField(tlist=tlist, time_units="fs")
     ef_total.add_arbitrary_Efield(full_field, field_units="V/m")
 
     full_rk4_slice = time_grid.full_rk4_slice
     if time_grid.full_rk4_times_fs.size == tlist.size:
         ef_full_propagation = ef_total
     else:
-        ef_full_propagation = ElectricField(tlist=tlist[full_rk4_slice])
+        ef_full_propagation = ElectricField(
+            tlist=tlist[full_rk4_slice], time_units="fs"
+        )
         ef_full_propagation.add_arbitrary_Efield(
             full_field[full_rk4_slice, :],
             field_units="V/m",

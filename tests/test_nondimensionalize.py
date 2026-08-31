@@ -49,7 +49,7 @@ def test_nondimensionalize_system_basic():
     """基本的な無次元化システムのテスト"""
     # 簡単なシステム設定
     tlist = np.linspace(-10, 10, 201)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=5.0,
@@ -180,7 +180,7 @@ def test_nondimensionalize_with_realistic_system():
 
     # 時間軸
     tlist = np.linspace(-50, 50, 1001)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=20.0,
@@ -239,8 +239,8 @@ def test_nondimensionalize_with_realistic_system():
 def test_edge_cases():
     """Zero scales are explicit inactive states, never invented defaults."""
     tlist = np.linspace(-5, 5, 101)
-    ambiguous_zero = ElectricField(tlist)
-    zero_field = ZeroField(tlist)
+    ambiguous_zero = ElectricField(tlist, time_units="fs")
+    zero_field = ZeroField(tlist, time_units="fs")
 
     hbar = 1.054571817e-34
     h0 = np.diag([0.0, 0.1]) * hbar / 1e-15

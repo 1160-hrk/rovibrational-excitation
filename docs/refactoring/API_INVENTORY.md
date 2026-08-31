@@ -3,7 +3,7 @@
 Last verified: 2026-08-31
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-045 typed generated-field unit boundary
+Latest API checkpoint: D-048 canonical low-level field construction
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -33,7 +33,7 @@ working proposal, not yet an accepted API decision.
 | `Hamiltonian` | Root re-export remains; internal callers now use the target module | `core.operators.Hamiltonian` | temporary root re-export pending O-008; target submodule complete |
 | `StateVector` | Tests and examples use `core.basis.StateVector` | `core.states.StateVector` | temporary public |
 | `DensityMatrix` | Tests use `core.basis.DensityMatrix` | `core.states.DensityMatrix` | temporary public |
-| `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public; D-047 requires direct amplitude units for arbitrary arrays |
+| `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public; D-047/D-048 require explicit input units and canonical fs/V/m storage |
 | `LinMolDipoleMatrix` | Tests and examples use its model subpackage | constructed by `models.linear_molecule`; advanced class remains under that model | temporary public |
 | `AbsorbanceCalculator` | spectroscopy examples and tests | `spectroscopy.AbsorbanceCalculator` or decomposed facade | temporary public at root; target public in subpackage |
 | `ExperimentalConditions` | spectroscopy examples and tests | `spectroscopy.ExperimentalConditions` | D-046 requires exact value/unit pairs and frozen canonical fields; temporary public at root; target public in subpackage |
@@ -104,8 +104,10 @@ They defensively copy real V/m samples and own one canonical `TimeGrid`.
 legacy array constructor remains available for kernels, optimization code, and
 tests that have not yet migrated.
 `add_arbitrary_Efield` requires a direct field-amplitude unit and stores V/m;
-intensity labels are inapplicable to signed arbitrary samples. Constructor and
-generated-pulse unit defaults remain P4.3-g migration work.
+intensity labels are inapplicable to signed arbitrary samples. Direct
+construction requires `time_units`, converts to fs, and has no constructor
+field-unit selector because stored fields are always V/m. Generated-pulse unit
+defaults remain P4.3-g migration work.
 
 The modulation helpers remain public under `fields` only if Phase 4/5 tests
 establish their units and sampling contracts. Until then their stability is
@@ -267,7 +269,7 @@ visualization failure.
 | `spectroscopy.create_calculator_from_params` | spectroscopy parameter mapping | examples and tests | typed spectroscopy facade | target public in subpackage |
 | removed `core.units.parameter_processor` | parameter-name suffix and mutable conversion tables | no remaining callers after D-045 | typed schema conversion at boundary | deleted by D-045 |
 | removed `ParameterProcessor.create_hamiltonian_from_params` and `create_efield_from_params` | parameter dictionary | no callers found by P3.2-a acceptance audit | constructors remain owned by operator/field and the config boundary | deleted in P3.2-a; removal also eliminates `core -> fields` reverse dependency |
-| `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | one explicit field constructor contract | temporary public method; consolidate in Phase 4 |
+| removed `ElectricField.create_from_SI` and `create_with_units` | explicit units | no callers found | direct construction with required `time_units`, or `from_time_grid` | deleted by D-048 |
 
 `PropagatorFactory` no longer inspects polarization or sparsity. It requires a
 typed state path and one `PropagationOptions`, then validates them against the

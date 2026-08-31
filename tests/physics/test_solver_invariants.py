@@ -270,7 +270,7 @@ def _flat_envelope(time: np.ndarray, center: float, duration: float) -> np.ndarr
 
 
 def _high_level_time_problem():
-    field = ElectricField(np.linspace(1.0, 1.5, 11))
+    field = ElectricField(np.linspace(1.0, 1.5, 11), time_units="fs")
     field.add_dispersed_Efield(
         _flat_envelope,
         duration=1.0,

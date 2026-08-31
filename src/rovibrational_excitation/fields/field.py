@@ -3,7 +3,7 @@
 ==============
 
 電場波形を表現するメインクラス。
-単位変換機能を持ち、SI単位系で内部保持する。
+単位変換機能を持ち、時間を fs、電場を V/m で内部保持する。
 無次元化機能は dynamics.scaling.converter に統一。
 """
 
@@ -32,27 +32,25 @@ class ElectricField:
     """
     電場波形を表現するクラス（偏光、包絡線、GDD/TOD付き）
 
-    SI単位系（fs, V/m）で内部保持し、単位変換機能を提供。
+    時間を fs、電場を V/m の固定単位系で内部保持し、単位変換機能を提供。
     無次元化機能は dynamics.scaling.converter に委譲。
     """
 
-    def __init__(
-        self, tlist: np.ndarray, time_units: str = "fs", field_units: str = "V/m"
-    ):
+    def __init__(self, tlist: np.ndarray, *, time_units: str):
         """
         Parameters
         ----------
         tlist : np.ndarray
             時間軸（指定単位）
-        time_units : str, default "fs"
+        time_units : str
             時間の単位 ("fs", "ps", "ns", "s")
-        field_units : str, default "V/m"
-            電場の単位 ("V/m", "MV/cm", "kV/cm", "GV/m", etc.)
-        """
-        # 単位情報を保存
-        self.time_units = time_units
-        self.field_units = field_units
 
+        Notes
+        -----
+        The initially zero field and every stored field sample use canonical
+        V/m. Field units belong to field addition, setting, or output methods;
+        there is no field-valued constructor argument to label.
+        """
         # 時間配列を内部単位（fs）に変換
         self.tlist = self._convert_time_to_fs(np.asarray(tlist), time_units)
         if self.tlist.ndim != 1 or self.tlist.size < 2:
@@ -80,13 +78,11 @@ class ElectricField:
     def from_time_grid(
         cls,
         time_grid: "TimeGrid",
-        field_units: str = "V/m",
     ) -> "ElectricField":
-        """Construct an electric field from the canonical femtosecond grid."""
+        """Construct a canonical V/m field from the canonical fs grid."""
         return cls(
             time_grid.field_times_fs,
             time_units="fs",
-            field_units=field_units,
         )
 
     # ------------------------------------------------------------------
@@ -134,7 +130,7 @@ class ElectricField:
         return np.asarray(self.Efield)
 
     def get_time_SI(self) -> np.ndarray:
-        """SI単位系での時間軸を取得（常にfs）"""
+        """Return the canonical fs time axis (the method name is legacy)."""
         return np.asarray(self.tlist)
 
     def get_time_in_units(self, target_units: str) -> np.ndarray:
@@ -156,18 +152,22 @@ class ElectricField:
         efield_array = np.asarray(self.Efield)
         return float(np.max(np.abs(efield_array)))
 
-    def get_field_scale_info(self) -> dict:
-        """電場スケール情報を取得"""
+    def get_field_scale_info(self, *, field_units: str) -> dict:
+        """Return field scale information in explicitly requested units."""
+        if field_units not in converter.get_supported_units("field_amplitude"):
+            raise ValueError(
+                "field_units must be a supported electric-field amplitude unit"
+            )
         scale_V_per_m = self.get_field_scale_factor()
 
         return {
             "scale_V_per_m": scale_V_per_m,
             "scale_MV_per_cm": scale_V_per_m / 1e8,
             "scale_GV_per_m": scale_V_per_m / 1e9,
-            "scale_in_original_units": self._convert_field_from_SI(
-                np.array([scale_V_per_m]), self.field_units
+            "scale_in_requested_units": self._convert_field_from_SI(
+                np.array([scale_V_per_m]), field_units
             )[0],
-            "original_units": self.field_units,
+            "requested_units": field_units,
         }
 
     def get_pol(self) -> np.ndarray:
@@ -290,18 +290,6 @@ class ElectricField:
                 ef_disp = ef_disp[0]
             ef_disp = np.asarray(ef_disp)
             self._scalar_field = np.real(ef_disp).flatten()
-
-    @classmethod
-    def create_from_SI(cls, tlist_fs: np.ndarray) -> "ElectricField":
-        """SI単位系（fs, V/m）でElectricFieldを作成"""
-        return cls(tlist_fs, time_units="fs", field_units="V/m")
-
-    @classmethod
-    def create_with_units(
-        cls, tlist: np.ndarray, time_units: str, field_units: str
-    ) -> "ElectricField":
-        """指定単位でElectricFieldを作成"""
-        return cls(tlist, time_units=time_units, field_units=field_units)
 
     def apply_sinusoidal_mod(
         self,
@@ -493,10 +481,8 @@ class ZeroField(ElectricField):
     ``ZeroField`` records that zero interaction is the caller's intent.
     """
 
-    def __init__(
-        self, tlist: np.ndarray, time_units: str = "fs", field_units: str = "V/m"
-    ):
-        super().__init__(tlist, time_units=time_units, field_units=field_units)
+    def __init__(self, tlist: np.ndarray, *, time_units: str):
+        super().__init__(tlist, time_units=time_units)
         self._constant_pol = np.array([1.0, 0.0], dtype=np.complex128)
         self._scalar_field = np.zeros(self.tlist.size, dtype=np.float64)
 

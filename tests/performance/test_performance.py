@@ -62,7 +62,7 @@ def test_large_system_performance():
 
     # 短時間のテスト
     tlist = np.linspace(-1, 1, 51)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=0.5,
@@ -106,7 +106,7 @@ def test_very_large_system():
 
     # 非常に短時間
     tlist = np.linspace(-100, 100, 1001)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=20,
@@ -149,7 +149,7 @@ def test_long_time_evolution():
 
     # 長い時間軸
     tlist = np.linspace(-10, 10, 1001)  # 多くの時間点
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -193,7 +193,7 @@ def test_memory_efficiency():
     dipole = MockDipole(dim)
 
     tlist = np.linspace(-2, 2, 101)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -233,7 +233,7 @@ def test_stride_performance():
     dipole = MockDipole(dim)
 
     tlist = np.linspace(-5, 5, 501)  # 多くの時間点
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,
@@ -283,7 +283,7 @@ def test_numerical_stability_large_system():
 
     # パルス電場設定
     t_list = np.linspace(-100, 100, 10001)
-    Efield = ElectricField(t_list)
+    Efield = ElectricField(t_list, time_units="fs")
     Efield.add_dispersed_Efield(
         envelope_func=gaussian_fwhm,
         duration=20.0,
@@ -339,7 +339,7 @@ def test_electric_field_performance():
     tlist = np.linspace(-20, 20, 10001)  # 高分解能
 
     start_time = time.time()
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
 
     # 複数パルス追加
     for i in range(5):
@@ -372,7 +372,7 @@ def test_backend_performance_comparison():
     dipole = MockDipole(dim)
 
     tlist = np.linspace(-2, 2, 101)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=1.0,

@@ -945,6 +945,15 @@ reconstructed from intensity samples. Internal GRAPE, Krotov, and local
 optimizer arrays are labeled `V/m`; this labeling does not alter their values,
 time grids, endpoint slices, segment indices, or RK4 consumption.
 
+Direct low-level `ElectricField` and `ZeroField` construction requires
+`time_units`; the supplied increasing uniform time grid is converted exactly
+once to internal fs. The constructor has no `field_units` argument because it
+receives no field-valued input: the initially zero field and all later stored
+samples use V/m. `ElectricField.from_time_grid` consumes the canonical fs grid
+without another caller unit choice. Field-scale output requires an explicit
+direct amplitude unit. The legacy-named `get_time_SI()` returns canonical fs,
+not seconds; `get_time_in_units()` is the explicit conversion boundary.
+
 Generated pulses require the serialization-safe `envelope_kind` and
 `modulation_kind` discriminators. Supported generated envelopes are `gaussian`,
 `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`; `duration` retains the

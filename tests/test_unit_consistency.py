@@ -60,7 +60,7 @@ def test_nondimensionalization_unit_options():
     """無次元化の単位オプションのテスト"""
     # テスト用システム
     tlist = np.linspace(-10, 10, 201)
-    efield = ElectricField(tlist)
+    efield = ElectricField(tlist, time_units="fs")
     efield.add_dispersed_Efield(
         gaussian_fwhm,
         duration=5.0,
@@ -118,26 +118,36 @@ def test_time_unit_handling():
     tlist_s = tlist_fs * 1e-15  # s
 
     # fs単位の電場
-    efield_fs = ElectricField(tlist_fs)
+    efield_fs = ElectricField(tlist_fs, time_units="fs")
     efield_fs.add_dispersed_Efield(
         gaussian_fwhm,
         duration=5.0,
+        duration_units="fs",
         t_center=0.0,
+        t_center_units="fs",
         carrier_freq=0.1,
+        carrier_freq_units="PHz",
         amplitude=1e8,
         polarization=np.array([1.0, 0.0]),
     )
 
     # s単位の電場（同じ物理的内容）
-    efield_s = ElectricField(tlist_s)
+    efield_s = ElectricField(tlist_s, time_units="s")
     efield_s.add_dispersed_Efield(
         gaussian_fwhm,
         duration=5.0e-15,
+        duration_units="s",
         t_center=0.0,
+        t_center_units="s",
         carrier_freq=0.1 / 1e-15,
+        carrier_freq_units="Hz",
         amplitude=1e8,
         polarization=np.array([1.0, 0.0]),
     )
+
+    # Both construction paths are converted once to canonical fs and V/m.
+    np.testing.assert_allclose(efield_s.get_time_SI(), efield_fs.get_time_SI())
+    np.testing.assert_allclose(efield_s.get_Efield_SI(), efield_fs.get_Efield_SI())
 
     # 簡単なハミルトニアン
     H0 = np.diag([0, 1e-21, 2e-21])  # J
@@ -149,9 +159,9 @@ def test_time_unit_handling():
         H0, mu_x, mu_y, efield_fs, H0_units="energy", time_units="fs"
     )
 
-    # s単位での無次元化
+    # ElectricField exposes canonical fs to the raw-array scaling boundary.
     (_, _, _, _, tlist_prime_s, dt_prime_s, scales_s) = nondimensionalize_system(
-        H0, mu_x, mu_y, efield_s, H0_units="energy", time_units="s"
+        H0, mu_x, mu_y, efield_s, H0_units="energy", time_units="fs"
     )
 
     # 無次元時間は同じになるべき
@@ -206,7 +216,7 @@ def test_physical_regime_analysis():
 
     # 弱い電場
     tlist = np.linspace(-50, 50, 1001)
-    efield_weak = ElectricField(tlist)
+    efield_weak = ElectricField(tlist, time_units="fs")
     efield_weak.add_dispersed_Efield(
         gaussian_fwhm,
         duration=20.0,
@@ -217,7 +227,7 @@ def test_physical_regime_analysis():
     )
 
     # 強い電場
-    efield_strong = ElectricField(tlist)
+    efield_strong = ElectricField(tlist, time_units="fs")
     efield_strong.add_dispersed_Efield(
         gaussian_fwhm,
         duration=20.0,
