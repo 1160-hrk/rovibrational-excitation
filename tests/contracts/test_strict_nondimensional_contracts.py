@@ -16,7 +16,10 @@ HBAR = 1.054571817e-34
 
 def _constant_field(values: np.ndarray) -> ElectricField:
     field = ElectricField(np.linspace(0.0, 0.2, 5))
-    field.add_arbitrary_Efield(np.asarray(values, dtype=float))
+    field.add_arbitrary_Efield(
+        np.asarray(values, dtype=float),
+        field_units="V/m",
+    )
     return field
 
 
@@ -150,7 +153,10 @@ class _TwoLevelDipole:
 def test_centering_restores_absolute_wavefunction_phase():
     tlist = np.linspace(0.0, 2.0, 201)
     field = ElectricField(tlist)
-    field.add_arbitrary_Efield(np.tile([1.0e8, 0.0], (tlist.size, 1)))
+    field.add_arbitrary_Efield(
+        np.tile([1.0e8, 0.0], (tlist.size, 1)),
+        field_units="V/m",
+    )
 
     offset = 1.0e-19
     h0 = Hamiltonian(np.diag([offset, offset + 1.0e-21]), units="J")
@@ -220,7 +226,10 @@ def test_nonhermitian_coupling_operator_is_rejected():
 def test_auto_timestep_is_rejected_instead_of_resampling():
     tlist = np.linspace(0.0, 0.2, 5)
     field = ElectricField(tlist)
-    field.add_arbitrary_Efield(np.tile([1.0e8, 0.0], (tlist.size, 1)))
+    field.add_arbitrary_Efield(
+        np.tile([1.0e8, 0.0], (tlist.size, 1)),
+        field_units="V/m",
+    )
     h0 = Hamiltonian(np.diag([0.0, 1.0e-21]), units="J")
     dipole = _TwoLevelDipole(np.array([[0.0, 1.0e-30], [1.0e-30, 0.0]]))
 

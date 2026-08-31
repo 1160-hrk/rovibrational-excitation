@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-31
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-f D-046 spectroscopy units
+Verified structural checkpoint: P4.3-g unit 1 D-047 arbitrary field units
 Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
@@ -72,6 +72,9 @@ The authoritative details and formulas are in
 - Spectroscopy conditions require explicit K, Pa, m, ps, and kg-per-molecule
   labels. Public spectral grids and device resolution require explicit cm^-1;
   frozen canonical fields feed the unchanged spectroscopy formulas.
+- Low-level arbitrary field arrays require a direct electric-field amplitude
+  unit and convert once to V/m. Intensity labels are invalid for signed field
+  samples; optimizer grids, endpoints, indices, and values remain unchanged.
 - Public propagation requires explicit Cartesian axes or one scalar coupling
   axis and accepts no unrestricted keyword arguments.
 - Split-operator calls require the constructor interaction mode again; omission
@@ -139,14 +142,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-f:
+Current local CPU baseline after P4.3-g unit 1:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-944 passed, 10 GPU tests skipped (954 collected)
+945 passed, 10 GPU tests skipped (955 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -217,13 +220,12 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 with P4.3-g, the low-level electric-field unit boundary,
-   using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-045 covers normal
-   simulation and D-046 covers spectroscopy. Characterize direct
-   `ElectricField` construction and waveform mutation before removing unit
-   defaults or adding amplitude-unit conversion. Structural field-grid
-   validation never resamples, and numerical adequacy remains a separate
-   explicit convergence report.
+1. Continue P4.3-g with the low-level `ElectricField` constructor and generated
+   pulse boundary using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-047 already
+   covers arbitrary arrays. Characterize constructor defaults and pulse
+   amplitude/GDD/TOD pairing before changing those signatures. Structural
+   field-grid validation never resamples, and numerical adequacy remains a
+   separate explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

@@ -33,7 +33,7 @@ working proposal, not yet an accepted API decision.
 | `Hamiltonian` | Root re-export remains; internal callers now use the target module | `core.operators.Hamiltonian` | temporary root re-export pending O-008; target submodule complete |
 | `StateVector` | Tests and examples use `core.basis.StateVector` | `core.states.StateVector` | temporary public |
 | `DensityMatrix` | Tests use `core.basis.DensityMatrix` | `core.states.DensityMatrix` | temporary public |
-| `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public |
+| `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public; D-047 requires direct amplitude units for arbitrary arrays |
 | `LinMolDipoleMatrix` | Tests and examples use its model subpackage | constructed by `models.linear_molecule`; advanced class remains under that model | temporary public |
 | `AbsorbanceCalculator` | spectroscopy examples and tests | `spectroscopy.AbsorbanceCalculator` or decomposed facade | temporary public at root; target public in subpackage |
 | `ExperimentalConditions` | spectroscopy examples and tests | `spectroscopy.ExperimentalConditions` | D-046 requires exact value/unit pairs and frozen canonical fields; temporary public at root; target public in subpackage |
@@ -103,6 +103,9 @@ They defensively copy real V/m samples and own one canonical `TimeGrid`.
 `ElectricField.from_time_grid` remains the generated-pulse constructor and its
 legacy array constructor remains available for kernels, optimization code, and
 tests that have not yet migrated.
+`add_arbitrary_Efield` requires a direct field-amplitude unit and stores V/m;
+intensity labels are inapplicable to signed arbitrary samples. Constructor and
+generated-pulse unit defaults remain P4.3-g migration work.
 
 The modulation helpers remain public under `fields` only if Phase 4/5 tests
 establish their units and sampling contracts. Until then their stability is

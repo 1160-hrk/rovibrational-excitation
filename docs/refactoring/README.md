@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 944 passed, 10 skipped (954 collected) |
+| Pytest | 945 passed, 10 skipped (955 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-31. P4.3-f implements D-046:
+These rows were last verified locally on 2026-08-31. P4.3-g unit 1 implements
+D-047: arbitrary low-level field arrays require a direct amplitude unit and
+convert once to V/m; optimizer grids, indices, and values are unchanged.
+P4.3-f implements D-046:
 spectroscopy conditions, wavenumber grids, and device resolution now require
 exact unit labels and numerical code consumes frozen canonical values. All
 spectroscopy formulas and routing remain unchanged. P4.3-e implements D-045:

@@ -84,7 +84,7 @@ def run_grape_optimization(
         ef_data: np.ndarray, initial_state_vec: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField.from_time_grid(time_grid)
-        ef.add_arbitrary_Efield(ef_data)
+        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
         result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
@@ -137,7 +137,7 @@ def run_grape_optimization(
         field_data = field_data - float(learning_rate) * grad
 
     ef_total = ElectricField.from_time_grid(time_grid)
-    ef_total.add_arbitrary_Efield(field_data)
+    ef_total.add_arbitrary_Efield(field_data, field_units="V/m")
     internal_time, internal_trajectory = forward(field_data, psi_initial)
     fidelity = fidelity_of(internal_trajectory[-1])
     time_full, psi_traj_full = sample_optimization_output(

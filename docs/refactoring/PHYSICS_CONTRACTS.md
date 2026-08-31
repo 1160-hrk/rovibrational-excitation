@@ -936,6 +936,15 @@ Cartesian samples. A missing decomposition therefore raises if that
 approximation is requested, while exact Cartesian RK4 and split propagation
 need only the two real components.
 
+The legacy low-level `ElectricField.add_arbitrary_Efield` boundary requires a
+`field_units` label on every supplied array and converts exactly once to its
+internal V/m storage before the unchanged elementwise addition. Accepted
+labels are direct electric-field amplitude units only. Cycle-averaged intensity
+units are rejected because a signed, phase-bearing field waveform cannot be
+reconstructed from intensity samples. Internal GRAPE, Krotov, and local
+optimizer arrays are labeled `V/m`; this labeling does not alter their values,
+time grids, endpoint slices, segment indices, or RK4 consumption.
+
 Generated pulses require the serialization-safe `envelope_kind` and
 `modulation_kind` discriminators. Supported generated envelopes are `gaussian`,
 `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`; `duration` retains the

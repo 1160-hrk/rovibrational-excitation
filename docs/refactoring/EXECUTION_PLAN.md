@@ -942,10 +942,18 @@ raise without fallback. All exact/approximate routing, polarization,
 phase-matching, Doppler, response, and Beer-Lambert calculations are unchanged.
 The complete CPU suite passes 944 tests with 10 optional-GPU skips.
 
+P4.3-g begins D-047 on 2026-08-31. Unit 1 requires a direct electric-field
+amplitude unit on every `add_arbitrary_Efield` array and converts it once to
+V/m. Signed arbitrary arrays reject intensity units. Existing GRAPE, Krotov,
+and local-optimizer arrays are explicitly labeled V/m without changing any
+value, time point, endpoint slice, segment index, or propagation call. The
+complete CPU suite passes 945 tests with 10 optional-GPU skips. Constructor
+defaults and generated low-level pulse quantities remain later P4.3-g units.
+
 Remaining Phase 4 work:
 
-- use `UNIT_BOUNDARY_AUDIT.md` to migrate the low-level electric-field boundary
-  only after characterizing its current units and behavior;
+- finish the characterized low-level `ElectricField` constructor and
+  generated-pulse quantity units using `UNIT_BOUNDARY_AUDIT.md`;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

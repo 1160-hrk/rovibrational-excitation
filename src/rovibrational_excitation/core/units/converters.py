@@ -308,6 +308,7 @@ class UnitConverter:
             "dipole": list(self._dipole_to_Cm.keys()),
             "field": list(self._field_to_Vm.keys())
             + list(self._intensity_to_field.keys()),
+            "field_amplitude": list(self._field_to_Vm.keys()),
             "time": list(self._time_to_fs.keys()),
             "gdd": list(self._gdd_to_fs2.keys()),
             "tod": list(self._tod_to_fs3.keys()),

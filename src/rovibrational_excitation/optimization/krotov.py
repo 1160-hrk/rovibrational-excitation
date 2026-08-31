@@ -190,7 +190,7 @@ def run_krotov_optimization(
 
     def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField.from_time_grid(time_grid)
-        ef.add_arbitrary_Efield(ef_data)
+        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
         result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
@@ -213,7 +213,7 @@ def run_krotov_optimization(
         overlap = np.vdot(psi_target, psi_final)
         chi_T = overlap * psi_target
         ef = ElectricField.from_time_grid(time_grid)
-        ef.add_arbitrary_Efield(ef_data)
+        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
         result = propagator._propagate_array(
             hamiltonian=hamiltonian,
             efield=ef,
@@ -282,7 +282,7 @@ def run_krotov_optimization(
 
     # Final forward for outputs
     ef_total = ElectricField.from_time_grid(time_grid)
-    ef_total.add_arbitrary_Efield(field_data)
+    ef_total.add_arbitrary_Efield(field_data, field_units="V/m")
     internal_time, internal_trajectory = forward(field_data)
     fidelity = fidelity_of(internal_trajectory[-1])
     time_full, psi_traj_full = sample_optimization_output(

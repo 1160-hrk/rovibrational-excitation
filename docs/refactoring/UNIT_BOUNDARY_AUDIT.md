@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-08-31
-Current checkpoint: P4.3-f D-046 spectroscopy boundary complete
+Current checkpoint: P4.3-g unit 1 D-047 arbitrary field arrays
 
 ## Purpose
 
@@ -94,8 +94,8 @@ polarization, phase-matching, radiation, and PFID reference tests remain green.
 - `add_dispersed_Efield` defaults duration, center, carrier, GDD, and TOD
   units. Its `amplitude` value is used as V/m without an amplitude-unit
   argument.
-- `add_arbitrary_Efield` treats its array as canonical V/m without stating
-  that at the call.
+- `add_arbitrary_Efield` is now Class A under D-047: every array has a required
+  direct amplitude unit and is converted once to V/m. Intensity units raise.
 - `ScalarField` and `CartesianField` are already Class B because their
   sample attributes and constructor arguments say `v_per_m`.
 
@@ -107,7 +107,7 @@ polarization, phase-matching, radiation, and PFID reference tests remain green.
 - Require GDD/TOD value and unit together when present; omission of both
   retains the accepted exact-zero modifier.
 - Require `field_units` on arbitrary field-array injection. Internal
-  optimizer calls pass `"V/m"` explicitly.
+  optimizer calls pass `"V/m"` explicitly. Completed by P4.3-g unit 1.
 
 Characterization must cover every current constructor and waveform reference
 before changing signatures.
@@ -177,7 +177,7 @@ normal-simulation model schemas.
 
 ## Recommended implementation order
 
-1. Low-level electric-field explicit units (P4.3-g).
+1. Finish low-level electric-field constructor and pulse units (P4.3-g).
 2. Krotov initial-pulse explicit units (P4.3-h).
 3. Local field-limit/seed key rename only after characterization.
 4. Optimization model consolidation in the planned model/optimization phases.

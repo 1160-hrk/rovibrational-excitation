@@ -1907,7 +1907,32 @@ cm^-1 array and does not inspect unit strings. Regression tests retain all
 exact-route comparisons and add missing/wrong-unit, device-pair, factory,
 radiation, and PFID coverage.
 
-Implementation commit: this checkpoint commit.
+Implementation commit: `cf4e70a`.
+
+### D-047: Arbitrary low-level field arrays require amplitude units
+
+Status: Accepted and implemented on 2026-08-31 as P4.3-g unit 1.
+
+Scope: `ElectricField.add_arbitrary_Efield`, `ZeroField`, direct field-unit
+classification, and GRAPE/Krotov/local-optimizer field-array construction.
+
+Every arbitrary field array now requires `field_units` and is converted once
+to V/m before the existing shape check and addition. The accepted labels are
+the converter's direct electric-field amplitude units. Intensity labels are
+not accepted: intensity has no sign or carrier phase and therefore cannot
+define an arbitrary field waveform without adding an unapproved reconstruction
+rule. Missing, unsupported, or intensity units raise explicitly.
+
+Existing optimizer-produced arrays are already V/m and now state that label at
+the call. Their values and shapes are unchanged. In particular, the local
+optimizer's odd legacy grid, shared endpoints, segment/full slices, indices,
+and RK4 consumption are byte-for-byte untouched. The Krotov V=0 to V=3
+integration reference and all local optimizer time/index characterizations
+remain green.
+
+P4.3-g remains incomplete: constructor unit defaults and generated low-level
+pulse amplitude/GDD/TOD pairs are separate units. Implementation commit: this
+checkpoint commit.
 
 
 ## Open decisions

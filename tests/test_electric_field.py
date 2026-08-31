@@ -208,7 +208,10 @@ def test_electricfield_arbitrary_field():
     arbitrary_field[:, 1] = np.cos(2 * np.pi * tlist)  # y成分
 
     # 追加
-    ef.add_arbitrary_Efield(arbitrary_field)
+    with pytest.raises(TypeError, match="field_units"):
+        ef.add_arbitrary_Efield(arbitrary_field)
+
+    ef.add_arbitrary_Efield(arbitrary_field, field_units="V/m")
 
     # 形状確認
     assert ef.Efield.shape == arbitrary_field.shape
@@ -217,7 +220,30 @@ def test_electricfield_arbitrary_field():
     # 形状不一致エラー
     wrong_shape_field = np.zeros((50, 2))
     with pytest.raises(ValueError):
-        ef.add_arbitrary_Efield(wrong_shape_field)
+        ef.add_arbitrary_Efield(wrong_shape_field, field_units="V/m")
+
+
+def test_arbitrary_field_units_convert_once_to_v_per_m():
+    tlist = np.linspace(-5.0, 5.0, 101)
+    field_v_per_m = np.column_stack(
+        (
+            2.0e8 * np.sin(2 * np.pi * tlist),
+            3.0e8 * np.cos(2 * np.pi * tlist),
+        )
+    )
+    canonical = ElectricField(tlist)
+    converted = ElectricField(tlist)
+
+    canonical.add_arbitrary_Efield(field_v_per_m, field_units="V/m")
+    converted.add_arbitrary_Efield(field_v_per_m / 1.0e8, field_units="MV/cm")
+
+    np.testing.assert_allclose(converted.get_Efield_SI(), canonical.get_Efield_SI())
+    for invalid_units in ("tesla", "W/cm^2"):
+        with pytest.raises(ValueError, match="field_units must be"):
+            ElectricField(tlist).add_arbitrary_Efield(
+                field_v_per_m,
+                field_units=invalid_units,
+            )
 
 
 def test_envelope_functions():

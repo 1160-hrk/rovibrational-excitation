@@ -382,12 +382,27 @@ class ElectricField:
             self.Efield = irfft(E_freq_mod, axis=0, n=len(self.tlist))
         return self
 
-    def add_arbitrary_Efield(self, Efield: np.ndarray):
-        """任意の電場を追加"""
+    def add_arbitrary_Efield(
+        self,
+        Efield: np.ndarray,
+        *,
+        field_units: str,
+    ) -> "ElectricField":
+        """Add arbitrary field samples after explicit conversion to V/m.
+
+        ``field_units`` must describe an electric-field amplitude. Intensity
+        units are rejected because an arbitrary signed field array cannot be
+        reconstructed from cycle-averaged intensity samples.
+        """
+        if field_units not in converter.get_supported_units("field_amplitude"):
+            raise ValueError(
+                "field_units must be a supported electric-field amplitude unit"
+            )
+        field_si = self._convert_field_to_SI(np.asarray(Efield), field_units)
         efield_array = np.asarray(self.Efield)
-        if Efield.shape != efield_array.shape:
+        if field_si.shape != efield_array.shape:
             raise ValueError("Efield shape mismatch")
-        self.Efield += Efield
+        self.Efield += field_si
         return self
 
     def plot(self, use_SI_units: bool = True):
@@ -488,7 +503,12 @@ class ZeroField(ElectricField):
     def add_dispersed_Efield(self, *args, **kwargs) -> None:
         raise TypeError("ZeroField cannot contain a pulse; use ElectricField")
 
-    def add_arbitrary_Efield(self, Efield: np.ndarray):
+    def add_arbitrary_Efield(
+        self,
+        Efield: np.ndarray,
+        *,
+        field_units: str,
+    ) -> "ElectricField":
         if np.any(np.asarray(Efield) != 0):
             raise TypeError("ZeroField accepts only identically zero samples")
-        return super().add_arbitrary_Efield(Efield)
+        return super().add_arbitrary_Efield(Efield, field_units=field_units)
