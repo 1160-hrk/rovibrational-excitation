@@ -89,10 +89,12 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/fields/sampled.py",
         "src/rovibrational_excitation/core/states.py",
         "src/rovibrational_excitation/core/units/constants.py",
+        "src/rovibrational_excitation/core/units/scalar_quantities.py",
         "src/rovibrational_excitation/io/checkpoint.py",
         "src/rovibrational_excitation/io/serialization.py",
         "src/rovibrational_excitation/simulation/case.py",
         "src/rovibrational_excitation/simulation/convergence.py",
+        "src/rovibrational_excitation/simulation/generated.py",
         "src/rovibrational_excitation/models/parameters.py",
         "src/rovibrational_excitation/models/validation.py",
     ]
