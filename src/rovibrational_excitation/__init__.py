@@ -27,14 +27,9 @@ spectroscopy    … 線形応答理論による分光計算 (吸収、PFID、放
 >>> H0 = basis.generate_H0()
 
 線形応答分光計算:
->>> # Modern API (推奨)
->>> calc = rve.LinearResponseCalculator()
->>> calc.initialize(3, 10, spectroscopy_params=rve.SpectroscopyParameters())
->>> spectrum = rve.calculate_absorption_spectrum(rho_thermal, calc)
->>>
->>> # Legacy API (後方互換性)
->>> rve.prepare_variables(Nv=3, Nj=10, T2=500)
->>> spectrum = rve.absorbance_spectrum_for_loop(rho_thermal)
+`rovibrational_excitation.spectroscopy` の unit-explicit example を参照。
+温度、圧力、光路長、コヒーレンス時間、分子質量、波数にはそれぞれ
+明示的な単位が必要。
 """
 
 from __future__ import annotations

@@ -6,7 +6,7 @@
 @core/の標準オブジェクト（Basis, Hamiltonian, DipoleMatrix）と統合。
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 import numpy as np
@@ -24,6 +24,14 @@ EPS = CONSTANTS.EPSILON0
 KB = CONSTANTS.BOLTZMANN
 
 
+def _require_exact_units(value: object, *, name: str, expected: str) -> None:
+    """Validate a public unit label without guessing or converting it."""
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+    if value != expected:
+        raise ValueError(f"{name} must be {expected!r}, got {value!r}")
+
+
 @dataclass(frozen=True, slots=True)
 class SpectroscopyCalculationReport:
     """Observable record of the numerical spectroscopy path used."""
@@ -39,38 +47,66 @@ class SpectroscopyCalculationReport:
     device_function_applied: bool
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class ExperimentalConditions:
-    """Explicit experimental parameters required for spectroscopy."""
+    """Experimental inputs with required units and fixed canonical storage.
+
+    This boundary currently accepts only the units used by the spectroscopy
+    formulas: K, Pa, m, ps, and kg per molecule.  Canonical ``*_k``, ``*_pa``,
+    ``*_m``, ``*_ps``, and ``*_kg`` attributes are the only values consumed by
+    numerical code.  No unit is inferred and no value is silently converted.
+    """
 
     temperature: float
+    temperature_units: str
     pressure: float
+    pressure_units: str
     optical_length: float
-    T2: float
+    optical_length_units: str
+    coherence_time: float
+    coherence_time_units: str
     molecular_mass: float
+    molecular_mass_units: str
+    temperature_k: float = field(init=False)
+    pressure_pa: float = field(init=False)
+    optical_length_m: float = field(init=False)
+    coherence_time_ps: float = field(init=False)
+    molecular_mass_kg: float = field(init=False)
 
     def __post_init__(self) -> None:
-        for name in (
-            "temperature",
-            "pressure",
-            "optical_length",
-            "T2",
-            "molecular_mass",
-        ):
+        unit_contracts = {
+            "temperature_units": "K",
+            "pressure_units": "Pa",
+            "optical_length_units": "m",
+            "coherence_time_units": "ps",
+            "molecular_mass_units": "kg",
+        }
+        for name, expected in unit_contracts.items():
+            _require_exact_units(getattr(self, name), name=name, expected=expected)
+
+        canonical_names = {
+            "temperature": "temperature_k",
+            "pressure": "pressure_pa",
+            "optical_length": "optical_length_m",
+            "coherence_time": "coherence_time_ps",
+            "molecular_mass": "molecular_mass_kg",
+        }
+        for name, canonical_name in canonical_names.items():
             value = float(getattr(self, name))
             if not np.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be finite and positive")
-            setattr(self, name, value)
+            object.__setattr__(self, name, value)
+            object.__setattr__(self, canonical_name, value)
 
     @property
     def number_density(self) -> float:
         """数密度を計算 [m^-3]"""
-        return self.pressure / (KB * self.temperature)
+        return self.pressure_pa / (KB * self.temperature_k)
 
     @property
     def coherence_decay_rate(self) -> float:
         """コヒーレンス減衰率 [rad/s]"""
-        return 1 / (self.T2 * 1e-12)
+        return 1 / (self.coherence_time_ps * 1e-12)
 
 
 class AbsorbanceCalculator:
@@ -112,7 +148,9 @@ class AbsorbanceCalculator:
     ...     basis, H0, dipole, conditions,
     ...     phase_matching='pump_probe', axes='xyz'
     ... )
-    >>> absorbance = calculator.calculate(rho, wavenumber, method='loop')
+    >>> absorbance = calculator.calculate(
+    ...     rho, wavenumber, method='loop', wavenumber_units='cm^-1'
+    ... )
     """
 
     def __init__(
@@ -295,7 +333,12 @@ class AbsorbanceCalculator:
         self._mu_det_support = np.abs(self.mu_det) > support_threshold
         self.ind_nonzero = np.array(np.where(self._mu_det_support))
 
-    def prepare_2d_calculation(self, wavenumber: np.ndarray):
+    def prepare_2d_calculation(
+        self,
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
+    ) -> None:
         """
         2D計算用の事前準備（高速化のため）
 
@@ -303,7 +346,18 @@ class AbsorbanceCalculator:
         ----------
         wavenumber : np.ndarray
             波数配列 [cm^-1]
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
         """
+        _require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
+        self._prepare_2d_calculation(wavenumber)
+
+    def _prepare_2d_calculation(self, wavenumber: np.ndarray) -> None:
+        """Prepare canonical cm^-1 input for the internal 2D calculation."""
         omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
 
         # 周波数配列を2D化
@@ -395,14 +449,26 @@ class AbsorbanceCalculator:
             "auto",
             "approximate_sparse",
         ],
+        *,
+        wavenumber_units: str,
         apply_doppler: bool = False,
         apply_device_function: bool = False,
         device_resolution: float | None = None,
+        device_resolution_units: str | None = None,
         chunk_size: int | None = None,
         relative_threshold: float | None = None,
         memory_budget_bytes: int | None = None,
     ) -> np.ndarray:
-        """Calculate an absorbance spectrum through an explicit method."""
+        """Calculate absorbance from a wavenumber grid explicitly in cm^-1.
+
+        ``device_resolution`` and ``device_resolution_units`` must be supplied
+        together exactly when ``apply_device_function=True``.
+        """
+        _require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
         valid_methods = {
             "matrix",
             "loop",
@@ -469,16 +535,23 @@ class AbsorbanceCalculator:
         if apply_device_function:
             if (
                 device_resolution is None
+                or device_resolution_units is None
                 or not np.isfinite(device_resolution)
                 or device_resolution <= 0.0
             ):
                 raise ValueError(
-                    "a finite positive device_resolution is required when "
-                    "apply_device_function=True"
+                    "finite positive device_resolution and device_resolution_units "
+                    "are required when apply_device_function=True"
                 )
-        elif device_resolution is not None:
+            _require_exact_units(
+                device_resolution_units,
+                name="device_resolution_units",
+                expected="cm^-1",
+            )
+        elif device_resolution is not None or device_resolution_units is not None:
             raise ValueError(
-                "device_resolution is applicable only when apply_device_function=True"
+                "device_resolution and device_resolution_units are applicable only "
+                "when apply_device_function=True"
             )
 
         rho_array = self._select_pre_probe_density(self._validate_density_matrix(rho))
@@ -525,6 +598,8 @@ class AbsorbanceCalculator:
                 spectrum,
                 wavenumber_array,
                 resolution=device_resolution,
+                wavenumber_units=wavenumber_units,
+                resolution_units=device_resolution_units,
             )
 
         self._last_calculation_report = SpectroscopyCalculationReport(
@@ -548,7 +623,7 @@ class AbsorbanceCalculator:
         if not self._prepared_2d or not np.array_equal(
             wavenumber, self._prepared_wavenumber
         ):
-            self.prepare_2d_calculation(wavenumber)
+            self._prepare_2d_calculation(wavenumber)
 
         # コミュテータ [μ_int, ρ]
         rho_after_int = self.mu_int @ rho - rho @ self.mu_int
@@ -697,7 +772,7 @@ class AbsorbanceCalculator:
 
         result = np.sqrt(1 + response / EPS * dens_num)
         absorbance = (
-            2 * self.conditions.optical_length * omega / C * result.imag  # type: ignore
+            2 * self.conditions.optical_length_m * omega / C * result.imag  # type: ignore
         )
 
         # mODに変換
@@ -733,7 +808,9 @@ class AbsorbanceCalculator:
             return response
         spacing = self._uniform_grid_spacing(omega, name="angular-frequency grid")
         sigma_doppler = abs(omega0) * np.sqrt(
-            KB * self.conditions.temperature / (self.conditions.molecular_mass * C**2)
+            KB
+            * self.conditions.temperature_k
+            / (self.conditions.molecular_mass_kg * C**2)
         )
         return self._filter_complex_gaussian(
             response,
@@ -741,7 +818,11 @@ class AbsorbanceCalculator:
         )
 
     def calculate_radiation_spectrum(
-        self, rho: np.ndarray, wavenumber: np.ndarray
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
     ) -> np.ndarray:
         """
         放射スペクトルを計算（例：PFID）
@@ -754,12 +835,19 @@ class AbsorbanceCalculator:
             密度行列（コヒーレンスを含む）
         wavenumber : np.ndarray
             波数配列 [cm^-1]
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
 
         Returns
         -------
         np.ndarray
             放射スペクトル [mOD]
         """
+        _require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
         rho_array = self._validate_density_matrix(rho)
         wavenumber_array = np.asarray(wavenumber, dtype=float)
         omega = 2 * np.pi * C * 1e2 * wavenumber_array
@@ -778,7 +866,11 @@ class AbsorbanceCalculator:
         return self._response_to_absorbance(omega, resp_lin_per_mole)
 
     def calculate_pfid_spectrum(
-        self, rho: np.ndarray, wavenumber: np.ndarray
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
     ) -> np.ndarray:
         """
         Probe-induced free induction decay (PFID) スペクトルを計算
@@ -791,6 +883,8 @@ class AbsorbanceCalculator:
             プローブ相互作用後の密度行列
         wavenumber : np.ndarray
             波数配列 [cm^-1]
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
 
         Returns
         -------
@@ -798,13 +892,20 @@ class AbsorbanceCalculator:
             PFIDスペクトル [mOD]
         """
         # PFIDは放射スペクトルと同じ計算
-        return self.calculate_radiation_spectrum(rho, wavenumber)
+        return self.calculate_radiation_spectrum(
+            rho,
+            wavenumber,
+            wavenumber_units=wavenumber_units,
+        )
 
     def apply_device_function(
         self,
         spectrum: np.ndarray,
         wavenumber: np.ndarray,
-        resolution: float = 1.0,
+        resolution: float,
+        *,
+        wavenumber_units: str,
+        resolution_units: str,
         function_type: Literal["sinc", "sinc2", "gaussian"] = "sinc2",
     ) -> np.ndarray:
         """
@@ -818,6 +919,10 @@ class AbsorbanceCalculator:
             波数配列 [cm^-1]
         resolution : float
             分解能 [cm^-1]
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
+        resolution_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
         function_type : {'sinc', 'sinc2', 'gaussian'}
             装置関数のタイプ
 
@@ -826,6 +931,16 @@ class AbsorbanceCalculator:
         np.ndarray
             装置関数適用後のスペクトル
         """
+        _require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
+        _require_exact_units(
+            resolution_units,
+            name="resolution_units",
+            expected="cm^-1",
+        )
         if not np.isfinite(resolution) or resolution <= 0.0:
             raise ValueError("resolution must be finite and positive")
         if function_type not in {"sinc", "sinc2", "gaussian"}:
@@ -862,10 +977,15 @@ def create_calculator_from_params(
     dipole_matrix: DipoleMatrixBase,
     *,
     temperature: float,
+    temperature_units: str,
     pressure: float,
+    pressure_units: str,
     optical_length: float,
-    T2: float,
+    optical_length_units: str,
+    coherence_time: float,
+    coherence_time_units: str,
     molecular_mass: float,
+    molecular_mass_units: str,
     phase_matching: Literal["unfiltered", "pump_probe"],
     axes: str = "xy",
     pol_int: np.ndarray | None = None,
@@ -882,16 +1002,16 @@ def create_calculator_from_params(
         ハミルトニアン
     dipole_matrix : DipoleMatrixBase
         双極子行列
-    temperature : float
-        温度 [K]
-    pressure : float
-        圧力 [Pa]
-    optical_length : float
-        光路長 [m]
-    T2 : float
-        コヒーレンス緩和時間 [ps]
-    molecular_mass : float
-        分子質量 [kg]
+    temperature, temperature_units
+        温度と必須単位。現在は ``K`` のみ。
+    pressure, pressure_units
+        圧力と必須単位。現在は ``Pa`` のみ。
+    optical_length, optical_length_units
+        光路長と必須単位。現在は ``m`` のみ。
+    coherence_time, coherence_time_units
+        コヒーレンス緩和時間と必須単位。現在は ``ps`` のみ。
+    molecular_mass, molecular_mass_units
+        1分子あたりの質量と必須単位。現在は ``kg`` のみ。
     phase_matching : {'unfiltered', 'pump_probe'}
         Probe interaction前の密度行列に適用する位相整合経路
     axes : str
@@ -906,10 +1026,15 @@ def create_calculator_from_params(
     """
     conditions = ExperimentalConditions(
         temperature=temperature,
+        temperature_units=temperature_units,
         pressure=pressure,
+        pressure_units=pressure_units,
         optical_length=optical_length,
-        T2=T2,
+        optical_length_units=optical_length_units,
+        coherence_time=coherence_time,
+        coherence_time_units=coherence_time_units,
         molecular_mass=molecular_mass,
+        molecular_mass_units=molecular_mass_units,
     )
 
     return AbsorbanceCalculator(

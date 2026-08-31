@@ -933,10 +933,19 @@ saved parameters retain the original value/unit pairs. Cross-unit waveform and
 population references pass, the full CPU suite passes 937 tests with 10
 optional-GPU skips, and strict mypy passes for all 23 configured modules.
 
+P4.3-f implements D-046 on 2026-08-31. Spectroscopy conditions now require
+explicit K, Pa, m, ps, and kg-per-molecule labels and expose frozen canonical
+fields to the unchanged formulas. Every absorbance, radiation, PFID, direct 2D,
+and device-function spectral grid requires an explicit cm^-1 label. Device
+resolution is a conditional value/unit pair. Missing or unsupported labels
+raise without fallback. All exact/approximate routing, polarization,
+phase-matching, Doppler, response, and Beer-Lambert calculations are unchanged.
+The complete CPU suite passes 944 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- use `UNIT_BOUNDARY_AUDIT.md` to migrate physical scalar inputs outside
-  normal simulation only after characterizing their current units and behavior;
+- use `UNIT_BOUNDARY_AUDIT.md` to migrate the low-level electric-field boundary
+  only after characterizing its current units and behavior;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

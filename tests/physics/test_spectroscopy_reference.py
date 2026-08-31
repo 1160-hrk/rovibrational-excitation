@@ -11,7 +11,25 @@ from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
     ExperimentalConditions,
+    create_calculator_from_params,
 )
+
+WAVENUMBER_UNITS = "cm^-1"
+
+
+def _experimental_conditions() -> ExperimentalConditions:
+    return ExperimentalConditions(
+        temperature=300.0,
+        temperature_units="K",
+        pressure=3.0e4,
+        pressure_units="Pa",
+        optical_length=1.0e-3,
+        optical_length_units="m",
+        coherence_time=500.0,
+        coherence_time_units="ps",
+        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
+        molecular_mass_units="kg",
+    )
 
 
 @pytest.fixture
@@ -23,13 +41,7 @@ def two_level_case():
     )
     hamiltonian = basis.generate_H0()
     dipole = TwoLevelDipoleMatrix(basis, mu0=1.0e-30)
-    conditions = ExperimentalConditions(
-        temperature=300.0,
-        pressure=3.0e4,
-        optical_length=1.0e-3,
-        T2=500.0,
-        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
-    )
+    conditions = _experimental_conditions()
     calculator = AbsorbanceCalculator(
         basis,
         hamiltonian,
@@ -51,27 +63,106 @@ def test_experimental_conditions_are_explicit_and_positive():
 
     valid = {
         "temperature": 300.0,
+        "temperature_units": "K",
         "pressure": 3.0e4,
+        "pressure_units": "Pa",
         "optical_length": 1.0e-3,
-        "T2": 500.0,
+        "optical_length_units": "m",
+        "coherence_time": 500.0,
+        "coherence_time_units": "ps",
         "molecular_mass": 44.0e-3 / CONSTANTS.AVOGADRO,
+        "molecular_mass_units": "kg",
     }
-    for name in valid:
+    for name in (
+        "temperature",
+        "pressure",
+        "optical_length",
+        "coherence_time",
+        "molecular_mass",
+    ):
         invalid = valid | {name: 0.0}
         with pytest.raises(ValueError, match=f"{name} must be finite and positive"):
             ExperimentalConditions(**invalid)
 
 
+@pytest.mark.parametrize(
+    ("unit_name", "invalid_unit"),
+    [
+        ("temperature_units", "degC"),
+        ("pressure_units", "bar"),
+        ("optical_length_units", "cm"),
+        ("coherence_time_units", "fs"),
+        ("molecular_mass_units", "g/mol"),
+    ],
+)
+def test_experimental_condition_units_are_required_and_exact(
+    unit_name,
+    invalid_unit,
+):
+    values = {
+        "temperature": 300.0,
+        "temperature_units": "K",
+        "pressure": 3.0e4,
+        "pressure_units": "Pa",
+        "optical_length": 1.0e-3,
+        "optical_length_units": "m",
+        "coherence_time": 500.0,
+        "coherence_time_units": "ps",
+        "molecular_mass": 44.0e-3 / CONSTANTS.AVOGADRO,
+        "molecular_mass_units": "kg",
+    }
+    missing = values.copy()
+    del missing[unit_name]
+    with pytest.raises(TypeError):
+        ExperimentalConditions(**missing)
+
+    invalid = values | {unit_name: invalid_unit}
+    with pytest.raises(ValueError, match=unit_name):
+        ExperimentalConditions(**invalid)
+
+
+def test_calculator_factory_requires_and_forwards_condition_units(two_level_case):
+    reference, _rho, _wavenumber = two_level_case
+    calculator = create_calculator_from_params(
+        reference.basis,
+        reference.hamiltonian,
+        reference.dipole_matrix,
+        temperature=300.0,
+        temperature_units="K",
+        pressure=3.0e4,
+        pressure_units="Pa",
+        optical_length=1.0e-3,
+        optical_length_units="m",
+        coherence_time=500.0,
+        coherence_time_units="ps",
+        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
+        molecular_mass_units="kg",
+        phase_matching="unfiltered",
+        axes="xy",
+        pol_int=np.array([1.0, 0.0]),
+        pol_det=np.array([1.0, 0.0]),
+    )
+
+    assert calculator.conditions == reference.conditions
+
+
 def test_exact_methods_retain_physical_scale_transitions(two_level_case):
     calculator, rho, wavenumber = two_level_case
 
-    loop = calculator.calculate(rho, wavenumber, method="loop")
-    matrix = calculator.calculate(rho, wavenumber, method="matrix")
-    two_dimensional = calculator.calculate(rho, wavenumber, method="2d")
+    loop = calculator.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
+    matrix = calculator.calculate(
+        rho, wavenumber, method="matrix", wavenumber_units=WAVENUMBER_UNITS
+    )
+    two_dimensional = calculator.calculate(
+        rho, wavenumber, method="2d", wavenumber_units=WAVENUMBER_UNITS
+    )
     chunked = calculator.calculate(
         rho,
         wavenumber,
         method="chunked",
+        wavenumber_units=WAVENUMBER_UNITS,
         chunk_size=5,
     )
 
@@ -88,13 +179,29 @@ def test_method_is_required_and_controls_are_mode_specific(two_level_case):
     calculator, rho, wavenumber = two_level_case
 
     with pytest.raises(TypeError):
-        calculator.calculate(rho, wavenumber)
+        calculator.calculate(
+            rho,
+            wavenumber,
+            wavenumber_units=WAVENUMBER_UNITS,
+        )
+
+    with pytest.raises(TypeError, match="wavenumber_units"):
+        calculator.calculate(rho, wavenumber, method="loop")
+
+    with pytest.raises(ValueError, match="wavenumber_units"):
+        calculator.calculate(
+            rho,
+            wavenumber,
+            method="loop",
+            wavenumber_units="m^-1",
+        )
 
     with pytest.raises(ValueError, match="relative_threshold.*approximate_sparse"):
         calculator.calculate(
             rho,
             wavenumber,
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
             relative_threshold=1.0e-3,
         )
 
@@ -103,6 +210,7 @@ def test_method_is_required_and_controls_are_mode_specific(two_level_case):
             rho,
             wavenumber,
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
             memory_budget_bytes=1024,
         )
 
@@ -111,11 +219,30 @@ def test_method_is_required_and_controls_are_mode_specific(two_level_case):
             rho,
             wavenumber,
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
             chunk_size=8,
         )
 
     with pytest.raises(ValueError, match="Unknown method"):
-        calculator.calculate(rho, wavenumber, method="optimized")
+        calculator.calculate(
+            rho, wavenumber, method="optimized", wavenumber_units=WAVENUMBER_UNITS
+        )
+
+
+def test_all_public_spectral_entry_points_require_units(two_level_case):
+    calculator, rho, wavenumber = two_level_case
+    spectrum = np.zeros_like(wavenumber)
+
+    with pytest.raises(TypeError, match="wavenumber_units"):
+        calculator.prepare_2d_calculation(wavenumber)
+    with pytest.raises(ValueError, match="wavenumber_units"):
+        calculator.prepare_2d_calculation(wavenumber, wavenumber_units="m^-1")
+    with pytest.raises(TypeError, match="wavenumber_units"):
+        calculator.calculate_radiation_spectrum(rho, wavenumber)
+    with pytest.raises(TypeError, match="wavenumber_units"):
+        calculator.calculate_pfid_spectrum(rho, wavenumber)
+    with pytest.raises(TypeError, match="wavenumber_units"):
+        calculator.apply_device_function(spectrum, wavenumber, resolution=2.0)
 
 
 def test_auto_requires_budget_and_records_executed_method(two_level_case):
@@ -126,6 +253,7 @@ def test_auto_requires_budget_and_records_executed_method(two_level_case):
             rho,
             wavenumber,
             method="auto",
+            wavenumber_units=WAVENUMBER_UNITS,
             chunk_size=5,
         )
 
@@ -133,6 +261,7 @@ def test_auto_requires_budget_and_records_executed_method(two_level_case):
         rho,
         wavenumber,
         method="auto",
+        wavenumber_units=WAVENUMBER_UNITS,
         memory_budget_bytes=10**9,
         chunk_size=5,
     )
@@ -146,6 +275,7 @@ def test_auto_requires_budget_and_records_executed_method(two_level_case):
         rho,
         wavenumber,
         method="auto",
+        wavenumber_units=WAVENUMBER_UNITS,
         memory_budget_bytes=1,
         chunk_size=5,
     )
@@ -223,13 +353,7 @@ class _OrthogonalTransitionDipole:
 
 
 def test_exact_methods_enumerate_detection_transition_support():
-    conditions = ExperimentalConditions(
-        temperature=300.0,
-        pressure=3.0e4,
-        optical_length=1.0e-3,
-        T2=500.0,
-        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
-    )
+    conditions = _experimental_conditions()
     calculator = AbsorbanceCalculator(
         _ThreeLevelBasis(),
         _ThreeLevelHamiltonian(),
@@ -244,13 +368,20 @@ def test_exact_methods_enumerate_detection_transition_support():
     rho = np.outer(state, state.conj())
     wavenumber = np.linspace(400.0, 1200.0, 19)
 
-    loop = calculator.calculate(rho, wavenumber, method="loop")
-    matrix = calculator.calculate(rho, wavenumber, method="matrix")
-    two_dimensional = calculator.calculate(rho, wavenumber, method="2d")
+    loop = calculator.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
+    matrix = calculator.calculate(
+        rho, wavenumber, method="matrix", wavenumber_units=WAVENUMBER_UNITS
+    )
+    two_dimensional = calculator.calculate(
+        rho, wavenumber, method="2d", wavenumber_units=WAVENUMBER_UNITS
+    )
     chunked = calculator.calculate(
         rho,
         wavenumber,
         method="chunked",
+        wavenumber_units=WAVENUMBER_UNITS,
         chunk_size=7,
     )
 
@@ -261,13 +392,7 @@ def test_exact_methods_enumerate_detection_transition_support():
 
 
 def test_approximate_sparse_requires_relative_threshold_and_reports_discarding():
-    conditions = ExperimentalConditions(
-        temperature=300.0,
-        pressure=3.0e4,
-        optical_length=1.0e-3,
-        T2=500.0,
-        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
-    )
+    conditions = _experimental_conditions()
     calculator = AbsorbanceCalculator(
         _ThreeLevelBasis(),
         _ThreeLevelHamiltonian(),
@@ -286,6 +411,7 @@ def test_approximate_sparse_requires_relative_threshold_and_reports_discarding()
             rho,
             wavenumber,
             method="approximate_sparse",
+            wavenumber_units=WAVENUMBER_UNITS,
             chunk_size=7,
         )
 
@@ -295,6 +421,7 @@ def test_approximate_sparse_requires_relative_threshold_and_reports_discarding()
                 rho,
                 wavenumber,
                 method="approximate_sparse",
+                wavenumber_units=WAVENUMBER_UNITS,
                 chunk_size=7,
                 relative_threshold=invalid,
             )
@@ -303,6 +430,7 @@ def test_approximate_sparse_requires_relative_threshold_and_reports_discarding()
         rho,
         wavenumber,
         method="approximate_sparse",
+        wavenumber_units=WAVENUMBER_UNITS,
         chunk_size=7,
         relative_threshold=0.1,
     )
@@ -317,8 +445,24 @@ def test_device_function_is_applied_only_when_explicit(two_level_case, monkeypat
     calculator, rho, wavenumber = two_level_case
     calls = []
 
-    def fake_device(spectrum, supplied_wavenumber, resolution, function_type="sinc2"):
-        calls.append((supplied_wavenumber.copy(), resolution, function_type))
+    def fake_device(
+        spectrum,
+        supplied_wavenumber,
+        resolution,
+        *,
+        wavenumber_units,
+        resolution_units,
+        function_type="sinc2",
+    ):
+        calls.append(
+            (
+                supplied_wavenumber.copy(),
+                resolution,
+                wavenumber_units,
+                resolution_units,
+                function_type,
+            )
+        )
         return spectrum + 2.0
 
     monkeypatch.setattr(calculator, "apply_device_function", fake_device)
@@ -328,22 +472,47 @@ def test_device_function_is_applied_only_when_explicit(two_level_case, monkeypat
             rho,
             wavenumber,
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
             device_resolution=2.0,
         )
 
-    baseline = calculator.calculate(rho, wavenumber, method="loop")
+    with pytest.raises(ValueError, match="device_resolution_units"):
+        calculator.calculate(
+            rho,
+            wavenumber,
+            method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
+            apply_device_function=True,
+            device_resolution=2.0,
+            device_resolution_units="m^-1",
+        )
+
+    with pytest.raises(ValueError, match="applicable only"):
+        calculator.calculate(
+            rho,
+            wavenumber,
+            method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
+            device_resolution_units="cm^-1",
+        )
+
+    baseline = calculator.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
     broadened = calculator.calculate(
         rho,
         wavenumber,
         method="loop",
+        wavenumber_units=WAVENUMBER_UNITS,
         apply_device_function=True,
         device_resolution=2.0,
+        device_resolution_units="cm^-1",
     )
 
     np.testing.assert_allclose(broadened, baseline + 2.0)
     assert len(calls) == 1
     np.testing.assert_array_equal(calls[0][0], wavenumber)
-    assert calls[0][1:] == (2.0, "sinc2")
+    assert calls[0][1:] == (2.0, "cm^-1", "cm^-1", "sinc2")
     assert calculator.last_calculation_report.device_function_applied is True
 
     with pytest.raises(ValueError, match="unknown device function"):
@@ -352,6 +521,8 @@ def test_device_function_is_applied_only_when_explicit(two_level_case, monkeypat
             baseline,
             wavenumber,
             resolution=2.0,
+            wavenumber_units="cm^-1",
+            resolution_units="cm^-1",
             function_type="lorentzian",
         )
 
@@ -364,6 +535,7 @@ def test_doppler_rejects_nonuniform_grid(two_level_case):
             rho,
             np.array([400.0, 401.0, 403.0]),
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
             apply_doppler=True,
         )
 
@@ -371,8 +543,8 @@ def test_doppler_rejects_nonuniform_grid(two_level_case):
 def test_spectroscopy_uses_authoritative_constants(two_level_case):
     calculator, _rho, _wavenumber = two_level_case
 
-    expected_density = calculator.conditions.pressure / (
-        CONSTANTS.BOLTZMANN * calculator.conditions.temperature
+    expected_density = calculator.conditions.pressure_pa / (
+        CONSTANTS.BOLTZMANN * calculator.conditions.temperature_k
     )
     assert calculator.conditions.number_density == expected_density
 
@@ -417,13 +589,7 @@ class _DegenerateCircularDipole:
 
 
 def _spectroscopy_conditions():
-    return ExperimentalConditions(
-        temperature=300.0,
-        pressure=3.0e4,
-        optical_length=1.0e-3,
-        T2=500.0,
-        molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
-    )
+    return _experimental_conditions()
 
 
 def _circular_calculator(polarization, *, axes="xy", pol_det=None):
@@ -454,8 +620,20 @@ def test_circular_detection_is_adjoint_and_global_phase_invariant():
         ("chunked", {"chunk_size": 17}),
     ):
         np.testing.assert_allclose(
-            phase_shifted.calculate(rho, wavenumber, method=method, **options),
-            reference.calculate(rho, wavenumber, method=method, **options),
+            phase_shifted.calculate(
+                rho,
+                wavenumber,
+                method=method,
+                wavenumber_units=WAVENUMBER_UNITS,
+                **options,
+            ),
+            reference.calculate(
+                rho,
+                wavenumber,
+                method=method,
+                wavenumber_units=WAVENUMBER_UNITS,
+                **options,
+            ),
             rtol=2.0e-14,
             atol=2.0e-14,
             err_msg=method,
@@ -475,8 +653,12 @@ def test_circular_helicity_selection_and_m_symmetric_response():
     assert abs(minus_calculator.mu_int[0, 1]) < 1.0e-45
     assert abs(minus_calculator.mu_int[0, 2]) > 0.0
     np.testing.assert_allclose(
-        plus_calculator.calculate(rho, wavenumber, method="loop"),
-        minus_calculator.calculate(rho, wavenumber, method="loop"),
+        plus_calculator.calculate(
+            rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+        ),
+        minus_calculator.calculate(
+            rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+        ),
         rtol=2.0e-14,
         atol=2.0e-14,
     )
@@ -490,12 +672,20 @@ def test_reversing_m_orientation_reverses_circular_dichroism():
     reversed_orientation = np.diag([0.8, 0.0, 0.2]).astype(np.complex128)
 
     difference = _circular_calculator(plus).calculate(
-        oriented, wavenumber, method="loop"
-    ) - _circular_calculator(minus).calculate(oriented, wavenumber, method="loop")
-    reversed_difference = _circular_calculator(plus).calculate(
-        reversed_orientation, wavenumber, method="loop"
+        oriented, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
     ) - _circular_calculator(minus).calculate(
-        reversed_orientation, wavenumber, method="loop"
+        oriented, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
+    reversed_difference = _circular_calculator(plus).calculate(
+        reversed_orientation,
+        wavenumber,
+        method="loop",
+        wavenumber_units=WAVENUMBER_UNITS,
+    ) - _circular_calculator(minus).calculate(
+        reversed_orientation,
+        wavenumber,
+        method="loop",
+        wavenumber_units=WAVENUMBER_UNITS,
     )
 
     assert np.max(np.abs(difference)) > 1.0
@@ -551,7 +741,7 @@ def test_response_conversion_has_no_implicit_orientational_third():
     refractive_index = np.sqrt(1.0 + response * density / CONSTANTS.EPSILON0)
     expected = (
         2.0
-        * calculator.conditions.optical_length
+        * calculator.conditions.optical_length_m
         * omega
         / CONSTANTS.C
         * refractive_index.imag
@@ -590,6 +780,7 @@ def test_doppler_rejects_routes_without_transition_specific_widths(
             rho,
             wavenumber,
             method=method,
+            wavenumber_units=WAVENUMBER_UNITS,
             apply_doppler=True,
             **options,
         )
@@ -597,8 +788,20 @@ def test_doppler_rejects_routes_without_transition_specific_widths(
 
 def test_matrix_and_loop_share_transition_specific_doppler(two_level_case):
     calculator, rho, wavenumber = two_level_case
-    loop = calculator.calculate(rho, wavenumber, method="loop", apply_doppler=True)
-    matrix = calculator.calculate(rho, wavenumber, method="matrix", apply_doppler=True)
+    loop = calculator.calculate(
+        rho,
+        wavenumber,
+        method="loop",
+        wavenumber_units=WAVENUMBER_UNITS,
+        apply_doppler=True,
+    )
+    matrix = calculator.calculate(
+        rho,
+        wavenumber,
+        method="matrix",
+        wavenumber_units=WAVENUMBER_UNITS,
+        apply_doppler=True,
+    )
 
     np.testing.assert_allclose(matrix, loop, rtol=2.0e-14, atol=2.0e-14)
 
@@ -631,14 +834,22 @@ def test_pump_probe_selects_same_v_blocks_and_reports_discarded_norm():
     assert selected[0, 2] == 0.0  # cross-V optical-order coherence is removed
 
     wavenumber = np.linspace(400.0, 1200.0, 19)
-    loop = calculator.calculate(rho, wavenumber, method="loop")
+    loop = calculator.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
     for method, options in (
         ("matrix", {}),
         ("2d", {}),
         ("chunked", {"chunk_size": 7}),
     ):
         np.testing.assert_allclose(
-            calculator.calculate(rho, wavenumber, method=method, **options),
+            calculator.calculate(
+                rho,
+                wavenumber,
+                method=method,
+                wavenumber_units=WAVENUMBER_UNITS,
+                **options,
+            ),
             loop,
             rtol=2.0e-14,
             atol=2.0e-14,
@@ -651,7 +862,9 @@ def test_pump_probe_selects_same_v_blocks_and_reports_discarded_norm():
     assert report.phase_matching == "pump_probe"
     assert report.discarded_density_l2_fraction == pytest.approx(expected_fraction)
 
-    calculator.calculate(np.zeros_like(rho), wavenumber, method="loop")
+    calculator.calculate(
+        np.zeros_like(rho), wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
     assert calculator.last_calculation_report.discarded_density_l2_fraction == 0.0
 
 
@@ -662,8 +875,12 @@ def test_unfiltered_and_pump_probe_pathways_are_observably_distinct():
     unfiltered = _pathway_calculator(_SameVBlockBasis(), "unfiltered")
     pump_probe = _pathway_calculator(_SameVBlockBasis(), "pump_probe")
 
-    unfiltered_spectrum = unfiltered.calculate(rho, wavenumber, method="loop")
-    selected_spectrum = pump_probe.calculate(rho, wavenumber, method="loop")
+    unfiltered_spectrum = unfiltered.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
+    selected_spectrum = pump_probe.calculate(
+        rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
+    )
 
     assert np.max(np.abs(unfiltered_spectrum - selected_spectrum)) > 1.0e-6
     assert unfiltered.last_calculation_report.phase_matching == "unfiltered"
@@ -710,6 +927,7 @@ def test_density_matrix_is_strictly_validated(invalid_rho):
             invalid_rho,
             np.linspace(400.0, 1200.0, 19),
             method="loop",
+            wavenumber_units=WAVENUMBER_UNITS,
         )
 
 
@@ -724,12 +942,18 @@ def test_radiation_and_pfid_keep_post_probe_optical_coherence():
         rho_after_probe,
         wavenumber,
         method="loop",
+        wavenumber_units=WAVENUMBER_UNITS,
     )
     radiation = calculator.calculate_radiation_spectrum(
         rho_after_probe,
         wavenumber,
+        wavenumber_units=WAVENUMBER_UNITS,
     )
-    pfid = calculator.calculate_pfid_spectrum(rho_after_probe, wavenumber)
+    pfid = calculator.calculate_pfid_spectrum(
+        rho_after_probe,
+        wavenumber,
+        wavenumber_units=WAVENUMBER_UNITS,
+    )
 
     np.testing.assert_allclose(absorption, 0.0)
     assert np.max(np.abs(radiation)) > 1.0e-6

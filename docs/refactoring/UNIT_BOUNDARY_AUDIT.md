@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-08-31
-Current checkpoint: D-045 normal-simulation boundary complete
+Current checkpoint: P4.3-f D-046 spectroscopy boundary complete
 
 ## Purpose
 
@@ -41,26 +41,31 @@ validated as explicit pairs. The input mapping and saved JSON retain the
 submitted pair; frozen model and generated-field schemas contain canonical
 values.
 
+Spectroscopy is Class A under D-046. Experimental conditions retain required
+value/unit pairs and expose frozen canonical K, Pa, m, ps, and kg fields.
+Every public spectral grid requires cm^-1 explicitly; device resolution is a
+conditional value/unit pair. No spectroscopy formula or route was changed.
+
 ## Spectroscopy
 
-### Current state
+### Completed P4.3-f state
 
-| Input | Current implicit unit | Class |
+| Input | Canonical unit | Class |
 |---|---:|---|
-| `ExperimentalConditions.temperature` | K | C |
-| `ExperimentalConditions.pressure` | Pa | C |
-| `ExperimentalConditions.optical_length` | m | C |
-| `ExperimentalConditions.T2` | ps | C |
-| `ExperimentalConditions.molecular_mass` | kg per molecule | C |
-| `calculate(..., wavenumber)` and related spectrum methods | cm^-1 | C |
-| `device_resolution` / `resolution` | cm^-1 | C |
+| `ExperimentalConditions.temperature` | K | A |
+| `ExperimentalConditions.pressure` | Pa | A |
+| `ExperimentalConditions.optical_length` | m | A |
+| `ExperimentalConditions.coherence_time` | ps | A |
+| `ExperimentalConditions.molecular_mass` | kg per molecule | A |
+| `calculate(..., wavenumber)` and related spectrum methods | cm^-1 | A |
+| `device_resolution` / `resolution` | cm^-1 | A |
 
 The formulas already establish these units: number density uses Pa/(k_B K),
 coherence decay converts ps to seconds, Beer-Lambert length is meters, Doppler
 width uses kilograms per molecule, and the spectral grid is converted from
 cm^-1. No alternative unit is currently supported at this boundary.
 
-### Recommended P4.3-f contract
+### Implemented P4.3-f contract
 
 - Make every `ExperimentalConditions` value a required neutral value/unit
   pair: `temperature/temperature_units`, `pressure/pressure_units`,
@@ -77,9 +82,8 @@ cm^-1. No alternative unit is currently supported at this boundary.
   `device_resolution_units="cm^-1"` when device broadening is requested.
 - Preserve every spectroscopy formula and exact/approximate routing decision.
 
-This is the recommended next implementation unit because the current units are
-already explicit in formulas and docstrings and spectroscopy has strong
-reference tests.
+All items above are implemented by D-046. Exact-route, Doppler, device,
+polarization, phase-matching, radiation, and PFID reference tests remain green.
 
 ## Low-level electric-field API
 
@@ -173,12 +177,11 @@ normal-simulation model schemas.
 
 ## Recommended implementation order
 
-1. Spectroscopy explicit units (P4.3-f).
-2. Low-level electric-field explicit units (P4.3-g).
-3. Krotov initial-pulse explicit units (P4.3-h).
-4. Local field-limit/seed key rename only after characterization.
-5. Optimization model consolidation in the planned model/optimization phases.
-6. Class-D optimizer quantities only after user clarification and independent
+1. Low-level electric-field explicit units (P4.3-g).
+2. Krotov initial-pulse explicit units (P4.3-h).
+3. Local field-limit/seed key rename only after characterization.
+4. Optimization model consolidation in the planned model/optimization phases.
+5. Class-D optimizer quantities only after user clarification and independent
    references.
 
 Every unit updates this audit, D-045 or a successor decision, the physics

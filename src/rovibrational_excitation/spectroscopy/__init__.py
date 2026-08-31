@@ -35,11 +35,16 @@ Basic usage:
 >>>
 >>> # Set up experimental conditions
 >>> conditions = ExperimentalConditions(
-...     temperature=300,  # K
-...     pressure=1e5,     # Pa
-...     optical_length=1e-3,  # m
-...     T2=500,           # ps
-...     molecular_mass=44e-3 / CONSTANTS.AVOGADRO  # kg
+...     temperature=300,
+...     temperature_units='K',
+...     pressure=1e5,
+...     pressure_units='Pa',
+...     optical_length=1e-3,
+...     optical_length_units='m',
+...     coherence_time=500,
+...     coherence_time_units='ps',
+...     molecular_mass=44e-3 / CONSTANTS.AVOGADRO,
+...     molecular_mass_units='kg',
 ... )
 >>>
 >>> # Create calculator
@@ -54,7 +59,12 @@ Basic usage:
 >>>
 >>> # Calculate spectrum
 >>> wavenumber = np.arange(2000, 2500, 0.1)
->>> absorbance = calculator.calculate(rho, wavenumber, method='loop')
+>>> absorbance = calculator.calculate(
+...     rho,
+...     wavenumber,
+...     method='loop',
+...     wavenumber_units='cm^-1',
+... )
 
 Advanced usage with 3D dipole components:
 
@@ -76,6 +86,7 @@ Memory-efficient calculation for large systems:
 >>> absorbance = calculator.calculate(
 ...     rho, wavenumber,
 ...     method='auto',
+...     wavenumber_units='cm^-1',
 ...     memory_budget_bytes=2 * 1024**3,
 ...     chunk_size=1000
 ... )

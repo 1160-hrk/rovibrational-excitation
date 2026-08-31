@@ -781,9 +781,27 @@ an independent derivation or validation of the Krotov update equation.
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature
-`T`, pressure, optical length, dephasing time `T2`, and molecular mass `m` are
-required positive finite values. Spectroscopy uses the constants from
+`T`, pressure, optical length, coherence time `T2`, and per-molecule mass `m`
+are required positive finite values with their own required unit labels. The
+public pairs are `temperature/temperature_units`,
+`pressure/pressure_units`, `optical_length/optical_length_units`,
+`coherence_time/coherence_time_units`, and
+`molecular_mass/molecular_mass_units`. The currently implemented boundary
+accepts exactly K, Pa, m, ps, and kg per molecule; unsupported labels raise
+instead of being inferred or converted by an undocumented formula.
+
+`ExperimentalConditions` is frozen and exposes the canonical values consumed
+by numerical code as `temperature_k`, `pressure_pa`, `optical_length_m`,
+`coherence_time_ps`, and `molecular_mass_kg`. Number density remains
+`pressure_pa / (k_B * temperature_k)`, and the coherence decay remains
+`1 / (coherence_time_ps * 1e-12)`. Spectroscopy uses the constants from
 `core.units.constants`; local rounded copies are forbidden.
+
+All public spectral grids require `wavenumber_units="cm^-1"`. Device
+broadening additionally requires `device_resolution/device_resolution_units`
+as a pair, with `device_resolution_units="cm^-1"`. Radiation and PFID routes
+have the same explicit grid-unit boundary. Internal exact/approximate routing
+and every response formula consume the same canonical cm^-1 arrays as before.
 
 For ordered Cartesian components `axes`, interaction and detection use
 
@@ -865,7 +883,8 @@ The response calculation policy is:
   until they share the transition-specific kernel; method selection may not
   change the physical line shape.
 - A requested device function must be recognized and applied. Its resolution
-  is required, positive, and expressed on the supplied wavenumber grid.
+  is required, positive, paired with its required cm^-1 label, and expressed
+  on the explicitly labeled cm^-1 wavenumber grid.
 
 `SpectroscopyCalculationReport` is the observable record of requested and
 executed method, estimated allocation, explicit memory/threshold controls,

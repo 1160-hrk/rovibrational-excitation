@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 937 passed, 10 skipped (947 collected) |
+| Pytest | 944 passed, 10 skipped (954 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-31. P4.3-e implements D-045:
+These rows were last verified locally on 2026-08-31. P4.3-f implements D-046:
+spectroscopy conditions, wavenumber grids, and device resolution now require
+exact unit labels and numerical code consumes frozen canonical values. All
+spectroscopy formulas and routing remain unchanged. P4.3-e implements D-045:
 every normal-simulation scalar physical input now has an explicit paired unit,
 and frozen quantity schemas convert once to fs, V/m, C*m, fs^2, fs^3, or
 rad/fs. Direct mappings, Python files, batch expansion, and saved parameter
@@ -119,7 +122,7 @@ stable. The old README claim of 63% coverage is stale.
 
 | File | Physical lines | Main concern |
 |---|---:|---|
-| `spectroscopy/absorbance_calculator.py` | 913 | Multiple response/spectrum responsibilities despite 90% measured coverage |
+| `spectroscopy/absorbance_calculator.py` | 1,049 | Multiple response/spectrum responsibilities despite 90% measured coverage |
 | `simulation/runner.py` | 628 | Construction, execution, multiprocessing, output, error handling |
 | `dynamics/scaling/converter.py` | 562 | Strict scaling, array conversion, and object preparation |
 | `dynamics/algorithms/rk4/schrodinger.py` | 478 | Dense, sparse, CPU, GPU, validation paths in one module |

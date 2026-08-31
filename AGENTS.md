@@ -2,8 +2,8 @@
 
 Last verified: 2026-08-31
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-e D-045 typed generated fields
-Latest infrastructure checkpoint: `ea07387`
+Verified structural checkpoint: P4.3-f D-046 spectroscopy units
+Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
 
@@ -69,6 +69,9 @@ The authoritative details and formulas are in
 - Every normal-simulation scalar physical input requires its own explicit unit.
   Caller value/unit pairs are saved unchanged; frozen boundaries convert once
   to the documented internal canonical units.
+- Spectroscopy conditions require explicit K, Pa, m, ps, and kg-per-molecule
+  labels. Public spectral grids and device resolution require explicit cm^-1;
+  frozen canonical fields feed the unchanged spectroscopy formulas.
 - Public propagation requires explicit Cartesian axes or one scalar coupling
   axis and accepts no unrestricted keyword arguments.
 - Split-operator calls require the constructor interaction mode again; omission
@@ -136,14 +139,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-e:
+Current local CPU baseline after P4.3-f:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-937 passed, 10 GPU tests skipped (947 collected)
+944 passed, 10 GPU tests skipped (954 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -214,12 +217,12 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 with a read-only audit of physical scalar inputs outside
-   normal simulation, using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-045 has deleted `ParameterProcessor`; normal simulation
-   now requires explicit value/unit pairs, preserves them for provenance, and
-   converts once through frozen boundaries. Migrate another boundary only after
-   characterizing its current units and numerical behavior. Structural
-   field-grid validation never resamples, and numerical adequacy remains a separate
+1. Continue Phase 4 with P4.3-g, the low-level electric-field unit boundary,
+   using `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-045 covers normal
+   simulation and D-046 covers spectroscopy. Characterize direct
+   `ElectricField` construction and waveform mutation before removing unit
+   defaults or adding amplitude-unit conversion. Structural field-grid
+   validation never resamples, and numerical adequacy remains a separate
    explicit convergence report.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,

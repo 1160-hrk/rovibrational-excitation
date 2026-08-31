@@ -1877,6 +1877,38 @@ Regression tests cover missing pairs, cross-unit sampled-field and population
 equivalence, non-mutation, saved provenance, and batch-route preservation.
 Implementation commits: `b56eea2`, `3590667`, and `60629f1`.
 
+### D-046: Spectroscopy inputs require exact unit labels
+
+Status: Accepted and implemented on 2026-08-31.
+
+Scope: `spectroscopy.ExperimentalConditions`, absorbance/radiation/PFID
+spectral grids, device resolution, the spectroscopy factory, and public
+spectroscopy examples.
+
+The existing spectroscopy formulas already assume K, Pa, m, ps, kg per
+molecule, and cm^-1. P4.3-f makes those assumptions executable public
+contracts without introducing alternative conversions. Each experimental
+condition is a required value/unit pair. `T2` is renamed to the neutral
+`coherence_time` input, and the frozen boundary exposes canonical
+`temperature_k`, `pressure_pa`, `optical_length_m`, `coherence_time_ps`, and
+`molecular_mass_kg` fields to numerical consumers.
+
+All public wavenumber arrays require `wavenumber_units="cm^-1"`. A requested
+device function requires both `device_resolution` and
+`device_resolution_units="cm^-1"`; either member outside that mode is an
+error. Direct 2D preparation, radiation, PFID, and device-function entry points
+have the same strict boundary. Missing or unsupported units raise and never
+fall back to formula knowledge or a default.
+
+The number-density, coherence-decay, Beer-Lambert, Doppler, response,
+polarization, phase-matching, broadening, exact/approximate, and auto-routing
+formulas are unchanged. Internal 2D preparation receives an already canonical
+cm^-1 array and does not inspect unit strings. Regression tests retain all
+exact-route comparisons and add missing/wrong-unit, device-pair, factory,
+radiation, and PFID coverage.
+
+Implementation commit: this checkpoint commit.
+
 
 ## Open decisions
 

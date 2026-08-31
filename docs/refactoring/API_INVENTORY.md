@@ -36,8 +36,8 @@ working proposal, not yet an accepted API decision.
 | `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public |
 | `LinMolDipoleMatrix` | Tests and examples use its model subpackage | constructed by `models.linear_molecule`; advanced class remains under that model | temporary public |
 | `AbsorbanceCalculator` | spectroscopy examples and tests | `spectroscopy.AbsorbanceCalculator` or decomposed facade | temporary public at root; target public in subpackage |
-| `ExperimentalConditions` | spectroscopy examples and tests | `spectroscopy.ExperimentalConditions` | temporary public at root; target public in subpackage |
-| `create_calculator_from_params` | spectroscopy examples and tests | typed spectroscopy constructor under `spectroscopy` | temporary public at root; target public in subpackage |
+| `ExperimentalConditions` | spectroscopy examples and tests | `spectroscopy.ExperimentalConditions` | D-046 requires exact value/unit pairs and frozen canonical fields; temporary public at root; target public in subpackage |
+| `create_calculator_from_params` | spectroscopy examples and tests | typed spectroscopy constructor under `spectroscopy` | D-046 requires and forwards every condition unit; temporary public at root; target public in subpackage |
 
 Every current root `__all__` name therefore has an explicit disposition. Only
 `ElectricField` is proposed to remain a root re-export.
@@ -167,7 +167,7 @@ callers import functions from their owning modules.
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `optimization` | `run_local_optimization`, `run_krotov_optimization`, `run_grape_optimization`, `ALGO_REGISTRY` | typed functions under `optimization`; private registry | run functions target public in subpackage; registry internal |
-| `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical/polarization/pathway policy accepted by D-023 through D-025, scientific references pending O-007 |
+| `spectroscopy` | `AbsorbanceCalculator`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; numerical/polarization/pathway policy accepted by D-023 through D-025, strict units by D-046, scientific references pending O-007 |
 
 `cli/__init__.py` remains empty. `simulation.__all__` contains only
 `run_simulation_case`; specialized validation, convergence, sweep, and runner
