@@ -4,18 +4,18 @@ from typing import Any, TypedDict
 
 import numpy as np
 
-from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.dynamics import (
     PropagationDirection,
     SchrodingerPropagator,
 )
 from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
-from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
+from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.optimization.timegrid import (
     build_optimization_time_settings,
     sample_optimization_output,
 )
 
+from .krotov_initial_field import parse_krotov_initial_field
 from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
 
 DEFAULT_PARAMS = {
@@ -24,13 +24,6 @@ DEFAULT_PARAMS = {
     "lambda_a": 1.0e-20,
     "target_fidelity": 1.0,
     "control_axes": "xy",
-    "carrier_freq_initial": 2300,
-    "unit_carrier_freq": "cm^-1",
-    "amplitude_initial": 1.0e9,
-    "pol_initial": [1.0, 1.0],
-    "gdd_initial": 0.0,
-    "tod_initial": 0.0,
-    "const_polarisation": False,
     "propagator_func": None,
 }
 
@@ -52,17 +45,7 @@ def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
 def run_krotov_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
-    duration_raw = params.get("duration_initial")
-    try:
-        duration_initial = float(duration_raw)
-    except (TypeError, ValueError):
-        raise ValueError("duration_initial must be finite and positive") from None
-    if (
-        isinstance(duration_raw, bool)
-        or not np.isfinite(duration_initial)
-        or duration_initial <= 0
-    ):
-        raise ValueError("duration_initial must be finite and positive")
+    initial_field = parse_krotov_initial_field(params)
 
     initial_state = tuple(states["initial"])  # (v,J,...) expected
     target_state = tuple(states["target"]) if states.get("target") is not None else None
@@ -74,7 +57,6 @@ def run_krotov_optimization(
 
     time_settings = build_optimization_time_settings(time_cfg)
     time_grid = time_settings.grid
-    time_total = time_grid.t_end_fs
     output_stride = time_settings.output_stride
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
@@ -124,38 +106,7 @@ def run_krotov_optimization(
     mu_a_prime = mu_map[control_axes[0]]
     mu_b_prime = mu_map[control_axes[1]]
 
-    # Initial field (gaussian)
-    Efield_test = ElectricField.from_time_grid(time_grid)
-    carrier_freq = params.get(
-        "carrier_freq_initial", DEFAULT_PARAMS["carrier_freq_initial"]
-    )
-    unit_carrier_freq = params.get(
-        "unit_carrier_freq", DEFAULT_PARAMS["unit_carrier_freq"]
-    )
-    carrier_freq_phz = converter.convert_frequency(
-        carrier_freq, unit_carrier_freq, "PHz"
-    )  # PHz
-    Efield_test.add_dispersed_Efield(
-        envelope_func=gaussian_fwhm,
-        duration=duration_initial,
-        t_center=params.get("t_center_initial", time_total / 2),
-        carrier_freq=float(carrier_freq_phz),  # PHz
-        duration_units="fs",
-        t_center_units="fs",
-        carrier_freq_units="PHz",
-        amplitude=params.get("amplitude_initial", DEFAULT_PARAMS["amplitude_initial"]),
-        amplitude_units="V/m",
-        polarization=params.get("pol_initial", DEFAULT_PARAMS["pol_initial"]),
-        phase_rad=0.0,
-        gdd=params.get("gdd_initial", DEFAULT_PARAMS["gdd_initial"]),
-        tod=params.get("tod_initial", DEFAULT_PARAMS["tod_initial"]),
-        gdd_units="fs^2",
-        tod_units="fs^3",
-        const_polarisation=params.get(
-            "const_polarisation", DEFAULT_PARAMS["const_polarisation"]
-        ),
-    )
-    field_data = params.get("efield_initial", Efield_test.get_Efield_SI())
+    field_data = initial_field.samples_on(time_grid)
 
     # Precompute helpers
     S_t = _shape_function(tlist, tlist[-1])

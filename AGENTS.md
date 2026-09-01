@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-08-31
+Last verified: 2026-09-01
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-g unit 3 D-049 generated-pulse units
+Verified structural checkpoint: P4.3-h D-050 Krotov initial fields
 Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
@@ -66,6 +66,10 @@ The authoritative details and formulas are in
   stores field samples only in V/m; it has no constructor field-unit selector.
 - Low-level generated pulses require explicit duration, center, carrier, and
   direct-amplitude units; GDD/TOD are complete optional pairs or exact zero.
+- Krotov initial fields explicitly select generated or sampled input. Generated
+  seeds require physical value/unit pairs; sampled two-component fields require
+  a direct amplitude unit and exact canonical-grid length. Neither route
+  resamples or silently overrides the other.
 - Typed trajectories always include the exact endpoint; if stride does not
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
@@ -146,14 +150,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-g unit 3:
+Current local CPU baseline after P4.3-h:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-957 passed, 10 GPU tests skipped (967 collected)
+972 passed, 10 GPU tests skipped (982 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -217,17 +221,19 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 102 discovered modules import, internal modules avoid root
+are removed, all 103 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Begin P4.3-h by characterizing the Krotov initial-pulse parameter boundary
-   from `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`. D-047 through D-049 complete
-   low-level field units. Do not change Krotov defaults, samples, grid, update
-   indices, or objective logic while introducing the frozen parameter schema.
+1. Continue the unit audit with the local-optimizer `field_max` and
+   `seed_amplitude` unit-encoded rename only after exact characterization. Do
+   not change defaults, clipping, the legacy odd grid, endpoints, shared
+   boundaries, slices, indices, values, or RK4 consumption. Do not touch the
+   Class-D `gain`, `c_abs_min`, `drive_abs_min`, or `shape_floor` quantities
+   without the user's definition.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

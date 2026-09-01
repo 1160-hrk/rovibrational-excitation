@@ -25,15 +25,16 @@ algorithms:
     lambda_a: 1.0e-20
     target_fidelity: 1.0
     control_axes: "zx"
-    carrier_freq_initial: 2300.0
-    unit_carrier_freq: "cm^-1"
-    amplitude_initial: 1.0e+9
-    pol_initial: [1.0, 0.0]
-    duration_initial: 200.0
-    t_center_initial: 250.0
-    gdd_initial: 0.0
-    tod_initial: 0.0
-    const_polarisation: false
+    initial_field_kind: generated
+    initial_carrier_frequency: 2300.0
+    initial_carrier_frequency_units: "cm^-1"
+    initial_amplitude: 1.0e+9
+    initial_amplitude_units: "V/m"
+    initial_polarization: [1.0, 0.0]
+    initial_duration: 200.0
+    initial_duration_units: "fs"
+    initial_center: 250.0
+    initial_center_units: "fs"
 plot:
   save_fig: false
   spectrum: false

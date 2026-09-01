@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-08-31
+Last verified: 2026-09-01
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 957 passed, 10 skipped (967 collected) |
+| Pytest | 972 passed, 10 skipped (982 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-08-31. P4.3-g unit 3 implements
+These rows were last verified locally on 2026-09-01. P4.3-h implements D-050:
+Krotov initial fields require an explicit generated/sampled source, physical
+value/unit pairs, and strict exact-grid sampled injection. Frozen seed samples,
+update indices, and V=0 to V=3 fidelities are unchanged. P4.3-g unit 3 implements
 D-049 and completes the low-level field-unit boundary: generated pulses require
 time, carrier, and direct amplitude units, while GDD/TOD are complete optional
 pairs or exact zero. Frozen nonzero-dispersion samples remain unchanged and

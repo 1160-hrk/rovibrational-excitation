@@ -1997,6 +1997,39 @@ This completes P4.3-g. Optimization-specific initial-pulse defaults and unit
 encoded parameter names remain the separately characterized P4.3-h work.
 Implementation commit: this checkpoint.
 
+### D-050: Krotov initial fields require an explicit source and physical units
+
+Status: Accepted and implemented on 2026-09-01 as P4.3-h.
+
+Scope: Krotov initial-field parameters, generated Gaussian seed construction,
+sampled seed injection, and the active V=0 to V=3 reference configuration.
+
+`initial_field_kind` is required and is either `generated` or `sampled`.
+There is no generated-field construction followed by an implicit
+`efield_initial` override. Generated seeds require neutral value/unit pairs for
+duration, center, carrier frequency, and direct electric-field amplitude, plus
+a finite nonzero two-component polarization. GDD and TOD retain the D-049
+complete-pair-or-exact-zero contract. The generated kind means the existing
+Gaussian-FWHM Krotov seed with zero carrier phase; the existing waveform
+formula and polarization normalization are unchanged.
+
+Sampled seeds require `initial_field_samples` and `initial_field_units`. Only
+real finite `(n_field_points, 2)` arrays and direct electric-field amplitude
+units are accepted. Values are copied and converted once to V/m. Their length
+must exactly match the canonical odd `TimeGrid`; no interpolation, trimming,
+padding, phase reconstruction, intensity conversion, or normalization occurs.
+Generated-only and sampled-only keys are mutually exclusive. Unknown
+`initial_*` names and every legacy Krotov initial-pulse name raise with an
+explicit migration error.
+
+The Krotov update equation, objective, backward propagation, half-step field
+grid, `i * 2` update index, endpoint handling, and numerical optimizer defaults
+are unchanged. The frozen generated samples and V=0 to V=3 initial/optimized
+fidelities remain unchanged. Class-D penalty and tolerance quantities remain
+unresolved and are not renamed or converted by this decision.
+
+Implementation commit: this checkpoint.
+
 
 ## Open decisions
 

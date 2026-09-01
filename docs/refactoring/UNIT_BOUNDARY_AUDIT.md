@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-08-31
-Current checkpoint: P4.3-g unit 3 D-049 generated-pulse units
+Last verified: 2026-09-01
+Current checkpoint: P4.3-h D-050 Krotov initial fields
 
 ## Purpose
 
@@ -131,22 +131,14 @@ change during unit work.
 
 ### Krotov initial pulse
 
-The current initial-pulse mapping has Class C inputs:
-`duration_initial` and `t_center_initial` are fs,
-`amplitude_initial` is V/m, `gdd_initial` is fs^2, and
-`tod_initial` is fs^3. Carrier frequency has a value/unit pair but uses
-legacy names. Several physical values have numerical defaults.
-
-Recommended P4.3-h:
-
-- add a frozen initial-pulse schema with neutral required pairs;
-- require carrier, amplitude, duration, center, and polarization rather than
-  selecting hidden physical defaults;
-- retain the accepted optional zero GDD/TOD rule;
-- preserve the exact sampled initial field before entering any Krotov update.
-
-An externally supplied `efield_initial` should use the sampled-field contract
-and must state V/m explicitly. It must never be resampled.
+Completed by D-050. `initial_field_kind` explicitly selects `generated` or
+`sampled`; no constructed field is silently replaced. Generated seeds are
+Class A for duration, center, carrier frequency, amplitude, GDD, and TOD.
+Primary pulse values and polarization are required; dispersion is an optional
+complete pair or exact zero. Sampled seeds are Class A, use a direct field unit,
+and must be real, finite, two-component, and exactly grid-matched. Legacy and
+inapplicable keys raise. Frozen samples and the Krotov V=0 to V=3 reference are
+unchanged.
 
 ### Local optimizer
 
@@ -184,10 +176,9 @@ normal-simulation model schemas.
 
 ## Recommended implementation order
 
-1. Krotov initial-pulse explicit units (P4.3-h).
-2. Local field-limit/seed key rename only after characterization.
-3. Optimization model consolidation in the planned model/optimization phases.
-4. Class-D optimizer quantities only after user clarification and independent
+1. Local field-limit/seed key rename only after characterization.
+2. Optimization model consolidation in the planned model/optimization phases.
+3. Class-D optimizer quantities only after user clarification and independent
    references.
 
 Every unit updates this audit, D-045 or a successor decision, the physics

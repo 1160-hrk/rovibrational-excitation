@@ -969,10 +969,24 @@ agree within double-precision conversion roundoff. No waveform formula,
 polarization path, optimizer grid, update index, or Krotov reference changes.
 The complete CPU suite passes 957 tests with 10 optional-GPU skips.
 
+P4.3-h implements D-050 on 2026-09-01. Krotov initial fields require the
+explicit `generated` or `sampled` source. Generated Gaussian-FWHM seeds require
+duration, center, carrier, direct amplitude, and polarization with a unit for
+every physical scalar; GDD/TOD are complete optional pairs or exact zero.
+Sampled two-component fields require a direct amplitude unit, are copied and
+converted once to V/m, and must match the canonical odd field grid exactly.
+Legacy names, source conflicts, unknown initial-field keys, intensity labels,
+complex/nonfinite arrays, and length mismatch raise without fallback. Frozen
+seed samples and the V=0 to V=3 fidelities are unchanged. The Krotov update
+loop, objective, time grid, factor-of-two index, and endpoints are untouched.
+The complete CPU suite passes 972 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- continue P4.3-h with the separately characterized Krotov initial-pulse
-  parameter boundary from `UNIT_BOUNDARY_AUDIT.md`;
+- continue the unit audit with local-optimizer field-limit/seed names only
+  after preserving every legacy grid, endpoint, slice, index, and value;
+- defer Class-D optimizer penalties and tolerances until independent references
+  and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

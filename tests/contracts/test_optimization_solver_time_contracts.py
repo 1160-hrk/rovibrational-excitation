@@ -69,6 +69,23 @@ class _DirectionSpy:
         return times, trajectory
 
 
+def _generated_initial_field(**overrides: Any) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "initial_field_kind": "generated",
+        "initial_duration": 0.2,
+        "initial_duration_units": "fs",
+        "initial_center": 0.4,
+        "initial_center_units": "fs",
+        "initial_carrier_frequency": 2300.0,
+        "initial_carrier_frequency_units": "cm^-1",
+        "initial_amplitude": 1.0e9,
+        "initial_amplitude_units": "V/m",
+        "initial_polarization": [1.0, 1.0],
+    }
+    params.update(overrides)
+    return params
+
+
 def test_grape_uses_full_internal_trajectory_and_thins_only_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -104,11 +121,7 @@ def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
         dipole=_ZeroDipole(),
         states={"initial": (0,), "target": (1,)},
         time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 3},
-        params={
-            "duration_initial": 0.2,
-            "amplitude_initial": 0.0,
-            "max_iter": 1,
-        },
+        params=_generated_initial_field(initial_amplitude=0.0, max_iter=1),
     )
 
     assert [call["sample_stride"] for call in spy.calls] == [1, 1, 1]
@@ -124,3 +137,60 @@ def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
         result["time"], np.arange(5, dtype=float)[[0, 3, 4]] * 0.2
     )
     assert result["psi_traj"].shape == (3, 2)
+
+
+def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _DirectionSpy()
+    monkeypatch.setattr(krotov_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = krotov_module.run_krotov_optimization(
+        basis=_TwoStateBasis(),
+        hamiltonian=_Hamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 1},
+        params=_generated_initial_field(max_iter=0),
+    )
+
+    expected = np.array(
+        [
+            [1.0627984523004956e4, 1.0627984523004956e4],
+            [1.3694193539024193e6, 1.3694193539024193e6],
+            [4.4028375516281895e7, 4.4028375516281895e7],
+            [3.5322163832979065e8, 3.5322163832979065e8],
+            [7.0710678118654740e8, 7.0710678118654740e8],
+            [3.5322163832979065e8, 3.5322163832979065e8],
+            [4.4028375516281806e7, 4.4028375516281806e7],
+            [1.3694193539024722e6, 1.3694193539024722e6],
+            [1.0627984523092236e4, 1.0627984523092236e4],
+        ]
+    )
+    np.testing.assert_allclose(result["field_data"], expected, rtol=2e-15, atol=0.0)
+    np.testing.assert_array_equal(spy.calls[0]["field"], result["field_data"])
+
+
+def test_krotov_sampled_initial_field_is_consumed_without_resampling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _DirectionSpy()
+    monkeypatch.setattr(krotov_module, "SchrodingerPropagator", lambda **_: spy)
+    external = np.arange(18, dtype=float).reshape(9, 2)
+
+    result = krotov_module.run_krotov_optimization(
+        basis=_TwoStateBasis(),
+        hamiltonian=_Hamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 1},
+        params={
+            "initial_field_kind": "sampled",
+            "initial_field_samples": external,
+            "initial_field_units": "V/m",
+            "max_iter": 0,
+        },
+    )
+
+    np.testing.assert_array_equal(result["field_data"], external)
+    np.testing.assert_array_equal(spy.calls[0]["field"], external)

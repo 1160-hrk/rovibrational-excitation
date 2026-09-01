@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-08-31
+Last verified: 2026-09-01
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-049 explicit low-level generated-pulse units
+Latest API checkpoint: D-050 explicit Krotov initial-field source and units
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -252,6 +252,13 @@ floor-based RK4 consumption are not reconstructed through canonical `TimeGrid`.
 Only the final RK4 view is restricted to the odd prefix that the legacy kernel
 already consumed. Normal and optimization workflows may still share typed
 propagation and result boundaries without sharing time-array construction.
+
+D-050 makes the Krotov seed source explicit. `initial_field_kind=generated`
+uses required value/unit pairs and the frozen Gaussian-FWHM projection;
+`initial_field_kind=sampled` uses a required direct field unit and exact
+two-component grid match. The typed `krotov_initial_field` boundary is internal;
+`run_krotov_optimization` remains the optimization entry point. Legacy seed
+keys and implicit external-array override are removed.
 
 The runner catches every plotting exception and returns a nominally successful
 optimization. Phase 7 must distinguish an optimization result from optional

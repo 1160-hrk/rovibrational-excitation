@@ -993,6 +993,17 @@ generated and externally injected TwoLevel, M-resolved LinMol, and M-averaged
 LinMol cases. This boundary conversion changes neither field samples nor the
 Hamiltonian evaluated at them.
 
+Krotov initial fields have a separate explicit source discriminator. A
+`generated` seed is the existing Gaussian-FWHM pulse and requires duration,
+center, carrier frequency, and direct amplitude value/unit pairs plus a finite
+nonzero two-component polarization. Optional GDD/TOD pairs are exact zero when
+both members are omitted. A `sampled` seed requires a real finite two-column
+array and a direct amplitude unit. It is converted once to V/m and must match
+the canonical odd Krotov `TimeGrid` exactly. The boundary never chooses between
+the two sources implicitly and never resamples, normalizes, repairs, or derives
+a signed field from intensity. Krotov update indices and objective logic consume
+the same field samples as before D-050.
+
 Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit
 convergence calculation with a caller-selected tolerance. It reports the

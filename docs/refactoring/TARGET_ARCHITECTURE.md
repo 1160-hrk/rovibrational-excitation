@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-08-27
+Last updated: 2026-09-01
 
 ## 1. Design goals
 
@@ -149,6 +149,7 @@ src/rovibrational_excitation/
 │   ├── local.py
 │   ├── grape.py
 │   ├── krotov.py
+│   ├── krotov_initial_field.py
 │   └── spectral_constraints.py
 ├── spectroscopy/
 │   ├── response.py
@@ -248,6 +249,12 @@ The returned optimization field and cost still use the complete legacy storage
 array. GRAPE and Krotov have no such exception: D-029 requires canonical
 `TimeGrid`, explicit `field_dt_fs`, complete internal trajectories, and
 output-only `output_stride`.
+
+D-050 gives Krotov one frozen initial-field ownership boundary. It selects
+generated or sampled input explicitly, converts public quantities to canonical
+fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the
+same `TimeGrid`. `krotov.py` consumes only the canonical writable field copy;
+its update loop does not parse units or choose a source.
 
 ### 5.2 CouplingSpec
 
