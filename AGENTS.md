@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-01
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-i D-051 local field units
+Verified structural checkpoint: P4.3-j D-052 molecular symmetry foundation
 Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
@@ -153,14 +153,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-i:
+Current local CPU baseline after P4.3-j:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-975 passed, 10 GPU tests skipped (985 collected)
+983 passed, 10 GPU tests skipped (993 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -210,7 +210,7 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 72%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 73%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -224,28 +224,34 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 103 discovered modules import, internal modules avoid root
+are removed, all 116 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 by consolidating optimization model construction with the
+1. Continue D-052 by adding independent SymTop Hamiltonian and dipole
+   primitive references, then implement the accepted rigid, nondegenerate
+   parallel-band `|v,J,K,M>` model for NumPy dense/CSR RK4. Preserve the
+   experimental legacy route until basis ordering and unfiltered numerical
+   parity are characterized. Do not infer CH3F statistical weights before a
+   signed-K symmetry-adapted basis exists.
+2. Continue Phase 4 by consolidating optimization model construction with the
    frozen normal-simulation model schemas only after exact Hamiltonian, dipole,
    basis-ordering, and optimizer-result characterization. Handle SymTop as a
    separate decision because it is not in the normal model schemas. Do not
    touch the Class-D `gain`, `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user's
    definition and independent references.
-2. Reduce exact transition debt only with the Phase 6 model consolidation. The
+3. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two
    `models -> dynamics.problem` imports; never broaden or hide them.
-3. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
-4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
-5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
-7. Preserve the D-044 support boundary: active examples, benchmarks, and
+4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
+5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
+6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
+7. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+8. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archived examples remain historical
    until individually migrated and smoke-tested.

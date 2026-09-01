@@ -99,6 +99,10 @@ src/rovibrational_excitation/
 │   ├── base.py
 │   ├── registry.py
 │   ├── validation.py
+│   ├── symmetry/
+│   │   ├── groups.py
+│   │   ├── policy.py
+│   │   └── presets.py
 │   ├── two_level/
 │   │   ├── model.py
 │   │   ├── basis.py
@@ -470,6 +474,14 @@ not global configuration.
 A model registry maps an explicit model name to a builder. It does not inspect
 unrelated parameter names to guess the model.
 
+`models/symmetry` owns reusable geometric descriptors, rotational-state
+classification policies, and source-versioned molecule-name presets. It is
+deliberately below model builders and above no numerical kernel. A preset may
+select symmetry constraints but may not construct a Hamiltonian or provide
+physical constants. Model builders must pass an explicit state to the policy
+and apply an explicitly selected spin-isomer filter; kernels receive the
+already constructed basis and weights, never molecule names.
+
 ## 9. Current-to-target mapping
 
 | Current path | Target owner | Migration note |
@@ -481,6 +493,7 @@ unrelated parameter names to guess the model.
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Co-locate energy-gap schema |
 | `core/basis/symtop.py` | `models/symmetric_top/basis.py` | Keep experimental until validated |
+| no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; integration into linear and symmetric-top builders remains reference-tested work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |

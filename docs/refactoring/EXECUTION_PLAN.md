@@ -991,8 +991,23 @@ slices, lookahead index, field samples, and RK4-consumed prefix do not change.
 Class-D optimizer quantities remain untouched. The complete CPU suite passes
 975 tests with 10 optional-GPU skips.
 
+P4.3-j begins the D-052 SymTop preparation on 2026-09-01 without changing a
+numerical model. A strict `models.symmetry` layer represents point-group
+families, optional permutation-inversion labels, rotational symmetry states,
+nuclear-spin policies, and source-versioned molecule-name presets. `H2`,
+`D2`, `T2`, and `HD` provide explicit linear-rotor weights. `CH3F`
+provides only its validated K-modulo-three ortho/para sectors and refuses a
+weight until signed-K symmetry adaptation is implemented. Presets contain no
+physical constants and unknown names never fall back. The complete CPU suite
+passes 983 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
+- add independent SymTop Hamiltonian and dipole primitive references, then
+  implement the accepted rigid parallel-band model without reusing the broken
+  legacy formulas by assumption;
+- connect symmetry filters to model basis construction only after exact basis
+  ordering and unfiltered parity are characterized;
 - consolidate optimization model construction with the frozen model schemas
   only after exact Hamiltonian, dipole, basis-ordering, and result parity;
 - defer Class-D optimizer penalties and tolerances until independent references

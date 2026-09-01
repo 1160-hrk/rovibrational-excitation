@@ -2059,6 +2059,55 @@ definition and independent optimization references.
 Implementation commit: this checkpoint.
 
 
+### D-052: SymTop and molecular symmetry start from a narrow explicit contract
+
+Status: Accepted; symmetry foundation implemented on 2026-09-01 as P4.3-j.
+
+Scope: future SymTop production model, molecular-symmetry descriptors,
+nuclear-spin state selection, and name-based symmetry presets.
+
+The first supported SymTop physics is a rigid symmetric top in a
+nondegenerate, totally symmetric parallel vibrational band. Its basis is
+`|v,J,K,M>` with signed K and M. The body-fixed transition dipole is along the
+symmetry axis, so the initial selection rules are Delta K=0 and lab-frame
+Delta M=0,+/-1. Hamiltonian frequencies use the existing `omega01` plus
+positive anharmonic-shift convention. Neutral perpendicular/parallel
+rotational constants and separate perpendicular/parallel vibration-rotation
+couplings will be required. NumPy dense and CSR RK4 are the first production
+execution routes; unsupported routes must raise. Split-operator support is a
+later reference-tested unit. No hyperfine or nuclear-spin conversion dynamics
+is implied.
+
+`models.symmetry` is a model-layer foundation, not a character-table engine.
+It separates geometric point group, an optional permutation-inversion group,
+rotational state classification, and nuclear-spin policy. Point-group names
+never infer nuclear-spin weights. Every preset carries a canonical preset ID,
+explicit aliases, rule source, and rule version. Resolving a
+molecule name supplies symmetry rules only: it never supplies a rotational
+constant, vibrational frequency, dipole, temperature, field, or unit.
+
+Initial presets are `H2`, `D2`, `T2`, `HD`, and `CH3F`. In the supported
+totally symmetric vibronic manifold, H2/T2 use even-J/odd-J weights 1/3,
+D2 uses 6/3, and HD uses a state-independent weight 6. CH3F classifies
+K=3n as ortho and other K as para, including signed K through `abs(K)`.
+CH3F statistical weights are deliberately unavailable until the signed-K
+basis is symmetry adapted; requesting them raises. Unknown names, unsupported
+vibronic symmetry, invalid quantum numbers, and unsupported isomer names also
+raise without fallback.
+
+Statistical weights belong to thermal or otherwise explicit incoherent
+population construction. They are not coherent state-vector amplitudes.
+Filtering by a selected spin isomer is separate from obtaining a statistical
+weight and never rewrites quantum numbers.
+
+This checkpoint does not connect presets to the experimental legacy SymTop
+basis or change any Hamiltonian, dipole, propagation, or optimization result.
+The next unit must add independent primitive references before replacing the
+legacy SymTop implementation.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -2083,16 +2132,14 @@ policy and is never silently enabled.
 
 ### O-005: SymTop production scope
 
-SymTop basis and dipole code exist, but the main simulation model factory does
-not expose SymTop.
-
-User input and reference data are needed to define:
-
-- supported quantum numbers;
-- Hamiltonian model;
-- coupling/polarization semantics;
-- validated use cases;
-- whether it belongs in v0.3 stable scope.
+Resolved in specification by D-052. The initial production scope, quantum
+numbers, Hamiltonian convention, parallel-band coupling, required parameters,
+and first execution routes are accepted. The existing legacy basis and dipole
+remain experimental and the main simulation factory still does not expose
+SymTop. Production status remains blocked on independent Hamiltonian and
+dipole primitive references, basis-ordering characterization, and dense/CSR
+RK4 parity tests; this is implementation work, not an unresolved physics
+choice.
 
 ### O-006: Optimization reference behavior
 

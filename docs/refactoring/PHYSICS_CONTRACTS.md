@@ -491,6 +491,47 @@ coupling directly so callers do not need a dummy polarization vector.
 A supplied polarization may still be normalized and structurally validated by
 the input layer. It must not change scalar-model excitation results.
 
+### Molecular symmetry and nuclear-spin statistics
+
+The D-052 foundation keeps four concepts separate:
+
+1. geometric point group;
+2. optional molecular permutation-inversion group;
+3. rotational-state quantum numbers and vibronic symmetry;
+4. a source-identified nuclear-spin classification policy.
+
+A point-group label alone never determines allowed rotational states or
+statistical weights. Initial policies apply only to the explicitly supported
+totally symmetric vibronic manifold. They classify the caller's state without
+changing `v`, `J`, or signed `K`.
+
+| Preset | Point group | Sector rule | Statistical weight |
+|---|---|---|---|
+| `H2` | Dinfh | even J para; odd J ortho | 1; 3 |
+| `D2` | Dinfh | even J ortho; odd J para | 6; 3 |
+| `T2` | Dinfh | even J para; odd J ortho | 1; 3 |
+| `HD` | Cinfv | one unfiltered sector | 6 for every J |
+| `CH3F` | C3v, molecular group C3v(M) | K divisible by 3 ortho; otherwise para | unresolved until signed-K symmetry adaptation |
+
+CH3F uses `abs(K) mod 3` only for sector selection. Its preset must raise if a
+caller asks for a numerical weight. A zero weight may eventually remove a
+state, while a positive weight is population data for a thermal or explicit
+incoherent construction. A weight is never interpreted as a coherent
+amplitude.
+
+Molecule-name resolution is not a molecular-constant database. Presets contain
+no Hamiltonian constants, dipoles, temperature, field parameters, or units;
+those remain required physical inputs. Unknown molecule names never select a
+generic symmetry or model.
+
+The accepted first SymTop model is a rigid, nondegenerate parallel band in
+`|v,J,K,M>` with signed K/M, Delta K=0, and Delta M=0,+/-1. It will use the
+library's `omega01` and positive anharmonic-shift convention and require
+separate perpendicular/parallel rotational constants and vibration-rotation
+couplings. This checkpoint defines the contract only; the experimental legacy
+SymTop matrices remain outside production until independent reference tests
+exist.
+
 ### Split-operator polarization reference
 
 M 位相回転、Hermitian 性、Strang 分割、計算量の詳しい導出は

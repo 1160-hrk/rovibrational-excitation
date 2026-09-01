@@ -44,8 +44,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 975 passed, 10 skipped (985 collected) |
-| Measured branch coverage | 72% |
+| Pytest | 983 passed, 10 skipped (993 collected) |
+| Measured branch coverage | 73% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
@@ -55,7 +55,12 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-01. P4.3-i implements D-051:
+These rows were last verified locally on 2026-09-01. P4.3-j begins D-052 with
+a strict model-layer symmetry foundation and name-based presets for `H2`,
+`D2`, `T2`, `HD`, and `CH3F`. Presets contain source-versioned symmetry
+rules but never molecular constants. CH3F provides K-sector selection only and
+rejects statistical-weight use until signed-K symmetry adaptation. No existing
+model or numerical result changes. P4.3-i implements D-051:
 the local optimizer now names its direct field limit and seed amplitude
 `field_max_v_per_m` and `seed_amplitude_v_per_m`. Exact characterization keeps
 the defaults, seed-before-componentwise-clipping order, stored and propagated

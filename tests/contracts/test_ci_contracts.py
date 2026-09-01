@@ -97,6 +97,9 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/simulation/generated.py",
         "src/rovibrational_excitation/models/parameters.py",
         "src/rovibrational_excitation/models/validation.py",
+        "src/rovibrational_excitation/models/symmetry/groups.py",
+        "src/rovibrational_excitation/models/symmetry/policy.py",
+        "src/rovibrational_excitation/models/symmetry/presets.py",
         "src/rovibrational_excitation/optimization/krotov_initial_field.py",
     ]
 

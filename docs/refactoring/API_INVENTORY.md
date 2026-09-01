@@ -3,7 +3,7 @@
 Last verified: 2026-09-01
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-051 local optimizer field-limit and seed V/m names
+Latest API checkpoint: D-052 molecular-symmetry descriptors and named presets
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -141,10 +141,13 @@ and demo factories are deleted rather than deprecated.
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy`, `basis_type`, and `initial_states`; LinMol also requires `representation`, and `m_resolved` requires `axes`. Normal-simulation `use_M` is removed under D-041 |
+| `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | internal typed foundation under D-052; presets resolve symmetry only and are not yet connected to model builders |
 
 `SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
 simulation `build_model` registry supports only `linmol`, `twolevel`, and
-`vibladder`. SymTop must not be advertised as stable until O-005 is resolved.
+`vibladder`. D-052 resolves the intended production scope, but SymTop must not
+be advertised as stable until independent primitive references and the new
+model implementation replace the experimental route.
 
 ### 3.5 Persistence
 
