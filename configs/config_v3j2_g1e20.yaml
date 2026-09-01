@@ -22,10 +22,10 @@ algorithm:
 algorithms:
   local:
     gain: 1e20
-    field_max: 1.0e12
+    field_max_v_per_m: 1.0e12
     use_sin2_shape: false
     control_axes: "zx"
-    seed_amplitude: 1.0e3
+    seed_amplitude_v_per_m: 1.0e3
     seed_max_segments: 5
     c_abs_min: 1.0e-1
     shape_floor: 1.0e-2

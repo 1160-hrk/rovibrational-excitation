@@ -981,10 +981,20 @@ seed samples and the V=0 to V=3 fidelities are unchanged. The Krotov update
 loop, objective, time grid, factor-of-two index, and endpoints are untouched.
 The complete CPU suite passes 972 tests with 10 optional-GPU skips.
 
+P4.3-i implements D-051 on 2026-09-01. The local optimizer's unit-ambiguous
+`field_max` and `seed_amplitude` keys are replaced by
+`field_max_v_per_m` and `seed_amplitude_v_per_m`; the old keys raise with the
+required replacement. Defaults remain `1e12 V/m` and `1e3 V/m`, and exact
+characterization preserves seed-before-componentwise-clipping behavior. The
+legacy odd grid, tail endpoints, shared-boundary ownership, segment midpoint,
+slices, lookahead index, field samples, and RK4-consumed prefix do not change.
+Class-D optimizer quantities remain untouched. The complete CPU suite passes
+975 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- continue the unit audit with local-optimizer field-limit/seed names only
-  after preserving every legacy grid, endpoint, slice, index, and value;
+- consolidate optimization model construction with the frozen model schemas
+  only after exact Hamiltonian, dipole, basis-ordering, and result parity;
 - defer Class-D optimizer penalties and tolerances until independent references
   and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.

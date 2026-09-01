@@ -3,7 +3,7 @@
 Last verified: 2026-09-01
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-050 explicit Krotov initial-field source and units
+Latest API checkpoint: D-051 local optimizer field-limit and seed V/m names
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -259,6 +259,12 @@ uses required value/unit pairs and the frozen Gaussian-FWHM projection;
 two-component grid match. The typed `krotov_initial_field` boundary is internal;
 `run_krotov_optimization` remains the optimization entry point. Legacy seed
 keys and implicit external-array override are removed.
+
+D-051 makes the local optimizer's direct field inputs unit-bearing:
+`field_max_v_per_m` limits each control component after field construction, and
+`seed_amplitude_v_per_m` supplies the unchanged zero-drive seed. Their numeric
+defaults and every local time/index contract are unchanged. The old ambiguous
+keys raise with the replacement name.
 
 The runner catches every plotting exception and returns a nominally successful
 optimization. Phase 7 must distinguish an optimization result from optional

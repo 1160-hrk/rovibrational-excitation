@@ -148,3 +148,60 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
     np.testing.assert_array_equal(result["field_data"][:, 1], expected_component)
     np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
     np.testing.assert_array_equal(spy.calls[1]["field"][:, 0], expected_component[4:9])
+
+
+def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
+    spy = _PropagationSpy()
+    original_propagator = local_module.SchrodingerPropagator
+    local_module.SchrodingerPropagator = lambda **_: spy  # type: ignore[misc]
+    try:
+        result = local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "seed_amplitude_v_per_m": 40.0,
+                "field_max_v_per_m": 25.0,
+            },
+        )
+    finally:
+        local_module.SchrodingerPropagator = original_propagator
+
+    expected_component = np.array([0.0, 25.0, 25.0, 25.0, 25.0, 0.0, 0.0])
+    np.testing.assert_array_equal(result["field_data"][:, 0], expected_component)
+    np.testing.assert_array_equal(result["field_data"][:, 1], expected_component)
+    np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
+    np.testing.assert_array_equal(spy.calls[-1]["field"][:, 0], expected_component)
+
+
+@pytest.mark.parametrize(
+    ("removed_key", "replacement_key"),
+    [
+        ("field_max", "field_max_v_per_m"),
+        ("seed_amplitude", "seed_amplitude_v_per_m"),
+    ],
+)
+def test_local_optimizer_rejects_unit_ambiguous_field_keys(
+    removed_key: str,
+    replacement_key: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"{removed_key} was removed; provide {replacement_key} in V/m",
+    ):
+        local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                removed_key: 1.0,
+            },
+        )

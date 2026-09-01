@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-01
-Current checkpoint: P4.3-h D-050 Krotov initial fields
+Current checkpoint: P4.3-i D-051 local field limit and seed units
 
 ## Purpose
 
@@ -142,10 +142,11 @@ unchanged.
 
 ### Local optimizer
 
-`field_max` and `seed_amplitude` are used as V/m but do not state units.
-They can eventually become `field_max_v_per_m` and
-`seed_amplitude_v_per_m` after exact characterization. This rename must not
-change defaults, clipping, segment construction, endpoints, or indices.
+Completed by D-051. `field_max_v_per_m` and `seed_amplitude_v_per_m` now state
+their fixed V/m representation. The unit-ambiguous former names raise with the
+replacement. Exact characterization preserves the `1e12` and `1e3` defaults,
+seed-before-componentwise-clipping order, stored field, segment input, full RK4
+input, odd prefix, tail endpoints, shared boundaries, slices, and indices.
 
 The following are Class D and must not be renamed, converted, or assigned a
 unit by inference:
@@ -176,9 +177,8 @@ normal-simulation model schemas.
 
 ## Recommended implementation order
 
-1. Local field-limit/seed key rename only after characterization.
-2. Optimization model consolidation in the planned model/optimization phases.
-3. Class-D optimizer quantities only after user clarification and independent
+1. Optimization model consolidation in the planned model/optimization phases.
+2. Class-D optimizer quantities only after user clarification and independent
    references.
 
 Every unit updates this audit, D-045 or a successor decision, the physics

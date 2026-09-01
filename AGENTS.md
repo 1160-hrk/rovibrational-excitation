@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-01
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-h D-050 Krotov initial fields
+Verified structural checkpoint: P4.3-i D-051 local field units
 Latest infrastructure checkpoint: `d95572f`
 
 ## Purpose
@@ -70,6 +70,9 @@ The authoritative details and formulas are in
   seeds require physical value/unit pairs; sampled two-component fields require
   a direct amplitude unit and exact canonical-grid length. Neither route
   resamples or silently overrides the other.
+- Local-optimizer direct field inputs are `field_max_v_per_m` and
+  `seed_amplitude_v_per_m`. Their defaults, componentwise clipping order,
+  legacy odd grid, shared endpoints, slices, indices, and RK4 prefix are fixed.
 - Typed trajectories always include the exact endpoint; if stride does not
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
@@ -150,14 +153,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-h:
+Current local CPU baseline after P4.3-i:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-972 passed, 10 GPU tests skipped (982 collected)
+975 passed, 10 GPU tests skipped (985 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -228,12 +231,13 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue the unit audit with the local-optimizer `field_max` and
-   `seed_amplitude` unit-encoded rename only after exact characterization. Do
-   not change defaults, clipping, the legacy odd grid, endpoints, shared
-   boundaries, slices, indices, values, or RK4 consumption. Do not touch the
-   Class-D `gain`, `c_abs_min`, `drive_abs_min`, or `shape_floor` quantities
-   without the user's definition.
+1. Continue Phase 4 by consolidating optimization model construction with the
+   frozen normal-simulation model schemas only after exact Hamiltonian, dipole,
+   basis-ordering, and optimizer-result characterization. Handle SymTop as a
+   separate decision because it is not in the normal model schemas. Do not
+   touch the Class-D `gain`, `c_abs_min`, `drive_abs_min`, `shape_floor`,
+   `learning_rate`, `lambda_a`, or convergence tolerances without the user's
+   definition and independent references.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

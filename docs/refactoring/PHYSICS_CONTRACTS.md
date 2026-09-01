@@ -753,6 +753,16 @@ D-027: it retains its versioned `np.arange` storage, segment endpoints, and
 `sample_stride`, with the existing numerical value 0.1 fs renamed only to
 `field_dt_fs`.
 
+The local optimizer's direct component limit is `field_max_v_per_m`, and its
+zero-drive seed is `seed_amplitude_v_per_m`. Both are explicitly V/m. The
+historical defaults remain exactly `1e12 V/m` and `1e3 V/m`; a generated seed
+is still evaluated before the existing componentwise clipping. The former
+unit-ambiguous keys are errors. This rename does not change the odd storage
+grid, shared endpoint ownership, segment midpoint or slices, lookahead index,
+field values, or RK4-consumed prefix. `gain`, `c_abs_min`, `drive_abs_min`, and
+`shape_floor` retain unresolved Class-D dimensions and must not be assigned
+units without a separate user decision.
+
 GRAPE and Krotov optimization always consume every propagated state internally.
 `output_stride` applies only after the final objective has been evaluated and
 only to the returned trajectory. The initial state and exact endpoint remain in

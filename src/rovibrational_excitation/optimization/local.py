@@ -14,11 +14,11 @@ from rovibrational_excitation.optimization.timegrid import (
 DEFAULT_PARAMS = {
     "control_axes": "xy",
     "gain": 1.0,
-    "field_max": 1e12,
+    "field_max_v_per_m": 1e12,
     "use_sin2_shape": False,
     "segment_size_steps": None,
     "segment_size_fs": 1,
-    "seed_amplitude": 1e3,
+    "seed_amplitude_v_per_m": 1e3,
     "seed_max_segments": 5,
     "c_abs_min": 1e-1,
     "shape_floor": 1e-2,
@@ -115,6 +115,21 @@ def _build_weights_for_basis(
 def run_local_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
+    """Run the versioned legacy local optimizer.
+
+    ``field_max_v_per_m`` and ``seed_amplitude_v_per_m`` are direct electric-
+    field amplitudes in V/m. Their defaults and numerical use are frozen by
+    D-027 and D-051. The former unit-ambiguous keys are rejected.
+    """
+    for removed_key, replacement_key in (
+        ("field_max", "field_max_v_per_m"),
+        ("seed_amplitude", "seed_amplitude_v_per_m"),
+    ):
+        if removed_key in params:
+            raise ValueError(
+                f"{removed_key} was removed; provide {replacement_key} in V/m"
+            )
+
     initial_state = tuple(states["initial"])
     target_state = tuple(states["target"]) if states.get("target") is not None else None
 
@@ -172,12 +187,14 @@ def run_local_optimization(
     mu_eff_y = mu_map[control_axes[1]]
 
     gain = float(params.get("gain", DEFAULT_PARAMS["gain"]))
-    field_max = float(params.get("field_max", DEFAULT_PARAMS["field_max"]))
+    field_max_v_per_m = float(
+        params.get("field_max_v_per_m", DEFAULT_PARAMS["field_max_v_per_m"])
+    )
     use_sin2_shape = bool(
         params.get("use_sin2_shape", DEFAULT_PARAMS["use_sin2_shape"])
     )
-    seed_amplitude = float(
-        params.get("seed_amplitude", DEFAULT_PARAMS["seed_amplitude"])
+    seed_amplitude_v_per_m = float(
+        params.get("seed_amplitude_v_per_m", DEFAULT_PARAMS["seed_amplitude_v_per_m"])
     )
     seed_max_segments = int(
         params.get("seed_max_segments", DEFAULT_PARAMS["seed_max_segments"])
@@ -295,8 +312,8 @@ def run_local_optimization(
                 and abs(im_y) < drive_abs_min
                 and seed_left > 0
             ):
-                ex = seed_amplitude * S_eff
-                ey = seed_amplitude * S_eff
+                ex = seed_amplitude_v_per_m * S_eff
+                ey = seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
         else:
             c = complex(np.vdot(psi_target, psi_ref)) if target_idx is not None else 0.0
@@ -325,12 +342,12 @@ def run_local_optimization(
                     if (abs(d_y) == 0.0)
                     else (1.0 if (np.real(d_y) >= 0.0) else -1.0)
                 )
-                ex = sx * seed_amplitude * S_eff
-                ey = sy * seed_amplitude * S_eff
+                ex = sx * seed_amplitude_v_per_m * S_eff
+                ey = sy * seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
 
-        ex = float(np.clip(ex, -field_max, field_max))
-        ey = float(np.clip(ey, -field_max, field_max))
+        ex = float(np.clip(ex, -field_max_v_per_m, field_max_v_per_m))
+        ey = float(np.clip(ey, -field_max_v_per_m, field_max_v_per_m))
 
         field_write_slice = time_grid.field_write_slice(start, end)
         full_field[field_write_slice, 0] = ex

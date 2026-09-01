@@ -2031,6 +2031,34 @@ unresolved and are not renamed or converted by this decision.
 Implementation commit: this checkpoint.
 
 
+### D-051: Local field limit and seed names state V/m without numerical change
+
+Status: Accepted and implemented on 2026-09-01 as P4.3-i.
+
+Scope: the local optimizer's component field limit, zero-drive seed amplitude,
+active local YAML configurations, and exact legacy local propagation contracts.
+
+`field_max` is replaced by `field_max_v_per_m`, and `seed_amplitude` is replaced
+by `seed_amplitude_v_per_m`. These are unit-encoded private optimization inputs
+whose only supported representation is direct electric-field amplitude in V/m.
+The former ambiguous keys raise with the replacement name instead of being
+ignored or interpreted. The existing defaults remain exactly `1e12` and `1e3`.
+
+The rename is a projection-only change. Seed construction still precedes the
+same independent `np.clip` operation on each of the two control components.
+Characterization fixes an explicit `40 V/m` seed and `25 V/m` component limit,
+including both stored field components, segment propagation input, full RK4
+input, and untouched tail endpoints. The odd `np.arange` layout, shared
+boundary ownership, segment construction and midpoint, slices, lookahead,
+field values, and RK4-consumed prefix remain unchanged.
+
+No meaning or unit is inferred for `gain`, `c_abs_min`, `drive_abs_min`, or
+`shape_floor`; those Class-D quantities remain blocked on a separate user
+definition and independent optimization references.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

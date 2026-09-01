@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 972 passed, 10 skipped (982 collected) |
+| Pytest | 975 passed, 10 skipped (985 collected) |
 | Measured branch coverage | 72% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,13 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-01. P4.3-h implements D-050:
+These rows were last verified locally on 2026-09-01. P4.3-i implements D-051:
+the local optimizer now names its direct field limit and seed amplitude
+`field_max_v_per_m` and `seed_amplitude_v_per_m`. Exact characterization keeps
+the defaults, seed-before-componentwise-clipping order, stored and propagated
+field arrays, odd grid, shared endpoints, slices, indices, and RK4-consumed
+prefix unchanged. Class-D optimizer quantities remain unresolved. P4.3-h
+implements D-050:
 Krotov initial fields require an explicit generated/sampled source, physical
 value/unit pairs, and strict exact-grid sampled injection. Frozen seed samples,
 update indices, and V=0 to V=3 fidelities are unchanged. P4.3-g unit 3 implements
