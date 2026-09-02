@@ -223,7 +223,10 @@ def _resolve_simulation_case(
             + ", ".join(inapplicable_model)
         )
     if basis_type != "linmol":
-        inapplicable_selection = sorted({"representation", "axes"} & params.keys())
+        inapplicable_selection_keys = {"representation"}
+        if basis_type != "symtop":
+            inapplicable_selection_keys.add("axes")
+        inapplicable_selection = sorted(inapplicable_selection_keys & params.keys())
         if inapplicable_selection:
             raise SimulationConfigurationError(
                 f"Parameters not applicable to basis_type={basis_type}: "
@@ -232,7 +235,9 @@ def _resolve_simulation_case(
     representation = (
         validate_linmol_representation(params) if basis_type == "linmol" else None
     )
-    expects_cartesian = representation is LinMolRepresentation.M_RESOLVED
+    expects_cartesian = (
+        representation is LinMolRepresentation.M_RESOLVED or basis_type == "symtop"
+    )
 
     required = set(_EXECUTION_REQUIRED)
     if field is None:
@@ -277,7 +282,7 @@ def _resolve_simulation_case(
     if field is not None:
         if expects_cartesian and not isinstance(field, CartesianField):
             raise SimulationConfigurationError(
-                "m_resolved LinMol requires a Cartesian field"
+                f"{basis_type} Cartesian coupling requires a Cartesian field"
             )
         if not expects_cartesian and not isinstance(field, ScalarField):
             raise SimulationConfigurationError(
@@ -343,6 +348,16 @@ def _resolve_simulation_case(
     except (TypeError, ValueError) as exc:
         raise SimulationConfigurationError(str(exc)) from exc
 
+    if basis_type == "symtop":
+        if options.backend_name != "numpy":
+            raise SimulationConfigurationError(
+                "SymTop currently supports only backend='numpy'"
+            )
+        if options.algorithm_name != "rk4":
+            raise SimulationConfigurationError(
+                "SymTop currently supports only algorithm='rk4'"
+            )
+
     split_selector_is_applicable = (
         representation is LinMolRepresentation.M_RESOLVED
         and options.algorithm is PropagationAlgorithm.SPLIT_OPERATOR
@@ -389,6 +404,15 @@ def _resolve_simulation_case(
         if "axes" not in params:
             raise SimulationConfigurationError(
                 "Missing required LinMol m_resolved parameter: axes"
+            )
+        try:
+            validate_axes(params["axes"])
+        except (AttributeError, ValueError) as exc:
+            raise SimulationConfigurationError(str(exc)) from exc
+    elif basis_type == "symtop":
+        if "axes" not in params:
+            raise SimulationConfigurationError(
+                "Missing required SymTop parameter: axes"
             )
         try:
             validate_axes(params["axes"])

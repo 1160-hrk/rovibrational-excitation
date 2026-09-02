@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-01
+Last verified: 2026-09-02
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 983 passed, 10 skipped (993 collected) |
+| Pytest | 1016 passed, 10 skipped (1026 collected) |
 | Measured branch coverage | 73% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,12 +55,16 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-01. P4.3-j begins D-052 with
-a strict model-layer symmetry foundation and name-based presets for `H2`,
-`D2`, `T2`, `HD`, and `CH3F`. Presets contain source-versioned symmetry
-rules but never molecular constants. CH3F provides K-sector selection only and
-rejects statistical-weight use until signed-K symmetry adaptation. No existing
-model or numerical result changes. P4.3-i implements D-051:
+These rows were last verified locally on 2026-09-02. P4.3-k implements D-053:
+normal simulation now has an independent rigid parallel-band SymTop model with
+signed `|v,J,K,M>` ordering, explicit CH3F ortho/para filtering, two rotational
+constants, two vibration-rotation couplings, and Cartesian rank-one Wigner
+dipoles. NumPy dense/CSR RK4 and strict scaling are verified; CuPy, split
+operator, all-isomer pure states, and optimization raise explicitly. The
+legacy direct SymTop route and every optimizer numerical kernel are unchanged.
+P4.3-j began D-052 with a strict model-layer symmetry foundation and named
+presets for `H2`, `D2`, `T2`, `HD`, and `CH3F` without inferred constants or
+weights. P4.3-i implements D-051:
 the local optimizer now names its direct field limit and seed amplitude
 `field_max_v_per_m` and `seed_amplitude_v_per_m`. Exact characterization keeps
 the defaults, seed-before-componentwise-clipping order, stored and propagated

@@ -248,14 +248,17 @@ Required simulation fields are model-specific:
 | LinMol | `V_max`, `J_max`, `vibrational_frequency` + `_units`, `anharmonic_shift` + `_units`, `rotational_constant` + `_units`, `vibration_rotation_coupling` + `_units`, `dipole_scale` + `_units`, `potential_type` |
 | VibLadder | `V_max`, `vibrational_frequency` + `_units`, `anharmonic_shift` + `_units`, `dipole_scale` + `_units`, `potential_type` |
 | TwoLevel | `energy_gap`, `energy_gap_units`, `dipole_scale`, `dipole_scale_units` |
+| SymTop | `molecule`, `nuclear_spin_isomer`, `V_max`, `J_max`, all six frequency quantities with explicit `_units`, `dipole_scale` + `_units`, and `potential_type` |
 
 Every simulation case also states `duration` explicitly. The removed
 `pulse_duration` name is rejected. Direct basis construction requires
 LinMol `omega`, `B`, `alpha`, and `delta_omega`; VibLadder `omega`
-and `delta_omega`; TwoLevel `energy_gap`; or SymTop `omega`, `B`, `C`,
-`alpha`, and `delta_omega`. Direct dipole construction requires `mu0`;
-LinMol, VibLadder, and SymTop dipoles also require `potential_type`. TwoLevel
-does not accept this inapplicable option. Krotov optimization requires a
+and `delta_omega`; or TwoLevel `energy_gap`. Production SymTop construction
+uses the frozen schema in the table above; its six frequency quantities are
+vibrational frequency, anharmonic shift, perpendicular/parallel rotational
+constants, and perpendicular/parallel vibration-rotation couplings. The legacy
+`core.basis.SymTopBasis` is not its input path. Direct legacy dipole construction
+requires `mu0`. Krotov optimization requires a
 positive finite `duration_initial` before any model or field work begins.
 
 For raw-array nondimensionalization, `H0_units` and `time_units` are
@@ -482,7 +485,7 @@ Current simulation model capabilities:
 | LinMol | Cartesian | Configurable two-axis mapping, default `xy` | Depends on field polarization |
 | TwoLevel | Scalar | `x` | Independent of supplied polarization direction |
 | VibLadder | Scalar | `z` | Independent of supplied polarization direction |
-| SymTop | Not integrated into the simulation model factory | Builder-specific | Must be characterized before migration |
+| SymTop | Cartesian parallel-band coupling | Required explicit Cartesian axes | Polarization dependent; NumPy dense/CSR RK4 only |
 
 For TwoLevel and VibLadder, `x` and `z` are current storage axes, not physical
 polarization degrees of freedom. The target architecture should expose scalar
@@ -524,13 +527,50 @@ no Hamiltonian constants, dipoles, temperature, field parameters, or units;
 those remain required physical inputs. Unknown molecule names never select a
 generic symmetry or model.
 
-The accepted first SymTop model is a rigid, nondegenerate parallel band in
-`|v,J,K,M>` with signed K/M, Delta K=0, and Delta M=0,+/-1. It will use the
-library's `omega01` and positive anharmonic-shift convention and require
-separate perpendicular/parallel rotational constants and vibration-rotation
-couplings. This checkpoint defines the contract only; the experimental legacy
-SymTop matrices remain outside production until independent reference tests
-exist.
+The first production SymTop model is a rigid, nondegenerate parallel band in
+`|v,J,K,M>` with signed K/M and deterministic storage order `v,J,K,M`. For
+`x=v+1/2`, its angular-frequency Hamiltonian is
+
+~~~text
+E_vib(v) = (omega01 + delta_omega) x - delta_omega x^2 / 2
+B_perp(v) = B_perp - alpha_perp x
+B_parallel(v) = B_parallel - alpha_parallel x
+E(v,J,K) = E_vib(v) + B_perp(v) J(J+1)
+           + [B_parallel(v) - B_perp(v)] K^2.
+~~~
+
+External equation anchors are the NIST symmetric-top energy and selection-rule
+[overview](https://physics.nist.gov/PhysRefData/MolSpec/Hydro/Html/sec2.html)
+and the rank-one matrix element in Eq. 67 of
+[Wall et al.](https://arxiv.org/abs/1305.1236). The implemented spherical form is
+
+~~~text
+<J'K'M'|D^1_{p0}*|JKM>
+ = (-1)^(M'-K) sqrt[(2J'+1)(2J+1)]
+   (J' 1 J; -M' p M) (J' 1 J; -K 0 K) delta_K'K.
+~~~
+
+The parallel-band direction cosine is the product of the standard M and K
+Wigner-3j factors with `delta_K'K`. Cartesian conversion gives Delta K=0;
+Delta M=0 for z and Delta M=+/-1 for x/y. The rank-one factors enforce
+Delta J=0,+/-1 and remove J=0 to J=0. Harmonic vibration couples adjacent
+levels; Morse vibration retains the accepted overtone elements and derives its
+finite bound-level parameter per model instance.
+
+Construction requires a named symmetric-top preset and exactly one pure
+`ortho` or `para` sector. It filters the basis but never applies a statistical
+weight. `nuclear_spin_isomer="all"` is rejected because one state vector must
+not coherently combine nuclear-spin species; a future explicit incoherent
+mixture may combine separately propagated sectors. CH3F is the first supported
+preset. All constants and units remain caller supplied.
+
+Independent SymPy Wigner-3j references cover low-J elements through J=3.
+Hamiltonian references cover both vibration-rotation couplings and signed-K/M
+degeneracy. Dense/CSR dipoles are exactly equal; dense/CSR and
+dimensional/nondimensional RK4 populations agree. CuPy, split operator, and
+optimization routes raise before allocation or propagation. The legacy
+`core.basis.SymTopBasis` and `dipole.symtop` remain experimental and are not
+used by this production model.
 
 ### Split-operator polarization reference
 
@@ -1092,7 +1132,6 @@ problem scale. Do not use a loose constant solely to make a test pass.
 The first four Phase 2 propagation questions were resolved by D-026. These
 items still require user input before behavior changes:
 
-1. The intended production status and validated physics scope of SymTop.
-2. Independent objective/gradient references and acceptable tolerances for
+1. Independent objective/gradient references and acceptable tolerances for
    optimization, plus spectroscopy references beyond the existing exact-route
    tests.

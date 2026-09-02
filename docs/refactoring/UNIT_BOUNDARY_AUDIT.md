@@ -172,8 +172,10 @@ of their intended dimensions.
 defaults for `input_units` and `output_units`. The long-term solution is to
 reuse the frozen model schemas, not add a second converter. Migration requires
 exact Hamiltonian, dipole, basis ordering, and optimizer-result parity.
-`SymTop` must be handled separately because it is not represented by the
-normal-simulation model schemas.
+D-053 adds `SymmetricTopParameters` to the normal-simulation frozen schemas.
+Optimization rejects SymTop before legacy basis construction until the runner
+consumes that shared schema; it must not translate the new inputs back into
+the legacy one-alpha model.
 
 ## Recommended implementation order
 

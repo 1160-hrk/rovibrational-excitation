@@ -492,8 +492,8 @@ already constructed basis and weights, never molecule names.
 | `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Co-locate energy-gap schema |
-| `core/basis/symtop.py` | `models/symmetric_top/basis.py` | Keep experimental until validated |
-| no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; integration into linear and symmetric-top builders remains reference-tested work |
+| `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | D-053 production owner complete for normal NumPy dense/CSR RK4; legacy direct path remains experimental until Phase 6 removal |
+| no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
 | `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |

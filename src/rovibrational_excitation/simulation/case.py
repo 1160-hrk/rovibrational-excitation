@@ -76,7 +76,10 @@ class SimulationCase:
 
     @property
     def expects_cartesian_field(self) -> bool:
-        return self.representation is LinMolRepresentation.M_RESOLVED
+        return (
+            self.basis_type == "symtop"
+            or self.representation is LinMolRepresentation.M_RESOLVED
+        )
 
 
 __all__ = ["SimulationCase"]

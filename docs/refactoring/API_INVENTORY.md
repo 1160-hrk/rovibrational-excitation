@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-01
+Last verified: 2026-09-02
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-052 molecular-symmetry descriptors and named presets
+Latest API checkpoint: D-053 production rigid parallel-band SymTop
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -137,17 +137,18 @@ and demo factories are deleted rather than deprecated.
 | `dipole.linmol` | `LinMolDipoleMatrix` | `models.linear_molecule` | temporary public |
 | `dipole.twolevel` | `TwoLevelDipoleMatrix` | `models.two_level` | temporary public |
 | `dipole.viblad` | `VibLadderDipoleMatrix` | `models.vib_ladder` | temporary public |
-| `dipole.symtop` | `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public pending O-005 |
+| `dipole.symtop` | legacy `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public; not used by production D-053 and retained until Phase 6 removal |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
-| `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, `build_model`; model validation remains explicit under `models.validation` | flat target-owner facade reached in P3.1-f; model validation ownership reached in P3.2-b; model-specific package split pending Phase 6 | internal transition facade; `build_model` requires `ExecutionPolicy`, `basis_type`, and `initial_states`; LinMol also requires `representation`, and `m_resolved` requires `axes`. Normal-simulation `use_M` is removed under D-041 |
-| `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | internal typed foundation under D-052; presets resolve symmetry only and are not yet connected to model builders |
+| `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
+| `models.symmetric_top` | `SymmetricTopBasis`, `SymmetricTopDipoleMatrix`, `build_symmetric_top_from_parameters` | production model owner | normal NumPy dense/CSR RK4 production path; split, CuPy, all-isomer pure state, and optimization explicitly unsupported |
+| `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | D-052 foundation; D-053 connects CH3F filtering to production SymTop, without supplying constants or weights |
 
-`SymTopBasis` and `SymTopDipoleMatrix` are importable, but the primary
-simulation `build_model` registry supports only `linmol`, `twolevel`, and
-`vibladder`. D-052 resolves the intended production scope, but SymTop must not
-be advertised as stable until independent primitive references and the new
-model implementation replace the experimental route.
+The primary simulation `build_model` registry supports `symtop` through the
+new production package. It requires CH3F, one ortho/para sector, explicit axes,
+and explicit value/unit pairs. The same-named legacy direct basis/dipole remain
+importable but are not used by this route. `simulation.optimize_runner` rejects
+SymTop until optimization construction is migrated to the shared frozen model.
 
 ### 3.5 Persistence
 

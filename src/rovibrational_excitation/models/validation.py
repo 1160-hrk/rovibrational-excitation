@@ -8,11 +8,14 @@ from typing import Any
 
 from .parameters import (
     LinMolParameters,
+    SymmetricTopParameters,
     TwoLevelParameters,
     VibLadderParameters,
 )
 
-ModelParameters = LinMolParameters | TwoLevelParameters | VibLadderParameters
+ModelParameters = (
+    LinMolParameters | SymmetricTopParameters | TwoLevelParameters | VibLadderParameters
+)
 
 
 class ModelConfigurationError(ValueError):
@@ -89,6 +92,27 @@ _MODEL_REQUIRED = {
         "dipole_scale_units",
         "potential_type",
     },
+    "symtop": {
+        "molecule",
+        "nuclear_spin_isomer",
+        "V_max",
+        "J_max",
+        "vibrational_frequency",
+        "vibrational_frequency_units",
+        "anharmonic_shift",
+        "anharmonic_shift_units",
+        "rotational_constant_perpendicular",
+        "rotational_constant_perpendicular_units",
+        "rotational_constant_parallel",
+        "rotational_constant_parallel_units",
+        "vibration_rotation_coupling_perpendicular",
+        "vibration_rotation_coupling_perpendicular_units",
+        "vibration_rotation_coupling_parallel",
+        "vibration_rotation_coupling_parallel_units",
+        "dipole_scale",
+        "dipole_scale_units",
+        "potential_type",
+    },
 }
 
 
@@ -147,6 +171,8 @@ def _construct_model_parameters(
         return LinMolParameters.from_mapping(params)
     if basis_type == "twolevel":
         return TwoLevelParameters.from_mapping(params)
+    if basis_type == "symtop":
+        return SymmetricTopParameters.from_mapping(params)
     return VibLadderParameters.from_mapping(params)
 
 
@@ -184,7 +210,9 @@ def validate_model_parameters(params: Mapping[str, Any]) -> str:
         raise ModelConfigurationError(
             "Missing required model parameter: initial_states"
         )
-    if basis_type in {"linmol", "vibladder"} and params["potential_type"] not in {
+    if basis_type in {"linmol", "symtop", "vibladder"} and params[
+        "potential_type"
+    ] not in {
         "harmonic",
         "morse",
     }:
@@ -198,7 +226,7 @@ def validate_model_parameters(params: Mapping[str, Any]) -> str:
 
 def model_parameters_from_mapping(
     params: Mapping[str, Any],
-) -> LinMolParameters | TwoLevelParameters | VibLadderParameters:
+) -> ModelParameters:
     """Return the frozen parameters after applying the public validation."""
     basis_type = validate_model_parameters(params)
     return _construct_model_parameters(basis_type, params)

@@ -100,6 +100,10 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/models/symmetry/groups.py",
         "src/rovibrational_excitation/models/symmetry/policy.py",
         "src/rovibrational_excitation/models/symmetry/presets.py",
+        "src/rovibrational_excitation/models/symmetric_top/rotational.py",
+        "src/rovibrational_excitation/models/symmetric_top/basis.py",
+        "src/rovibrational_excitation/models/symmetric_top/dipole.py",
+        "src/rovibrational_excitation/models/symmetric_top/model.py",
         "src/rovibrational_excitation/optimization/krotov_initial_field.py",
     ]
 

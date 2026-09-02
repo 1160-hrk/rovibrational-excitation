@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -13,7 +14,13 @@ from rovibrational_excitation.dynamics.problem import (
 )
 
 from .linmol import build_linmol_from_parameters
-from .parameters import LinMolParameters, TwoLevelParameters, VibLadderParameters
+from .parameters import (
+    LinMolParameters,
+    SymmetricTopParameters,
+    TwoLevelParameters,
+    VibLadderParameters,
+)
+from .symmetric_top import build_symmetric_top_from_parameters
 from .twolevel import build_twolevel_from_parameters
 from .validation import (
     LinMolRepresentation,
@@ -34,6 +41,7 @@ class ModelComponents:
     hamiltonian: Any
     dipole: Any
     coupling: CouplingSpec
+    metadata: Mapping[str, Any]
 
     def to_system_model(self) -> SystemModel:
         """Project the temporary builder result to the typed model boundary."""
@@ -43,7 +51,7 @@ class ModelComponents:
             hamiltonian=self.hamiltonian,
             dipole=self.dipole,
             coupling=self.coupling,
-            metadata={},
+            metadata=self.metadata,
         )
 
 
@@ -103,6 +111,27 @@ def build_model_from_parameters(
             execution_policy=execution_policy,
         )
         basis_type = "linmol"
+        metadata = {}
+    elif isinstance(model_parameters, SymmetricTopParameters):
+        if representation is not None:
+            raise ValueError("representation is not applicable to SymTop")
+        if axes is None:
+            raise ModelConfigurationError("Missing required SymTop parameter: axes")
+        try:
+            coupling = CouplingSpec.cartesian(axes)
+        except (TypeError, ValueError) as exc:
+            raise ModelConfigurationError(str(exc)) from exc
+        basis, state, hamiltonian, dipole = build_symmetric_top_from_parameters(
+            model_parameters,
+            initial_states,
+            execution_policy=execution_policy,
+        )
+        basis_type = "symtop"
+        metadata = {
+            **model_parameters.molecule_preset.metadata,
+            "nuclear_spin_isomer": model_parameters.nuclear_spin_isomer,
+            "vibronic_symmetry": "totally_symmetric",
+        }
     elif isinstance(model_parameters, TwoLevelParameters):
         coupling = CouplingSpec.scalar(Axis.X)
         basis, state, hamiltonian, dipole = build_twolevel_from_parameters(
@@ -111,6 +140,7 @@ def build_model_from_parameters(
             execution_policy=execution_policy,
         )
         basis_type = "twolevel"
+        metadata = {}
     elif isinstance(model_parameters, VibLadderParameters):
         coupling = CouplingSpec.scalar(Axis.Z)
         basis, state, hamiltonian, dipole = build_vibladder_from_parameters(
@@ -119,6 +149,7 @@ def build_model_from_parameters(
             execution_policy=execution_policy,
         )
         basis_type = "vibladder"
+        metadata = {}
     else:
         raise TypeError("unsupported model parameter schema")
 
@@ -129,4 +160,5 @@ def build_model_from_parameters(
         hamiltonian=hamiltonian,
         dipole=dipole,
         coupling=coupling,
+        metadata=metadata,
     )

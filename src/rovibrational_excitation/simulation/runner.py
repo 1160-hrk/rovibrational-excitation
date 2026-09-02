@@ -219,7 +219,7 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
         params["basis_type"].lower() == "linmol"
         and params["representation"] == LinMolRepresentation.M_INCOHERENT_AVERAGE.value
     )
-    expects_cartesian = (
+    expects_cartesian = params["basis_type"].lower() == "symtop" or (
         params["basis_type"].lower() == "linmol"
         and params["representation"] == LinMolRepresentation.M_RESOLVED.value
     )

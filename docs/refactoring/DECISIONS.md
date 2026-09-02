@@ -2108,6 +2108,39 @@ legacy SymTop implementation.
 Implementation commit: this checkpoint.
 
 
+### D-053: Production SymTop is an independent rigid parallel-band model
+
+Status: Accepted and implemented on 2026-09-02 as P4.3-k.
+
+Scope: normal-simulation SymTop Hamiltonian, dipole, symmetry filtering, and
+explicit unsupported-route boundaries.
+
+D-053 implements D-052 without reusing the known-broken legacy formulas. The
+signed `|v,J,K,M>` basis is ordered by `v,J,K,M`. Its energy uses the accepted
+`omega01` convention, separate perpendicular/parallel rotational constants,
+and separate vibration-rotation couplings. The parallel dipole uses independent
+rank-one Wigner-3j factors with Delta K=0 and Cartesian Delta M=0,+/-1. The
+Morse factor and per-instance bound-level derivation retain the accepted model.
+
+The constructor requires explicit quantities with units, a named symmetric-top
+preset, Cartesian axes, and exactly one pure `ortho` or `para` sector. The
+CH3F preset filters signed K sectors but supplies neither constants nor a
+statistical weight. `all` raises rather than coherently combining spin isomers.
+
+Supported execution is NumPy dense or CSR RK4, including the strict
+nondimensional path. CuPy and split operator raise before propagation. The
+optimization runner also rejects SymTop before constructing the legacy basis;
+it will become supported only after it consumes the shared frozen model and its
+result parity is characterized without changing optimizer grids or indices.
+
+Independent SymPy references cover every low-J Wigner element through J=3;
+dense and CSR dipoles are exactly equal; Hamiltonian, unit-conversion,
+Morse-overtone, dense/CSR population, and dimensional/scaled parity tests pass.
+No optimizer numerical kernel or legacy direct SymTop class is changed.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -2132,14 +2165,11 @@ policy and is never silently enabled.
 
 ### O-005: SymTop production scope
 
-Resolved in specification by D-052. The initial production scope, quantum
-numbers, Hamiltonian convention, parallel-band coupling, required parameters,
-and first execution routes are accepted. The existing legacy basis and dipole
-remain experimental and the main simulation factory still does not expose
-SymTop. Production status remains blocked on independent Hamiltonian and
-dipole primitive references, basis-ordering characterization, and dense/CSR
-RK4 parity tests; this is implementation work, not an unresolved physics
-choice.
+Resolved in specification by D-052 and implemented for normal simulation by
+D-053. Independent Hamiltonian/dipole references, basis ordering, unit
+conversion, Morse, dense/CSR, and scaled propagation contracts pass. Legacy
+direct classes remain experimental. Split operator, CuPy, and optimization are
+explicitly unsupported rather than open physics choices.
 
 ### O-006: Optimization reference behavior
 

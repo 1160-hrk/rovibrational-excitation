@@ -23,7 +23,6 @@ import yaml
 
 from rovibrational_excitation.core.basis import (
     LinMolBasis,
-    SymTopBasis,
     TwoLevelBasis,
     VibLadderBasis,
 )
@@ -60,16 +59,10 @@ def _build_basis(system_cfg: dict):
             output_units=p.get("output_units", "rad/fs"),
         )
     if t == "symtop":
-        return SymTopBasis(
-            V_max=int(p["V_max"]),
-            J_max=int(p["J_max"]),
-            omega=p["omega_cm"],
-            B=p["B_cm"],
-            C=p["C_cm"],
-            alpha=p["alpha_cm"],
-            delta_omega=p["delta_omega_cm"],
-            input_units=p.get("input_units", "cm^-1"),
-            output_units=p.get("output_units", "rad/fs"),
+        raise ValueError(
+            "SymTop optimization is not supported yet. The production SymTop "
+            "model is available through the normal simulation runner, but the "
+            "optimization runner has not yet migrated to that shared model."
         )
     if t == "twolevel":
         return TwoLevelBasis(

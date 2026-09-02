@@ -1001,15 +1001,21 @@ weight until signed-K symmetry adaptation is implemented. Presets contain no
 physical constants and unknown names never fall back. The complete CPU suite
 passes 983 tests with 10 optional-GPU skips.
 
+P4.3-k implements D-053 on 2026-09-02. A new production
+`models.symmetric_top` package owns the signed `|v,J,K,M>` basis, independent
+integer Wigner-3j rotation primitive, parallel-band Cartesian dipole, and model
+builder. CH3F ortho/para filtering is applied before basis allocation; all
+constants remain explicit quantities. Normal NumPy dense/CSR RK4 and strict
+scaled propagation are supported. CuPy, split operator, coherent all-isomer
+construction, and optimization raise explicitly. Independent physics tests and
+the complete suite pass 1016 tests with 10 optional-GPU skips; measured branch
+coverage remains 73%.
+
 Remaining Phase 4 work:
 
-- add independent SymTop Hamiltonian and dipole primitive references, then
-  implement the accepted rigid parallel-band model without reusing the broken
-  legacy formulas by assumption;
-- connect symmetry filters to model basis construction only after exact basis
-  ordering and unfiltered parity are characterized;
 - consolidate optimization model construction with the frozen model schemas
-  only after exact Hamiltonian, dipole, basis-ordering, and result parity;
+  only after exact Hamiltonian, dipole, basis-ordering, and result parity; keep
+  SymTop optimization rejected until it uses the shared production builder;
 - defer Class-D optimizer penalties and tolerances until independent references
   and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.

@@ -1,9 +1,9 @@
 # Codex repository instructions
 
-Last verified: 2026-09-01
+Last verified: 2026-09-02
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-j D-052 molecular symmetry foundation
-Latest infrastructure checkpoint: `d95572f`
+Verified structural checkpoint: P4.3-k D-053 production SymTop model
+Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
 
@@ -101,6 +101,11 @@ The authoritative details and formulas are in
   global state or a fixed `N=200`.
 - TwoLevel and VibLadder use scalar coupling and reject the inapplicable
   `polarization` input. LinMol M-resolved coupling is Cartesian.
+- Production SymTop is a rigid parallel band in signed `|v,J,K,M>` order with
+  CH3F ortho/para filtering, Delta K=0, and Cartesian Delta M=0,+/-1. It
+  requires all constants and units, explicit axes, and exactly one spin-isomer
+  sector. NumPy dense/CSR RK4 is supported; CuPy, split operator, all-isomer
+  pure states, and optimization raise explicitly.
 - Density matrices must be finite, square, Hermitian, positive semidefinite,
   and have positive real trace within the documented scale-aware tolerance.
 - Liouville propagation currently supports NumPy dense RK4 only.
@@ -153,14 +158,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-j:
+Current local CPU baseline after P4.3-k:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-983 passed, 10 GPU tests skipped (993 collected)
+1016 passed, 10 GPU tests skipped (1026 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -224,34 +229,28 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 116 discovered modules import, internal modules avoid root
+are removed, all 121 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue D-052 by adding independent SymTop Hamiltonian and dipole
-   primitive references, then implement the accepted rigid, nondegenerate
-   parallel-band `|v,J,K,M>` model for NumPy dense/CSR RK4. Preserve the
-   experimental legacy route until basis ordering and unfiltered numerical
-   parity are characterized. Do not infer CH3F statistical weights before a
-   signed-K symmetry-adapted basis exists.
-2. Continue Phase 4 by consolidating optimization model construction with the
+1. Continue Phase 4 by consolidating optimization model construction with the
    frozen normal-simulation model schemas only after exact Hamiltonian, dipole,
-   basis-ordering, and optimizer-result characterization. Handle SymTop as a
-   separate decision because it is not in the normal model schemas. Do not
+   basis-ordering, and optimizer-result characterization. SymTop optimization
+   must remain rejected until it uses the shared D-053 production model. Do not
    touch the Class-D `gain`, `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user's
    definition and independent references.
-3. Reduce exact transition debt only with the Phase 6 model consolidation. The
+2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two
    `models -> dynamics.problem` imports; never broaden or hide them.
-4. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
-5. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
-6. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-7. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
-8. Preserve the D-044 support boundary: active examples, benchmarks, and
+3. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
+4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
+5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
+6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
+7. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archived examples remain historical
    until individually migrated and smoke-tested.
