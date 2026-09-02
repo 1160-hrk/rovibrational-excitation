@@ -176,8 +176,8 @@ def _construct_model_parameters(
     return VibLadderParameters.from_mapping(params)
 
 
-def validate_model_parameters(params: Mapping[str, Any]) -> str:
-    """Validate model selection and physically defining model inputs."""
+def _validate_physical_model_parameters(params: Mapping[str, Any]) -> str:
+    """Validate model selection and physical inputs without a workflow state."""
     removed = sorted(_REMOVED_FREQUENCY_KEYS.keys() & params.keys())
     if removed:
         key = removed[0]
@@ -206,10 +206,6 @@ def validate_model_parameters(params: Mapping[str, Any]) -> str:
         raise ModelConfigurationError(
             "Missing required model parameters: " + ", ".join(missing)
         )
-    if "initial_states" not in params:
-        raise ModelConfigurationError(
-            "Missing required model parameter: initial_states"
-        )
     if basis_type in {"linmol", "symtop", "vibladder"} and params[
         "potential_type"
     ] not in {
@@ -217,11 +213,32 @@ def validate_model_parameters(params: Mapping[str, Any]) -> str:
         "morse",
     }:
         raise ModelConfigurationError("potential_type must be 'harmonic' or 'morse'")
+    return basis_type
+
+
+def validate_model_parameters(params: Mapping[str, Any]) -> str:
+    """Validate model selection, physical inputs, and normal-runner state input."""
+    basis_type = _validate_physical_model_parameters(params)
+    if "initial_states" not in params:
+        raise ModelConfigurationError(
+            "Missing required model parameter: initial_states"
+        )
     try:
         _construct_model_parameters(basis_type, params)
     except (TypeError, ValueError) as exc:
         raise ModelConfigurationError(str(exc)) from exc
     return basis_type
+
+
+def model_parameters_from_physical_mapping(
+    params: Mapping[str, Any],
+) -> ModelParameters:
+    """Build frozen parameters without imposing a workflow's state semantics."""
+    basis_type = _validate_physical_model_parameters(params)
+    try:
+        return _construct_model_parameters(basis_type, params)
+    except (TypeError, ValueError) as exc:
+        raise ModelConfigurationError(str(exc)) from exc
 
 
 def model_parameters_from_mapping(

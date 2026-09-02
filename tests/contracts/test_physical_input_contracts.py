@@ -12,7 +12,7 @@ from rovibrational_excitation.dipole import (
     VibLadderDipoleMatrix,
 )
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
-from rovibrational_excitation.simulation.optimize_runner import _build_dipole
+from rovibrational_excitation.optimization.model import build_optimization_model
 
 
 @pytest.mark.parametrize(
@@ -52,9 +52,15 @@ def test_generic_factory_requires_potential_only_for_vibrational_models():
 
 
 def test_optimization_twolevel_does_not_require_irrelevant_potential_type():
-    basis = TwoLevelBasis(energy_gap=0.2)
-    dipole = _build_dipole(
-        basis,
-        {"params": {"mu0": 1.0, "unit_dipole": "C*m"}},
+    model = build_optimization_model(
+        {
+            "type": "twolevel",
+            "params": {
+                "energy_gap": 0.2,
+                "energy_gap_units": "rad/fs",
+                "dipole_scale": 1.0,
+                "dipole_scale_units": "C*m",
+            },
+        }
     )
-    assert isinstance(dipole, TwoLevelDipoleMatrix)
+    assert isinstance(model.dipole, TwoLevelDipoleMatrix)

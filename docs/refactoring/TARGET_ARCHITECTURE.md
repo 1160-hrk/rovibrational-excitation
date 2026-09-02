@@ -148,6 +148,7 @@ src/rovibrational_excitation/
 │   ├── sweep.py
 │   └── manager.py
 ├── optimization/
+│   ├── model.py
 │   ├── objective.py
 │   ├── result.py
 │   ├── local.py
@@ -210,6 +211,9 @@ Rules:
 8. No lower layer imports package-root convenience exports; use direct module
    imports to avoid cycles.
 9. Optional dependencies are imported lazily at the capability boundary.
+10. `optimization` reuses frozen model parameters and model-owned operator
+    builders. Workflow-specific state tuples, controls, and update rules remain
+    in optimization and do not leak into model construction.
 
 Architecture tests should inspect imports and reject reverse dependencies after
 Phase 3.

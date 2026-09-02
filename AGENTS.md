@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-02
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-k D-053 production SymTop model
+Verified structural checkpoint: P4.3-l D-054 shared optimization model construction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -158,14 +158,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-k:
+Current local CPU baseline after P4.3-l:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1016 passed, 10 GPU tests skipped (1026 collected)
+1025 passed, 10 GPU tests skipped (1035 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -215,7 +215,7 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 73%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 74%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -229,20 +229,20 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 121 discovered modules import, internal modules avoid root
+are removed, all 122 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue Phase 4 by consolidating optimization model construction with the
-   frozen normal-simulation model schemas only after exact Hamiltonian, dipole,
-   basis-ordering, and optimizer-result characterization. SymTop optimization
-   must remain rejected until it uses the shared D-053 production model. Do not
-   touch the Class-D `gain`, `c_abs_min`, `drive_abs_min`, `shape_floor`,
-   `learning_rate`, `lambda_a`, or convergence tolerances without the user's
-   definition and independent references.
+1. Decide whether the incomplete tracked optimizer YAML files should be removed
+   or completed with user-approved dipole values. Never infer those values.
+   Then define strict per-algorithm option schemas after characterizing valid
+   defaults, controls, and result parity. Do not touch the Class-D `gain`,
+   `c_abs_min`, `drive_abs_min`, `shape_floor`, `learning_rate`, `lambda_a`, or
+   convergence tolerances without the user's definition and independent
+   references.
 2. Reduce exact transition debt only with the Phase 6 model consolidation. The
    four current entries are `dynamics.utils -> dipole.base`,
    `dynamics.scaling.converter -> dipole.base`, and two

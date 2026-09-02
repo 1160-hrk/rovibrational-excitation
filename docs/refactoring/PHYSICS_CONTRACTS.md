@@ -1095,6 +1095,23 @@ the two sources implicitly and never resamples, normalizes, repairs, or derives
 a signed field from intensity. Krotov update indices and objective logic consume
 the same field samples as before D-050.
 
+Optimization model construction uses the same frozen physical parameter
+schemas and model-owned basis/Hamiltonian/dipole builders as normal simulation.
+Optimization state entries remain exact quantum-number tuples for `initial`
+and `target`; they are not normal-runner basis indices and are never repaired by
+adding or removing M. LinMol optimization currently requires the full
+M-resolved basis. The separate M-block incoherent average is unsupported in
+optimization and raises instead of being approximated by a no-M basis.
+
+The optimizer retains its historical NumPy CSR construction and rad/fs
+Hamiltonian projection. Krotov and local optimization retain their ordered
+two-component control-axis projection, including the zero second component for
+a VibLadder `zx` choice. This is a workflow adapter, not a change to the normal
+scalar VibLadder coupling contract. No optimizer objective, gradient, time
+grid, factor-of-two field index, or endpoint rule is changed by sharing model
+construction. SymTop optimization remains unsupported pending an independent
+objective/control reference.
+
 Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit
 convergence calculation with a caller-selected tolerance. It reports the

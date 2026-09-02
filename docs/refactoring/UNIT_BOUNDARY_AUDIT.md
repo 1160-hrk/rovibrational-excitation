@@ -168,18 +168,24 @@ of their intended dimensions.
 
 ### Optimization model construction
 
-`simulation.optimize_runner` still uses legacy unit-encoded model names and
-defaults for `input_units` and `output_units`. The long-term solution is to
-reuse the frozen model schemas, not add a second converter. Migration requires
-exact Hamiltonian, dipole, basis ordering, and optimizer-result parity.
-D-053 adds `SymmetricTopParameters` to the normal-simulation frozen schemas.
-Optimization rejects SymTop before legacy basis construction until the runner
-consumes that shared schema; it must not translate the new inputs back into
-the legacy one-alpha model.
+D-054 completes this boundary for LinMol, VibLadder, and TwoLevel. The optimizer
+uses neutral physical names with required adjacent units, converts through the
+frozen production schemas, and calls the same model-owned operator builders.
+The historical rad/fs optimizer Hamiltonian projection is retained. Basis
+ordering, H0, SI dipoles, and the stored Krotov result are characterized;
+differences are limited to sub-ulp unit-conversion roundoff. Legacy unit-encoded
+names and shared input/output unit defaults raise.
+
+SymTop optimization still raises. The model now has a shared production builder,
+but no independent SymTop optimization objective/control reference exists; a
+structural migration must not invent one. Tracked legacy optimizer YAML files
+that lack dipole values also remain unresolved rather than receiving an
+inferred constant.
 
 ## Recommended implementation order
 
-1. Optimization model consolidation in the planned model/optimization phases.
+1. Decide whether incomplete legacy optimizer YAML files are removed or supplied
+   with user-approved physical dipole values.
 2. Class-D optimizer quantities only after user clarification and independent
    references.
 

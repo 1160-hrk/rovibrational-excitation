@@ -44,6 +44,20 @@ def build_linmol_from_parameters(
     execution_policy: ExecutionPolicy,
 ) -> tuple[Any, Any, Any, Any]:
     """Build from the frozen schema without re-reading a configuration mapping."""
+    basis, hamiltonian, dipole = build_linmol_operators_from_parameters(
+        model_params,
+        execution_policy=execution_policy,
+    )
+    state = build_initial_state(basis, initial_states)
+    return basis, state, hamiltonian, dipole
+
+
+def build_linmol_operators_from_parameters(
+    model_params: LinMolParameters,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any]:
+    """Build basis and operators without imposing a workflow's state semantics."""
     basis = LinMolBasis(
         model_params.v_max,
         model_params.j_max,
@@ -55,8 +69,6 @@ def build_linmol_from_parameters(
         output_units="J",
         input_units="rad/fs",
     )
-    state = build_initial_state(basis, initial_states)
-
     potential_type = model_params.potential_type
 
     hamiltonian = basis.generate_H0()
@@ -67,4 +79,4 @@ def build_linmol_from_parameters(
         backend=execution_policy.backend.value,
         dense=execution_policy.dense,
     )
-    return basis, state, hamiltonian, dipole
+    return basis, hamiltonian, dipole

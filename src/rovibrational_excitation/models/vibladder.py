@@ -34,12 +34,25 @@ def build_vibladder_from_parameters(
     execution_policy: ExecutionPolicy,
 ) -> tuple[Any, Any, Any, Any]:
     """Build from the frozen schema without re-reading a configuration mapping."""
+    basis, hamiltonian, dipole = build_vibladder_operators_from_parameters(
+        model_params,
+        execution_policy=execution_policy,
+    )
+    state = build_initial_state(basis, initial_states)
+    return basis, state, hamiltonian, dipole
+
+
+def build_vibladder_operators_from_parameters(
+    model_params: VibLadderParameters,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any]:
+    """Build basis and operators without imposing a workflow's state semantics."""
     basis = VibLadderBasis(
         model_params.v_max,
         omega=model_params.vibrational_frequency.angular_rad_per_fs,
         delta_omega=model_params.anharmonic_shift.angular_rad_per_fs,
     )
-    state = build_initial_state(basis, initial_states)
     hamiltonian = basis.generate_H0()
     dipole = VibLadderDipoleMatrix(
         basis,
@@ -48,4 +61,4 @@ def build_vibladder_from_parameters(
         backend=execution_policy.backend.value,
         dense=execution_policy.dense,
     )
-    return basis, state, hamiltonian, dipole
+    return basis, hamiltonian, dipole

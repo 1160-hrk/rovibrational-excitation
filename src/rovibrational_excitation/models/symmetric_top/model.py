@@ -22,11 +22,24 @@ def build_symmetric_top_from_parameters(
     execution_policy: ExecutionPolicy,
 ) -> tuple[Any, Any, Any, Any]:
     """Build one validated NumPy dense/CSR rigid symmetric-top model."""
+    basis, hamiltonian, dipole = build_symmetric_top_operators_from_parameters(
+        parameters,
+        execution_policy=execution_policy,
+    )
+    state = build_initial_state(basis, initial_states)
+    return basis, state, hamiltonian, dipole
+
+
+def build_symmetric_top_operators_from_parameters(
+    parameters: SymmetricTopParameters,
+    *,
+    execution_policy: ExecutionPolicy,
+) -> tuple[Any, Any, Any]:
+    """Build basis and operators without imposing a workflow's state semantics."""
     if execution_policy.backend is not ArrayBackend.NUMPY:
         raise ValueError("SymTop currently supports only backend='numpy'")
     validate_symmetric_top_vibrational_basis(parameters)
     basis = SymmetricTopBasis(parameters)
-    state = build_initial_state(basis, initial_states)
     hamiltonian = basis.generate_H0()
     dipole = SymmetricTopDipoleMatrix(
         basis,
@@ -35,7 +48,10 @@ def build_symmetric_top_from_parameters(
         backend="numpy",
         dense=execution_policy.dense,
     )
-    return basis, state, hamiltonian, dipole
+    return basis, hamiltonian, dipole
 
 
-__all__ = ["build_symmetric_top_from_parameters"]
+__all__ = [
+    "build_symmetric_top_from_parameters",
+    "build_symmetric_top_operators_from_parameters",
+]

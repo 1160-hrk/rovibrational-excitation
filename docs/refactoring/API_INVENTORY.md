@@ -238,12 +238,13 @@ and unversioned output are not part of the target contract.
 ### 4.2 Current optimization path and divergence
 
 `run_from_config` accepts YAML, a `Path`, or a dictionary. It owns a second set
-of basis and dipole builders instead of using `models.build_model`.
-The parameter names also differ (`omega_cm` versus `omega_rad_phz`, for
-example). It silently changes an unknown dipole unit to `C*m` and an unknown
-potential type to `harmonic`. These fallbacks violate the explicit-validation
-policy and must become errors when the typed config is introduced. They are
-documented here only; P0.1 does not change calculation behavior.
+of optimization state and algorithm semantics, but D-054 removes the second
+physical model builder. LinMol, VibLadder, and TwoLevel basis/Hamiltonian/dipole
+construction now consumes the production frozen schemas and model-owned
+operator builders. Physical scalars require adjacent units; legacy names,
+unknown/inapplicable keys, and implicit M tuple repair raise. Optimization
+states remain exact quantum-number tuples rather than normal-runner basis
+indices. LinMol optimization currently accepts only `m_resolved`.
 
 D-029 migrates the characterized GRAPE/Krotov time behavior to canonical
 `TimeGrid`. Configuration now states the historical half-spaced field interval
@@ -280,6 +281,7 @@ visualization failure.
 |---|---|---|---|---|
 | `models.build_model` | `basis_type`, plus LinMol `representation`: `m_resolved` or `m_incoherent_average` | simulation runner and tests | one typed model registry shared by both workflows | internal transition facade |
 | `models.build_{linmol,twolevel,vibladder}` and `build_initial_state` | selected by `build_model` | simulation model facade | model-owned constructors and one explicit state specification | internal |
+| `optimization.model.build_optimization_model` | strict `system.type` plus frozen physical schema | optimization runner | optimization projection over model-owned operator construction | internal |
 | `dipole.create_dipole_matrix` | runtime basis class including SymTop | optimization runner, examples, tests | model-owned construction called by shared model builder | temporary public, then internal/delete |
 | `dipole.<model>.builder.build_mu` | model-specific parameters | dipole cache classes | private model dipole kernels | internal |
 | `dynamics.PropagatorFactory.create_propagator` | required typed state path and `PropagationOptions` | tests and possible direct users | `propagate(problem, options)` with explicit solver selection | typed transition facade since P2.3-c; delete after `PropagationProblem` owns construction |

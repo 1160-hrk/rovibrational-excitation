@@ -44,8 +44,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1016 passed, 10 skipped (1026 collected) |
-| Measured branch coverage | 73% |
+| Pytest | 1025 passed, 10 skipped (1035 collected) |
+| Measured branch coverage | 74% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
@@ -55,7 +55,15 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-02. P4.3-k implements D-053:
+These rows were last verified locally on 2026-09-02. P4.3-l implements D-054:
+optimization now consumes the same frozen LinMol, VibLadder, and TwoLevel
+parameters and model-owned basis/Hamiltonian/dipole builders as normal
+simulation. Strict value/unit pairs and exact quantum-number state tuples
+replace legacy optimizer model names and implicit M repair. Basis order, H0,
+SI dipoles, every optimizer time/index contract, and the stored Krotov result
+remain characterized; optimizer kernels are unchanged. Incomplete tracked
+legacy optimizer configs receive no invented dipole values. P4.3-k implements
+D-053:
 normal simulation now has an independent rigid parallel-band SymTop model with
 signed `|v,J,K,M>` ordering, explicit CH3F ortho/para filtering, two rotational
 constants, two vibration-rotation couplings, and Cartesian rank-one Wigner

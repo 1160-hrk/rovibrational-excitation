@@ -16,7 +16,7 @@ from rovibrational_excitation.models.validation import (
     ModelConfigurationError,
     validate_model_parameters,
 )
-from rovibrational_excitation.simulation.optimize_runner import _build_basis
+from rovibrational_excitation.optimization.model import build_optimization_model
 from rovibrational_excitation.simulation.runner import _run_one
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
@@ -195,4 +195,4 @@ def test_optimization_rejects_legacy_symtop_before_basis_construction() -> None:
         ValueError,
         match="SymTop optimization is not supported yet.*normal simulation runner",
     ):
-        _build_basis({"type": "symtop", "params": {}})
+        build_optimization_model({"type": "symtop", "params": {}})

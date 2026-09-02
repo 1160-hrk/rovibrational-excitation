@@ -1011,11 +1011,24 @@ construction, and optimization raise explicitly. Independent physics tests and
 the complete suite pass 1016 tests with 10 optional-GPU skips; measured branch
 coverage remains 73%.
 
+P4.3-l implements D-054 on 2026-09-02. Optimization now reuses frozen
+LinMol, VibLadder, and TwoLevel parameter schemas plus the same model-owned
+basis/Hamiltonian/dipole builders as normal simulation. The strict optimization
+projection requires value/unit pairs, rejects legacy and inapplicable keys, and
+requires exact quantum-number tuples without silently adding or dropping M.
+LinMol accepts only `representation=m_resolved`; SymTop and M-incoherent
+optimization remain explicit unsupported routes. Basis ordering, H0, SI
+dipoles, all optimizer time/index contracts, and the stored Krotov result are
+characterized. No optimizer numerical kernel changes. The complete suite passes
+1025 tests with 10 optional-GPU skips, branch coverage is 74%, and strict mypy
+covers 32 named modules.
+
 Remaining Phase 4 work:
 
-- consolidate optimization model construction with the frozen model schemas
-  only after exact Hamiltonian, dipole, basis-ordering, and result parity; keep
-  SymTop optimization rejected until it uses the shared production builder;
+- decide whether to remove or complete the tracked legacy optimizer YAML files
+  that lack an explicit dipole scale; never invent the missing physical value;
+- define strict algorithm-option schemas, including whether each optimizer's
+  control axes remain optional, only after preserving current valid results;
 - defer Class-D optimizer penalties and tolerances until independent references
   and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.

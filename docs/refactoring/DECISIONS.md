@@ -2141,6 +2141,48 @@ No optimizer numerical kernel or legacy direct SymTop class is changed.
 Implementation commit: this checkpoint.
 
 
+### D-054: Optimization reuses frozen production model construction
+
+Status: Accepted and implemented on 2026-09-02 as P4.3-l.
+
+Scope: optimization model input, basis/Hamiltonian/dipole construction, and
+optimization quantum-state selection. Optimizer algorithms and time grids are
+excluded.
+
+The optimization runner now consumes the same frozen LinMol, VibLadder, and
+TwoLevel physical parameter schemas and the same model-owned operator builders
+as normal simulation. Optimizer state semantics remain separate: `initial` and
+`target` are exact quantum-number tuples, not normal-runner basis indices, and
+the boundary never adds or removes an M quantum number. LinMol optimization
+therefore requires `representation=m_resolved`; the separately propagated
+M-incoherent-average workflow is not silently approximated by a no-M basis.
+
+The optimization schema uses neutral physical names with a required unit next
+to every scalar quantity. Legacy `*_cm`, shared `input_units`/`output_units`,
+`mu0`/`unit_dipole`, `use_M`, unknown keys, and model-inapplicable keys raise
+with a precise migration error. `system.type=vibladder` replaces `viblad`.
+Construction remains NumPy CSR, and the returned optimization Hamiltonian
+retains the historical rad/fs representation. Three-model characterization
+preserves basis ordering and Hamiltonian values; SI dipoles agree within
+unit-conversion roundoff (maximum observed relative difference about
+`2.1e-16`). The stored four-level Krotov initial and ten-iteration fidelities
+are unchanged.
+
+No local-optimizer grid, segment, endpoint, midpoint, field sample, RK4 slice,
+GRAPE/Krotov trajectory, update index, objective, gradient, penalty, or
+tolerance changes in this decision. SymTop remains an explicit optimization
+error because sharing construction does not establish a validated SymTop
+objective or control contract.
+
+Most tracked `config_temp_*` and historical LinMol optimizer YAML files already
+lacked required dipole values and were not executable before this decision.
+They are not assigned invented physical constants; only the complete stored
+Krotov reference config is migrated. Their removal or completion requires a
+separate explicit decision.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

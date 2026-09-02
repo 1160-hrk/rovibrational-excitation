@@ -1,13 +1,13 @@
 system:
-  type: viblad
+  type: vibladder
   params:
     V_max: 3
-    omega_cm: 2349.1
-    delta_omega_cm: 25.0
-    input_units: "cm^-1"
-    output_units: "rad/fs"
-    mu0: 0.3
-    unit_dipole: "D"
+    vibrational_frequency: 2349.1
+    vibrational_frequency_units: "cm^-1"
+    anharmonic_shift: 25.0
+    anharmonic_shift_units: "cm^-1"
+    dipole_scale: 0.3
+    dipole_scale_units: "D"
     potential_type: harmonic
 states:
   initial: [0]
