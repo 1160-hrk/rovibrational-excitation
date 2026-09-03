@@ -178,15 +178,13 @@ names and shared input/output unit defaults raise.
 
 SymTop optimization still raises. The model now has a shared production builder,
 but no independent SymTop optimization objective/control reference exists; a
-structural migration must not invent one. Tracked legacy optimizer YAML files
-that lack dipole values also remain unresolved rather than receiving an
-inferred constant.
+structural migration must not invent one. D-055 archives the tracked legacy
+optimizer YAML files that lack dipole values rather than assigning an inferred
+constant.
 
 ## Recommended implementation order
 
-1. Decide whether incomplete legacy optimizer YAML files are removed or supplied
-   with user-approved physical dipole values.
-2. Class-D optimizer quantities only after user clarification and independent
+1. Class-D optimizer quantities only after user clarification and independent
    references.
 
 Every unit updates this audit, D-045 or a successor decision, the physics

@@ -2183,6 +2183,20 @@ separate explicit decision.
 Implementation commit: this checkpoint.
 
 
+### D-055: Incomplete v0.2 optimization documents are historical archives
+
+Status: Accepted and implemented on 2026-09-03 as P4.3-m.
+
+Scope: historical optimization YAML disposition and missing dipole values.
+
+Thirteen incomplete v0.2 optimizer YAML files are moved, with history, to
+`examples/archives/v0_2_optimization_configs/`. They remain historical records
+and receive no invented dipole value. They are excluded from the supported
+configuration set and must be explicitly migrated and tested before reuse.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

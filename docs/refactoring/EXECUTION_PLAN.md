@@ -1023,10 +1023,12 @@ characterized. No optimizer numerical kernel changes. The complete suite passes
 1025 tests with 10 optional-GPU skips, branch coverage is 74%, and strict mypy
 covers 32 named modules.
 
+P4.3-m implements D-055 on 2026-09-03. Thirteen incomplete v0.2 optimization
+YAML files move with history to an explicit archive. No physical value is
+invented and no source or numerical behavior changes.
+
 Remaining Phase 4 work:
 
-- decide whether to remove or complete the tracked legacy optimizer YAML files
-  that lack an explicit dipole scale; never invent the missing physical value;
 - define strict algorithm-option schemas, including whether each optimizer's
   control axes remain optional, only after preserving current valid results;
 - defer Class-D optimizer penalties and tolerances until independent references
