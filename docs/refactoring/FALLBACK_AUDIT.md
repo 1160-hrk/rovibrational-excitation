@@ -35,6 +35,7 @@ recorded.
 | Molecular symmetry preset | A molecule name could otherwise imply guessed constants, a generic model, or unverified nuclear-spin weights | D-052 resolves only an explicit alias to source-versioned symmetry rules; constants remain empty/required, unknown aliases raise, unsupported vibronic symmetry raises, and CH3F weights raise until signed-K symmetry adaptation | `test_molecular_symmetry_presets.py` |
 | SymTop execution | The broken legacy route could be selected by optimization, while unverified CuPy or split execution could appear available | D-053 routes normal simulation through the independent production builder for NumPy dense/CSR RK4; CuPy, split operator, coherent all-isomer input, unknown presets, and optimization raise before numerical work | `test_symmetric_top_model_contracts.py`; `test_symmetric_top_reference.py` |
 | Optimization documents | Unknown options and arbitrary runner kwargs could be ignored; invalid axes fell back to `xy`; YAML output/plot policy was not authoritative; plotting exceptions were printed | D-056 closes every document/algorithm key set, requires axes, restricts GRAPE to `xy`, removes runner kwargs, defines explicit output/plot precedence, and raises top-level requested plotting failures | `test_optimization_config_contracts.py`; optimization time/reference contracts |
+| Optimization option values | Numeric/string values were coerced, duplicate axes were accepted, Local mode typos selected another branch, lookahead/weight/cost errors were suppressed, and spectral updates applied a repair floor | D-057 requires exact types/enums/distinct axes, surfaces requested Local failures, validates finite nonnegative spectral alpha, and divides directly by `1+alpha` | `test_optimization_option_contracts.py`; Local propagation contracts |
 
 ## P1: fix before API stabilization
 
@@ -43,11 +44,9 @@ recorded.
    context ranges, fixed 1000 fs estimate, broad exception downgrade, and raw
    `mu_axis` fallback are deleted. Numerical adequacy remains an explicit
    convergence report.
-2. optimization/local.py silently disables eigenvalue lookahead on any
-   exception and silently ignores target-weight indexing errors. These alter
-   the optimization objective or update rule. Replace them with validated
-   capability checks and explicit configuration errors after reference tests
-   required by O-006 exist.
+2. Resolved by D-057. Local resolves eigenvalues only when lookahead is
+   requested and raises on failure or invalid shape/value. Target-weight and
+   display-cost exceptions are no longer suppressed.
 3. io/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.

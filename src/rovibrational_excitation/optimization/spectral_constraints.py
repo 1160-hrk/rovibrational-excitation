@@ -33,7 +33,7 @@ def _to_phz(x: float | np.ndarray, units: str) -> float | np.ndarray:
 
 def _fwhm_to_sigma(fwhm: float) -> float:
     """ガウシアンの FWHM を標準偏差 σ に変換。"""
-    return float(fwhm) / (2.0 * np.sqrt(2.0 * np.log(2.0)))
+    return float(float(fwhm) / (2.0 * np.sqrt(2.0 * np.log(2.0))))
 
 
 def build_alpha_mask(
@@ -154,14 +154,22 @@ def solve_update_in_frequency(source: np.ndarray, alpha_mask: np.ndarray) -> np.
         s = s.reshape(-1, 1)
     N = s.shape[0]
     ncomp = s.shape[1]
-    # rFFT 長の検証
+    # rFFT length and penalty-domain validation.
     n_rfft = N // 2 + 1
-    if alpha_mask.shape[0] != n_rfft:
+    raw_alpha = np.asarray(alpha_mask)
+    if np.iscomplexobj(raw_alpha) or np.issubdtype(raw_alpha.dtype, np.bool_):
+        raise ValueError("alpha_mask must be a finite nonnegative real vector")
+    try:
+        alpha = np.asarray(raw_alpha, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("alpha_mask must be a finite nonnegative real vector") from exc
+    if alpha.ndim != 1 or alpha.shape[0] != n_rfft:
         raise ValueError("alpha_mask length must be N//2+1 for rFFT")
+    if not np.all(np.isfinite(alpha)) or np.any(alpha < 0.0):
+        raise ValueError("alpha_mask must be finite and nonnegative")
 
     out = np.zeros_like(s, dtype=float)
-    denom = 1.0 + np.asarray(alpha_mask, dtype=float)
-    denom = np.maximum(denom, 1e-16)
+    denom = 1.0 + alpha
     for k in range(ncomp):
         S_hat = np.fft.rfft(s[:, k])
         U_hat = S_hat / denom

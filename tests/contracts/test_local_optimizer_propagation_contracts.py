@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import inspect
 from typing import Any
 
 import numpy as np
@@ -27,6 +29,15 @@ class _ZeroHamiltonian:
     @staticmethod
     def get_eigenvalues() -> np.ndarray:
         return np.zeros(1)
+
+
+class _UnavailableEigenvalues:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def get_eigenvalues(self) -> np.ndarray:
+        self.calls += 1
+        raise RuntimeError("eigenvalues unavailable")
 
 
 class _ZeroDipole:
@@ -187,6 +198,29 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
     np.testing.assert_array_equal(spy.calls[-1]["field"][:, 0], expected_component)
 
 
+def test_local_target_mode_retains_the_explicit_target_overlap_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (0,)},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "target",
+        },
+    )
+
+    np.testing.assert_array_equal(result["field_data"], np.zeros((7, 2)))
+
+
 @pytest.mark.parametrize(
     ("removed_key", "replacement_key"),
     [
@@ -214,3 +248,64 @@ def test_local_optimizer_rejects_unit_ambiguous_field_keys(
                 removed_key: 1.0,
             },
         )
+
+
+def test_local_optimizer_does_not_request_eigenvalues_when_lookahead_is_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    hamiltonian = _UnavailableEigenvalues()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=hamiltonian,
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (0,)},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "lookahead_enable": False,
+        },
+    )
+
+    assert hamiltonian.calls == 0
+
+
+def test_local_optimizer_surfaces_unavailable_requested_lookahead(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    with pytest.raises(ValueError, match="lookahead_enable requires eigenvalues"):
+        local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_UnavailableEigenvalues(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "lookahead_enable": True,
+            },
+        )
+
+
+def test_local_optimizer_contains_no_broad_exception_suppression() -> None:
+    tree = ast.parse(inspect.getsource(local_module))
+    broad_handlers = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ExceptHandler)
+        and (
+            node.type is None
+            or (isinstance(node.type, ast.Name) and node.type.id == "Exception")
+        )
+    ]
+
+    assert broad_handlers == []

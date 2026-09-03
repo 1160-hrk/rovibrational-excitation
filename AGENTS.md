@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-03
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-n D-056 strict optimization documents
+Verified structural checkpoint: P4.3-o D-057 strict optimization option values
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -158,14 +158,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-l:
+Current local CPU baseline after P4.3-o:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1045 passed, 10 GPU tests skipped (1055 collected)
+1146 passed, 10 GPU tests skipped (1156 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -215,7 +215,7 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 74%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 75%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.

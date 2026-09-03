@@ -159,12 +159,15 @@ unit by inference:
 The user must define whether these are dimensionless, field-scaled, coupling
 scaled, or expressed in another optimizer-specific normalization.
 
+D-057 requires only that these values have a finite real representation. It
+does not infer their units, permitted sign, physical range, or scaling.
+
 ### GRAPE and Krotov penalties
 
 `learning_rate`, `lambda_a`, and the convergence tolerances may depend on
 the exact objective and gradient normalization. They are Class D. Unit work
 must wait for an independent objective/gradient reference and a user statement
-of their intended dimensions.
+of their intended dimensions. D-057 likewise adds finite-real validation only.
 
 ### Optimization model construction
 

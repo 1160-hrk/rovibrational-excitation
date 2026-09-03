@@ -44,8 +44,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1045 passed, 10 skipped (1055 collected) |
-| Measured branch coverage | 74% |
+| Pytest | 1146 passed, 10 skipped (1156 collected) |
+| Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
@@ -55,7 +55,12 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-03. P4.3-n implements D-056:
+These rows were last verified locally on 2026-09-03. P4.3-o implements D-057:
+optimizer option values now reject implicit type conversion, mode fallback,
+duplicate axes, invalid spectral constraints, and suppressed Local failures.
+Nonnegative spectral alpha uses exact `1+alpha` division, while valid Local
+time/index/update behavior and Krotov references remain unchanged. Strict mypy
+now covers 35 named modules. P4.3-n implements D-056:
 optimization documents now use closed root and per-algorithm schemas, require
 explicit ordered control axes, honor required YAML output/plot policy with
 documented API precedence, and raise top-level requested plotting failures.

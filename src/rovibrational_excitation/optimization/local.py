@@ -206,8 +206,8 @@ def run_local_optimization(
         params.get("lookahead_fraction", DEFAULT_PARAMS["lookahead_fraction"])
     )
 
-    eval_mode = str(params.get("eval_mode", DEFAULT_PARAMS["eval_mode"])).lower()
-    weight_mode = str(params.get("weight_mode", DEFAULT_PARAMS["weight_mode"])).lower()
+    eval_mode = params.get("eval_mode", DEFAULT_PARAMS["eval_mode"])
+    weight_mode = params.get("weight_mode", DEFAULT_PARAMS["weight_mode"])
     weight_v_power = float(
         params.get("weight_v_power", DEFAULT_PARAMS["weight_v_power"])
     )
@@ -239,21 +239,32 @@ def run_local_optimization(
     psi_curr = psi_initial.copy()
     seed_left = seed_max_segments
 
-    # Precompute eigenvalues for lookahead if available
-    try:
-        eigenvalues = hamiltonian.get_eigenvalues()
-    except Exception:
-        eigenvalues = None
+    # Resolve eigenvalues only when the caller explicitly requests lookahead.
+    eigenvalues = None
+    if lookahead_enable:
+        try:
+            raw_eigenvalues = hamiltonian.get_eigenvalues()
+        except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
+            raise ValueError(
+                "lookahead_enable requires eigenvalues from the Hamiltonian"
+            ) from exc
+        if np.iscomplexobj(raw_eigenvalues):
+            raise ValueError("lookahead eigenvalues must be finite and real")
+        try:
+            eigenvalues = np.asarray(raw_eigenvalues, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("lookahead eigenvalues must be finite and real") from exc
+        if eigenvalues.shape != (basis.size(),) or not np.all(np.isfinite(eigenvalues)):
+            raise ValueError(
+                "lookahead eigenvalues must be a finite vector matching the basis"
+            )
 
     # Prepare evaluation operator (weights mode)
     if eval_mode == "weights":
         one_hot_idx = target_idx if use_one_hot_target_in_weights else None
-        mode_is_reverse = weight_mode.endswith("_reverse")
-        base_mode = weight_mode.replace("_reverse", "")
-        reverse_flag = bool(weight_reverse) or mode_is_reverse
         A_diag = _build_weights_for_basis(
             basis,
-            mode=base_mode,
+            mode=weight_mode,
             normalize=normalize_weights,
             custom=np.asarray(custom_weights, dtype=float)
             if custom_weights is not None
@@ -263,14 +274,11 @@ def run_local_optimization(
             else None,
             v_power=weight_v_power,
             one_hot_target_idx=one_hot_idx,
-            reverse=reverse_flag,
+            reverse=weight_reverse,
         )
         if one_hot_idx is None and target_idx is not None:
-            try:
-                w_before = float(A_diag[target_idx])
-                A_diag[target_idx] = w_before * float(weight_target_factor)
-            except Exception:
-                pass
+            w_before = float(A_diag[target_idx])
+            A_diag[target_idx] = w_before * weight_target_factor
     else:
         A_diag = None
 
@@ -410,19 +418,16 @@ def run_local_optimization(
 
     fidelity = _fidelity(psi_traj_full[-1], target_idx)
 
-    # optional: running cost J_a ~ ∫ S|E|^2 dt with λ=1/gain for display
-    try:
-        field_penalty = 1.0 / max(gain, 1e-30)
-        S_run = (
-            np.sin(np.pi * tlist / tlist[-1]) ** 2
-            if use_sin2_shape
-            else np.ones_like(tlist)
-        )
-        E2 = full_field[:, 0] ** 2 + full_field[:, 1] ** 2
-        dt_field = float(tlist[1] - tlist[0])
-        running_cost = float(field_penalty) * float(np.sum(S_run * E2) * dt_field)
-    except Exception:
-        running_cost = None
+    # Display-only running cost J_a ~ integral S|E|^2 dt with lambda=1/gain.
+    field_penalty = 1.0 / max(gain, 1e-30)
+    S_run = (
+        np.sin(np.pi * tlist / tlist[-1]) ** 2
+        if use_sin2_shape
+        else np.ones_like(tlist)
+    )
+    E2 = full_field[:, 0] ** 2 + full_field[:, 1] ** 2
+    dt_field = float(tlist[1] - tlist[0])
+    running_cost = float(field_penalty) * float(np.sum(S_run * E2) * dt_field)
 
     return RunResult(
         efield=ef_total,

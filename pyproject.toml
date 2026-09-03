@@ -148,6 +148,7 @@ files = [
     "src/rovibrational_excitation/optimization/krotov_initial_field.py",
     "src/rovibrational_excitation/optimization/model.py",
     "src/rovibrational_excitation/optimization/options.py",
+    "src/rovibrational_excitation/optimization/spectral_constraints.py",
 ]
 
 [tool.ruff]

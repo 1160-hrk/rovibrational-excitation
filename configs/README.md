@@ -45,8 +45,9 @@ Unknown root, section, algorithm, and spectral-constraint keys are errors.
 `control_axes` is required and ordered. For example, `zx` means that field
 column 0 couples through `mu_z` and column 1 through `mu_x`; a generated
 Krotov `initial_polarization: [1.0, 0.0]` therefore drives only the z column.
-The local and Krotov optimizers accept two lowercase labels from `x`, `y`, and
-`z`. GRAPE currently accepts only `xy` because no other route is implemented.
+The local and Krotov optimizers accept two distinct lowercase labels from `x`,
+`y`, and `z`; duplicate pairs such as `xx` are errors. GRAPE currently accepts
+only `xy` because no other route is implemented.
 
 VibLadder and TwoLevel are physically scalar models. Their two columns and
 axis labels are the preserved optimizer adapter, not a physical polarization
@@ -58,6 +59,18 @@ propagation step is `2 * field_dt_fs`. The exact field length is therefore
 trajectory and never the internal optimizer states. The local optimizer uses
 its separately frozen odd-grid, segment, shared-boundary, and endpoint rules;
 do not translate its `sample_stride` to `output_stride`.
+
+Local `eval_mode` is exactly `target` or `weights`. In weights mode,
+`weight_mode` is exactly `by_v`, `by_v_power`, or `custom`; reversal is supplied
+only through the separate boolean `weight_reverse`. Values are not lowercased
+or converted from strings, so YAML booleans must be unquoted `true`/`false` and
+iteration/stride counts must be integers.
+
+Spectral bands must be nonempty finite center/positive-width pairs with a
+supported frequency unit. Mode is `pass` or `stop`, combination is `max` or
+`sum`, and weights apply only to `sum`. The spectral alpha scale and optional
+sum weights are nonnegative; invalid values raise rather than being clipped or
+repaired.
 
 ## Python-supplied Krotov fields
 

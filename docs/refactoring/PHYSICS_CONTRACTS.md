@@ -1113,8 +1113,8 @@ construction. SymTop optimization remains unsupported pending an independent
 objective/control reference.
 
 Decision D-056 requires configured optimization to use an explicit ordered
-two-axis adapter for every
-algorithm. Krotov and local accept exactly two lowercase Cartesian labels and
+two-axis adapter for every algorithm. D-057 requires those labels to be
+distinct. Krotov and local accept exactly two lowercase Cartesian labels and
 preserve their existing two-column projection; GRAPE accepts only `xy`, the
 only route it implements. Invalid, missing, or unsupported axes raise and are
 never replaced by `xy`. For scalar VibLadder and TwoLevel models these labels
@@ -1122,6 +1122,19 @@ only preserve the historical two-column optimizer representation and do not
 create physical polarization dependence. The closed configuration boundary
 does not alter any optimizer field sample, objective, update equation, time
 grid, or endpoint rule.
+
+Local evaluation is selected only by exact `target` or `weights` labels;
+weight construction is selected only by `by_v`, `by_v_power`, or `custom`,
+with reversal carried by its separate boolean. Requested lookahead requires a
+finite real eigenvalue for every basis state and never silently disables itself.
+These validation rules do not change the accepted Local update expression or
+its frozen time/index layout.
+
+For the monotonic Krotov spectral route, `alpha` is finite and nonnegative.
+Each frequency component therefore uses the exact denominator `1 + alpha`,
+which is at least one. No clipping or denominator floor is applied. Invalid
+bands, units, modes, weights, scale, shape, or alpha values raise before they
+can alter an update.
 
 Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit

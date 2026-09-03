@@ -1039,6 +1039,17 @@ explicit dipole units and axes remain active. Optimizer kernels and all local
 time/index contracts are unchanged. The complete suite passes 1045 tests with
 10 optional-GPU skips, and strict mypy covers 34 named modules.
 
+P4.3-o implements D-057 on 2026-09-03. Optimizer values now use exact boolean,
+integer, finite-real, enum, and distinct-axis contracts without Python coercion
+or fallback. Local evaluates only explicit `target` or `weights` modes, uses the
+separate `weight_reverse` flag, resolves eigenvalues only for requested
+lookahead, and surfaces weight/running-cost failures. Spectral constraints are
+fully value-validated; finite nonnegative alpha uses exact `1+alpha` division
+without a repair floor. Existing Local grid/index/endpoint references, Krotov
+fidelity, and current YAML smoke runs remain unchanged. The complete suite
+passes 1146 tests with 10 optional-GPU skips; strict mypy covers 35 named
+modules.
+
 Remaining Phase 4 work:
 
 - defer Class-D optimizer penalties and tolerances until independent references

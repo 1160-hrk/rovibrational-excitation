@@ -2239,6 +2239,48 @@ Class-D quantities remain unresolved under O-006.
 Implementation commit: this checkpoint.
 
 
+### D-057: Optimization option values never coerce, fall back, or self-repair
+
+Status: Accepted and implemented on 2026-09-03 as P4.3-o.
+
+Scope: optimizer option values, ordered control axes, Local evaluation modes
+and failure handling, and Krotov spectral-constraint input.
+
+Optimization option validation now rejects bool-as-integer, numeric strings,
+fractional iteration counts, and nonfinite numeric values rather than applying
+Python `bool`, `int`, `float`, or `str.lower` coercions. `target_fidelity` is a
+finite value in `[0,1]`. `control_axes` contains two distinct lowercase axes;
+duplicate controls such as `xx` are errors. Class-D quantities are checked only
+for a finite real representation: this decision assigns no unit, sign, range,
+or normalization meaning to them.
+
+Local `eval_mode` is exactly `target` or `weights`. `weight_mode` is exactly
+`by_v`, `by_v_power`, or `custom`; the implicit `*_reverse` suffix is removed
+in favor of the existing explicit `weight_reverse` boolean. All Local booleans
+must be actual booleans and integer controls must be exact integers. Custom
+weights have one explicit array-or-mapping source and are never accepted by a
+non-custom mode.
+
+Local no longer requests Hamiltonian eigenvalues when lookahead is disabled.
+When lookahead is requested, missing, failing, complex, nonfinite, or
+dimension-mismatched eigenvalues raise. Target-weight adjustment and the
+display-only running-cost calculation no longer suppress exceptions. Their
+formulas and successful-input values are unchanged. The frozen legacy grid,
+segment construction, midpoint, field-write slice, shared endpoint ownership,
+final odd RK4 prefix, and every field/update expression remain untouched.
+
+Monotonic spectral constraints require nonempty finite `[center,width]` bands,
+a supported frequency unit, exact pass/stop and max/sum modes, an actual FWHM
+boolean, a finite nonnegative alpha scale, and applicable finite nonnegative
+sum weights. The update accepts only a one-dimensional finite nonnegative
+`alpha_mask` of the exact rFFT length and evaluates
+`U_hat = S_hat / (1 + alpha)` directly. The old `max(1+alpha, 1e-16)` was an
+unreachable repair for valid `alpha >= 0` and is removed. Valid outputs remain
+bitwise equal to direct division.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
