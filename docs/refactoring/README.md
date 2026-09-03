@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-02
+Last verified: 2026-09-03
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1025 passed, 10 skipped (1035 collected) |
+| Pytest | 1045 passed, 10 skipped (1055 collected) |
 | Measured branch coverage | 74% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,16 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-02. P4.3-l implements D-054:
+These rows were last verified locally on 2026-09-03. P4.3-n implements D-056:
+optimization documents now use closed root and per-algorithm schemas, require
+explicit ordered control axes, honor required YAML output/plot policy with
+documented API precedence, and raise top-level requested plotting failures.
+Thirteen incomplete v0.2 YAML files are archived without invented dipoles;
+three current-schema configs remain active with explicit dipole units and axes.
+All optimizer kernels and local time/index contracts remain unchanged, and
+strict mypy covers 34 named modules. P4.3-m implements D-055 by moving the
+incomplete v0.2 optimization YAML files to an explicit archive without
+inventing missing dipoles. P4.3-l implements D-054:
 optimization now consumes the same frozen LinMol, VibLadder, and TwoLevel
 parameters and model-owned basis/Hamiltonian/dipole builders as normal
 simulation. Strict value/unit pairs and exact quantum-number state tuples

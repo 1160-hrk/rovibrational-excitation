@@ -34,6 +34,7 @@ recorded.
 | Numerical time-step adequacy | Removed `auto_timestep`/`target_accuracy` could otherwise be reintroduced as an implicit grid change | `assess_simulation_convergence` requires two caller-selected grids, a named observable, and explicit tolerance; it reports maximum absolute difference and never refines, retries, resamples, writes, or changes either calculation | `test_simulation_convergence.py` |
 | Molecular symmetry preset | A molecule name could otherwise imply guessed constants, a generic model, or unverified nuclear-spin weights | D-052 resolves only an explicit alias to source-versioned symmetry rules; constants remain empty/required, unknown aliases raise, unsupported vibronic symmetry raises, and CH3F weights raise until signed-K symmetry adaptation | `test_molecular_symmetry_presets.py` |
 | SymTop execution | The broken legacy route could be selected by optimization, while unverified CuPy or split execution could appear available | D-053 routes normal simulation through the independent production builder for NumPy dense/CSR RK4; CuPy, split operator, coherent all-isomer input, unknown presets, and optimization raise before numerical work | `test_symmetric_top_model_contracts.py`; `test_symmetric_top_reference.py` |
+| Optimization documents | Unknown options and arbitrary runner kwargs could be ignored; invalid axes fell back to `xy`; YAML output/plot policy was not authoritative; plotting exceptions were printed | D-056 closes every document/algorithm key set, requires axes, restricts GRAPE to `xy`, removes runner kwargs, defines explicit output/plot precedence, and raises top-level requested plotting failures | `test_optimization_config_contracts.py`; optimization time/reference contracts |
 
 ## P1: fix before API stabilization
 
@@ -47,10 +48,7 @@ recorded.
    the optimization objective or update rule. Replace them with validated
    capability checks and explicit configuration errors after reference tests
    required by O-006 exist.
-3. simulation/optimize_runner.py now requires basis constants, dipole value and
-   unit, potential type, and Krotov pulse duration. Target and plotting options
-   still need a typed optimization configuration after O-006 reference tests.
-4. io/serialization.py interprets missing real or imaginary mapping
+3. io/serialization.py interprets missing real or imaginary mapping
    fields as zero. Reject unknown keys and require an unambiguous complex
    number schema so misspellings cannot change polarization.
 
@@ -63,9 +61,10 @@ copied into the final public typed API.
 
 ## P2: cleanup and observability
 
-- visualization/plot_all.py and io/{storage,checkpoint}.py helpers catch broad exceptions.
-  Plotting failures may remain non-fatal only if returned in result metadata;
-  persistence failures must be surfaced.
+- visualization/plot_all.py still catches errors inside optional spectrum and
+  spectrogram branches. The optimization runner no longer catches the top-level
+  plot call. Optional branch failures may remain non-fatal only if returned in
+  result metadata; persistence failures must be surfaced.
 - simulation/runner.py intentionally catches case failures for batch runs and
   writes tracebacks. Keep this behavior, but replace print-only reporting with
   a structured failure result.

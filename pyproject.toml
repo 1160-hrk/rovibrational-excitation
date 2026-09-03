@@ -144,8 +144,10 @@ files = [
     "src/rovibrational_excitation/models/symmetric_top/basis.py",
     "src/rovibrational_excitation/models/symmetric_top/dipole.py",
     "src/rovibrational_excitation/models/symmetric_top/model.py",
+    "src/rovibrational_excitation/optimization/config.py",
     "src/rovibrational_excitation/optimization/krotov_initial_field.py",
     "src/rovibrational_excitation/optimization/model.py",
+    "src/rovibrational_excitation/optimization/options.py",
 ]
 
 [tool.ruff]

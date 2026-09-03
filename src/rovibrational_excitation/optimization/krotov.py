@@ -16,6 +16,7 @@ from rovibrational_excitation.optimization.timegrid import (
 )
 
 from .krotov_initial_field import parse_krotov_initial_field
+from .options import validate_algorithm_options
 from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
 
 DEFAULT_PARAMS = {
@@ -23,7 +24,6 @@ DEFAULT_PARAMS = {
     "convergence_tol": 1.0e-18,
     "lambda_a": 1.0e-20,
     "target_fidelity": 1.0,
-    "control_axes": "xy",
     "propagator_func": None,
 }
 
@@ -46,6 +46,7 @@ def run_krotov_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
     initial_field = parse_krotov_initial_field(params)
+    control_axes = validate_algorithm_options("krotov", params)
 
     initial_state = tuple(states["initial"])  # (v,J,...) expected
     target_state = tuple(states["target"]) if states.get("target") is not None else None
@@ -102,7 +103,6 @@ def run_krotov_optimization(
         "y": mu_y_prime,
         "z": mu_z_prime,
     }
-    control_axes = params.get("control_axes", DEFAULT_PARAMS["control_axes"])
     mu_a_prime = mu_map[control_axes[0]]
     mu_b_prime = mu_map[control_axes[1]]
 

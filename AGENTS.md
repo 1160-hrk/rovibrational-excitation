@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-02
+Last verified: 2026-09-03
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-l D-054 shared optimization model construction
+Verified structural checkpoint: P4.3-n D-056 strict optimization documents
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -165,7 +165,7 @@ pytest -q
 ~~~
 
 ~~~text
-1025 passed, 10 GPU tests skipped (1035 collected)
+1045 passed, 10 GPU tests skipped (1055 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -229,17 +229,15 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 122 discovered modules import, internal modules avoid root
+are removed, all 125 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Decide whether the incomplete tracked optimizer YAML files should be removed
-   or completed with user-approved dipole values. Never infer those values.
-   Then define strict per-algorithm option schemas after characterizing valid
-   defaults, controls, and result parity. Do not touch the Class-D `gain`,
+1. Continue typed quantity and strict unit-validation boundaries. Do not touch
+   the Class-D `gain`,
    `c_abs_min`, `drive_abs_min`, `shape_floor`, `learning_rate`, `lambda_a`, or
    convergence tolerances without the user's definition and independent
    references.

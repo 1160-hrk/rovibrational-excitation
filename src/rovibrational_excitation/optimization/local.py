@@ -11,8 +11,9 @@ from rovibrational_excitation.optimization.timegrid import (
     LocalOptimizerLegacyGridV1,
 )
 
+from .options import validate_algorithm_options, validate_local_time_options
+
 DEFAULT_PARAMS = {
-    "control_axes": "xy",
     "gain": 1.0,
     "field_max_v_per_m": 1e12,
     "use_sin2_shape": False,
@@ -144,6 +145,7 @@ def run_local_optimization(
             "missing required local optimization time options: "
             + ", ".join(missing_time)
         )
+    validate_local_time_options(time_cfg)
     time_total = float(time_cfg["total_fs"])
     dt = float(time_cfg["field_dt_fs"])
     sample_stride = int(time_cfg.get("sample_stride", 1))
@@ -177,11 +179,7 @@ def run_local_optimization(
     mu_y_p = cm_to_rad_phz(mu_y_si)
     mu_z_p = cm_to_rad_phz(mu_z_si)
 
-    control_axes = str(
-        params.get("control_axes", DEFAULT_PARAMS["control_axes"])
-    ).lower()
-    if len(control_axes) != 2 or any(c not in "xyz" for c in control_axes):
-        control_axes = "xy"
+    control_axes = validate_algorithm_options("local", params)
     mu_map = {"x": mu_x_p, "y": mu_y_p, "z": mu_z_p}
     mu_eff_x = mu_map[control_axes[0]]
     mu_eff_y = mu_map[control_axes[1]]

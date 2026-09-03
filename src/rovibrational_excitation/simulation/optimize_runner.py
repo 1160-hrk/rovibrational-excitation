@@ -17,11 +17,13 @@ from __future__ import annotations
 import os
 import time
 from collections.abc import Iterable
+from copy import deepcopy
 from pathlib import Path
 
 import yaml
 
 from rovibrational_excitation.optimization import ALGO_REGISTRY
+from rovibrational_excitation.optimization.config import validate_optimization_config
 from rovibrational_excitation.optimization.model import (
     OptimizationModelConfigurationError,
     build_optimization_model,
@@ -105,9 +107,8 @@ def run_from_config(
     algorithm: str | None = None,
     overrides: Iterable[str] | None = None,
     *,
-    out_dir: str | None = None,
-    do_plot: bool = True,
-    **kwargs,
+    out_dir: str | Path | None = None,
+    do_plot: bool | None = None,
 ) -> dict:
     """
     Execute optimization from a YAML (or dict) config.
@@ -123,11 +124,17 @@ def run_from_config(
     if isinstance(config, (str, Path)):
         cfg = _load_yaml(str(config))
     elif isinstance(config, dict):
-        cfg = dict(config)
+        cfg = deepcopy(config)
     else:
         raise TypeError("config must be filepath or dict")
+    if do_plot is not None and not isinstance(do_plot, bool):
+        raise TypeError("do_plot must be a bool or None")
 
     cfg = _apply_overrides(cfg, overrides)
+    validated = validate_optimization_config(
+        cfg,
+        algorithm_override=algorithm,
+    )
 
     # 2) Build the same basis and operators as the production model layer.
     model = build_optimization_model(cfg["system"])
@@ -139,11 +146,9 @@ def run_from_config(
     states = _build_states(basis, cfg["states"])
 
     # 4) Algorithm/time
-    selected = cfg["algorithm"]["selected"]
-    if algorithm is not None and str(algorithm).strip():
-        selected = str(algorithm).strip()
-    params = dict(cfg.get("algorithms", {}).get(selected, {}))
-    time_cfg = dict(cfg["time"])
+    selected = validated.algorithm
+    params = validated.algorithm_params
+    time_cfg = validated.time
 
     runner = ALGO_REGISTRY.get(selected)
     if runner is None:
@@ -154,7 +159,7 @@ def run_from_config(
     system_label = _format_system_label(cfg.get("system", {}))
     safe_name = "".join(c if c.isalnum() or c in "_.-" else "_" for c in selected)
     if out_dir is None:
-        out_root = Path.cwd() / "results"
+        out_root = Path(validated.output_dir)
     else:
         out_root = Path(out_dir)
     out_path = out_root / f"{ts}_{safe_name}_{system_label}"
@@ -162,9 +167,6 @@ def run_from_config(
 
     # 6) Execute
     t0 = time.time()
-    # kwargsから追加パラメータを取得してparamsにマージ
-    if kwargs:
-        params.update(kwargs)
     result = runner(
         basis=basis,
         hamiltonian=H0,
@@ -176,58 +178,62 @@ def run_from_config(
     elapsed = time.time() - t0
     print(f"{selected} elapsed: {elapsed:.2f} s")
 
-    # 7) Optional plotting
-    try:
-        if do_plot:
-            from rovibrational_excitation.visualization.plot_all import (
-                plot_all,  # lazy import
-            )
+    # 7) Optional plotting. An explicitly requested plot must either succeed or raise.
+    plot_enabled = validated.plot_enabled if do_plot is None else do_plot
+    if plot_enabled:
+        from rovibrational_excitation.visualization.plot_all import (
+            plot_all,  # lazy import
+        )
 
-            efield_obj = result.get("efield")
-            time_full = result.get("time")
-            psi_traj = result.get("psi_traj")
-            tlist = result.get("tlist")
-            if tlist is None:
-                tlist = time_full
-            field_data = result.get("field_data")
-            target_idx = result.get("target_idx", -1)
-            if (
-                efield_obj is not None
-                and psi_traj is not None
-                and field_data is not None
-                and tlist is not None
-            ):
-                system_params = cfg["system"].get("params", {})
-                omega_center_cm = None
-                if system_params.get("vibrational_frequency_units") == "cm^-1":
-                    omega_center_cm = system_params.get("vibrational_frequency")
-                plot_cfg = cfg.get("plot", {})
-                plot_stride_key = (
-                    "sample_stride" if selected == "local" else "output_stride"
-                )
-                plot_all(
-                    basis=basis,
-                    optimizer_like=type(
-                        "O",
-                        (),
-                        {
-                            "tlist": tlist,
-                            "target_idx": target_idx if target_idx is not None else -1,
-                        },
-                    )(),
-                    efield=efield_obj,
-                    psi_traj=psi_traj,
-                    field_data=field_data,
-                    sample_stride=int(cfg["time"].get(plot_stride_key, 1)),
-                    trajectory_times_fs=time_full,
-                    omega_center_cm=omega_center_cm,
-                    figures_dir=str(out_path),
-                    filename_prefix=safe_name,
-                    do_spectrum=bool(plot_cfg.get("spectrum", False)),
-                    do_spectrogram=bool(plot_cfg.get("spectrogram", False)),
-                )
-    except Exception as e:
-        print(f"Plotting failed: {e}")
+        efield_obj = result.get("efield")
+        time_full = result.get("time")
+        psi_traj = result.get("psi_traj")
+        tlist = result.get("tlist")
+        if tlist is None:
+            tlist = time_full
+        field_data = result.get("field_data")
+        target_idx = result.get("target_idx", -1)
+        missing_plot_data = [
+            name
+            for name, value in (
+                ("efield", efield_obj),
+                ("psi_traj", psi_traj),
+                ("field_data", field_data),
+                ("tlist", tlist),
+            )
+            if value is None
+        ]
+        if missing_plot_data:
+            raise ValueError(
+                "optimization result is missing data required for plotting: "
+                + ", ".join(missing_plot_data)
+            )
+        system_params = cfg["system"]["params"]
+        omega_center_cm = None
+        if system_params.get("vibrational_frequency_units") == "cm^-1":
+            omega_center_cm = system_params.get("vibrational_frequency")
+        plot_stride_key = "sample_stride" if selected == "local" else "output_stride"
+        plot_all(
+            basis=basis,
+            optimizer_like=type(
+                "O",
+                (),
+                {
+                    "tlist": tlist,
+                    "target_idx": target_idx if target_idx is not None else -1,
+                },
+            )(),
+            efield=efield_obj,
+            psi_traj=psi_traj,
+            field_data=field_data,
+            sample_stride=int(cfg["time"].get(plot_stride_key, 1)),
+            trajectory_times_fs=time_full,
+            omega_center_cm=omega_center_cm,
+            figures_dir=str(out_path),
+            filename_prefix=safe_name,
+            do_spectrum=validated.plot_spectrum,
+            do_spectrogram=validated.plot_spectrogram,
+        )
 
     return {
         "cfg": cfg,

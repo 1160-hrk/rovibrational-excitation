@@ -2197,6 +2197,48 @@ configuration set and must be explicitly migrated and tested before reuse.
 Implementation commit: this checkpoint.
 
 
+### D-056: Optimization documents are closed and explicit
+
+Status: Accepted and implemented on 2026-09-03 as P4.3-n.
+
+Scope: current optimization YAML ownership, algorithm-option names, control
+axes, output and plotting policy, and supported configuration examples.
+
+The configured optimization boundary requires exactly `system`, `states`,
+`time`, `algorithm`, `algorithms`, `plot`, and `output`. Each section has a
+closed key set. The selected algorithm must have a supplied parameter mapping;
+unknown algorithm names, unknown options, removed names, and malformed nested
+spectral-constraint keys raise before model construction. Krotov also validates
+its generated/sampled initial-field discriminator, value/unit pairs, and exact
+sampled-grid length at this boundary.
+
+`control_axes` is required for local, Krotov, and GRAPE. It is an ordered
+two-character lowercase selection from `x`, `y`, and `z`; no case conversion or
+`xy` fallback is permitted. GRAPE accepts only its actually implemented `xy`
+path. Krotov and local retain their existing ordered two-column projection.
+For scalar VibLadder and TwoLevel models this remains the historical optimizer
+adapter, not a newly introduced physical polarization dependence.
+
+`run_from_config` accepts no unrestricted keyword arguments. Required
+`output.dir` is used unless the explicit Python/CLI output argument overrides
+it. Required `plot.enabled` is used unless an explicit API value or CLI
+`--no-plot` overrides it. Missing plotting result data and exceptions from the
+top-level plot call now raise instead of being printed as successful runs. The
+separately characterized print-only handling inside optional spectrum and
+spectrogram helpers remains deferred to its dedicated visualization change.
+
+The active `configs/` set is exactly three new or current-schema documents: a
+Krotov V=0 to V=3 reference, a spectral Krotov example, and a local-optimizer
+example. Every active document explicitly supplies the model dipole value/unit
+and `control_axes`.
+
+No objective, gradient, penalty, tolerance, field value, time point, local
+segment/index/endpoint rule, Krotov update index, or propagation formula changes.
+Class-D quantities remain unresolved under O-006.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

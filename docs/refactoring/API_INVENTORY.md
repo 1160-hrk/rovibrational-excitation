@@ -190,7 +190,7 @@ but is not re-exported from the package root.
 | Script | Current route | Input and construction path | Target | Disposition |
 |---|---|---|---|---|
 | `rve-simulate` | `cli.simulate:main` | Python file executed by `simulation.config.load_params_file` -> unchanged value/unit mapping -> iterable sweep expansion -> per-case validation -> `models.build_model` -> `SchrodingerPropagator` | versioned typed simulation config and one shared model/field builder | target public command; replace input contract |
-| `rve-optimize` | `cli.optimize:main` | YAML `safe_load` -> dotted overrides -> private `_build_basis` and `_build_dipole` -> `optimization.ALGO_REGISTRY` -> algorithm function | versioned typed optimization config reusing the same model/field builders | target public command; replace orchestration internals |
+| `rve-optimize` | `cli.optimize:main` | YAML `safe_load` -> dotted overrides -> closed `optimization.config` validation -> frozen production model builder -> `optimization.ALGO_REGISTRY` | versioned optimization/result schemas | active strict migration command; result versioning and final orchestration types remain |
 
 Both command names should remain. Backward compatibility for current config
 files is not required, but result and config schemas must be explicitly

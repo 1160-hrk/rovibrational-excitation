@@ -1112,6 +1112,17 @@ grid, factor-of-two field index, or endpoint rule is changed by sharing model
 construction. SymTop optimization remains unsupported pending an independent
 objective/control reference.
 
+Decision D-056 requires configured optimization to use an explicit ordered
+two-axis adapter for every
+algorithm. Krotov and local accept exactly two lowercase Cartesian labels and
+preserve their existing two-column projection; GRAPE accepts only `xy`, the
+only route it implements. Invalid, missing, or unsupported axes raise and are
+never replaced by `xy`. For scalar VibLadder and TwoLevel models these labels
+only preserve the historical two-column optimizer representation and do not
+create physical polarization dependence. The closed configuration boundary
+does not alter any optimizer field sample, objective, update equation, time
+grid, or endpoint rule.
+
 Time-grid consistency does not prove propagation accuracy. Accuracy assessment
 requires the complete generator and observable and is therefore an explicit
 convergence calculation with a caller-selected tolerance. It reports the

@@ -57,6 +57,7 @@ _SUPPORTED_INITIAL_KEYS = {
     *_GENERATED_OPTIONAL,
     *_SAMPLED_KEYS,
 }
+KROTOV_INITIAL_FIELD_OPTION_KEYS = frozenset(_SUPPORTED_INITIAL_KEYS)
 
 
 def _quantity_error(label: str, exc: TypeError | ValueError) -> ValueError:
@@ -299,5 +300,6 @@ __all__ = [
     "KrotovGeneratedInitialField",
     "KrotovInitialField",
     "KrotovSampledInitialField",
+    "KROTOV_INITIAL_FIELD_OPTION_KEYS",
     "parse_krotov_initial_field",
 ]

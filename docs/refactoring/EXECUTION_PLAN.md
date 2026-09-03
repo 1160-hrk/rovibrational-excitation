@@ -1027,10 +1027,20 @@ P4.3-m implements D-055 on 2026-09-03. Thirteen incomplete v0.2 optimization
 YAML files move with history to an explicit archive. No physical value is
 invented and no source or numerical behavior changes.
 
+P4.3-n implements D-056 on 2026-09-03. Optimization documents now have closed
+root, algorithm, plot, output, time, and spectral-constraint key sets.
+`control_axes` is required; GRAPE explicitly accepts only `xy`; unsupported or
+misspelled values never fall back. Krotov initial-field branches are validated
+before model construction, including exact sampled-grid length. Required
+`output.dir` and `plot.enabled` are honored with explicit API/CLI precedence,
+and top-level requested plotting failures raise. Thirteen incomplete v0.2 YAML
+files are archived without invented dipoles; three current-schema configs with
+explicit dipole units and axes remain active. Optimizer kernels and all local
+time/index contracts are unchanged. The complete suite passes 1045 tests with
+10 optional-GPU skips, and strict mypy covers 34 named modules.
+
 Remaining Phase 4 work:
 
-- define strict algorithm-option schemas, including whether each optimizer's
-  control axes remain optional, only after preserving current valid results;
 - defer Class-D optimizer penalties and tolerances until independent references
   and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.

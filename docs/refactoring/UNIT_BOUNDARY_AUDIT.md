@@ -180,7 +180,8 @@ SymTop optimization still raises. The model now has a shared production builder,
 but no independent SymTop optimization objective/control reference exists; a
 structural migration must not invent one. D-055 archives the tracked legacy
 optimizer YAML files that lack dipole values rather than assigning an inferred
-constant.
+constant. Three active current-schema configs provide explicit dipole values
+and units.
 
 ## Recommended implementation order
 

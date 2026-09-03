@@ -12,6 +12,8 @@ from rovibrational_excitation.optimization.timegrid import (
     sample_optimization_output,
 )
 
+from .options import validate_algorithm_options
+
 DEFAULT_PARAMS = {
     "max_iter": 200,
     "convergence_tol": 1e-18,
@@ -46,6 +48,7 @@ def run_grape_optimization(
     time_settings = build_optimization_time_settings(time_cfg)
     time_grid = time_settings.grid
     output_stride = time_settings.output_stride
+    control_axes = validate_algorithm_options("grape", params)
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
     convergence_tol = float(
@@ -90,7 +93,7 @@ def run_grape_optimization(
             efield=ef,
             dipole_matrix=dipole,
             initial_state=initial_state_vec,
-            axes="xy",
+            axes=control_axes,
             return_traj=True,
             return_time_psi=True,
             sample_stride=1,

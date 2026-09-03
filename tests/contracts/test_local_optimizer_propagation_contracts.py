@@ -97,7 +97,11 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
         dipole=_ZeroDipole(),
         states={"initial": (0,), "target": (0,)},
         time_cfg={"total_fs": time_total, "field_dt_fs": 0.1, "sample_stride": 1},
-        params={"segment_size_steps": None, "segment_size_fs": 0.5},
+        params={
+            "control_axes": "xy",
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+        },
     )
 
     assert [call["tlist"].size for call in spy.calls] == expected_call_lengths
@@ -138,7 +142,11 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
             dipole=_ZeroDipole(),
             states={"initial": (0,), "target": (0,)},
             time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
-            params={"segment_size_steps": None, "segment_size_fs": 0.5},
+            params={
+                "control_axes": "xy",
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+            },
         )
     finally:
         local_module.SchrodingerPropagator = original_propagator
@@ -162,6 +170,7 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
             states={"initial": (0,), "target": (0,)},
             time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
             params={
+                "control_axes": "xy",
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
                 "seed_amplitude_v_per_m": 40.0,

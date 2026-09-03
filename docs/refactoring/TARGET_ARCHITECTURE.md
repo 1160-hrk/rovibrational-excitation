@@ -606,6 +606,15 @@ before matrix allocation, while derived quantities such as Morse `N` remain
 instance-local properties. LinMol representation is a required enum-like
 choice rather than a boolean.
 
+Under D-056, configured optimization enters through a closed YAML/dict document
+validated by `optimization.config` and algorithm-specific key ownership in
+`optimization.options`. Model construction then reuses the frozen production
+schemas. Every algorithm requires its ordered two-axis adapter, Krotov requires
+an explicit generated or sampled field branch, and sampled data must match the
+canonical field grid exactly. Required output and plot sections have explicit
+API/CLI override precedence. This is the strict migration boundary; persistence
+schema versioning and final public result types remain Phase 7 work.
+
 Result files require a schema version independent of package version. A loader
 must either parse a known schema or raise an actionable error. It must not guess
 array meaning from key presence.

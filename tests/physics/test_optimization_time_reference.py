@@ -225,6 +225,7 @@ def test_krotov_completes_one_real_forward_backward_iteration() -> None:
         states={"initial": (0,), "target": (1,)},
         time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 1},
         params={
+            "control_axes": "xy",
             "initial_field_kind": "generated",
             "initial_duration": 0.2,
             "initial_duration_units": "fs",
