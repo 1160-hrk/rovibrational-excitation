@@ -2052,9 +2052,9 @@ input, and untouched tail endpoints. The odd `np.arange` layout, shared
 boundary ownership, segment construction and midpoint, slices, lookahead,
 field values, and RK4-consumed prefix remain unchanged.
 
-No meaning or unit is inferred for `gain`, `c_abs_min`, `drive_abs_min`, or
-`shape_floor`; those Class-D quantities remain blocked on a separate user
-definition and independent optimization references.
+No meaning or unit is inferred here for `gain`, `c_abs_min`,
+`drive_abs_min`, or `shape_floor`; those quantities remain blocked at this
+checkpoint. D-058 later resolves `gain` only.
 
 Implementation commit: this checkpoint.
 
@@ -2252,7 +2252,8 @@ Python `bool`, `int`, `float`, or `str.lower` coercions. `target_fidelity` is a
 finite value in `[0,1]`. `control_axes` contains two distinct lowercase axes;
 duplicate controls such as `xx` are errors. Class-D quantities are checked only
 for a finite real representation: this decision assigns no unit, sign, range,
-or normalization meaning to them.
+or normalization meaning to them. D-058 later strengthens `gain` without
+changing the remaining quantities.
 
 Local `eval_mode` is exactly `target` or `weights`. `weight_mode` is exactly
 `by_v`, `by_v_power`, or `custom`; the implicit `*_reverse` suffix is removed
@@ -2277,6 +2278,44 @@ sum weights. The update accepts only a one-dimensional finite nonnegative
 `U_hat = S_hat / (1 + alpha)` directly. The old `max(1+alpha, 1e-16)` was an
 unreachable repair for valid `alpha >= 0` and is removed. Valid outputs remain
 bitwise equal to direct division.
+
+Implementation commit: this checkpoint.
+
+
+### D-058: Local control gain is a positive field-squared-time quantity
+
+Status: Accepted and implemented on 2026-09-07 as P4.3-p.
+
+Scope: Local optimizer gain input, canonical conversion, active configuration,
+update-equation characterization, and Local result diagnostics.
+
+The user defines the Local input as gain rather than its reciprocal penalty.
+Both `gain` and `gain_units` are required. Exact supported labels are
+`(V/m)^2 fs`, `(MV/m)^2 fs`, `(GV/m)^2 fs`, and `(TV/m)^2 fs`;
+the canonical internal unit is `(V/m)^2 fs`. Values must be finite, numeric,
+and strictly positive. Numeric strings, booleans, missing units, unknown unit
+spellings, zero, negative values, and conversion overflow raise before the
+optimization loop.
+
+The definition follows directly from the existing expression
+`E_a = gain * S * response_a`: the projected dipole response has units
+`rad/fs/(V/m)`, so gain has units `(V/m)^2 fs`. The active example changes
+only its representation from `1e21` canonical units to
+`1000 (GV/m)^2 fs`. The canonical value entering both target and weights
+updates is therefore unchanged. Segment construction, midpoint, response,
+seed, clipping order, field samples, shared endpoints, slices, indices, and
+RK4 prefix are not changed.
+
+The unreachable reciprocal repair `1 / max(gain, 1e-30)` is replaced by
+`1 / gain` after strict positive validation. The misleading
+`running_cost` result key is removed. `field_fluence_proxy` reports the same
+valid-input expression and is explicitly not the authoritative objective.
+Additional read-only diagnostics report canonical gain, stored-field vector
+maximum and RMS, the fraction of segments altered by componentwise clipping,
+and `gain * max(abs(mu'_a))` separately for each ordered control axis.
+
+`c_abs_min`, `drive_abs_min`, and `shape_floor` remain unresolved Class-D
+quantities. This decision assigns them no dimension, range, or normalization.
 
 Implementation commit: this checkpoint.
 

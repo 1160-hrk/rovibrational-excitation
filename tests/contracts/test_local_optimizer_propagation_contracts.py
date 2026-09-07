@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 import rovibrational_excitation.optimization.local as local_module
+from rovibrational_excitation.dynamics.utils import DIRAC_HBAR
 
 
 class _OneStateBasis:
@@ -54,6 +55,30 @@ class _ZeroDipole:
         return np.zeros((1, 1))
 
 
+class _TwoStateBasis:
+    basis = [(0,), (1,)]
+
+    @staticmethod
+    def size() -> int:
+        return 2
+
+    @staticmethod
+    def get_index(state: tuple[int, ...]) -> int:
+        return _TwoStateBasis.basis.index(tuple(state))
+
+
+class _UnitDipole:
+    @staticmethod
+    def get_mu_x_SI() -> np.ndarray:
+        return DIRAC_HBAR * np.array([[0.0, 1.0], [1.0, 0.0]])
+
+    get_mu_y_SI = get_mu_x_SI
+
+    @staticmethod
+    def get_mu_z_SI() -> np.ndarray:
+        return np.zeros((2, 2))
+
+
 class _PropagationSpy:
     def __init__(self) -> None:
         self.calls: list[dict[str, np.ndarray]] = []
@@ -76,6 +101,48 @@ class _PropagationSpy:
         )
         time = tlist[0] + np.arange(sampled_steps + 1) * 2.0 * efield.dt * stride
         return time, trajectory
+
+
+class _StateInjectingPropagationSpy(_PropagationSpy):
+    def _propagate_array(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+        time, trajectory = super()._propagate_array(**kwargs)
+        trajectory[-1] = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+        return time, trajectory
+
+
+def test_local_optimizer_converts_gain_before_unchanged_update_formula(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _StateInjectingPropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_TwoStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_UnitDipole(),
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 2.0e-17,
+            "gain_units": "(GV/m)^2 fs",
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "seed_amplitude_v_per_m": 0.0,
+            "seed_max_segments": 1,
+        },
+    )
+
+    assert np.max(result["field_data"][:, 0]) == pytest.approx(10.0)
+    assert np.max(result["field_data"][:, 1]) == pytest.approx(10.0)
+    assert "running_cost" not in result["metrics"]
+    assert result["metrics"]["gain_v_per_m_squared_fs"] == pytest.approx(20.0)
+    assert result["metrics"]["field_fluence_proxy"] >= 0.0
+    assert result["metrics"]["clipped_segment_fraction"] == 0.0
+    assert result["metrics"]["reference_field_scale_v_per_m"] == {
+        "x": pytest.approx(20.0),
+        "y": pytest.approx(20.0),
+    }
 
 
 @pytest.mark.parametrize(
@@ -110,6 +177,8 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
         time_cfg={"total_fs": time_total, "field_dt_fs": 0.1, "sample_stride": 1},
         params={
             "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
         },
@@ -155,6 +224,8 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
             time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
             params={
                 "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
             },
@@ -182,6 +253,8 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
             time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
             params={
                 "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
                 "seed_amplitude_v_per_m": 40.0,
@@ -196,6 +269,17 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
     np.testing.assert_array_equal(result["field_data"][:, 1], expected_component)
     np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
     np.testing.assert_array_equal(spy.calls[-1]["field"][:, 0], expected_component)
+    assert result["metrics"]["clipped_segment_fraction"] == 1.0
+    assert result["metrics"]["field_amplitude_max_v_per_m"] == pytest.approx(
+        np.sqrt(2.0) * 25.0
+    )
+    assert result["metrics"]["field_amplitude_rms_v_per_m"] == pytest.approx(
+        np.sqrt(5000.0 / 7.0)
+    )
+    assert result["metrics"]["reference_field_scale_v_per_m"] == {
+        "x": 0.0,
+        "y": 0.0,
+    }
 
 
 def test_local_target_mode_retains_the_explicit_target_overlap_branch(
@@ -212,6 +296,8 @@ def test_local_target_mode_retains_the_explicit_target_overlap_branch(
         time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
         params={
             "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
             "eval_mode": "target",
@@ -265,6 +351,8 @@ def test_local_optimizer_does_not_request_eigenvalues_when_lookahead_is_off(
         time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
         params={
             "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
             "lookahead_enable": False,
@@ -289,6 +377,8 @@ def test_local_optimizer_surfaces_unavailable_requested_lookahead(
             time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
             params={
                 "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
                 "lookahead_enable": True,

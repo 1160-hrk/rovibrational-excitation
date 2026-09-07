@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from rovibrational_excitation.core.units import converter
+from rovibrational_excitation.core.units import LocalControlGain, converter
 
 from .krotov_initial_field import KROTOV_INITIAL_FIELD_OPTION_KEYS
 
@@ -34,6 +34,7 @@ LOCAL_OPTION_KEYS = frozenset(
     {
         "control_axes",
         "gain",
+        "gain_units",
         "field_max_v_per_m",
         "use_sin2_shape",
         "segment_size_steps",
@@ -85,7 +86,6 @@ _LOCAL_BOOL_KEYS = {
     "use_one_hot_target_in_weights",
 }
 _LOCAL_REAL_KEYS = {
-    "gain",
     "field_max_v_per_m",
     "segment_size_fs",
     "seed_amplitude_v_per_m",
@@ -274,6 +274,16 @@ def _validate_spectrum_constraints(value: Any) -> None:
 
 
 def _validate_local_options(params: Mapping[str, Any]) -> None:
+    missing_gain = {"gain", "gain_units"} - set(params)
+    if missing_gain:
+        raise ValueError(
+            "missing required local optimization options: " + _names(missing_gain)
+        )
+    try:
+        LocalControlGain(params["gain"], params["gain_units"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(str(exc)) from exc
+
     for key in _LOCAL_BOOL_KEYS & params.keys():
         if not isinstance(params[key], bool):
             raise ValueError(f"{key} must be a bool")

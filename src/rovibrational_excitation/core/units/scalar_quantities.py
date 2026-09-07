@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from numbers import Real
 
 import numpy as np
 
@@ -83,6 +84,34 @@ class ElectricFieldAmplitude:
 
 
 @dataclass(frozen=True, slots=True)
+class LocalControlGain:
+    """Local-control gain with canonical value in (V/m)^2 fs."""
+
+    value: float
+    unit: str
+    volts_per_meter_squared_femtoseconds: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, (bool, np.bool_)) or not isinstance(self.value, Real):
+            raise TypeError("local control gain value must be a finite scalar")
+        value, canonical = _canonical_value(
+            self.value,
+            self.unit,
+            quantity="local control gain",
+            canonical_unit="(V/m)^2 fs",
+            convert=converter.convert_local_control_gain,
+        )
+        if canonical <= 0.0:
+            raise ValueError("local control gain must be positive")
+        object.__setattr__(self, "value", value)
+        object.__setattr__(
+            self,
+            "volts_per_meter_squared_femtoseconds",
+            canonical,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class GroupDelayDispersion:
     """GDD input with canonical internal value in fs^2."""
 
@@ -125,6 +154,7 @@ class ThirdOrderDispersion:
 __all__ = [
     "DipoleMoment",
     "ElectricFieldAmplitude",
+    "LocalControlGain",
     "GroupDelayDispersion",
     "ThirdOrderDispersion",
 ]

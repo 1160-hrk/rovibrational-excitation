@@ -66,6 +66,14 @@ only through the separate boolean `weight_reverse`. Values are not lowercased
 or converted from strings, so YAML booleans must be unquoted `true`/`false` and
 iteration/stride counts must be integers.
 
+Local `gain` and `gain_units` are both required. The recommended readable
+unit is `(GV/m)^2 fs`; `1` in that unit equals `1e18 (V/m)^2 fs`.
+The active example's `1000 (GV/m)^2 fs` therefore preserves the historical
+canonical value `1e21 (V/m)^2 fs`. Gain must be finite and positive. The
+result reports `field_fluence_proxy` only as a diagnostic, together with
+canonical gain, vector field maximum/RMS, segment clipping fraction, and
+separate per-control-axis reference field scales.
+
 Spectral bands must be nonempty finite center/positive-width pairs with a
 supported frequency unit. Mode is `pass` or `stop`, combination is `max` or
 `sum`, and weights apply only to `sum`. The spectral alpha scale and optional

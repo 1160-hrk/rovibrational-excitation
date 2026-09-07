@@ -13,6 +13,7 @@ from rovibrational_excitation.core.units import (
     ElectricFieldAmplitude,
     Frequency,
     GroupDelayDispersion,
+    LocalControlGain,
     ThirdOrderDispersion,
     TimeQuantity,
 )
@@ -332,11 +333,34 @@ def test_scalar_quantity_types_convert_once_to_canonical_units():
     amplitude = ElectricFieldAmplitude(1.0, "MV/cm")
     gdd = GroupDelayDispersion(2.0, "ps^2")
     tod = ThirdOrderDispersion(3.0, "ps^3")
+    gain = LocalControlGain(1000.0, "(GV/m)^2 fs")
 
     assert dipole.coulomb_meters == pytest.approx(0.3 * _debye)
     assert amplitude.volts_per_meter == pytest.approx(1.0e8)
     assert gdd.femtoseconds_squared == pytest.approx(2.0e6)
     assert tod.femtoseconds_cubed == pytest.approx(3.0e9)
+    assert gain.volts_per_meter_squared_femtoseconds == pytest.approx(1.0e21)
+
+
+@pytest.mark.parametrize(
+    ("value", "unit", "expected"),
+    [
+        (1.0e18, "(V/m)^2 fs", 1.0e18),
+        (1.0e6, "(MV/m)^2 fs", 1.0e18),
+        (1.0, "(GV/m)^2 fs", 1.0e18),
+        (1.0e-6, "(TV/m)^2 fs", 1.0e18),
+    ],
+)
+def test_local_control_gain_units_have_one_canonical_value(value, unit, expected):
+    gain = LocalControlGain(value, unit)
+
+    assert gain.volts_per_meter_squared_femtoseconds == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("value", [0.0, -1.0])
+def test_local_control_gain_must_be_positive(value):
+    with pytest.raises(ValueError, match="local control gain must be positive"):
+        LocalControlGain(value, "(GV/m)^2 fs")
 
 
 def test_intensity_quantity_uses_cycle_average_to_peak_field_contract():
@@ -353,6 +377,7 @@ def test_intensity_quantity_uses_cycle_average_to_peak_field_contract():
         (ElectricFieldAmplitude, "not-a-field-unit"),
         (GroupDelayDispersion, "not-a-gdd-unit"),
         (ThirdOrderDispersion, "not-a-tod-unit"),
+        (LocalControlGain, "not-a-gain-unit"),
     ],
 )
 def test_scalar_quantity_types_reject_unknown_units(factory, unit):
@@ -362,11 +387,18 @@ def test_scalar_quantity_types_reject_unknown_units(factory, unit):
 
 @pytest.mark.parametrize(
     "factory",
-    [DipoleMoment, ElectricFieldAmplitude, GroupDelayDispersion, ThirdOrderDispersion],
+    [
+        DipoleMoment,
+        ElectricFieldAmplitude,
+        GroupDelayDispersion,
+        ThirdOrderDispersion,
+        LocalControlGain,
+    ],
 )
 def test_scalar_quantity_types_reject_nonfinite_values(factory):
     with pytest.raises(ValueError, match="finite"):
-        factory(np.nan, "C*m")
+        unit = "(V/m)^2 fs" if factory is LocalControlGain else "C*m"
+        factory(np.nan, unit)
 
 
 if __name__ == "__main__":

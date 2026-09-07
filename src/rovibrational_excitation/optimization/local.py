@@ -4,6 +4,7 @@ from typing import Any, TypedDict
 
 import numpy as np
 
+from rovibrational_excitation.core.units import LocalControlGain
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
 from rovibrational_excitation.fields import ElectricField
@@ -14,7 +15,6 @@ from rovibrational_excitation.optimization.timegrid import (
 from .options import validate_algorithm_options, validate_local_time_options
 
 DEFAULT_PARAMS = {
-    "gain": 1.0,
     "field_max_v_per_m": 1e12,
     "use_sin2_shape": False,
     "segment_size_steps": None,
@@ -118,6 +118,8 @@ def run_local_optimization(
 ) -> RunResult:
     """Run the versioned legacy local optimizer.
 
+    ``gain`` and ``gain_units`` are required and converted to ``(V/m)^2 fs``
+    before entering the unchanged local-control update formula.
     ``field_max_v_per_m`` and ``seed_amplitude_v_per_m`` are direct electric-
     field amplitudes in V/m. Their defaults and numerical use are frozen by
     D-027 and D-051. The former unit-ambiguous keys are rejected.
@@ -184,7 +186,10 @@ def run_local_optimization(
     mu_eff_x = mu_map[control_axes[0]]
     mu_eff_y = mu_map[control_axes[1]]
 
-    gain = float(params.get("gain", DEFAULT_PARAMS["gain"]))
+    gain = LocalControlGain(
+        params["gain"],
+        params["gain_units"],
+    ).volts_per_meter_squared_femtoseconds
     field_max_v_per_m = float(
         params.get("field_max_v_per_m", DEFAULT_PARAMS["field_max_v_per_m"])
     )
@@ -238,6 +243,7 @@ def run_local_optimization(
 
     psi_curr = psi_initial.copy()
     seed_left = seed_max_segments
+    clipped_segment_count = 0
 
     # Resolve eigenvalues only when the caller explicitly requests lookahead.
     eigenvalues = None
@@ -352,8 +358,12 @@ def run_local_optimization(
                 ey = sy * seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
 
-        ex = float(np.clip(ex, -field_max_v_per_m, field_max_v_per_m))
-        ey = float(np.clip(ey, -field_max_v_per_m, field_max_v_per_m))
+        clipped_ex = float(np.clip(ex, -field_max_v_per_m, field_max_v_per_m))
+        clipped_ey = float(np.clip(ey, -field_max_v_per_m, field_max_v_per_m))
+        if clipped_ex != ex or clipped_ey != ey:
+            clipped_segment_count += 1
+        ex = clipped_ex
+        ey = clipped_ey
 
         field_write_slice = time_grid.field_write_slice(start, end)
         full_field[field_write_slice, 0] = ex
@@ -418,8 +428,8 @@ def run_local_optimization(
 
     fidelity = _fidelity(psi_traj_full[-1], target_idx)
 
-    # Display-only running cost J_a ~ integral S|E|^2 dt with lambda=1/gain.
-    field_penalty = 1.0 / max(gain, 1e-30)
+    # Diagnostic proxy only: this is not claimed as the optimizer objective.
+    field_penalty = 1.0 / gain
     S_run = (
         np.sin(np.pi * tlist / tlist[-1]) ** 2
         if use_sin2_shape
@@ -427,13 +437,28 @@ def run_local_optimization(
     )
     E2 = full_field[:, 0] ** 2 + full_field[:, 1] ** 2
     dt_field = float(tlist[1] - tlist[0])
-    running_cost = float(field_penalty) * float(np.sum(S_run * E2) * dt_field)
+    field_fluence_proxy = float(field_penalty) * float(np.sum(S_run * E2) * dt_field)
+    field_amplitudes = np.sqrt(E2)
+    reference_field_scale_v_per_m = {
+        control_axes[0]: float(gain * np.max(np.abs(mu_eff_x))),
+        control_axes[1]: float(gain * np.max(np.abs(mu_eff_y))),
+    }
 
     return RunResult(
         efield=ef_total,
         time=time_full,
         psi_traj=psi_traj_full,
-        metrics={"fidelity": fidelity, "running_cost": running_cost},
+        metrics={
+            "fidelity": fidelity,
+            "gain_v_per_m_squared_fs": float(gain),
+            "field_fluence_proxy": field_fluence_proxy,
+            "field_amplitude_max_v_per_m": float(np.max(field_amplitudes)),
+            "field_amplitude_rms_v_per_m": float(np.sqrt(np.mean(E2))),
+            "clipped_segment_fraction": float(
+                clipped_segment_count / len(segments_arr)
+            ),
+            "reference_field_scale_v_per_m": reference_field_scale_v_per_m,
+        },
         tlist=tlist,
         field_data=full_field,
         target_idx=target_idx if target_idx is not None else -1,

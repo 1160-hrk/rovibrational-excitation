@@ -12,6 +12,7 @@ from .scalar_quantities import (
     DipoleMoment,
     ElectricFieldAmplitude,
     GroupDelayDispersion,
+    LocalControlGain,
     ThirdOrderDispersion,
 )
 from .time_quantity import TimeQuantity
@@ -25,6 +26,7 @@ __all__ = [
     "TimeQuantity",
     "DipoleMoment",
     "ElectricFieldAmplitude",
+    "LocalControlGain",
     "GroupDelayDispersion",
     "ThirdOrderDispersion",
     "UnitValidator",

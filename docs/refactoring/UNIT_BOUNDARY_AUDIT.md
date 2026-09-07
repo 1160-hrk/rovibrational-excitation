@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-01
-Current checkpoint: P4.3-i D-051 local field limit and seed units
+Current checkpoint: P4.3-p D-058 Local control gain units
 
 ## Purpose
 
@@ -142,16 +142,23 @@ unchanged.
 
 ### Local optimizer
 
-Completed by D-051. `field_max_v_per_m` and `seed_amplitude_v_per_m` now state
+Completed by D-051 and D-058. `field_max_v_per_m` and
+`seed_amplitude_v_per_m` state
 their fixed V/m representation. The unit-ambiguous former names raise with the
 replacement. Exact characterization preserves the `1e12` and `1e3` defaults,
 seed-before-componentwise-clipping order, stored field, segment input, full RK4
 input, odd prefix, tail endpoints, shared boundaries, slices, and indices.
 
-The following are Class D and must not be renamed, converted, or assigned a
+Local `gain` is no longer Class D. The user defined it as a strictly positive
+field-squared-time quantity. It requires an adjacent `gain_units` label,
+accepts only the four explicit V/m, MV/m, GV/m, and TV/m squared forms with
+femtoseconds, and converts to canonical `(V/m)^2 fs` before the existing
+update expression. The active `1000 (GV/m)^2 fs` value is exactly the former
+`1e21` canonical value.
+
+The following remain Class D and must not be renamed, converted, or assigned a
 unit by inference:
 
-- `gain`;
 - `c_abs_min`;
 - `drive_abs_min`;
 - `shape_floor`.
@@ -159,7 +166,8 @@ unit by inference:
 The user must define whether these are dimensionless, field-scaled, coupling
 scaled, or expressed in another optimizer-specific normalization.
 
-D-057 requires only that these values have a finite real representation. It
+D-057 requires only that the remaining values have a finite real
+representation. It
 does not infer their units, permitted sign, physical range, or scaling.
 
 ### GRAPE and Krotov penalties

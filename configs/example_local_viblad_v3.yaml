@@ -21,7 +21,8 @@ algorithm:
 algorithms:
   local:
     control_axes: "zx"
-    gain: 1.0e+21
+    gain: 1000.0
+    gain_units: "(GV/m)^2 fs"
     field_max_v_per_m: 1.0e+12
     use_sin2_shape: false
     segment_size_steps: null

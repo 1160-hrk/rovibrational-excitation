@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1146 passed, 10 skipped (1156 collected) |
+| Pytest | 1168 passed, 10 skipped (1178 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,13 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-03. P4.3-o implements D-057:
+These rows were last verified locally on 2026-09-07. P4.3-p implements D-058:
+Local control gain now requires a finite positive value/unit pair and converts
+to canonical `(V/m)^2 fs` before the unchanged update equations. The active
+example preserves `1e21` canonically as `1000 (GV/m)^2 fs`. Result
+diagnostics distinguish the field-fluence proxy from the objective and expose
+field scale and clipping without changing the frozen Local grid or control
+logic. P4.3-o implements D-057:
 optimizer option values now reject implicit type conversion, mode fallback,
 duplicate axes, invalid spectral constraints, and suppressed Local failures.
 Nonnegative spectral alpha uses exact `1+alpha` division, while valid Local

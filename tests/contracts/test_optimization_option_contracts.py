@@ -16,11 +16,60 @@ from rovibrational_excitation.optimization.spectral_constraints import (
 )
 
 
+def _local_options(**overrides: Any) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "control_axes": "xy",
+        "gain": 1.0,
+        "gain_units": "(GV/m)^2 fs",
+    }
+    result.update(overrides)
+    return result
+
+
 @pytest.mark.parametrize("algorithm", ["local", "krotov", "grape"])
 @pytest.mark.parametrize("axes", ["xx", "yy", "zz"])
 def test_control_axes_must_be_distinct(algorithm: str, axes: str) -> None:
+    params = (
+        _local_options(control_axes=axes)
+        if algorithm == "local"
+        else {"control_axes": axes}
+    )
     with pytest.raises(ValueError, match="distinct"):
-        validate_algorithm_options(algorithm, {"control_axes": axes})
+        validate_algorithm_options(algorithm, params)
+
+
+@pytest.mark.parametrize(
+    ("params", "missing"),
+    [
+        ({"gain_units": "(GV/m)^2 fs"}, "gain"),
+        ({"gain": 1.0}, "gain_units"),
+    ],
+)
+def test_local_gain_value_and_unit_are_both_required(params, missing):
+    with pytest.raises(ValueError, match=rf"missing required.*{missing}"):
+        validate_algorithm_options("local", {"control_axes": "xy", **params})
+
+
+@pytest.mark.parametrize(
+    ("gain", "units", "match"),
+    [
+        (0.0, "(GV/m)^2 fs", "positive"),
+        (-1.0, "(GV/m)^2 fs", "positive"),
+        (True, "(GV/m)^2 fs", "finite scalar"),
+        ("1.0", "(GV/m)^2 fs", "finite scalar"),
+        (np.nan, "(GV/m)^2 fs", "finite"),
+        (np.inf, "(GV/m)^2 fs", "finite"),
+        (1.0e300, "(TV/m)^2 fs", "converted local control gain must be finite"),
+        (1.0, "GV/m", "invalid local control gain unit"),
+        (1.0, None, "unit must be a string"),
+    ],
+)
+def test_local_gain_value_and_unit_are_strict(gain, units, match):
+    with pytest.raises(ValueError, match=match):
+        validate_algorithm_options(
+            "local",
+            {"control_axes": "xy", "gain": gain, "gain_units": units},
+        )
 
 
 @pytest.mark.parametrize("value", [True, 1.5, "2"])
@@ -56,11 +105,13 @@ def test_target_fidelity_is_a_finite_probability(value: Any) -> None:
 
 @pytest.mark.parametrize("algorithm", ["local", "krotov", "grape"])
 def test_propagator_override_must_be_callable_or_none(algorithm: str) -> None:
+    params = (
+        _local_options(propagator_func="rk4")
+        if algorithm == "local"
+        else {"control_axes": "xy", "propagator_func": "rk4"}
+    )
     with pytest.raises(ValueError, match="propagator_func.*callable"):
-        validate_algorithm_options(
-            algorithm,
-            {"control_axes": "xy", "propagator_func": "rk4"},
-        )
+        validate_algorithm_options(algorithm, params)
 
 
 @pytest.mark.parametrize(
@@ -77,14 +128,13 @@ def test_local_boolean_options_require_actual_booleans(key: str, value: Any) -> 
     with pytest.raises(ValueError, match=rf"{key}.*bool"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", key: value},
+            _local_options(**{key: value}),
         )
 
 
 @pytest.mark.parametrize(
     "key",
     [
-        "gain",
         "field_max_v_per_m",
         "segment_size_fs",
         "seed_amplitude_v_per_m",
@@ -101,23 +151,22 @@ def test_local_real_options_require_finite_numbers(key: str, value: Any) -> None
     with pytest.raises(ValueError, match=rf"{key}.*finite real number"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", key: value},
+            _local_options(**{key: value}),
         )
 
 
 def test_only_local_segment_size_may_use_none_as_an_alternative_source() -> None:
     validate_algorithm_options(
         "local",
-        {
-            "control_axes": "xy",
-            "segment_size_steps": 4,
-            "segment_size_fs": None,
-        },
+        _local_options(
+            segment_size_steps=4,
+            segment_size_fs=None,
+        ),
     )
-    with pytest.raises(ValueError, match="gain.*finite real number"):
+    with pytest.raises(ValueError, match="finite scalar"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", "gain": None},
+            _local_options(gain=None),
         )
 
 
@@ -126,7 +175,7 @@ def test_local_evaluation_mode_is_an_exact_enum(value: str) -> None:
     with pytest.raises(ValueError, match="eval_mode.*target, weights"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", "eval_mode": value},
+            _local_options(eval_mode=value),
         )
 
 
@@ -135,7 +184,7 @@ def test_local_weight_mode_has_no_fallback_or_reverse_suffix(value: str) -> None
     with pytest.raises(ValueError, match="weight_mode.*by_v, by_v_power, custom"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", "weight_mode": value},
+            _local_options(weight_mode=value),
         )
 
 
@@ -145,7 +194,7 @@ def test_local_integer_options_do_not_truncate_or_parse(key: str, value: Any) ->
     with pytest.raises(ValueError, match=rf"{key}.*integer"):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", key: value},
+            _local_options(**{key: value}),
         )
 
 

@@ -264,6 +264,12 @@ fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the
 same `TimeGrid`. `krotov.py` consumes only the canonical writable field copy;
 its update loop does not parse units or choose a source.
 
+D-058 gives Local control gain a frozen scalar boundary. Public callers provide
+a required value/unit pair, `core.units` converts it to `(V/m)^2 fs`, and
+the Local workflow passes only the positive canonical scalar into its unchanged
+update expressions. The legacy grid adapter and numerical loop never inspect a
+unit string.
+
 ### 5.2 CouplingSpec
 
 ~~~python

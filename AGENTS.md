@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-03
+Last verified: 2026-09-07
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-o D-057 strict optimization option values
+Verified structural checkpoint: P4.3-p D-058 Local control gain units
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -73,6 +73,8 @@ The authoritative details and formulas are in
 - Local-optimizer direct field inputs are `field_max_v_per_m` and
   `seed_amplitude_v_per_m`. Their defaults, componentwise clipping order,
   legacy odd grid, shared endpoints, slices, indices, and RK4 prefix are fixed.
+- Local control `gain` requires an explicit unit, converts to positive
+  canonical `(V/m)^2 fs`, and enters the unchanged update expression.
 - Typed trajectories always include the exact endpoint; if stride does not
   divide the step count, only the final output interval is shorter.
 - Typed propagation requires an explicit initial state, algorithm, backend,
@@ -158,14 +160,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-o:
+Current local CPU baseline after P4.3-p:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1146 passed, 10 GPU tests skipped (1156 collected)
+1168 passed, 10 GPU tests skipped (1178 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -236,8 +238,8 @@ P3.2-b moved model selection and required-input validation to
 workflow validation and translates model errors at its boundary.
 The next work is:
 
-1. Continue typed quantity and strict unit-validation boundaries. Do not touch
-   the Class-D `gain`,
+1. Continue typed quantity and strict unit-validation boundaries. Local
+   `gain` is resolved by D-058. Do not touch the remaining Class-D
    `c_abs_min`, `drive_abs_min`, `shape_floor`, `learning_rate`, `lambda_a`, or
    convergence tolerances without the user's definition and independent
    references.

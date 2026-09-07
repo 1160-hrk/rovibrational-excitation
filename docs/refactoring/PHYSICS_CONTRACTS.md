@@ -834,15 +834,33 @@ D-027: it retains its versioned `np.arange` storage, segment endpoints, and
 `sample_stride`, with the existing numerical value 0.1 fs renamed only to
 `field_dt_fs`.
 
+The local optimizer requires `gain` together with `gain_units`. The supported
+unit labels are `(V/m)^2 fs`, `(MV/m)^2 fs`, `(GV/m)^2 fs`, and
+`(TV/m)^2 fs`; the one canonical internal representation is `(V/m)^2 fs`.
+The gain must be finite and strictly positive. For example, the historical
+`1e21` canonical value is entered as `1000 (GV/m)^2 fs`. Conversion occurs
+before the unchanged update expressions `E_a = gain * S * response_a`.
+Because the projected dipole has units `rad/fs/(V/m)`, the gain has
+field-squared-time units, with radians treated as dimensionless.
+
 The local optimizer's direct component limit is `field_max_v_per_m`, and its
 zero-drive seed is `seed_amplitude_v_per_m`. Both are explicitly V/m. The
 historical defaults remain exactly `1e12 V/m` and `1e3 V/m`; a generated seed
 is still evaluated before the existing componentwise clipping. The former
 unit-ambiguous keys are errors. This rename does not change the odd storage
 grid, shared endpoint ownership, segment midpoint or slices, lookahead index,
-field values, or RK4-consumed prefix. `gain`, `c_abs_min`, `drive_abs_min`, and
+field values, or RK4-consumed prefix. `c_abs_min`, `drive_abs_min`, and
 `shape_floor` retain unresolved Class-D dimensions and must not be assigned
 units without a separate user decision.
+
+Local reports `field_fluence_proxy = (1/gain) * sum_i
+S(t_i) * (E_1(t_i)^2 + E_2(t_i)^2) * field_dt`. This is a diagnostic proxy,
+not a claim that the expression is the exact optimization objective. It also
+reports the maximum and RMS of the stored vector amplitude
+`sqrt(E_1^2 + E_2^2)`, the fraction of control segments in which either
+component changed under the existing componentwise clip, and the separate
+per-axis reference scales `gain * max(abs(mu'_a))`. These diagnostics never
+alter a field value, segment, index, endpoint, or propagation call.
 
 GRAPE and Krotov optimization always consume every propagated state internally.
 `output_stride` applies only after the final objective has been evaluated and

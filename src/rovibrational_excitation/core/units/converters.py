@@ -90,6 +90,14 @@ class UnitConverter:
             "atomic": 5.14220674763e11,  # E_h/(e*a_0)
         }
 
+        # Local-control gain conversions (target: (V/m)^2 fs)
+        self._local_control_gain_to_Vm2_fs = {
+            "(V/m)^2 fs": 1.0,
+            "(MV/m)^2 fs": 1e12,
+            "(GV/m)^2 fs": 1e18,
+            "(TV/m)^2 fs": 1e24,
+        }
+
         # Time conversions (target: fs)
         self._time_to_fs = {
             "fs": 1.0,
@@ -265,6 +273,20 @@ class UnitConverter:
         else:
             raise ValueError(f"Unknown target time unit: {to_unit}")
 
+    def convert_local_control_gain(
+        self,
+        value: Union[float, np.ndarray],
+        from_unit: str,
+        to_unit: str = "(V/m)^2 fs",
+    ) -> Union[float, np.ndarray]:
+        """Convert local-control gain between explicit field-squared-time units."""
+        if from_unit not in self._local_control_gain_to_Vm2_fs:
+            raise ValueError(f"Unknown local control gain unit: {from_unit}")
+        if to_unit not in self._local_control_gain_to_Vm2_fs:
+            raise ValueError(f"Unknown target local control gain unit: {to_unit}")
+        value_Vm2_fs = value * self._local_control_gain_to_Vm2_fs[from_unit]
+        return value_Vm2_fs / self._local_control_gain_to_Vm2_fs[to_unit]
+
     def frequency_to_energy(
         self,
         freq: Union[float, np.ndarray],
@@ -312,6 +334,7 @@ class UnitConverter:
             "time": list(self._time_to_fs.keys()),
             "gdd": list(self._gdd_to_fs2.keys()),
             "tod": list(self._tod_to_fs3.keys()),
+            "local_control_gain": list(self._local_control_gain_to_Vm2_fs.keys()),
         }
 
         if quantity not in mapping:

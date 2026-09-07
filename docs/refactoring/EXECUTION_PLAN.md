@@ -1050,10 +1050,22 @@ fidelity, and current YAML smoke runs remain unchanged. The complete suite
 passes 1146 tests with 10 optional-GPU skips; strict mypy covers 35 named
 modules.
 
+P4.3-p implements D-058 on 2026-09-07. Local `gain` and `gain_units` are
+required, accept four exact field-squared-femtosecond labels, and convert to
+canonical `(V/m)^2 fs` before the unchanged target/weights update equations.
+The active example uses `1000 (GV/m)^2 fs`, exactly preserving its former
+`1e21` canonical multiplier. Positive validation removes the unreachable
+reciprocal repair. The former `running_cost` output becomes the explicitly
+diagnostic `field_fluence_proxy`; canonical gain, vector field maximum/RMS,
+segment clipping fraction, and separate per-axis gain-dipole reference scales
+are reported without changing any control value, segment, index, endpoint, or
+RK4 call. `c_abs_min`, `drive_abs_min`, and `shape_floor` remain Class D.
+The complete CPU suite passes 1168 tests with 10 optional-GPU skips.
+
 Remaining Phase 4 work:
 
-- defer Class-D optimizer penalties and tolerances until independent references
-  and user-defined dimensions exist;
+- defer the remaining Class-D optimizer thresholds, penalties, and tolerances
+  until independent references and user-defined dimensions exist;
 - define an error-controlled adaptive integrator separately, if wanted.
 Tasks:
 

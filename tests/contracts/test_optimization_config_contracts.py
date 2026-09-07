@@ -94,6 +94,28 @@ def test_control_axes_are_required_for_every_algorithm(algorithm: str) -> None:
         validate_optimization_config(config, algorithm_override=None)
 
 
+@pytest.mark.parametrize("missing", ["gain", "gain_units"])
+def test_local_gain_value_and_unit_are_required_by_document_schema(
+    missing: str,
+) -> None:
+    config = _load("example_local_viblad_v3.yaml")
+    del config["algorithms"]["local"][missing]
+
+    with pytest.raises(
+        OptimizationConfigurationError,
+        match=rf"missing required.*{missing}",
+    ):
+        validate_optimization_config(config, algorithm_override=None)
+
+
+def test_local_example_preserves_the_historical_canonical_gain() -> None:
+    config = _load("example_local_viblad_v3.yaml")
+    params = config["algorithms"]["local"]
+
+    assert params["gain"] == 1000.0
+    assert params["gain_units"] == "(GV/m)^2 fs"
+
+
 @pytest.mark.parametrize("axes", ["x", "xyz", "Xy", "x1"])
 def test_control_axes_require_exactly_two_lowercase_cartesian_axes(axes: str) -> None:
     config = _load()
