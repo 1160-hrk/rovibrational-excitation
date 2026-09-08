@@ -12,6 +12,7 @@ import numpy as np
 from rovibrational_excitation.core.units import LocalControlGain, converter
 
 from .krotov_initial_field import KROTOV_INITIAL_FIELD_OPTION_KEYS
+from .local_initialization import parse_local_initialization
 
 OptimizationAlgorithm = Literal["local", "krotov", "grape"]
 
@@ -39,8 +40,7 @@ LOCAL_OPTION_KEYS = frozenset(
         "use_sin2_shape",
         "segment_size_steps",
         "segment_size_fs",
-        "seed_amplitude_v_per_m",
-        "seed_max_segments",
+        "initialization",
         "c_abs_min",
         "shape_floor",
         "lookahead_enable",
@@ -65,8 +65,14 @@ _OPTION_KEYS = {
     "local": LOCAL_OPTION_KEYS,
 }
 _REMOVED_LOCAL_KEYS = {
-    "field_max": "field_max_v_per_m",
-    "seed_amplitude": "seed_amplitude_v_per_m",
+    "field_max": "provide field_max_v_per_m in V/m",
+    "seed_amplitude": (
+        "provide initialization.amplitude and initialization.amplitude_units"
+    ),
+    "seed_amplitude_v_per_m": (
+        "provide initialization.amplitude and initialization.amplitude_units"
+    ),
+    "seed_max_segments": "provide initialization.max_segments",
 }
 _SPECTRUM_REQUIRED = {
     "method",
@@ -88,7 +94,6 @@ _LOCAL_BOOL_KEYS = {
 _LOCAL_REAL_KEYS = {
     "field_max_v_per_m",
     "segment_size_fs",
-    "seed_amplitude_v_per_m",
     "c_abs_min",
     "shape_floor",
     "lookahead_fraction",
@@ -274,15 +279,16 @@ def _validate_spectrum_constraints(value: Any) -> None:
 
 
 def _validate_local_options(params: Mapping[str, Any]) -> None:
-    missing_gain = {"gain", "gain_units"} - set(params)
-    if missing_gain:
+    missing = {"gain", "gain_units", "initialization"} - set(params)
+    if missing:
         raise ValueError(
-            "missing required local optimization options: " + _names(missing_gain)
+            "missing required local optimization options: " + _names(missing)
         )
     try:
         LocalControlGain(params["gain"], params["gain_units"])
     except (TypeError, ValueError) as exc:
         raise ValueError(str(exc)) from exc
+    parse_local_initialization(params["initialization"])
 
     for key in _LOCAL_BOOL_KEYS & params.keys():
         if not isinstance(params[key], bool):
@@ -295,8 +301,6 @@ def _validate_local_options(params: Mapping[str, Any]) -> None:
 
     if "segment_size_steps" in params and params["segment_size_steps"] is not None:
         _integer(params["segment_size_steps"], label="segment_size_steps", minimum=1)
-    if "seed_max_segments" in params:
-        _integer(params["seed_max_segments"], label="seed_max_segments", minimum=0)
     if "propagator_func" in params:
         value = params["propagator_func"]
         if value is not None and not callable(value):
@@ -365,9 +369,7 @@ def validate_algorithm_options(
         removed = set(params) & set(_REMOVED_LOCAL_KEYS)
         if removed:
             key = sorted(removed)[0]
-            raise ValueError(
-                f"{key} was removed; provide {_REMOVED_LOCAL_KEYS[key]} in V/m"
-            )
+            raise ValueError(f"{key} was removed; {_REMOVED_LOCAL_KEYS[key]}")
     unknown = set(params) - set(_OPTION_KEYS[algorithm])
     if unknown:
         raise ValueError(

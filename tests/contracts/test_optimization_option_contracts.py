@@ -21,6 +21,12 @@ def _local_options(**overrides: Any) -> dict[str, Any]:
         "control_axes": "xy",
         "gain": 1.0,
         "gain_units": "(GV/m)^2 fs",
+        "initialization": {
+            "method": "seed_field",
+            "amplitude": 1000.0,
+            "amplitude_units": "V/m",
+            "max_segments": 5,
+        },
     }
     result.update(overrides)
     return result
@@ -47,7 +53,14 @@ def test_control_axes_must_be_distinct(algorithm: str, axes: str) -> None:
 )
 def test_local_gain_value_and_unit_are_both_required(params, missing):
     with pytest.raises(ValueError, match=rf"missing required.*{missing}"):
-        validate_algorithm_options("local", {"control_axes": "xy", **params})
+        validate_algorithm_options(
+            "local",
+            {
+                "control_axes": "xy",
+                "initialization": {"method": "none"},
+                **params,
+            },
+        )
 
 
 @pytest.mark.parametrize(
@@ -68,7 +81,24 @@ def test_local_gain_value_and_unit_are_strict(gain, units, match):
     with pytest.raises(ValueError, match=match):
         validate_algorithm_options(
             "local",
-            {"control_axes": "xy", "gain": gain, "gain_units": units},
+            {
+                "control_axes": "xy",
+                "gain": gain,
+                "gain_units": units,
+                "initialization": {"method": "none"},
+            },
+        )
+
+
+def test_local_initialization_is_required() -> None:
+    with pytest.raises(ValueError, match="missing required.*initialization"):
+        validate_algorithm_options(
+            "local",
+            {
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+            },
         )
 
 
@@ -137,7 +167,6 @@ def test_local_boolean_options_require_actual_booleans(key: str, value: Any) -> 
     [
         "field_max_v_per_m",
         "segment_size_fs",
-        "seed_amplitude_v_per_m",
         "c_abs_min",
         "shape_floor",
         "lookahead_fraction",
@@ -188,7 +217,7 @@ def test_local_weight_mode_has_no_fallback_or_reverse_suffix(value: str) -> None
         )
 
 
-@pytest.mark.parametrize("key", ["segment_size_steps", "seed_max_segments"])
+@pytest.mark.parametrize("key", ["segment_size_steps"])
 @pytest.mark.parametrize("value", [True, 1.5, "2"])
 def test_local_integer_options_do_not_truncate_or_parse(key: str, value: Any) -> None:
     with pytest.raises(ValueError, match=rf"{key}.*integer"):

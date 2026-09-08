@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-08-27
+Last updated: 2026-09-08
 
 ## How to use this log
 
@@ -2316,6 +2316,49 @@ and `gain * max(abs(mu'_a))` separately for each ordered control axis.
 
 `c_abs_min`, `drive_abs_min`, and `shape_floor` remain unresolved Class-D
 quantities. This decision assigns them no dimension, range, or normalization.
+
+Implementation commit: this checkpoint.
+
+
+### D-059: Local control initialization is explicit and zero-drive preflight is strict
+
+Status: Accepted and implemented on 2026-09-08 as P4.3-q.
+
+Scope: Local-control starter field, no-seed execution, configuration schema,
+and initialization diagnostics.
+
+Local control now requires an `initialization` mapping. The supported methods
+are exactly `seed_field` and `none`; no method is inferred. `seed_field`
+requires `amplitude`, `amplitude_units`, and a positive integer
+`max_segments`. The amplitude is a finite positive magnitude in a direct
+electric-field unit, converts once to V/m, and enters the pre-existing seed
+replacement. Intensity units are invalid because they do not define a signed
+field. The active configuration preserves the historical `1000 V/m` and five
+segments exactly.
+
+The seed trigger, field signs, shape floor, write slice, shared endpoints,
+componentwise clipping order, segment propagation, and final odd RK4 prefix are
+unchanged. In `weights` mode, the existing trigger remains both response
+magnitudes below `drive_abs_min`. In `target` mode, it remains target-overlap
+magnitude below `c_abs_min`.
+
+`none` accepts no seed options and never injects a field. Before the first
+segment propagation it evaluates the same mode-specific trigger. If that
+trigger is active, execution raises with the measured response or overlap and
+the configured threshold. It does not wait for floating-point noise, continue
+with a known zero-control fixed point, or silently switch to `seed_field`.
+`none` remains available for an initial condition already outside the trigger;
+this is not a convergence guarantee.
+
+The former top-level `seed_amplitude`, `seed_amplitude_v_per_m`, and
+`seed_max_segments` options raise with migration guidance. Result diagnostics
+record `initialization_method` and `seed_segments_used`. Reusing the existing
+trigger predicates assigns no unit, sign, scale, or normalization meaning to
+the still-Class-D `c_abs_min`, `drive_abs_min`, or `shape_floor`.
+
+This decision supersedes only D-051's seed-input names and seed default. D-027's
+complete Local time/index contract and D-051's componentwise clipping order
+remain binding.
 
 Implementation commit: this checkpoint.
 

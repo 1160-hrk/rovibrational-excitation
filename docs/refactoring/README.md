@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1168 passed, 10 skipped (1178 collected) |
+| Pytest | 1182 passed, 10 skipped (1192 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +55,14 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-07. P4.3-p implements D-058:
+These rows were last verified locally on 2026-09-08. P4.3-q implements
+D-059: Local control now requires an explicit `seed_field` or `none`
+initialization. The seed branch requires a positive direct-amplitude value/unit
+pair and segment count while preserving the active 1000 V/m, five-segment
+field, trigger, clipping, grid, endpoint, and RK4 behavior. The no-seed branch
+injects nothing and raises before propagation when the existing mode-specific
+initial trigger identifies a zero-control fixed point; it never falls back.
+Strict mypy now covers 36 named modules. P4.3-p implements D-058:
 Local control gain now requires a finite positive value/unit pair and converts
 to canonical `(V/m)^2 fs` before the unchanged update equations. The active
 example preserves `1e21` canonically as `1000 (GV/m)^2 fs`. Result

@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-08-27
+Last verified against source and tests: 2026-09-08
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -843,15 +843,33 @@ before the unchanged update expressions `E_a = gain * S * response_a`.
 Because the projected dipole has units `rad/fs/(V/m)`, the gain has
 field-squared-time units, with radians treated as dimensionless.
 
-The local optimizer's direct component limit is `field_max_v_per_m`, and its
-zero-drive seed is `seed_amplitude_v_per_m`. Both are explicitly V/m. The
-historical defaults remain exactly `1e12 V/m` and `1e3 V/m`; a generated seed
-is still evaluated before the existing componentwise clipping. The former
-unit-ambiguous keys are errors. This rename does not change the odd storage
-grid, shared endpoint ownership, segment midpoint or slices, lookahead index,
-field values, or RK4-consumed prefix. `c_abs_min`, `drive_abs_min`, and
-`shape_floor` retain unresolved Class-D dimensions and must not be assigned
-units without a separate user decision.
+The local optimizer's direct component limit is `field_max_v_per_m`; its
+historical default remains exactly `1e12 V/m`. Initialization is a required,
+explicit policy. `initialization.method="seed_field"` requires `amplitude`,
+`amplitude_units`, and a positive integer `max_segments`. Amplitude must be
+finite and positive, accepts only direct electric-field amplitude units, and is
+converted once to V/m. The active example retains exactly `1000 V/m` and five
+segments. The former top-level `seed_amplitude`, `seed_amplitude_v_per_m`, and
+`seed_max_segments` keys are errors with migration guidance.
+
+The seed field is evaluated by the unchanged mode-specific trigger before the
+existing componentwise clipping. In `weights` mode the trigger remains both
+local response magnitudes below `drive_abs_min`; in `target` mode it remains
+target-overlap magnitude below `c_abs_min`. The odd storage grid, shared
+endpoint ownership, segment midpoint and slices, lookahead index, seed signs,
+field values, and RK4-consumed prefix are unchanged for the migrated
+`seed_field` configuration.
+
+`initialization.method="none"` accepts no seed parameters and never inserts a
+field. Before the first segment propagation, it raises if the same existing
+mode-specific trigger is active, reporting the measured response or overlap
+and the configured threshold. It is allowed only when the initial condition is
+already outside that zero-control condition. It never silently changes to
+`seed_field`, and it is not a convergence guarantee.
+
+`c_abs_min`, `drive_abs_min`, and `shape_floor` retain unresolved Class-D
+dimensions. Reusing their existing predicates for explicit initialization
+preflight assigns no new unit, range, or physical normalization to them.
 
 Local reports `field_fluence_proxy = (1/gain) * sum_i
 S(t_i) * (E_1(t_i)^2 + E_2(t_i)^2) * field_dt`. This is a diagnostic proxy,
@@ -859,8 +877,10 @@ not a claim that the expression is the exact optimization objective. It also
 reports the maximum and RMS of the stored vector amplitude
 `sqrt(E_1^2 + E_2^2)`, the fraction of control segments in which either
 component changed under the existing componentwise clip, and the separate
-per-axis reference scales `gain * max(abs(mu'_a))`. These diagnostics never
-alter a field value, segment, index, endpoint, or propagation call.
+per-axis reference scales `gain * max(abs(mu'_a))`. It also reports the
+selected initialization method and the number of segments that actually used
+the seed. These diagnostics never alter a field value, segment, index,
+endpoint, or propagation call.
 
 GRAPE and Krotov optimization always consume every propagated state internally.
 `output_stride` applies only after the final objective has been evaluated and

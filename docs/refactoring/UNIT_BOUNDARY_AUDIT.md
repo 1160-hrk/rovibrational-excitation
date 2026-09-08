@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-01
-Current checkpoint: P4.3-p D-058 Local control gain units
+Last verified: 2026-09-08
+Current checkpoint: P4.3-q D-059 explicit Local initialization
 
 ## Purpose
 
@@ -142,12 +142,19 @@ unchanged.
 
 ### Local optimizer
 
-Completed by D-051 and D-058. `field_max_v_per_m` and
-`seed_amplitude_v_per_m` state
-their fixed V/m representation. The unit-ambiguous former names raise with the
-replacement. Exact characterization preserves the `1e12` and `1e3` defaults,
-seed-before-componentwise-clipping order, stored field, segment input, full RK4
-input, odd prefix, tail endpoints, shared boundaries, slices, and indices.
+Completed by D-051, D-058, and D-059. `field_max_v_per_m` remains a
+private Class-B component limit with its fixed V/m representation and
+historical `1e12` default. Local initialization is now an explicit required sum
+type. `seed_field` is Class A: its required `amplitude/amplitude_units` pair
+accepts only direct electric-field units and converts once to V/m, while its
+positive `max_segments` count is dimensionless. The active `1000 V/m`, five-
+segment values are unchanged. `none` owns no field quantity and fails before
+propagation when the existing initial trigger is active. The former top-level
+seed names raise with migration guidance.
+
+Exact characterization preserves seed-before-componentwise-clipping order,
+stored field, segment input, full RK4 input, odd prefix, tail endpoints, shared
+boundaries, slices, and indices.
 
 Local `gain` is no longer Class D. The user defined it as a strictly positive
 field-squared-time quantity. It requires an adjacent `gain_units` label,

@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-08-27
+Last updated: 2026-09-08
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1061,6 +1061,17 @@ segment clipping fraction, and separate per-axis gain-dipole reference scales
 are reported without changing any control value, segment, index, endpoint, or
 RK4 call. `c_abs_min`, `drive_abs_min`, and `shape_floor` remain Class D.
 The complete CPU suite passes 1168 tests with 10 optional-GPU skips.
+
+P4.3-q implements D-059 on 2026-09-08. Local initialization is now an explicit
+required `seed_field` or `none` branch. `seed_field` requires a positive direct
+electric-field amplitude value/unit pair and positive maximum segment count;
+the active `1000 V/m`, five-segment configuration preserves the existing seed
+trigger, signs, clip order, field arrays, shared endpoints, and odd RK4 prefix.
+`none` injects no field and uses the existing mode-specific predicate as a
+first-segment preflight: a weights response below `drive_abs_min` or target
+overlap below `c_abs_min` raises before propagation with measured diagnostics.
+It never falls back to a seed. Initialization method and actual seeded segment
+count are reported. No new meaning is assigned to the three Class-D thresholds.
 
 Remaining Phase 4 work:
 

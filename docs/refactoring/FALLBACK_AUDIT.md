@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Date: 2026-08-28
+Date: 2026-09-08
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -37,6 +37,7 @@ recorded.
 | Optimization documents | Unknown options and arbitrary runner kwargs could be ignored; invalid axes fell back to `xy`; YAML output/plot policy was not authoritative; plotting exceptions were printed | D-056 closes every document/algorithm key set, requires axes, restricts GRAPE to `xy`, removes runner kwargs, defines explicit output/plot precedence, and raises top-level requested plotting failures | `test_optimization_config_contracts.py`; optimization time/reference contracts |
 | Optimization option values | Numeric/string values were coerced, duplicate axes were accepted, Local mode typos selected another branch, lookahead/weight/cost errors were suppressed, and spectral updates applied a repair floor | D-057 requires exact types/enums/distinct axes, surfaces requested Local failures, validates finite nonnegative spectral alpha, and divides directly by `1+alpha` | `test_optimization_option_contracts.py`; Local propagation contracts |
 | Local control gain | Missing gain used `1.0`; the unit was implicit; the diagnostic reciprocal used `max(gain, 1e-30)` | D-058 requires a finite positive value/unit pair, converts to `(V/m)^2 fs`, and uses the direct reciprocal only after validation | unit conversion, optimization option, configuration, and Local propagation contracts |
+| Local control initialization | Missing seed settings silently used `1000 V/m` for five trigger segments; disabling the seed could leave a known zero-control fixed point | D-059 requires explicit `seed_field` or `none`; the former has a required direct-amplitude pair/count, while the latter raises at an active initial trigger and never falls back | initialization parser, configuration, fixed-point preflight, and frozen Local propagation contracts |
 
 ## P1: fix before API stabilization
 

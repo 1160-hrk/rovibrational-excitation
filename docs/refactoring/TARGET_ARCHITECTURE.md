@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-09-01
+Last updated: 2026-09-08
 
 ## 1. Design goals
 
@@ -269,6 +269,13 @@ a required value/unit pair, `core.units` converts it to `(V/m)^2 fs`, and
 the Local workflow passes only the positive canonical scalar into its unchanged
 update expressions. The legacy grid adapter and numerical loop never inspect a
 unit string.
+
+D-059 gives Local control a required initialization sum type. The
+`seed_field` branch owns a required positive direct-amplitude value/unit pair
+and positive segment count, then supplies canonical V/m to the unchanged legacy
+seed update. The `none` branch owns no field data and runs a mode-specific
+initial-response preflight before propagation. Configuration chooses the branch
+explicitly; the numerical loop never invents or silently replaces it.
 
 ### 5.2 CouplingSpec
 

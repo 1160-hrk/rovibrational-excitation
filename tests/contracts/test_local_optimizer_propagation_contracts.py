@@ -110,6 +110,19 @@ class _StateInjectingPropagationSpy(_PropagationSpy):
         return time, trajectory
 
 
+def _seed_initialization(
+    *, amplitude: float = 1000.0, max_segments: int = 5
+) -> dict[str, dict[str, Any]]:
+    return {
+        "initialization": {
+            "method": "seed_field",
+            "amplitude": amplitude,
+            "amplitude_units": "V/m",
+            "max_segments": max_segments,
+        }
+    }
+
+
 def test_local_optimizer_converts_gain_before_unchanged_update_formula(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -126,10 +139,9 @@ def test_local_optimizer_converts_gain_before_unchanged_update_formula(
             "control_axes": "xy",
             "gain": 2.0e-17,
             "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(amplitude=1.0e-100, max_segments=1),
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
-            "seed_amplitude_v_per_m": 0.0,
-            "seed_max_segments": 1,
         },
     )
 
@@ -179,6 +191,7 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
             "control_axes": "xy",
             "gain": 1.0,
             "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
         },
@@ -226,6 +239,7 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
                 "control_axes": "xy",
                 "gain": 1.0,
                 "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(),
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
             },
@@ -255,9 +269,9 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
                 "control_axes": "xy",
                 "gain": 1.0,
                 "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(amplitude=40.0),
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
-                "seed_amplitude_v_per_m": 40.0,
                 "field_max_v_per_m": 25.0,
             },
         )
@@ -298,6 +312,7 @@ def test_local_target_mode_retains_the_explicit_target_overlap_branch(
             "control_axes": "xy",
             "gain": 1.0,
             "gain_units": "(GV/m)^2 fs",
+            "initialization": {"method": "none"},
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
             "eval_mode": "target",
@@ -305,22 +320,32 @@ def test_local_target_mode_retains_the_explicit_target_overlap_branch(
     )
 
     np.testing.assert_array_equal(result["field_data"], np.zeros((7, 2)))
+    assert result["metrics"]["initialization_method"] == "none"
+    assert result["metrics"]["seed_segments_used"] == 0
 
 
 @pytest.mark.parametrize(
-    ("removed_key", "replacement_key"),
+    ("removed_key", "migration"),
     [
-        ("field_max", "field_max_v_per_m"),
-        ("seed_amplitude", "seed_amplitude_v_per_m"),
+        ("field_max", "provide field_max_v_per_m in V/m"),
+        (
+            "seed_amplitude",
+            "provide initialization.amplitude and initialization.amplitude_units",
+        ),
+        (
+            "seed_amplitude_v_per_m",
+            "provide initialization.amplitude and initialization.amplitude_units",
+        ),
+        ("seed_max_segments", "provide initialization.max_segments"),
     ],
 )
-def test_local_optimizer_rejects_unit_ambiguous_field_keys(
+def test_local_optimizer_rejects_removed_field_and_seed_keys(
     removed_key: str,
-    replacement_key: str,
+    migration: str,
 ) -> None:
     with pytest.raises(
         ValueError,
-        match=rf"{removed_key} was removed; provide {replacement_key} in V/m",
+        match=rf"{removed_key} was removed; {migration}",
     ):
         local_module.run_local_optimization(
             basis=_OneStateBasis(),
@@ -334,6 +359,42 @@ def test_local_optimizer_rejects_unit_ambiguous_field_keys(
                 removed_key: 1.0,
             },
         )
+
+
+@pytest.mark.parametrize(
+    ("eval_mode", "message"),
+    [
+        ("weights", "initial response magnitudes.*drive_abs_min"),
+        ("target", "initial target overlap.*c_abs_min"),
+    ],
+)
+def test_none_initialization_rejects_the_initial_zero_control_fixed_point(
+    monkeypatch: pytest.MonkeyPatch,
+    eval_mode: str,
+    message: str,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    with pytest.raises(ValueError, match=message):
+        local_module.run_local_optimization(
+            basis=_TwoStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_UnitDipole(),
+            states={"initial": (0,), "target": (1,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+                "initialization": {"method": "none"},
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "eval_mode": eval_mode,
+            },
+        )
+
+    assert spy.calls == []
 
 
 def test_local_optimizer_does_not_request_eigenvalues_when_lookahead_is_off(
@@ -353,6 +414,7 @@ def test_local_optimizer_does_not_request_eigenvalues_when_lookahead_is_off(
             "control_axes": "xy",
             "gain": 1.0,
             "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
             "segment_size_steps": None,
             "segment_size_fs": 0.5,
             "lookahead_enable": False,
@@ -379,6 +441,7 @@ def test_local_optimizer_surfaces_unavailable_requested_lookahead(
                 "control_axes": "xy",
                 "gain": 1.0,
                 "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(),
                 "segment_size_steps": None,
                 "segment_size_fs": 0.5,
                 "lookahead_enable": True,

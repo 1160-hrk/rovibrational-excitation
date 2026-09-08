@@ -116,6 +116,22 @@ def test_local_example_preserves_the_historical_canonical_gain() -> None:
     assert params["gain_units"] == "(GV/m)^2 fs"
 
 
+def test_local_example_requires_explicit_seed_field_initialization() -> None:
+    config = _load("example_local_viblad_v3.yaml")
+    initialization = config["algorithms"]["local"]["initialization"]
+
+    assert initialization == {
+        "method": "seed_field",
+        "amplitude": 1000.0,
+        "amplitude_units": "V/m",
+        "max_segments": 5,
+    }
+
+    del config["algorithms"]["local"]["initialization"]
+    with pytest.raises(OptimizationConfigurationError, match="initialization"):
+        validate_optimization_config(config, algorithm_override=None)
+
+
 @pytest.mark.parametrize("axes", ["x", "xyz", "Xy", "x1"])
 def test_control_axes_require_exactly_two_lowercase_cartesian_axes(axes: str) -> None:
     config = _load()

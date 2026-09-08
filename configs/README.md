@@ -74,6 +74,27 @@ result reports `field_fluence_proxy` only as a diagnostic, together with
 canonical gain, vector field maximum/RMS, segment clipping fraction, and
 separate per-control-axis reference field scales.
 
+Local `initialization` is also required. For the standard basis-state transfer,
+use an explicit starter field:
+
+~~~yaml
+initialization:
+  method: seed_field
+  amplitude: 1000.0
+  amplitude_units: V/m
+  max_segments: 5
+~~~
+
+The amplitude is a positive magnitude in a direct electric-field unit;
+intensity units are invalid. This branch retains the existing mode-specific
+trigger and applies the seed before the componentwise field limit. To request
+no injected starter field, provide exactly `initialization: {method: none}`.
+That branch checks the initial `weights` response against `drive_abs_min`, or
+the initial `target` overlap against `c_abs_min`, and raises before propagation
+when the configured condition is a zero-control fixed point. It never silently
+falls back to a seed. Results report the selected method and seeded segment
+count.
+
 Spectral bands must be nonempty finite center/positive-width pairs with a
 supported frequency unit. Mode is `pass` or `stop`, combination is `max` or
 `sum`, and weights apply only to `sum`. The spectral alpha scale and optional

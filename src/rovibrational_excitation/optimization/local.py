@@ -12,6 +12,11 @@ from rovibrational_excitation.optimization.timegrid import (
     LocalOptimizerLegacyGridV1,
 )
 
+from .local_initialization import (
+    LocalNoInitialization,
+    LocalSeedFieldInitialization,
+    parse_local_initialization,
+)
 from .options import validate_algorithm_options, validate_local_time_options
 
 DEFAULT_PARAMS = {
@@ -19,8 +24,6 @@ DEFAULT_PARAMS = {
     "use_sin2_shape": False,
     "segment_size_steps": None,
     "segment_size_fs": 1,
-    "seed_amplitude_v_per_m": 1e3,
-    "seed_max_segments": 5,
     "c_abs_min": 1e-1,
     "shape_floor": 1e-2,
     "lookahead_enable": False,
@@ -120,18 +123,25 @@ def run_local_optimization(
 
     ``gain`` and ``gain_units`` are required and converted to ``(V/m)^2 fs``
     before entering the unchanged local-control update formula.
-    ``field_max_v_per_m`` and ``seed_amplitude_v_per_m`` are direct electric-
-    field amplitudes in V/m. Their defaults and numerical use are frozen by
-    D-027 and D-051. The former unit-ambiguous keys are rejected.
+    ``initialization`` is required. ``method="seed_field"`` preserves the
+    characterized starter-field update after converting its explicit direct
+    amplitude unit to V/m. ``method="none"`` never inserts a field and raises
+    before the first propagation if the existing mode-specific seed trigger is
+    active. The legacy grid, segment indices, and field-write order are unchanged.
     """
-    for removed_key, replacement_key in (
-        ("field_max", "field_max_v_per_m"),
-        ("seed_amplitude", "seed_amplitude_v_per_m"),
-    ):
+    removed_local_keys = {
+        "field_max": "provide field_max_v_per_m in V/m",
+        "seed_amplitude": (
+            "provide initialization.amplitude and initialization.amplitude_units"
+        ),
+        "seed_amplitude_v_per_m": (
+            "provide initialization.amplitude and initialization.amplitude_units"
+        ),
+        "seed_max_segments": "provide initialization.max_segments",
+    }
+    for removed_key, migration in removed_local_keys.items():
         if removed_key in params:
-            raise ValueError(
-                f"{removed_key} was removed; provide {replacement_key} in V/m"
-            )
+            raise ValueError(f"{removed_key} was removed; {migration}")
 
     initial_state = tuple(states["initial"])
     target_state = tuple(states["target"]) if states.get("target") is not None else None
@@ -196,12 +206,13 @@ def run_local_optimization(
     use_sin2_shape = bool(
         params.get("use_sin2_shape", DEFAULT_PARAMS["use_sin2_shape"])
     )
-    seed_amplitude_v_per_m = float(
-        params.get("seed_amplitude_v_per_m", DEFAULT_PARAMS["seed_amplitude_v_per_m"])
-    )
-    seed_max_segments = int(
-        params.get("seed_max_segments", DEFAULT_PARAMS["seed_max_segments"])
-    )
+    initialization = parse_local_initialization(params["initialization"])
+    if isinstance(initialization, LocalSeedFieldInitialization):
+        seed_amplitude_v_per_m = initialization.amplitude_v_per_m
+        seed_max_segments = initialization.max_segments
+    else:
+        seed_amplitude_v_per_m = 0.0
+        seed_max_segments = 0
     c_abs_min = float(params.get("c_abs_min", DEFAULT_PARAMS["c_abs_min"]))
     shape_floor = float(params.get("shape_floor", DEFAULT_PARAMS["shape_floor"]))
     lookahead_enable = bool(
@@ -291,7 +302,7 @@ def run_local_optimization(
     def shape_function(t: np.ndarray, T: float) -> np.ndarray:
         return np.sin(np.pi * t / T) ** 2
 
-    for start, end in segments_arr:
+    for segment_index, (start, end) in enumerate(segments_arr):
         mid = time_grid.segment_mid_index(start, end)
         S = shape_function(tlist, tlist[-1])[mid] if use_sin2_shape else 1.0
         S_eff = max(S, shape_floor) if use_sin2_shape else 1.0
@@ -319,11 +330,21 @@ def run_local_optimization(
             im_y = float(np.imag(term_y))
             ex = float(gain * S * im_x)
             ey = float(gain * S * im_y)
+            seed_triggered = abs(im_x) < drive_abs_min and abs(im_y) < drive_abs_min
             if (
-                abs(im_x) < drive_abs_min
-                and abs(im_y) < drive_abs_min
-                and seed_left > 0
+                segment_index == 0
+                and seed_triggered
+                and isinstance(initialization, LocalNoInitialization)
             ):
+                raise ValueError(
+                    "initialization.method='none' cannot start weights local "
+                    "control: initial response magnitudes "
+                    f"({abs(im_x):.17g}, {abs(im_y):.17g}) are both below "
+                    f"drive_abs_min={drive_abs_min:.17g}; select "
+                    "initialization.method='seed_field' or provide an initial "
+                    "condition with nonzero local response"
+                )
+            if seed_triggered and seed_left > 0:
                 ex = seed_amplitude_v_per_m * S_eff
                 ey = seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
@@ -343,7 +364,20 @@ def run_local_optimization(
             val_y = float(np.imag(np.conj(c) * d_y))
             ex = float(gain * S * val_x)
             ey = float(gain * S * val_y)
-            if abs(c) < c_abs_min and seed_left > 0:
+            seed_triggered = abs(c) < c_abs_min
+            if (
+                segment_index == 0
+                and seed_triggered
+                and isinstance(initialization, LocalNoInitialization)
+            ):
+                raise ValueError(
+                    "initialization.method='none' cannot start target local "
+                    f"control: initial target overlap {abs(c):.17g} is below "
+                    f"c_abs_min={c_abs_min:.17g}; select "
+                    "initialization.method='seed_field' or provide an initial "
+                    "condition outside the zero-control invariant set"
+                )
+            if seed_triggered and seed_left > 0:
                 sx = (
                     1.0
                     if (abs(d_x) == 0.0)
@@ -458,6 +492,8 @@ def run_local_optimization(
                 clipped_segment_count / len(segments_arr)
             ),
             "reference_field_scale_v_per_m": reference_field_scale_v_per_m,
+            "initialization_method": initialization.method,
+            "seed_segments_used": int(seed_max_segments - seed_left),
         },
         tlist=tlist,
         field_data=full_field,

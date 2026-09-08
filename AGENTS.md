@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-07
+Last verified: 2026-09-08
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-p D-058 Local control gain units
+Verified structural checkpoint: P4.3-q D-059 explicit Local initialization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -70,9 +70,12 @@ The authoritative details and formulas are in
   seeds require physical value/unit pairs; sampled two-component fields require
   a direct amplitude unit and exact canonical-grid length. Neither route
   resamples or silently overrides the other.
-- Local-optimizer direct field inputs are `field_max_v_per_m` and
-  `seed_amplitude_v_per_m`. Their defaults, componentwise clipping order,
-  legacy odd grid, shared endpoints, slices, indices, and RK4 prefix are fixed.
+- Local optimization requires explicit `initialization`: `seed_field` requires
+  a positive direct-amplitude value/unit pair and positive segment count;
+  `none` injects no field and raises before propagation when the existing
+  initial trigger detects a zero-control fixed point. Seed trigger/signs,
+  componentwise clipping order, legacy odd grid, shared endpoints, slices,
+  indices, and RK4 prefix remain fixed.
 - Local control `gain` requires an explicit unit, converts to positive
   canonical `(V/m)^2 fs`, and enters the unchanged update expression.
 - Typed trajectories always include the exact endpoint; if stride does not
@@ -160,14 +163,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-p:
+Current local CPU baseline after P4.3-q:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1168 passed, 10 GPU tests skipped (1178 collected)
+1182 passed, 10 GPU tests skipped (1192 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
