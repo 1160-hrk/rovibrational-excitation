@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-08
+Last verified against source and tests: 2026-09-10
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -384,6 +384,22 @@ implementation must not silently:
 
 Primary implementation:
 `core/validation.py`.
+
+### 5.1 Liouville RK4 ownership
+
+The low-level `rk4_lvne` and `rk4_lvne_traj` wrappers own density, operator,
+field-grid, step-count, and stride validation. They prepare complex128 operator
+and density arrays plus float64 field arrays before calling the dense NumPy
+kernel. Caller-owned arrays are not modified.
+
+`dynamics/algorithms/rk4/liouville_numpy.py` receives only those prevalidated
+arrays and scalar controls. It performs no unit conversion, model inspection,
+configuration lookup, I/O, or validation fallback. Its left/mid/right field
+indices, `H = H0 - mu_x E_x - mu_y E_y`, commutator, RK4 stage order,
+trajectory allocation, and stride write condition are the moved legacy
+implementation. Low-level stride trajectories retain their characterized
+endpoint omission when stride does not divide the step count; the typed result
+boundary remains responsible for appending an already computed endpoint.
 
 ## 6. Vibrational ladder and Morse potential
 

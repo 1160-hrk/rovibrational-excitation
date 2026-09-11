@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 
 ## 1. Design goals
 
@@ -431,6 +431,14 @@ Rules:
 - solver capability tests cover every advertised combination;
 - hot CPU, sparse, and GPU loops may remain separate implementations.
 
+P5.1-b establishes this split for density propagation without moving the
+validated low-level API. `dynamics.algorithms.rk4.lvne` owns validation and
+numeric dense-array preparation; `liouville_numpy` owns only the prevalidated
+NumPy/Numba loop. The kernel has no dependency on units, model objects,
+configuration, runners, or I/O. Its inherited temporary-allocation behavior is
+not an architectural requirement and may be replaced only in a separately
+benchmarked numerical implementation unit.
+
 ## 7. Units and scaling ownership
 
 `core/units` owns physical unit definitions and pure conversions.
@@ -518,6 +526,7 @@ already constructed basis and weights, never molecule names.
 | `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
 | model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
+| `dynamics/algorithms/rk4/lvne.py` mixed boundary/kernel | `dynamics/algorithms/rk4/{lvne,liouville_numpy}.py` | P5.1-b separates validated preparation from the unchanged dense NumPy/Numba loop; final solver-package move remains later |
 | `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
 | `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |
 | `simulation/timegrid.py` | `core/time.py` | Complete in P3.2-a; obsolete writable-array wrapper removed and callers use `TimeGrid.from_bounds` directly |

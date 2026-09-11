@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-08
+Last verified: 2026-09-10
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P4.3-q D-059 explicit Local initialization
+Verified structural checkpoint: P5.1-b D-060 Liouville NumPy kernel separation
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -114,6 +114,9 @@ The authoritative details and formulas are in
 - Density matrices must be finite, square, Hermitian, positive semidefinite,
   and have positive real trace within the documented scale-aware tolerance.
 - Liouville propagation currently supports NumPy dense RK4 only.
+- Validated Liouville wrappers own problem checks and numeric array
+  preparation; `liouville_numpy.py` owns only the unchanged prevalidated
+  NumPy/Numba loop.
 - Spectroscopy exact routes never prune response-relevant nonzero elements.
   Approximation and automatic routing are separate explicit modes with required
   controls and an observable calculation report.
@@ -163,14 +166,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P4.3-q:
+Current local CPU baseline after P5.1-b:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1182 passed, 10 GPU tests skipped (1192 collected)
+1184 passed, 10 GPU tests skipped (1194 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -234,26 +237,35 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 125 discovered modules import, internal modules avoid root
+are removed, all 127 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
 workflow validation and translates model errors at its boundary.
+Phase 4 is complete for all decided unit/scaling contracts; unresolved Class-D
+optimizer quantities and adaptive integration are explicitly deferred. P5.1-b
+separates validated Liouville preparation from the unchanged dense NumPy/Numba
+kernel.
 The next work is:
 
-1. Continue typed quantity and strict unit-validation boundaries. Local
-   `gain` is resolved by D-058. Do not touch the remaining Class-D
-   `c_abs_min`, `drive_abs_min`, `shape_floor`, `learning_rate`, `lambda_a`, or
-   convergence tolerances without the user's definition and independent
-   references.
-2. Reduce exact transition debt only with the Phase 6 model consolidation. The
-   four current entries are `dynamics.utils -> dipole.base`,
-   `dynamics.scaling.converter -> dipole.base`, and two
-   `models -> dynamics.problem` imports; never broaden or hide them.
-3. Preserve the characterized visualization debts during the acceptance audit: `plot_population.state_index` is unused, three standalone plotters save after `show()`, `plot_electric_field` creates an empty legend warning, and optional spectrum/spectrogram errors are print-only. Fix them only in a separate behavior commit.
-4. Defer persistence schema versioning and checkpoint-manager redesign until a separately tested persistence/API phase; P3.1-g intentionally preserves the unversioned schema and overwrite behavior.
-5. Preserve private optimization adapters, especially `LocalOptimizerLegacyGridV1`, until their separately characterized Phase 7 migration.
-6. Obtain independent optimization objective/gradient and spectroscopy references before Phase 7 decomposition.
-7. Preserve the D-044 support boundary: active examples, benchmarks, and
-   scripts remain executable and linted; archived examples remain historical
-   until individually migrated and smoke-tested.
+1. Benchmark the inherited dense Liouville kernel before replacing per-step
+   intermediates with reusable buffers. Preserve field indices, interaction sign,
+   commutator, RK4 order, stride, and shapes; compare runtime and numerical error
+   in a separate implementation-replacement commit.
+2. Keep CuPy density propagation unsupported. Separate the Schrödinger CuPy
+   dense kernel only when a real CUDA job can execute and compare it.
+3. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+   `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
+   dimensions and independent references.
+4. Reduce exact transition debt only with Phase 6 model consolidation; never
+   broaden or hide the four recorded reverse imports.
+5. Preserve the characterized visualization debts and fix them only in a
+   separate behavior commit.
+6. Defer persistence schema versioning and checkpoint-manager redesign to its
+   separately tested persistence/API phase.
+7. Preserve private optimization adapters, especially
+   `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
+   spectroscopy references before Phase 7 decomposition.
+8. Preserve the D-044 support boundary: active examples, benchmarks, and
+   scripts remain executable and linted; archives remain historical until
+   individually migrated and smoke-tested.

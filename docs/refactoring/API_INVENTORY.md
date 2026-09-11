@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-08
+Last verified: 2026-09-10
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-059 explicit Local initialization
+Latest API checkpoint: D-060 Liouville NumPy kernel separation
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -123,6 +123,12 @@ temporary.
 | `dynamics.algorithms.rk4` | `rk4_lvne`, `rk4_lvne_traj`, `rk4_schrodinger` | `dynamics.solvers.rk4` | internal |
 | `dynamics.algorithms.split_operator` | `splitop_schrodinger` | `dynamics.solvers.split_operator` | internal |
 | `dynamics.scaling` | `NondimensionalizationScales`, `ScaleValue`, `nondimensionalize_system`, `nondimensionalize_with_SI_base_units`, `nondimensionalize_from_objects`, `determine_SI_based_scales`, `create_dimensionless_time_array`, `analyze_regime`, `dimensionalize_wavefunction`, `get_physical_time` | target owner reached in P3.1-d with one explicit scaling representation | target public subpackage; old `core.nondimensional` path removed |
+
+D-060 keeps `rk4_lvne` and `rk4_lvne_traj` as the internal validated low-level
+entry points. Their prepared arrays now enter
+`dynamics.algorithms.rk4.liouville_numpy.rk4_liouville_numpy_dense`, an internal
+prevalidated kernel that is not re-exported from `dynamics.algorithms` or the
+package root.
 
 The former 25-name surface was reduced under D-022 after dimensional-equivalence
 and strict-generator tests identified the production path. Compatibility

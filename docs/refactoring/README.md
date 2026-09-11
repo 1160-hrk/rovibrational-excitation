@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-03
+Last verified: 2026-09-10
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -44,7 +44,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1182 passed, 10 skipped (1192 collected) |
+| Pytest | 1184 passed, 10 skipped (1194 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,9 +55,12 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-08. P4.3-q implements
-D-059: Local control now requires an explicit `seed_field` or `none`
-initialization. The seed branch requires a positive direct-amplitude value/unit
+These rows were last verified locally on 2026-09-10. P5.1-b implements D-060:
+validated Liouville wrappers now delegate to a prevalidated dense NumPy/Numba
+kernel. Field-stage indices, RK4 order, stride writes, shapes, and caller-array
+immutability are fixed. This move makes no speed claim. Strict mypy covers 37
+named modules. P4.3-q implements D-059: Local control requires
+an explicit `seed_field` or `none` initialization. The seed branch requires a positive direct-amplitude value/unit
 pair and segment count while preserving the active 1000 V/m, five-segment
 field, trigger, clipping, grid, endpoint, and RK4 behavior. The no-seed branch
 injects nothing and raises before propagation when the existing mode-specific
@@ -260,8 +263,8 @@ These commits are the starting point, not the final architecture.
 | 1 | Repository and CI normalization | Complete — local and GitHub gates pass; `main` requires `Required CI gates` |
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
-| 4 | Units and nondimensionalization | In progress — strict scaling and API consolidation complete; typed quantity migration pending |
-| 5 | Numerical dynamics engine | Early work — P5.1-a RK4 dense/CSR and P5.2 CPU split polarization kernels complete; CUDA parity pending |
+| 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
+| 5 | Numerical dynamics engine | In progress — P5.1-a dense/CSR and P5.1-b Liouville kernel separation complete; measured allocation work and CUDA validation remain |
 | 6 | Model consolidation | Pending |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |

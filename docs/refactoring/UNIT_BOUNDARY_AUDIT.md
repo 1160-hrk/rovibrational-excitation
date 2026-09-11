@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-08
-Current checkpoint: P4.3-q D-059 explicit Local initialization
+Last verified: 2026-09-10
+Current checkpoint: Phase 4 closed at P5.1-b; D-059 is the latest unit boundary
 
 ## Purpose
 
@@ -200,6 +200,14 @@ structural migration must not invent one. D-055 archives the tracked legacy
 optimizer YAML files that lack dipole values rather than assigning an inferred
 constant. Three active current-schema configs provide explicit dipole values
 and units.
+
+## Phase 4 disposition
+
+All identified Class-A and Class-B public/configuration boundaries are migrated
+and the Phase 4 acceptance checks pass. The remaining optimizer quantities are
+Class D because their dimensions depend on unresolved objective or response
+normalization. They are explicitly deferred and do not authorize guessed units,
+renaming, conversion, or default changes.
 
 ## Recommended implementation order
 

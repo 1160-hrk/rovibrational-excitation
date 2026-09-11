@@ -98,6 +98,7 @@ rho = rho_result.state
 ```
 
 Liouville 経路は NumPy dense RK4、renormalization disabled のみを受け付けます。`DensityState` は有限、正方、Hermitian、positive semidefinite、trace one でなければなりません。入力は自動修復されません。Numba kernel に渡す直前だけ、同じ値を持つ writable C-order 作業配列を作ります。
+内部では `rk4/lvne.py` が検証と数値配列準備を所有し、`rk4/liouville_numpy.py` は検証済み配列だけを受け取る NumPy/Numba 数値カーネルです。後者は単位変換やモデル、設定、I/Oに依存しません。
 
 ## インコヒーレント ensemble
 

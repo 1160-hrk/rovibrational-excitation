@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1073,7 +1073,8 @@ overlap below `c_abs_min` raises before propagation with measured diagnostics.
 It never falls back to a seed. Initialization method and actual seeded segment
 count are reported. No new meaning is assigned to the three Class-D thresholds.
 
-Remaining Phase 4 work:
+Phase 4 is complete for every currently decided contract. The following are
+explicitly deferred extensions rather than blockers for Phase 5:
 
 - defer the remaining Class-D optimizer thresholds, penalties, and tolerances
   until independent references and user-defined dimensions exist;
@@ -1116,8 +1117,22 @@ final-only tridiagonal diagnostic measured 5.67x at dimension 64 and 24.77x
 at dimension 256. Full validation collected 442 tests: 432 passed and 10 GPU
 tests skipped.
 
-CuPy dense and Liouville kernel separation remain part of the later P5.1
-completion; this early unit does not claim all of P5.1 complete.
+P5.1-b implements D-060 on 2026-09-10. The validated `rk4_lvne` and
+`rk4_lvne_traj` wrappers retain density/field/step/stride validation, canonical
+dtype and contiguous-array preparation, legacy output shapes, and final-state
+unwrapping. They now delegate to a dedicated prevalidated
+`liouville_numpy.py` NumPy/Numba kernel. The numerical body, field-stage
+indices, interaction sign, commutator, operation order, output allocation,
+stride writes, Numba signature, and fastmath setting moved unchanged. A frozen
+complex reference agrees within `1e-17`, caller arrays remain unchanged, 71
+focused Liouville tests pass with 6 optional skips, and the complete suite
+passes 1184 tests with 10 optional-GPU skips. Strict mypy covers 37 named
+modules.
+
+No allocation or speed claim is made: inherited per-step stage intermediates
+remain. An allocation-stable replacement requires a separate measured unit.
+CuPy dense separation and real-GPU validation remain before P5.1 can be called
+complete.
 
 Separate:
 

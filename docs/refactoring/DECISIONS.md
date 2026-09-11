@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 
 ## How to use this log
 
@@ -2362,6 +2362,36 @@ remain binding.
 
 Implementation commit: this checkpoint.
 
+
+### D-060: Liouville validation and the dense NumPy RK4 kernel are separate
+
+Status: Accepted and implemented on 2026-09-10 as P5.1-b.
+
+Scope: Low-level Liouville RK4 ownership; no public or physical behavior change.
+
+`dynamics.algorithms.rk4.lvne` remains the validated low-level boundary. It
+checks the density problem and field/step/stride contract, constructs the same
+complex128 and float64 prepared arrays, and retains the existing trajectory and
+final-state wrapper shapes. It delegates only after those checks.
+
+`dynamics.algorithms.rk4.liouville_numpy` owns the prevalidated dense
+NumPy/Numba loop. The function body, left/mid/right field indices, interaction
+sign, commutator, RK4 stage order, output allocation formula, stride write
+condition, final-only unwrapping, Numba signature, cache setting, and
+`fastmath=True` moved unchanged. The kernel imports no unit, validation, model,
+runner, or I/O layer.
+
+A nontrivial complex two-level trajectory and final state are frozen to
+`1e-17` absolute tolerance, and caller arrays remain unchanged. Trace,
+Hermiticity, pure-state agreement, legacy stride, and low-level failures remain
+covered. The complete suite passes 1184 tests with 10 optional-GPU skips.
+
+This checkpoint makes no allocation-stability or speed claim. The inherited
+kernel still creates stage Hamiltonians and commutator intermediates inside the
+time loop. Buffer reuse requires its own benchmark, numerical comparison, and
+implementation-replacement commit. CuPy density propagation remains unsupported.
+
+Implementation commit: this checkpoint.
 
 ## Open decisions
 
