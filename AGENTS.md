@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-13
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P5.4-a D-062 Phase 5 CPU acceptance audit
+Verified structural checkpoint: P6.1-a D-063 TwoLevel pre-move characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -170,14 +170,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P5.4-a:
+Current local CPU baseline after P6.1-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1193 passed, 10 GPU tests skipped (1203 collected)
+1201 passed, 10 GPU tests skipped (1211 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -255,30 +255,36 @@ Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
 P5.4-a verifies every CPU Phase 5 acceptance row. Phase 5 remains open because
 the actual CuPy low-level paths round-trip through host memory and no real CUDA
 job is available.
+P6.1-a now characterizes the complete current TwoLevel projection before its
+ownership move and records the reduced-Planck-constant mismatch as O-013.
 The next work is:
 
-1. Begin Phase 6 with TwoLevel ownership consolidation. Characterize the
-   current basis, Hamiltonian, dipole, state mapping, and scalar-coupling
-   projection before moving any implementation.
-2. Keep Phase 5 open until a real CUDA job can remove and verify the current
+1. Resolve O-013 before changing converted numerical values. Two active reduced
+   Planck constants map a configured `0.37 rad/fs` TwoLevel gap to
+   `0.3700000002267061 rad/fs` at propagation. The recommended correction is
+   one `CONSTANTS.H / (2*pi)` authority in a dedicated behavior commit.
+2. Continue Phase 6 TwoLevel ownership consolidation after P6.1-a. Its basis,
+   Hamiltonian, dipole, state mapping, scalar-x coupling, dense/CSR parity, and
+   builder routes are now characterized; do not mix O-013 into a file move.
+3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.
-3. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
+4. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.
-4. Keep CuPy density propagation unsupported.
-5. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+5. Keep CuPy density propagation unsupported.
+6. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-6. Reduce exact transition debt only with Phase 6 model consolidation; never
+7. Reduce exact transition debt only with Phase 6 model consolidation; never
    broaden or hide the four recorded reverse imports.
-7. Preserve the characterized visualization debts and fix them only in a
+8. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
-8. Defer persistence schema versioning and checkpoint-manager redesign to its
+9. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
-9. Preserve private optimization adapters, especially
+10. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
    spectroscopy references before Phase 7 decomposition.
-10. Preserve the D-044 support boundary: active examples, benchmarks, and
+11. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.

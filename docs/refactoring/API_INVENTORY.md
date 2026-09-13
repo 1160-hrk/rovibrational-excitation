@@ -3,7 +3,7 @@
 Last verified: 2026-09-13
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-062 Phase 5 CPU acceptance audit
+Latest API checkpoint: D-063 TwoLevel pre-move characterization
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -22,6 +22,11 @@ behavior are understood.
 
 The proposed root namespace is recorded under O-008 in `DECISIONS.md`. It is a
 working proposal, not yet an accepted API decision.
+
+P6.1-a changes no import path, export, signature, or runtime implementation.
+It adds behavior guards before the planned TwoLevel ownership move. The
+current `core.basis.TwoLevelBasis`, `dipole.twolevel`, and `models.twolevel`
+paths retain their inventory disposition until that structural commit.
 
 ## 2. Package root
 

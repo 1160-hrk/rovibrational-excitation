@@ -502,6 +502,11 @@ paired `*_units`; model builders consume only canonical
 `Frequency.angular_rad_per_fs`. Existing low-level basis constructors retain
 their angular-frequency arguments until Phase 6.
 
+P6.1-a freezes the complete current TwoLevel projection before ownership
+moves. Its next structural target is `models/two_level/`, but O-013 must be
+resolved separately: the move may not silently change the currently mismatched
+reduced-Planck-constant round trip.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 

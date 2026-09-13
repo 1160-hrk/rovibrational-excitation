@@ -653,6 +653,14 @@ largest absolute tolerance, `2e-12`.
 The CuPy comparison uses `rtol=2e-12`, `atol=2e-13`, is marked `gpu`, and must
 execute on real CUDA hardware before CuPy parity is considered verified.
 
+P6.1-a adds the ownership-migration reference in
+`tests/contracts/test_twolevel_model_consolidation.py`. It freezes the exact
+production basis, state mapping, Hamiltonian storage, dipole matrices,
+scalar-x coupling, and dense/CSR behavior. It also records, without repairing,
+the current `0.37 -> 0.3700000002267061 rad/fs` round trip caused by the two
+active reduced-Planck-constant values. O-013 owns the proposed correction;
+until approved, a structural model move must preserve this numerical behavior.
+
 ## 8. Coherent and incoherent observables
 
 A coherent initial superposition evolves one state vector and includes

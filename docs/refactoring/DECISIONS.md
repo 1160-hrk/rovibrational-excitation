@@ -2472,6 +2472,31 @@ The complete CPU suite passes 1193 tests with 10 optional-GPU skips.
 
 Implementation commit: this checkpoint.
 
+### D-063: TwoLevel ownership migration starts from bit-exact characterization
+
+Status: Accepted and implemented on 2026-09-13 as P6.1-a.
+
+Scope: Phase 6 TwoLevel migration guard; no source implementation or numerical
+behavior change.
+
+Before moving model code, executable contracts now freeze the production
+TwoLevel parameter projection, signed basis order `|0>, |1>`, state/index
+mapping, `H0 = diag(0, energy_gap)`, coherent initial-state construction,
+`mu_x = mu0 sigma_x`, `mu_y = mu0 sigma_y`, zero `mu_z`, scalar-x coupling,
+dense/CSR parity, cache identity, and stateless/stateful dipole-builder parity.
+
+The characterization exposed a pre-existing conversion inconsistency. The
+production builder stores a frequency-specified Hamiltonian in J using
+`Hamiltonian._HBAR = 6.62607015e-34 / (2 pi)`, while
+`Hamiltonian.get_matrix("rad/fs")` converts back through the rounded
+`CONSTANTS.HBAR = 1.054571817e-34`. An input gap of `0.37 rad/fs` therefore
+reaches the propagation boundary as `0.3700000002267061 rad/fs`. The current
+bit pattern is recorded only as a migration reference; correcting it is the
+separate physics/numerical decision O-013 and must not be hidden in a file
+move.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -2637,6 +2662,24 @@ Active examples, benchmarks, and scripts are linted and formatted; all three
 supported examples execute in CI. Historical files live under
 `examples/archives/` and are explicitly excluded until independently migrated
 to the current public API.
+
+### O-013: One authoritative reduced Planck constant
+
+Status: Open; discovered by P6.1-a on 2026-09-13.
+
+Two numerical definitions of reduced Planck's constant are active:
+
+- `Hamiltonian._HBAR = 6.62607015e-34 / (2 pi)`;
+- `CONSTANTS.HBAR = 1.054571817e-34`.
+
+This makes the production TwoLevel `rad/fs -> J -> rad/fs` route drift by
+approximately `6.13e-10` relative. The recommended resolution is to define
+the authoritative value once as `CONSTANTS.H / (2 pi)`, make `Hamiltonian`
+delegate to it, and run explicit before/after unit and end-to-end numerical
+comparisons. That global correction changes converted values slightly and
+therefore requires user approval in a dedicated commit. A narrower TwoLevel
+special case would leave the library internally inconsistent and is not
+recommended.
 
 ## Decision template
 

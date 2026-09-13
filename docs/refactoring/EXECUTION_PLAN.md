@@ -1218,6 +1218,21 @@ Order:
 3. LinMol;
 4. SymTop only after O-005 is resolved.
 
+### P6.1 TwoLevel
+
+P6.1-a completed the pre-move characterization on 2026-09-13 under D-063.
+Eight executable cases freeze the parameter projection, basis order and state
+mapping, Hamiltonian formula and current storage conversion, coherent state,
+scalar-x capability, exact Cartesian dipoles, dense/CSR parity, cache reuse,
+and stateless-builder parity. No source implementation changed.
+
+This checkpoint also found O-013: two active reduced-Planck-constant values
+make the current production `rad/fs -> J -> rad/fs` route drift by about
+`6.13e-10` relative. P6.1-b must not hide a correction inside the ownership
+move. After the user decides O-013, implement the constant correction in a
+separate numerical-behavior commit or preserve the characterized bit pattern
+during the structural move.
+
 For each model:
 
 - add frozen parameter schema;
