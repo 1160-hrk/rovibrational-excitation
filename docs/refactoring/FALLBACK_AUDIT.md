@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Date: 2026-09-08
+Date: 2026-09-13
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -38,6 +38,7 @@ recorded.
 | Optimization option values | Numeric/string values were coerced, duplicate axes were accepted, Local mode typos selected another branch, lookahead/weight/cost errors were suppressed, and spectral updates applied a repair floor | D-057 requires exact types/enums/distinct axes, surfaces requested Local failures, validates finite nonnegative spectral alpha, and divides directly by `1+alpha` | `test_optimization_option_contracts.py`; Local propagation contracts |
 | Local control gain | Missing gain used `1.0`; the unit was implicit; the diagnostic reciprocal used `max(gain, 1e-30)` | D-058 requires a finite positive value/unit pair, converts to `(V/m)^2 fs`, and uses the direct reciprocal only after validation | unit conversion, optimization option, configuration, and Local propagation contracts |
 | Local control initialization | Missing seed settings silently used `1000 V/m` for five trigger segments; disabling the seed could leave a known zero-control fixed point | D-059 requires explicit `seed_field` or `none`; the former has a required direct-amplitude pair/count, while the latter raises at an active initial trigger and never falls back | initialization parser, configuration, fixed-point preflight, and frozen Local propagation contracts |
+| Split Numba dependency | Import failure selected an unreported dummy decorator and pure-Python loop even though Numba is a required package dependency | D-062 imports required Numba directly; a broken installation raises instead of changing execution mode | `test_phase5_acceptance_contracts.py` |
 
 ## P1: fix before API stabilization
 
@@ -69,9 +70,6 @@ copied into the final public typed API.
 - simulation/runner.py intentionally catches case failures for batch runs and
   writes tracebacks. Keep this behavior, but replace print-only reporting with
   a structured failure result.
-- split-operator uses a pure NumPy implementation when Numba is unavailable.
-  This is a performance fallback, not a physics/backend substitution. Expose
-  acceleration availability in diagnostics and benchmarks.
 - get_dipole_component_SI in propagation/utils.py is unused compatibility code
   with a raw-attribute fallback. Delete it with the Phase 1 legacy cleanup.
 

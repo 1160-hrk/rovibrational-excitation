@@ -3,7 +3,7 @@
 Last verified: 2026-09-13
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-061 Liouville shared-endpoint reuse
+Latest API checkpoint: D-062 Phase 5 CPU acceptance audit
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -130,6 +130,11 @@ entry points. Their prepared arrays now enter
 prevalidated kernel that is not re-exported from `dynamics.algorithms` or the
 package root. D-061 changes no entry point or signature: the internal kernel
 reuses the exactly shared right/next-left endpoint Hamiltonian.
+
+D-062 changes no public export or signature. It removes only the split
+module's unreachable import-time Numba fallback; Numba is already a required
+project dependency. NumPy CSR split execution and existing device-result
+identity are now explicit contracts.
 
 The former 25-name surface was reduced under D-022 after dimensional-equivalence
 and strict-generator tests identified the production path. Compatibility

@@ -2436,6 +2436,42 @@ The complete suite passes 1188 tests with 10 optional-GPU skips and retains
 
 Implementation commit: this checkpoint.
 
+
+### D-062: Phase 5 CPU acceptance is verified; CUDA transfer debt stays open
+
+Status: Accepted and implemented on 2026-09-13 as P5.4-a.
+
+Scope: Numerical-engine acceptance audit and dependency honesty; no numerical
+formula or kernel change.
+
+Every CPU-verifiable P5.1-P5.3 requirement now has executable evidence.
+NumPy split propagation with actual CSR operators is exactly equal to its dense
+spectral input path. The split benchmark separately records public end-to-end,
+spectral-setup, and prepared inner-loop time, and both prepared inner kernels
+produce the exact public final state. The typed result boundary preserves an
+already device-native state by identity and imports no conversion backend.
+
+Numba is a required project dependency. The split module's dead
+dummy-decorator fallback is removed so a broken installation fails explicitly
+instead of silently selecting unreported pure-Python execution. The decorated
+NumPy kernels themselves are unchanged.
+
+Phase 5 is not complete. The current Schrödinger RK4 CuPy helper calls
+`.get()`, and both split CuPy helpers call `cp.asnumpy`, before the typed
+result boundary. A requested CuPy result is consequently transferred
+device-to-host and then host-to-device. Ten CUDA tests are collected but
+skipped in the current environment; they do not validate this path.
+
+The CUDA closure must return backend-native low-level arrays and verify RK4,
+static Cartesian, rotating Cartesian, and helicity-projected calculations on a
+real GPU. It may not change precision, formulas, tolerances, polarization, or
+renormalization. Until that infrastructure exists, CPU model consolidation may
+continue independently, but Phase 5 remains in progress.
+
+The complete CPU suite passes 1193 tests with 10 optional-GPU skips.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

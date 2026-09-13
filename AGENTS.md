@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-13
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P5.1-c D-061 exact Liouville endpoint reuse
+Verified structural checkpoint: P5.4-a D-062 Phase 5 CPU acceptance audit
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -23,9 +23,10 @@ Before changing source code, read these files in order:
 2. `docs/refactoring/DECISIONS.md`
 3. `docs/refactoring/TARGET_ARCHITECTURE.md`
 4. `docs/refactoring/EXECUTION_PLAN.md`
-5. `docs/refactoring/FALLBACK_AUDIT.md`
-6. `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`
-7. The source files and tests directly involved in the requested phase
+5. `docs/refactoring/PHASE5_ACCEPTANCE_AUDIT.md`
+6. `docs/refactoring/FALLBACK_AUDIT.md`
+7. `docs/refactoring/UNIT_BOUNDARY_AUDIT.md`
+8. The source files and tests directly involved in the requested phase
 
 `docs/refactoring/README.md` records the current baseline and document status.
 
@@ -169,14 +170,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P5.1-c:
+Current local CPU baseline after P5.4-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1188 passed, 10 GPU tests skipped (1198 collected)
+1193 passed, 10 GPU tests skipped (1203 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -251,28 +252,33 @@ optimizer quantities and adaptive integration are explicitly deferred. P5.1-b
 separates validated Liouville preparation from the unchanged dense NumPy/Numba
 kernel. P5.1-c reuses only its exactly shared right/next-left endpoint
 Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
+P5.4-a verifies every CPU Phase 5 acceptance row. Phase 5 remains open because
+the actual CuPy low-level paths round-trip through host memory and no real CUDA
+job is available.
 The next work is:
 
-1. Audit the already implemented D-019 split-operator and D-026 backend-native
-   result contracts against the remaining P5.2/P5.3 acceptance rows. Add
-   missing characterization without changing their numerical implementations.
-2. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
+1. Begin Phase 6 with TwoLevel ownership consolidation. Characterize the
+   current basis, Hamiltonian, dipole, state mapping, and scalar-coupling
+   projection before moving any implementation.
+2. Keep Phase 5 open until a real CUDA job can remove and verify the current
+   RK4/split `device -> host -> device` round trip. Do not edit that path using
+   skipped tests as evidence.
+3. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.
-3. Keep CuPy density propagation unsupported. Separate the Schrödinger CuPy
-   dense kernel only when a real CUDA job can execute and compare it.
-4. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+4. Keep CuPy density propagation unsupported.
+5. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-5. Reduce exact transition debt only with Phase 6 model consolidation; never
+6. Reduce exact transition debt only with Phase 6 model consolidation; never
    broaden or hide the four recorded reverse imports.
-6. Preserve the characterized visualization debts and fix them only in a
+7. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
-7. Defer persistence schema versioning and checkpoint-manager redesign to its
+8. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
-8. Preserve private optimization adapters, especially
+9. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
    spectroscopy references before Phase 7 decomposition.
-9. Preserve the D-044 support boundary: active examples, benchmarks, and
+10. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.

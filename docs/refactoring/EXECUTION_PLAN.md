@@ -1164,6 +1164,12 @@ construction through tests, not through runtime abstraction inside hot loops.
 
 ### P5.2 Split operator
 
+CPU status: accepted under D-062 on 2026-09-13. All rows below execute on
+NumPy, including exact CSR-to-dense-spectral parity. The benchmark now
+separates public end-to-end, spectral setup, and prepared inner propagation;
+prepared and public final states are exactly equal. CuPy parity and
+backend-native low-level output remain pending a real CUDA job.
+
 - require diagonal `H0` explicitly;
 - sample both Cartesian field components at propagation midpoints;
 - use a static eigensystem for fixed direction and M-diagonal rotations for changing xy direction;
@@ -1179,6 +1185,12 @@ construction through tests, not through runtime abstraction inside hot loops.
 Decide whether public results are host arrays or backend-native arrays and
 encode it in `PropagationResult`. Eliminate repeated transfer.
 
+Policy status: decided by D-026/D-039 and CPU/device-like boundary behavior
+accepted by D-062. `PropagationResult` retains an existing device state and
+converts only through explicit `to_numpy()`. Actual CuPy RK4 and split
+adapters still return through host memory, so the repeated-transfer acceptance
+row is not complete.
+
 ### Phase 5 acceptance
 
 - every advertised capability has an executing test;
@@ -1187,6 +1199,12 @@ encode it in `PropagationResult`. Eliminate repeated transfer.
 - physics baselines pass;
 - median performance regression is below 10% or explicitly approved;
 - memory use is documented for trajectories.
+
+P5.4-a records the row-by-row disposition in
+`PHASE5_ACCEPTANCE_AUDIT.md`. Phase 5 remains in progress only for real-CUDA
+parity, backend-native low-level CuPy output, and removal of repeated
+device/host transfer. These external-infrastructure items do not block
+independent Phase 6 CPU model consolidation.
 
 ## 9. Phase 6 — model consolidation
 

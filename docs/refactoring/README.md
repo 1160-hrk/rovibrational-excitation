@@ -21,6 +21,7 @@ tests, and the decision log.
 | `API_INVENTORY.md` | Current exports, CLI/config routes, factories, examples, and v0.3 disposition | Any public/internal entry-point change |
 | `UNIT_BOUNDARY_AUDIT.md` | Remaining explicit-unit debt, safe order, and user-confirmation items | Any physical input boundary migration |
 | `VALIDATION_INVENTORY.md` | P1.2-B audit of standalone diagnostics, replacements, and unresolved scale-policy constants | Any legacy validation disposition or recovered scientific intent |
+| `PHASE5_ACCEPTANCE_AUDIT.md` | Row-by-row CPU/CUDA numerical-engine acceptance status and transfer debt | Any solver capability, backend transfer, or Phase 5 status change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -44,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1188 passed, 10 skipped (1198 collected) |
+| Pytest | 1193 passed, 10 skipped (1203 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -55,7 +56,14 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-13. P5.1-c implements D-061:
+These rows were last verified locally on 2026-09-13. P5.4-a implements D-062:
+all CPU-verifiable Phase 5 rows now have executable evidence. NumPy CSR split
+is exactly equal to dense spectral execution, prepared split kernels exactly
+match public results, and an existing device state crosses result finalization
+by identity. The dead missing-Numba fallback is removed because Numba is a
+required dependency. Phase 5 remains open: current CuPy RK4 and split helpers
+round-trip through host memory, and real CUDA parity is unverified.
+P5.1-c implements D-061:
 the dense Liouville RK4 kernel reuses the exactly shared right/next-left
 endpoint Hamiltonian. Multiple dimensions and both output modes are bitwise
 equal to the retained pre-change Numba loop. The single-thread benchmark
@@ -272,8 +280,8 @@ These commits are the starting point, not the final architecture.
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
-| 5 | Numerical dynamics engine | In progress — P5.1-a dense/CSR, P5.1-b Liouville separation, and P5.1-c exact endpoint reuse complete; P5.2/P5.3 acceptance audit and CUDA validation remain |
-| 6 | Model consolidation | Pending |
+| 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
+| 6 | Model consolidation | Pending — CPU work may begin while the separately recorded CUDA blocker remains |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

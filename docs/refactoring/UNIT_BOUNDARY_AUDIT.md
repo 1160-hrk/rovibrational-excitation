@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-13
-Current checkpoint: Phase 4 closed at P5.1-c; D-059 is the latest unit boundary
+Current checkpoint: Phase 4 closed at P5.4-a; D-059 is the latest unit boundary
 
 ## Purpose
 
@@ -209,7 +209,8 @@ Class D because their dimensions depend on unresolved objective or response
 normalization. They are explicitly deferred and do not authorize guessed units,
 renaming, conversion, or default changes. P5.1-c reuses an already converted
 field-grid endpoint inside the numerical kernel and introduces no unit boundary
-or conversion.
+or conversion. P5.4-a audits solver capabilities and backend transfers without
+changing any physical quantity or unit conversion.
 
 ## Recommended implementation order
 

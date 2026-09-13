@@ -5,8 +5,8 @@ but allows two execution back‑ends:
 
 * **CuPy**  – for GPU acceleration (if ``cupy`` is available and the user passes
   ``backend='cupy'``).
-* **NumPy + Numba** – CPU execution with an inner loop compiled by ``@njit`` when
-  CuPy is not selected (or not installed).
+* **NumPy + Numba** – CPU execution with an inner loop compiled by ``@njit``
+  when NumPy is selected.
 
 Cartesian propagation uses the real field components directly.  For an
 M-resolved linear molecule, rotations in the xy plane are applied through
@@ -25,6 +25,7 @@ from typing import Literal
 
 import numpy as np
 import scipy.sparse
+from numba import njit
 
 from ....core.validation import validate_wavefunction_problem
 
@@ -36,22 +37,6 @@ try:
     import cupy as cp  # type: ignore
 except ImportError:  # CuPy が無い環境でも読み込めるように動作
     cp = None  # noqa: N816
-
-try:
-    from numba import njit  # type: ignore
-
-    _HAS_NUMBA = True
-except ImportError:  # NumPy fallback（遅くなるが動く）
-
-    def njit(**_kwargs):  # type: ignore
-        """Dummy decorator when numba is absent."""
-
-        def _decorator(func):
-            return func
-
-        return _decorator
-
-    _HAS_NUMBA = False
 
 __all__ = ["build_helicity_projected_interaction", "splitop_schrodinger"]
 

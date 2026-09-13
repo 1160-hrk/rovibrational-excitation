@@ -1,6 +1,6 @@
 {
   "artifact": "split-polarization-v0.3",
-  "created_utc": "2026-08-04T16:07:27.863844+00:00",
+  "created_utc": "2026-09-13T07:51:22.538922+00:00",
   "environment": {
     "python": "3.12.12",
     "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
@@ -12,12 +12,16 @@
     "gpu": "not run; CUDA hardware unavailable in this environment"
   },
   "source": {
-    "commit": "93ee9ebada729706dc710ed04c7f530424d007ff",
+    "commit": "5070836eda432b14a7eb670e75a3a445851ef0f9",
     "worktree_dirty": true
   },
   "methodology": {
     "timing": "median perf_counter_ns after one untimed warmup",
-    "timed_scope": "public final-state propagation, including eigendecomposition",
+    "timed_scope": {
+      "public": "validation, preparation, eigendecomposition, propagation",
+      "spectral_setup": "interaction construction where applicable, eigendecomposition, and contiguous spectral arrays",
+      "inner_propagation": "prepared NumPy/Numba time loop only"
+    },
     "comparison": "same field grid; projected difference is a model difference"
   },
   "workloads": [
@@ -27,13 +31,19 @@
       "steps": 400,
       "dt": 0.002,
       "median_ms": {
-        "rk4_dense": 1.026541,
-        "split_cartesian": 0.614833,
-        "split_helicity_projected": 0.487
+        "rk4_dense": 1.084458,
+        "split_cartesian": 0.654625,
+        "split_helicity_projected": 0.547125
+      },
+      "component_median_ms": {
+        "cartesian_spectral_setup": 0.045917,
+        "cartesian_inner_propagation": 0.5555,
+        "helicity_projected_spectral_setup": 0.073333,
+        "helicity_projected_inner_propagation": 0.39125
       },
       "speedup_vs_rk4": {
-        "split_cartesian": 1.6696257357688997,
-        "split_helicity_projected": 2.107887063655031
+        "split_cartesian": 1.6566095092610271,
+        "split_helicity_projected": 1.9821028101439342
       },
       "final_norm_error": {
         "rk4_dense": 6.661338147750939e-16,
@@ -41,7 +51,11 @@
         "split_helicity_projected": 7.915890165577366e-14
       },
       "same_grid_cartesian_vs_rk4_l2": 6.703874706119716e-09,
-      "projected_vs_cartesian_model_difference_l2": 0.012320789205057416
+      "projected_vs_cartesian_model_difference_l2": 0.012320789205057416,
+      "inner_vs_public_l2": {
+        "split_cartesian": 0.0,
+        "split_helicity_projected": 0.0
+      }
     },
     {
       "j_max": 5,
@@ -49,13 +63,19 @@
       "steps": 400,
       "dt": 0.002,
       "median_ms": {
-        "rk4_dense": 5.192583,
-        "split_cartesian": 2.243625,
-        "split_helicity_projected": 2.064833
+        "rk4_dense": 5.185958,
+        "split_cartesian": 2.325167,
+        "split_helicity_projected": 2.158208
+      },
+      "component_median_ms": {
+        "cartesian_spectral_setup": 0.380458,
+        "cartesian_inner_propagation": 1.873541,
+        "helicity_projected_spectral_setup": 0.43375,
+        "helicity_projected_inner_propagation": 1.71825
       },
       "speedup_vs_rk4": {
-        "split_cartesian": 2.3143720541534347,
-        "split_helicity_projected": 2.5147714125064833
+        "split_cartesian": 2.230359367735737,
+        "split_helicity_projected": 2.4028999985172885
       },
       "final_norm_error": {
         "rk4_dense": 6.661338147750939e-16,
@@ -63,7 +83,11 @@
         "split_helicity_projected": 8.670841822322473e-14
       },
       "same_grid_cartesian_vs_rk4_l2": 6.703882231320245e-09,
-      "projected_vs_cartesian_model_difference_l2": 0.012320789204978044
+      "projected_vs_cartesian_model_difference_l2": 0.012320789204978044,
+      "inner_vs_public_l2": {
+        "split_cartesian": 0.0,
+        "split_helicity_projected": 0.0
+      }
     }
   ],
   "cartesian_convergence": {

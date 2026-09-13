@@ -153,4 +153,8 @@ rho_result = solver.propagate(ensemble_problem, options=options)
 
 `state` は選択した backend 上に残ります。NumPy が必要な保存・解析境界では `host_result = result.to_numpy()` と明示します。metadata は schema/package version、モデル宣言、全実行選択、時間格子、無次元化時に実際に使った scale、設定 hash を持つ読み取り専用JSON値です。設定 hash は宣言済み契約を対象とし、Hamiltonian・dipole・field の数値配列本体は暗黙にhostへ転送してhashしません。
 
+このbackend-native方針は公開結果境界では成立していますが、現行CuPy
+RK4/split低水準アダプタにはhost往復が残っています。実GPUで移行と
+CPU/GPU一致を検証するまでは、Phase 5の未完了事項として扱います。
+
 非公開 `_propagate_array()` は既存 optimizer と数値 kernel の移行用です。新規コードの公開 API として使用しません。

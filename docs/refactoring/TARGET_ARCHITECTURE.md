@@ -442,6 +442,12 @@ Remaining stage intermediates may be replaced only in a separately benchmarked
 unit that assesses any numerical drift; the slower sub-ulp-different
 output-buffer experiment is not part of the architecture.
 
+D-062 verifies the NumPy side of this target. The typed result boundary already
+preserves an existing device array, but current CuPy RK4 and split helpers
+return through host memory. The target is still one direct
+`device kernel -> backend-native PropagationResult` path; the current
+`device -> host -> device` adapter is recorded debt, not an accepted layer.
+
 ## 7. Units and scaling ownership
 
 `core/units` owns physical unit definitions and pure conversions.

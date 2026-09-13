@@ -153,14 +153,25 @@ The command writes `benchmarks/split-polarization-v0.3.json`. It pins
 OpenBLAS and OpenMP to one thread before importing NumPy, performs one untimed
 warmup, and reports the median of seven public-API calls. The timed scope
 includes validation and eigendecomposition; basis, operator, field, and initial
-state construction are excluded.
+state construction are excluded. The artifact additionally measures spectral
+setup and the already prepared inner propagation loop separately.
 
 The recorded CPU result used 400 propagation steps and seven timed repetitions:
 
 | LinMol workload | Dimension | Dense RK4 (ms) | Cartesian split (ms) | Speedup | Projected split (ms) |
 |---|---:|---:|---:|---:|---:|
-| `J_max=3` | 32 | 1.027 | 0.615 | 1.67x | 0.487 |
-| `J_max=5` | 72 | 5.193 | 2.244 | 2.31x | 2.065 |
+| `J_max=3` | 32 | 1.084 | 0.655 | 1.66x | 0.547 |
+| `J_max=5` | 72 | 5.186 | 2.325 | 2.23x | 2.158 |
+
+| LinMol workload | Cartesian setup (ms) | Cartesian inner (ms) | Projected setup (ms) | Projected inner (ms) |
+|---|---:|---:|---:|---:|
+| `J_max=3` | 0.046 | 0.556 | 0.073 | 0.391 |
+| `J_max=5` | 0.380 | 1.874 | 0.434 | 1.718 |
+
+Both prepared inner-loop final states are exactly equal to the corresponding
+public-call final state in the recorded environment. Setup plus inner time is
+not expected to equal public time exactly because public validation and array
+preparation are additional work and each median is sampled independently.
 
 The maximum Cartesian final-state norm error is `1.85e-13`. Its same-grid
 L2 difference from RK4 is `6.71e-9`; halving the step from 0.02 to 0.01

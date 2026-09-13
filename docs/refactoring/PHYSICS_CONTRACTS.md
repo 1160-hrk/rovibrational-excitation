@@ -750,8 +750,8 @@ only inside private numerical/optimizer migration boundaries.
 
 | State path | Algorithm | NumPy dense | NumPy sparse | CuPy dense | CuPy sparse |
 |---|---|---:|---:|---:|---:|
-| Pure state | RK4 | Yes | Yes | Yes when CuPy is installed | No |
-| Pure state | Split operator | Yes | Accepted | Yes when CuPy is installed | No |
+| Pure state | RK4 | Yes | Yes | Implemented but real-CUDA parity/transfer closure pending | No |
+| Pure state | Split operator | Yes | Accepted | Implemented but real-CUDA parity/transfer closure pending | No |
 | Incoherent pure-state ensemble | Delegates to selected pure solver | Same as pure solver | Same as pure solver | Same as pure solver | No |
 | Explicit density matrix | Liouville RK4 | Yes | No | No | No |
 
@@ -774,6 +774,10 @@ Additional constraints:
   saved-time axis exactly once.
 - Dipole helper `_xp` raises when requested CuPy is unavailable; it never
   substitutes NumPy.
+- D-062 verifies every CPU row. The current CuPy RK4 and split adapters still
+  cross host memory before `PropagationResult` restores device ownership.
+  This violates the Phase 5 no-repeated-transfer target and remains explicitly
+  unverified until a real CUDA job can test a backend-native replacement.
 
 ### Numba CSR RK4 reference anchor
 
