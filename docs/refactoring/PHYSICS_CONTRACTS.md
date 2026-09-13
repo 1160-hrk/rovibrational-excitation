@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-10
+Last verified against source and tests: 2026-09-13
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -396,8 +396,12 @@ kernel. Caller-owned arrays are not modified.
 arrays and scalar controls. It performs no unit conversion, model inspection,
 configuration lookup, I/O, or validation fallback. Its left/mid/right field
 indices, `H = H0 - mu_x E_x - mu_y E_y`, commutator, RK4 stage order,
-trajectory allocation, and stride write condition are the moved legacy
-implementation. Low-level stride trajectories retain their characterized
+trajectory allocation, and stride write condition remain the characterized
+legacy calculation. Under D-061, the right-endpoint Hamiltonian at field index
+`2*s + 2` becomes the next step's left-endpoint Hamiltonian because both use
+the identical shared field-grid sample. The kernel reuses that exact array; it
+does not alter a field sample, equation, commutator, RK stage, or operation
+within a stage. Low-level stride trajectories retain their characterized
 endpoint omission when stride does not divide the step count; the typed result
 boundary remains responsible for appending an already computed endpoint.
 

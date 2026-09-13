@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-10
+Last updated: 2026-09-13
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1133,6 +1133,23 @@ No allocation or speed claim is made: inherited per-step stage intermediates
 remain. An allocation-stable replacement requires a separate measured unit.
 CuPy dense separation and real-GPU validation remain before P5.1 can be called
 complete.
+
+P5.1-c implements D-061 on 2026-09-13. The dense Liouville kernel reuses the
+right-endpoint Hamiltonian as the next step's exactly identical left-endpoint
+Hamiltonian. Field indices, the `-mu E` sign, both Cartesian components,
+commutator expressions, RK4 stages, stride, output shapes, and `fastmath`
+remain unchanged. Direct comparison with the retained pre-change Numba loop is
+bitwise exact for multiple dimensions and both output modes.
+
+`benchmarks/liouville-endpoint-reuse-v0.3.json` records single-thread median
+speedups of 1.019x to 1.044x for dimensions 4 to 64, with zero final-state
+difference. It also records the analytical source-level Hamiltonian-array
+traffic removed, explicitly not process RSS. A full output-buffer experiment
+was slower for representative nontrivial dimensions and changed sub-ulp
+results, so it was rejected rather than weakening the exact contract.
+Remaining stage and commutator intermediates are intentionally preserved.
+The complete suite passes 1188 tests with 10 optional-GPU skips; branch
+coverage remains 75%.
 
 Separate:
 

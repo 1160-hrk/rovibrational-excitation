@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-10
+Last updated: 2026-09-13
 
 ## How to use this log
 
@@ -2390,6 +2390,49 @@ This checkpoint makes no allocation-stability or speed claim. The inherited
 kernel still creates stage Hamiltonians and commutator intermediates inside the
 time loop. Buffer reuse requires its own benchmark, numerical comparison, and
 implementation-replacement commit. CuPy density propagation remains unsupported.
+
+Implementation commit: this checkpoint.
+
+
+### D-061: Dense Liouville RK4 reuses the exact shared endpoint Hamiltonian
+
+Status: Accepted and implemented on 2026-09-13 as P5.1-c.
+
+Scope: Dense NumPy/Numba Liouville RK4 allocation reduction; no equation,
+sampling, operation-order, or public-interface change.
+
+The odd field grid gives adjacent RK4 steps one identical physical sample:
+the right endpoint at index `2*s + 2` is the next step's left endpoint.
+Because `H(t) = H0 - mu_x*Ex(t) - mu_y*Ey(t)` depends only on the operators
+and that field sample, the already constructed `H4` is exactly the next
+step's `H1`. The kernel constructs the initial `H1` once, retains the
+existing midpoint and right-endpoint expressions, and assigns `H1 = H4`
+after each state update.
+
+This removes `steps - 1` redundant complex128 Hamiltonian constructions.
+It does not cache a field-dependent generator outside its valid endpoint,
+change either Cartesian component, exploit Hermiticity, rewrite a commutator,
+reorder an RK stage, or repair the density matrix.
+
+The pre-change Numba loop remains as test and benchmark reference.
+Dimensions 2, 4, and 7, final-only and stride-two trajectories, and the frozen
+complex reference are exactly equal with `np.array_equal`. The committed
+single-thread benchmark covers dimensions 4, 16, 32, and 64. Every final state
+is exactly equal; measured median speedups are 1.024x, 1.019x, 1.044x, and
+1.021x. These are modest environment-specific measurements, not a general
+speed guarantee. The analytical eliminated Hamiltonian-array traffic ranges
+from 255,744 to 3,260,416 bytes for those workloads and is explicitly not an
+RSS measurement.
+
+An exploratory fully reusable-buffer rewrite was rejected before commit. Its
+output-buffer ufunc form introduced sub-ulp differences from the old
+`fastmath` array expressions and gave no consistent speed benefit. The
+remaining RK stage and commutator intermediates therefore stay unchanged.
+Replacing them later requires a new exact reference, benchmark, and explicit
+assessment of any numerical difference.
+
+The complete suite passes 1188 tests with 10 optional-GPU skips and retains
+75% measured branch coverage.
 
 Implementation commit: this checkpoint.
 

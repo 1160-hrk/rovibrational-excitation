@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-10
+Last verified: 2026-09-13
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-060 Liouville NumPy kernel separation
+Latest API checkpoint: D-061 Liouville shared-endpoint reuse
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -128,7 +128,8 @@ D-060 keeps `rk4_lvne` and `rk4_lvne_traj` as the internal validated low-level
 entry points. Their prepared arrays now enter
 `dynamics.algorithms.rk4.liouville_numpy.rk4_liouville_numpy_dense`, an internal
 prevalidated kernel that is not re-exported from `dynamics.algorithms` or the
-package root.
+package root. D-061 changes no entry point or signature: the internal kernel
+reuses the exactly shared right/next-left endpoint Hamiltonian.
 
 The former 25-name surface was reduced under D-022 after dimensional-equivalence
 and strict-generator tests identified the production path. Compatibility

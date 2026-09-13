@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-09-10
+Last updated: 2026-09-13
 
 ## 1. Design goals
 
@@ -436,8 +436,11 @@ validated low-level API. `dynamics.algorithms.rk4.lvne` owns validation and
 numeric dense-array preparation; `liouville_numpy` owns only the prevalidated
 NumPy/Numba loop. The kernel has no dependency on units, model objects,
 configuration, runners, or I/O. Its inherited temporary-allocation behavior is
-not an architectural requirement and may be replaced only in a separately
-benchmarked numerical implementation unit.
+not an architectural requirement. P5.1-c reuses only the bitwise-identical
+right/next-left endpoint Hamiltonian and records the modest measured benefit.
+Remaining stage intermediates may be replaced only in a separately benchmarked
+unit that assesses any numerical drift; the slower sub-ulp-different
+output-buffer experiment is not part of the architecture.
 
 ## 7. Units and scaling ownership
 

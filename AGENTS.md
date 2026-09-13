@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-10
+Last verified: 2026-09-13
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P5.1-b D-060 Liouville NumPy kernel separation
+Verified structural checkpoint: P5.1-c D-061 exact Liouville endpoint reuse
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -114,6 +114,9 @@ The authoritative details and formulas are in
 - Density matrices must be finite, square, Hermitian, positive semidefinite,
   and have positive real trace within the documented scale-aware tolerance.
 - Liouville propagation currently supports NumPy dense RK4 only.
+- Dense Liouville RK4 reuses only the bitwise-identical right/next-left
+  endpoint Hamiltonian; its field samples, commutator, stages, and outputs are
+  unchanged.
 - Validated Liouville wrappers own problem checks and numeric array
   preparation; `liouville_numpy.py` owns only the unchanged prevalidated
   NumPy/Numba loop.
@@ -166,19 +169,20 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P5.1-b:
+Current local CPU baseline after P5.1-c:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1184 passed, 10 GPU tests skipped (1194 collected)
+1188 passed, 10 GPU tests skipped (1198 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
-Numba CSR comparison is `benchmarks/numba-csr-v0.2.10.json`. CUDA remains
-unverified.
+Numba CSR comparison is `benchmarks/numba-csr-v0.2.10.json`; exact Liouville
+endpoint reuse is `benchmarks/liouville-endpoint-reuse-v0.3.json`. CUDA
+remains unverified.
 
 Use Ruff without broad automatic fixes while a worktree contains unrelated
 changes:
@@ -245,27 +249,30 @@ workflow validation and translates model errors at its boundary.
 Phase 4 is complete for all decided unit/scaling contracts; unresolved Class-D
 optimizer quantities and adaptive integration are explicitly deferred. P5.1-b
 separates validated Liouville preparation from the unchanged dense NumPy/Numba
-kernel.
+kernel. P5.1-c reuses only its exactly shared right/next-left endpoint
+Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
 The next work is:
 
-1. Benchmark the inherited dense Liouville kernel before replacing per-step
-   intermediates with reusable buffers. Preserve field indices, interaction sign,
-   commutator, RK4 order, stride, and shapes; compare runtime and numerical error
-   in a separate implementation-replacement commit.
-2. Keep CuPy density propagation unsupported. Separate the Schrödinger CuPy
+1. Audit the already implemented D-019 split-operator and D-026 backend-native
+   result contracts against the remaining P5.2/P5.3 acceptance rows. Add
+   missing characterization without changing their numerical implementations.
+2. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
+   slower on representative dimensions and introduced sub-ulp differences;
+   do not revive it without a separate reference and benchmark.
+3. Keep CuPy density propagation unsupported. Separate the Schrödinger CuPy
    dense kernel only when a real CUDA job can execute and compare it.
-3. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+4. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-4. Reduce exact transition debt only with Phase 6 model consolidation; never
+5. Reduce exact transition debt only with Phase 6 model consolidation; never
    broaden or hide the four recorded reverse imports.
-5. Preserve the characterized visualization debts and fix them only in a
+6. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
-6. Defer persistence schema versioning and checkpoint-manager redesign to its
+7. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
-7. Preserve private optimization adapters, especially
+8. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
    spectroscopy references before Phase 7 decomposition.
-8. Preserve the D-044 support boundary: active examples, benchmarks, and
+9. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.

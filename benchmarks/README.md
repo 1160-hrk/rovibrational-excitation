@@ -103,6 +103,35 @@ On the same 4001-point, seven-repeat protocol, every P2.5 final state was exactl
 
 CUDA was unavailable and remains explicitly unverified. No P2.5 benchmark artifact claims a GPU result.
 
+## Dense Liouville shared-endpoint reuse
+
+P5.1-c can be reproduced with:
+
+~~~bash
+python benchmarks/run_liouville_endpoint_reuse.py
+~~~
+
+The script compares the production kernel with an embedded pre-P5.1-c Numba
+reference in one process. It pins BLAS/OpenMP thread environment variables to
+one, warms both functions, alternates measurement order, and reports the median
+of 11 final-state calls. Operators, density matrices, and two real field
+components are deterministic.
+
+| Dimension | Steps | Legacy (ms) | Reuse (ms) | Speedup | Final difference |
+|---:|---:|---:|---:|---:|---:|
+| 4 | 1000 | 1.007 | 0.983 | 1.024x | 0 |
+| 16 | 500 | 5.027 | 4.931 | 1.019x | 0 |
+| 32 | 200 | 11.959 | 11.460 | 1.044x | 0 |
+| 64 | 50 | 20.317 | 19.905 | 1.021x | 0 |
+
+The optimization constructs the first left-endpoint Hamiltonian once and then
+uses each step's right-endpoint matrix as the next step's identical
+left-endpoint matrix. It removes `steps - 1` source-level complex128
+Hamiltonian-array constructions. The artifact's eliminated-byte field is an
+analytical allocation-traffic value, not measured process RSS or peak memory.
+The small timings are environment-specific and are not a general speed
+guarantee.
+
 ## Regression policy
 
 Wall time is environment-dependent, so the artifact contains no absolute test

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "artifact": "liouville-endpoint-reuse-v0.3",
+  "generated_at_utc": "2026-09-13T04:36:57.018557+00:00",
+  "protocol": {
+    "random_seed": 20260913,
+    "dt": 0.001,
+    "record_trajectory": false,
+    "timer": "time.perf_counter_ns",
+    "statistic": "median",
+    "alternating_measurement_order": true,
+    "allocation_metric": "analytical complex128 bytes for the eliminated source-level endpoint Hamiltonian arrays; not process RSS",
+    "thread_environment": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "environment": {
+    "python": "3.12.12",
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "machine": "aarch64",
+    "numpy": "2.3.5",
+    "numba": "0.63.1",
+    "source_commit": "3371015fa0f84cdcd3321a6c264b08dc966c5be2",
+    "source_status": "M AGENTS.md\n M benchmarks/README.md\n M docs/refactoring/API_INVENTORY.md\n M docs/refactoring/DECISIONS.md\n M docs/refactoring/EXECUTION_PLAN.md\n M docs/refactoring/PHYSICS_CONTRACTS.md\n M docs/refactoring/README.md\n M docs/refactoring/TARGET_ARCHITECTURE.md\n M docs/refactoring/UNIT_BOUNDARY_AUDIT.md\n M src/rovibrational_excitation/dynamics/README.md\n M src/rovibrational_excitation/dynamics/algorithms/rk4/liouville_numpy.py\n M tests/contracts/test_liouville_kernel_separation_contracts.py\n?? benchmarks/liouville-endpoint-reuse-v0.3.json\n?? benchmarks/run_liouville_endpoint_reuse.py\n?? tests/performance/test_liouville_endpoint_reuse_report.py"
+  },
+  "results": [
+    {
+      "dimension": 4,
+      "propagation_steps": 1000,
+      "field_points": 2001,
+      "repeats": 11,
+      "legacy_median_ns": 1006750,
+      "endpoint_reuse_median_ns": 983209,
+      "speedup": 1.0239430273726136,
+      "exact_equal": true,
+      "max_abs_difference": 0.0,
+      "legacy_hamiltonian_builds": 3000,
+      "endpoint_reuse_hamiltonian_builds": 2001,
+      "avoided_hamiltonian_builds": 999,
+      "avoided_hamiltonian_allocation_traffic_bytes": 255744
+    },
+    {
+      "dimension": 16,
+      "propagation_steps": 500,
+      "field_points": 1001,
+      "repeats": 11,
+      "legacy_median_ns": 5026625,
+      "endpoint_reuse_median_ns": 4931208,
+      "speedup": 1.0193496198091827,
+      "exact_equal": true,
+      "max_abs_difference": 0.0,
+      "legacy_hamiltonian_builds": 1500,
+      "endpoint_reuse_hamiltonian_builds": 1001,
+      "avoided_hamiltonian_builds": 499,
+      "avoided_hamiltonian_allocation_traffic_bytes": 2043904
+    },
+    {
+      "dimension": 32,
+      "propagation_steps": 200,
+      "field_points": 401,
+      "repeats": 11,
+      "legacy_median_ns": 11959417,
+      "endpoint_reuse_median_ns": 11459834,
+      "speedup": 1.0435942614875573,
+      "exact_equal": true,
+      "max_abs_difference": 0.0,
+      "legacy_hamiltonian_builds": 600,
+      "endpoint_reuse_hamiltonian_builds": 401,
+      "avoided_hamiltonian_builds": 199,
+      "avoided_hamiltonian_allocation_traffic_bytes": 3260416
+    },
+    {
+      "dimension": 64,
+      "propagation_steps": 50,
+      "field_points": 101,
+      "repeats": 11,
+      "legacy_median_ns": 20316625,
+      "endpoint_reuse_median_ns": 19904625,
+      "speedup": 1.0206987069588098,
+      "exact_equal": true,
+      "max_abs_difference": 0.0,
+      "legacy_hamiltonian_builds": 150,
+      "endpoint_reuse_hamiltonian_builds": 101,
+      "avoided_hamiltonian_builds": 49,
+      "avoided_hamiltonian_allocation_traffic_bytes": 3211264
+    }
+  ]
+}

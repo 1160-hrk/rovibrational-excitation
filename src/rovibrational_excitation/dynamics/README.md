@@ -6,6 +6,10 @@
 
 公開 `propagate()` は `PropagationOptions` と coupling 指定を必須にします。algorithm、backend、dense/CSR、trajectory、stride、次元化、逐次規格化は推測されません。
 
+密度行列のNumPy/Numba RK4カーネルは、隣接ステップで同じ電場標本を
+参照する右端・次の左端のハミルトニアンだけを再利用します。場の添字、
+交換子、RK4段階、stride、出力形状は変更しません。
+
 ```python
 from rovibrational_excitation.core.execution import (
     ArrayBackend,

@@ -25,7 +25,7 @@ def rk4_liouville_numpy_dense(
     stride: int,
     record_traj: bool,
 ) -> np.ndarray:
-    """Run the unchanged complex128 dense kernel on prepared numeric arrays."""
+    """Run dense complex128 RK4 with exact shared-endpoint Hamiltonian reuse."""
     dim = rho0.shape[0]
     n_out = steps // stride + 1 if record_traj else 1
     traj = np.empty((n_out, dim, dim), np.complex128)
@@ -35,18 +35,16 @@ def rk4_liouville_numpy_dense(
 
     buf = np.empty_like(rho)
     out_idx = 1
+    H1 = H0 - mu_x * Ex[0] - mu_y * Ey[0]
 
     for s in range(steps):
         idx = 2 * s
-        ex1 = Ex[idx]
         ex2 = Ex[idx + 1]
         ex4 = Ex[idx + 2]
 
-        ey1 = Ey[idx]
         ey2 = Ey[idx + 1]
         ey4 = Ey[idx + 2]
 
-        H1 = H0 - mu_x * ex1 - mu_y * ey1
         H2 = H0 - mu_x * ex2 - mu_y * ey2
         H4 = H0 - mu_x * ex4 - mu_y * ey4
 
@@ -62,6 +60,7 @@ def rk4_liouville_numpy_dense(
         k4 = -1j * (H4 @ buf - buf @ H4)
 
         rho += (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        H1 = H4
 
         if record_traj and ((s + 1) % stride == 0):
             traj[out_idx] = rho

@@ -6,11 +6,60 @@ import ast
 from pathlib import Path
 
 import numpy as np
+from numba import njit
 
 from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
     rk4_lvne,
     rk4_lvne_traj,
 )
+
+
+@njit(fastmath=True)  # type: ignore[untyped-decorator]
+def _legacy_liouville_kernel_reference(
+    h0: np.ndarray,
+    mu_x: np.ndarray,
+    mu_y: np.ndarray,
+    field_x: np.ndarray,
+    field_y: np.ndarray,
+    rho0: np.ndarray,
+    dt: float,
+    steps: int,
+    stride: int,
+    record_trajectory: bool,
+) -> np.ndarray:
+    """Freeze the pre-P5.1-c executable loop for exact parity testing."""
+    dimension = rho0.shape[0]
+    output_count = steps // stride + 1 if record_trajectory else 1
+    trajectory = np.empty((output_count, dimension, dimension), np.complex128)
+
+    rho = rho0.copy()
+    trajectory[0] = rho
+    buffer = np.empty_like(rho)
+    output_index = 1
+
+    for step_index in range(steps):
+        field_index = 2 * step_index
+        h1 = h0 - mu_x * field_x[field_index] - mu_y * field_y[field_index]
+        h2 = h0 - mu_x * field_x[field_index + 1] - mu_y * field_y[field_index + 1]
+        h4 = h0 - mu_x * field_x[field_index + 2] - mu_y * field_y[field_index + 2]
+
+        k1 = -1j * (h1 @ rho - rho @ h1)
+        buffer[:, :] = rho + 0.5 * dt * k1
+        k2 = -1j * (h2 @ buffer - buffer @ h2)
+        buffer[:, :] = rho + 0.5 * dt * k2
+        k3 = -1j * (h2 @ buffer - buffer @ h2)
+        buffer[:, :] = rho + dt * k3
+        k4 = -1j * (h4 @ buffer - buffer @ h4)
+
+        rho += (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
+        if record_trajectory and (step_index + 1) % stride == 0:
+            trajectory[output_index] = rho
+            output_index += 1
+
+    if not record_trajectory:
+        trajectory[0] = rho
+    return trajectory
 
 
 def _complex_liouville_problem() -> tuple[np.ndarray, ...]:
@@ -70,6 +119,48 @@ def test_liouville_wrappers_preserve_frozen_complex_trajectory_and_final_state()
         np.testing.assert_array_equal(array, snapshot)
 
 
+def test_liouville_kernel_matches_pre_allocation_refactor_loop_exactly() -> None:
+    from rovibrational_excitation.dynamics.algorithms.rk4.liouville_numpy import (
+        rk4_liouville_numpy_dense,
+    )
+
+    random = np.random.default_rng(20260913)
+    steps = 5
+    for dimension in (2, 4, 7):
+        operators = []
+        for _ in range(3):
+            raw = random.normal(size=(dimension, dimension)) + 1j * random.normal(
+                size=(dimension, dimension)
+            )
+            operators.append(np.ascontiguousarray((raw + raw.conj().T) / 20.0))
+        h0, mu_x, mu_y = operators
+
+        state_factor = random.normal(size=(dimension, dimension)) + 1j * random.normal(
+            size=(dimension, dimension)
+        )
+        rho0 = state_factor @ state_factor.conj().T
+        rho0 = np.ascontiguousarray(rho0 / np.trace(rho0), dtype=np.complex128)
+        field_x = np.ascontiguousarray(random.normal(size=2 * steps + 1))
+        field_y = np.ascontiguousarray(random.normal(size=2 * steps + 1))
+
+        for record_trajectory, stride in ((False, 1), (True, 2)):
+            arguments = (
+                h0,
+                mu_x,
+                mu_y,
+                field_x,
+                field_y,
+                rho0,
+                0.0125,
+                steps,
+                stride,
+                record_trajectory,
+            )
+            expected = _legacy_liouville_kernel_reference(*arguments)
+            actual = rk4_liouville_numpy_dense(*arguments)
+            np.testing.assert_array_equal(actual, expected)
+
+
 def test_liouville_numpy_kernel_is_separate_from_validation_boundary() -> None:
     from rovibrational_excitation.dynamics.algorithms.rk4.liouville_numpy import (
         rk4_liouville_numpy_dense,
@@ -94,6 +185,12 @@ def test_liouville_numpy_kernel_is_separate_from_validation_boundary() -> None:
     assert "validate_density_matrix_problem" not in kernel_source
     assert "@njit" not in boundary_source
     assert "validate_density_matrix_problem" in boundary_source
+    assert kernel_source.index("H1 = H0 -") < kernel_source.index(
+        "for s in range(steps):"
+    )
+    assert kernel_source.count("H1 = H0 -") == 1
+    assert "H1 = H4" in kernel_source
+    assert "ex1 = Ex[idx]" not in kernel_source
     for node in ast.walk(kernel_tree):
         if isinstance(node, ast.Import):
             imported = {alias.name for alias in node.names}
