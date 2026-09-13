@@ -2497,6 +2497,38 @@ move.
 
 Implementation commit: this checkpoint.
 
+### D-064: Reduced Planck's constant has one derived authority
+
+Status: Accepted by the user and implemented on 2026-09-13 as P6.1-b.
+
+Scope: Physical constants, energy/frequency and dipole/coupling conversion,
+and dependent numerical results.
+
+`CONSTANTS.HBAR` is now derived as `CONSTANTS.H / (2 pi)` from the exact SI
+Planck constant. `Hamiltonian._HBAR`, the dimensional propagation alias in J fs,
+strict nondimensionalization, dipole conversion, spectroscopy, and global-phase
+restoration all consume that authority. `Hamiltonian.to_energy_units()` and
+`to_frequency_units()` delegate to the same central converter used by
+`get_matrix()` so the public conversion methods cannot diverge by formula or
+constant.
+
+This intentionally replaces the former rounded `1.054571817e-34 J s`. The
+relative constant correction is approximately `6.13e-10`. For the active typed
+TwoLevel example, the maximum absolute population change across dimensional
+dense, CSR, and nondimensional routes is `1.142e-13`; post-change dense/CSR
+population disagreement is `6.78e-20`, and maximum norm error is `5.07e-13`.
+No Hamiltonian sign, time step, RK stage, polarization, normalization, or model
+formula changes.
+
+Exact authority, alias, Hamiltonian round-trip, and dipole round-trip contracts
+are executable. Independent nondimensional references derive hbar from the
+exact Planck constant rather than retaining the old rounded literal.
+
+O-013 is resolved. The following TwoLevel ownership move remains structural
+and must preserve the new reference values.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -2665,7 +2697,7 @@ to the current public API.
 
 ### O-013: One authoritative reduced Planck constant
 
-Status: Open; discovered by P6.1-a on 2026-09-13.
+Status: Resolved by D-064 on 2026-09-13.
 
 Two numerical definitions of reduced Planck's constant are active:
 

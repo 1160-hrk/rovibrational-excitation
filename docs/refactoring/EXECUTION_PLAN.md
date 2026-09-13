@@ -1226,12 +1226,12 @@ mapping, Hamiltonian formula and current storage conversion, coherent state,
 scalar-x capability, exact Cartesian dipoles, dense/CSR parity, cache reuse,
 and stateless-builder parity. No source implementation changed.
 
-This checkpoint also found O-013: two active reduced-Planck-constant values
-make the current production `rad/fs -> J -> rad/fs` route drift by about
-`6.13e-10` relative. P6.1-b must not hide a correction inside the ownership
-move. After the user decides O-013, implement the constant correction in a
-separate numerical-behavior commit or preserve the characterized bit pattern
-during the structural move.
+P6.1-b resolves O-013 under D-064 in a separate approved numerical-behavior
+commit. Reduced Planck's constant is derived once from exact Planck's constant,
+all runtime aliases consume it, and all Hamiltonian conversion methods use the
+central converter. The typed TwoLevel example changes by at most `1.142e-13`
+in population; dense/CSR and dimensional/nondimensional checks continue to
+pass. P6.1-c may now move ownership while preserving these new references.
 
 For each model:
 

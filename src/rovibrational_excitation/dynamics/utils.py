@@ -11,6 +11,7 @@ import scipy.sparse
 
 from ..core.operators import Hamiltonian
 from ..core.time import FIELD_INTERVALS_PER_PROPAGATION_STEP
+from ..core.units.constants import CONSTANTS
 from ..dipole.base import DipoleMatrixBase
 from ..fields import ElectricField
 
@@ -21,8 +22,8 @@ if TYPE_CHECKING:
 else:
     Array = np.ndarray
 
-# Physical constants
-DIRAC_HBAR = 6.62607015e-019 / (2 * np.pi)  # J fs
+# Compatibility alias in J fs; PhysicalConstants.HBAR is authoritative.
+DIRAC_HBAR = CONSTANTS.get_hbar_in_units("J·fs")
 
 
 # Optional CuPy support

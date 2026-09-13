@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1201 passed, 10 skipped (1211 collected) |
+| Pytest | 1205 passed, 10 skipped (1215 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -56,13 +56,15 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-13. P6.1-a implements D-063:
+These rows were last verified locally on 2026-09-13. P6.1-b implements D-064:
+reduced Planck's constant is derived once as `H/(2*pi)`, all runtime aliases
+share it, and Hamiltonian conversions use the central converter. The approved
+correction changes the active typed TwoLevel population by at most
+`1.142e-13`; dense/CSR disagreement remains `6.78e-20`. Four new contracts
+cover constant authority and energy/dipole round trips. P6.1-a implements D-063:
 the TwoLevel production parameter projection, basis/state mapping, Hamiltonian,
 dense/CSR dipoles, scalar-x coupling, and builder parity are fixed by eight
-pre-move characterization cases. No source implementation changed. The audit
-also exposes O-013: the production frequency-to-J-to-frequency route uses two
-slightly different reduced-Planck-constant values and maps `0.37 rad/fs` to
-`0.3700000002267061 rad/fs`; it is recorded rather than silently repaired.
+pre-move characterization cases. Its O-013 finding is resolved by D-064.
 P5.4-a implements D-062:
 all CPU-verifiable Phase 5 rows now have executable evidence. NumPy CSR split
 is exactly equal to dense spectral execution, prepared split kernels exactly
@@ -288,7 +290,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-a freezes TwoLevel behavior; O-013 constant unification awaits approval before the ownership move |
+| 6 | Model consolidation | In progress — P6.1-a freezes TwoLevel behavior and P6.1-b resolves constant authority; TwoLevel ownership move is next |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

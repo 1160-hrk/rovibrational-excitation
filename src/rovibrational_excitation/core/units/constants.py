@@ -4,6 +4,7 @@ Physical constants used in rovibrational excitation calculations.
 All constants are in SI base units (no prefixes).
 """
 
+import math
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -21,7 +22,7 @@ class PhysicalConstants:
     # Fundamental constants
     C: ClassVar[float] = 299792458  # Speed of light [m/s]
     H: ClassVar[float] = 6.62607015e-34  # Planck constant [J·s]
-    HBAR: ClassVar[float] = 1.054571817e-34  # Reduced Planck constant [J·s]
+    HBAR: ClassVar[float] = H / (2.0 * math.pi)  # Reduced Planck constant [J·s]
     E: ClassVar[float] = 1.602176634e-19  # Elementary charge [C]
     BOLTZMANN: ClassVar[float] = 1.380649e-23  # Boltzmann constant [J/K]
     AVOGADRO: ClassVar[float] = 6.02214076e23  # Avogadro constant [1/mol]

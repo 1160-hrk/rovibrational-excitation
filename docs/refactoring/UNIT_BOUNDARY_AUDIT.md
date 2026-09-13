@@ -1,8 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-13
-Current checkpoint: Phase 4 closed; P6.1-a records O-013, while D-059 remains
-the latest completed unit-boundary migration
+Current checkpoint: Phase 4 closed; P6.1-b implements D-064 constant authority
 
 ## Purpose
 
@@ -214,11 +213,11 @@ or conversion. P5.4-a audits solver capabilities and backend transfers without
 changing any physical quantity or unit conversion.
 
 P6.1-a found a separate internal conversion inconsistency rather than a
-missing public unit: `Hamiltonian._HBAR` is derived from exact Planck's
-constant, while `CONSTANTS.HBAR` is a rounded literal. The production TwoLevel
-builder consequently does not exactly preserve a `rad/fs` gap across its J
-storage round trip. O-013 recommends one authoritative derived constant, but
-the resulting numerical change requires a dedicated approved commit.
+missing public unit. P6.1-b resolves it under the approved D-064:
+`CONSTANTS.HBAR` is derived from exact Planck's constant, runtime aliases share
+that value, and Hamiltonian conversion methods use the central converter. The
+production TwoLevel builder now preserves its configured `rad/fs` gap across J
+storage; no public unit field or conversion boundary changed.
 
 ## Recommended implementation order
 

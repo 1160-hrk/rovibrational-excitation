@@ -11,6 +11,7 @@ from typing import Literal
 
 import numpy as np
 
+from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.core.units.converters import converter
 
 
@@ -27,8 +28,8 @@ class Hamiltonian:
     このクラスは物理計算レイヤーでの厳密な単位管理を担当します。
     """
 
-    # Planck constant for physical unit conversions only
-    _HBAR = 6.62607015e-034 / (2 * np.pi)  # J⋅s
+    # Compatibility alias; the authoritative value is PhysicalConstants.HBAR.
+    _HBAR = CONSTANTS.HBAR
 
     def __init__(
         self,
@@ -173,8 +174,9 @@ class Hamiltonian:
         if self._units == "J":
             return Hamiltonian(self._matrix, "J", self._basis_info)
         elif self._units == "rad/fs":
-            # rad/fs → J: E = ℏω, rad/fs → rad/s → J
-            matrix_J = self._matrix * self._HBAR / 1e-15
+            matrix_J = np.asarray(
+                converter.convert_hamiltonian(self._matrix, "rad/fs", "J")
+            )
             return Hamiltonian(matrix_J, "J", self._basis_info)
         else:
             raise ValueError(f"Unknown units: {self._units}")
@@ -184,8 +186,9 @@ class Hamiltonian:
         if self._units == "rad/fs":
             return Hamiltonian(self._matrix, "rad/fs", self._basis_info)
         elif self._units == "J":
-            # J → rad/fs: ω = E/ℏ, J → rad/s → rad/fs
-            matrix_rad_fs = self._matrix / self._HBAR * 1e-15
+            matrix_rad_fs = np.asarray(
+                converter.convert_hamiltonian(self._matrix, "J", "rad/fs")
+            )
             return Hamiltonian(matrix_rad_fs, "rad/fs", self._basis_info)
         else:
             raise ValueError(f"Unknown units: {self._units}")

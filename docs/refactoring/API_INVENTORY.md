@@ -3,7 +3,7 @@
 Last verified: 2026-09-13
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-063 TwoLevel pre-move characterization
+Latest API checkpoint: D-064 reduced Planck constant authority
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -27,6 +27,10 @@ P6.1-a changes no import path, export, signature, or runtime implementation.
 It adds behavior guards before the planned TwoLevel ownership move. The
 current `core.basis.TwoLevelBasis`, `dipole.twolevel`, and `models.twolevel`
 paths retain their inventory disposition until that structural commit.
+
+P6.1-b changes no import path, export, or signature. `Hamiltonian._HBAR` and
+`dynamics.utils.DIRAC_HBAR` remain accessible compatibility aliases, but both
+now delegate to `CONSTANTS.HBAR`; they are not independent constant owners.
 
 ## 2. Package root
 

@@ -11,7 +11,7 @@ from rovibrational_excitation.dynamics.scaling import (
 )
 from rovibrational_excitation.fields import ElectricField, ZeroField
 
-HBAR = 1.054571817e-34
+HBAR = 6.62607015e-34 / (2.0 * np.pi)
 
 
 def _constant_field(values: np.ndarray) -> ElectricField:

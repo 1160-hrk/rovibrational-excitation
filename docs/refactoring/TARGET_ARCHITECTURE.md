@@ -503,9 +503,9 @@ paired `*_units`; model builders consume only canonical
 their angular-frequency arguments until Phase 6.
 
 P6.1-a freezes the complete current TwoLevel projection before ownership
-moves. Its next structural target is `models/two_level/`, but O-013 must be
-resolved separately: the move may not silently change the currently mismatched
-reduced-Planck-constant round trip.
+moves. P6.1-b separately resolves O-013 through the central constant and unit
+converter. The next structural target is `models/two_level/`; that move must
+preserve the corrected conversion values and every P6.1-a behavioral contract.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.

@@ -65,7 +65,7 @@ def test_nondimensionalize_system_basic():
 
     # ダミーのハミルトニアンと双極子行列
     # エネルギー単位（J）のハミルトニアン
-    _HBAR = 1.054571817e-34
+    _HBAR = 6.62607015e-34 / (2.0 * np.pi)
     H0_freq = np.diag([0.0, 0.1, 0.2])  # rad/fs
     H0 = H0_freq * _HBAR / 1e-15  # rad/fs → J
     mu_x = np.array([[0, 1e-30, 0], [1e-30, 0, 1e-30], [0, 1e-30, 0]])  # C·m
@@ -250,7 +250,7 @@ def test_edge_cases():
     ambiguous_zero = ElectricField(tlist, time_units="fs")
     zero_field = ZeroField(tlist, time_units="fs")
 
-    hbar = 1.054571817e-34
+    hbar = 6.62607015e-34 / (2.0 * np.pi)
     h0 = np.diag([0.0, 0.1]) * hbar / 1e-15
     mu_x = np.array([[0, 1e-30], [1e-30, 0]])
     mu_y = np.zeros_like(mu_x)

@@ -65,6 +65,17 @@ The current dimensional propagation boundary uses:
 | Wavefunction | dimensionless complex amplitude |
 | Density matrix | dimensionless complex matrix |
 
+Reduced Planck's constant has one runtime authority:
+
+~~~text
+CONSTANTS.HBAR = CONSTANTS.H / (2 pi)
+~~~
+
+Energy/frequency Hamiltonian conversion, dipole/coupling conversion,
+nondimensionalization, spectroscopy, and global-phase restoration consume this
+same value. `Hamiltonian` retains `_HBAR` only as a compatibility alias and its
+conversion methods delegate to the central converter.
+
 Input objects may accept J, eV, cm^-1, THz, Debye, C*m, intensity units, and
 other documented units. Conversion must happen before entering a numerical
 kernel. A kernel must not inspect unit strings or model classes.
@@ -653,13 +664,14 @@ largest absolute tolerance, `2e-12`.
 The CuPy comparison uses `rtol=2e-12`, `atol=2e-13`, is marked `gpu`, and must
 execute on real CUDA hardware before CuPy parity is considered verified.
 
-P6.1-a adds the ownership-migration reference in
+P6.1-a added the ownership-migration reference in
 `tests/contracts/test_twolevel_model_consolidation.py`. It freezes the exact
 production basis, state mapping, Hamiltonian storage, dipole matrices,
-scalar-x coupling, and dense/CSR behavior. It also records, without repairing,
-the current `0.37 -> 0.3700000002267061 rad/fs` round trip caused by the two
-active reduced-Planck-constant values. O-013 owns the proposed correction;
-until approved, a structural model move must preserve this numerical behavior.
+scalar-x coupling, and dense/CSR behavior. P6.1-b implements the approved D-064
+constant correction: the configured `0.37 rad/fs` gap now reaches propagation
+as `0.37 rad/fs`, rather than `0.3700000002267061 rad/fs`. The accompanying
+reference was updated explicitly; a structural model move must preserve the
+new value.
 
 ## 8. Coherent and incoherent observables
 

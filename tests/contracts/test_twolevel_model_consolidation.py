@@ -34,12 +34,12 @@ def _policy(storage: str) -> ExecutionPolicy:
     return ExecutionPolicy.from_strings(backend="numpy", storage=storage)
 
 
-def _current_builder_gaps(gap_rad_per_fs: float) -> tuple[float, float]:
-    """Return the characterized J storage and propagation-boundary gap."""
+def _unified_builder_gaps(gap_rad_per_fs: float) -> tuple[float, float]:
+    """Return the approved J storage and propagation-boundary gap."""
     assert gap_rad_per_fs == 0.37
     return (
         float.fromhex("0x1.70868888018b1p-65"),
-        float.fromhex("0x1.7ae147b1f98b4p-2"),
+        float.fromhex("0x1.7ae147ae147aep-2"),
     )
 
 
@@ -93,12 +93,12 @@ def test_model_builder_owns_scalar_x_coupling_and_coherent_state_order() -> None
         model.state.data,
         np.full((2, 1), 1.0 / np.sqrt(2.0), dtype=np.complex128),
     )
-    gap_j, propagation_gap = _current_builder_gaps(0.37)
+    gap_j, propagation_gap = _unified_builder_gaps(0.37)
     np.testing.assert_array_equal(model.hamiltonian.matrix, np.diag([0.0, gap_j]))
     np.testing.assert_array_equal(
         model.hamiltonian.get_matrix("rad/fs"), np.diag([0.0, propagation_gap])
     )
-    assert propagation_gap != 0.37
+    assert propagation_gap == 0.37
 
 
 def test_dense_operators_have_exact_two_level_matrices() -> None:
@@ -109,7 +109,7 @@ def test_dense_operators_have_exact_two_level_matrices() -> None:
 
     assert basis.size() == 2
     assert hamiltonian.units == "J"
-    gap_j, propagation_gap = _current_builder_gaps(0.37)
+    gap_j, propagation_gap = _unified_builder_gaps(0.37)
     np.testing.assert_array_equal(hamiltonian.matrix, np.diag([0.0, gap_j]))
     np.testing.assert_array_equal(
         hamiltonian.get_matrix("rad/fs"), np.diag([0.0, propagation_gap])
