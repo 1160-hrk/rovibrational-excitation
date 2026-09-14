@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1205 passed, 10 skipped (1215 collected) |
+| Pytest | 1206 passed, 10 skipped (1216 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -56,7 +56,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-13. P6.1-b implements D-064:
+These rows were last verified locally on 2026-09-13. P6.1-c implements D-065:
+the basis, dipole, stateless dipole builder, and production builders now have
+one owner under `models/two_level/`; all three superseded paths are removed and
+the D-063/D-064 numerical references remain unchanged. P6.1-b implements D-064:
 reduced Planck's constant is derived once as `H/(2*pi)`, all runtime aliases
 share it, and Hamiltonian conversions use the central converter. The approved
 correction changes the active typed TwoLevel population by at most
@@ -290,7 +293,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-a freezes TwoLevel behavior and P6.1-b resolves constant authority; TwoLevel ownership move is next |
+| 6 | Model consolidation | In progress — P6.1-a/b freeze and correct TwoLevel references; P6.1-c moves implementation ownership; schema/factory cleanup remains |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

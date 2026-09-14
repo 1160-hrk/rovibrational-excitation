@@ -10,13 +10,15 @@ from rovibrational_excitation.core.basis import (
     BasisBase,
     LinMolBasis,
     SymTopBasis,
-    TwoLevelBasis,
     VibLadderBasis,
+)
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
 )
 
 from .linmol import LinMolDipoleMatrix
 from .symtop import SymTopDipoleMatrix
-from .twolevel import TwoLevelDipoleMatrix
 from .viblad import VibLadderDipoleMatrix
 
 

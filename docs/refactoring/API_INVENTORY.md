@@ -3,7 +3,7 @@
 Last verified: 2026-09-13
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-064 reduced Planck constant authority
+Latest API checkpoint: D-065 TwoLevel model ownership
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -31,6 +31,12 @@ paths retain their inventory disposition until that structural commit.
 P6.1-b changes no import path, export, or signature. `Hamiltonian._HBAR` and
 `dynamics.utils.DIRAC_HBAR` remain accessible compatibility aliases, but both
 now delegate to `CONSTANTS.HBAR`; they are not independent constant owners.
+
+P6.1-c intentionally replaces the former `core.basis.TwoLevelBasis`,
+`dipole.twolevel`, `dipole.TwoLevelDipoleMatrix`, and `models.twolevel` paths
+with `models.two_level`. The `dipole` convenience export of
+`create_dipole_matrix` is also removed; transitional callers use the explicit
+`dipole.factory` module. No compatibility shim is retained under D-001.
 
 ## 2. Package root
 
@@ -91,7 +97,7 @@ not treated as intentional API.
 |---|---|---|---|
 | `core` | no re-exported names yet | narrow generic state/operator/time/unit surface pending O-008 | target public package created in P3.1-a |
 | `core.operators` | `Hamiltonian` is directly importable; no package `__all__` yet | generic unit-aware operator owner | target public module; root re-export remains temporary |
-| `core.basis` | `BasisBase`, `LinMolBasis`, `TwoLevelBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; model bases to their `models.*` owners | temporary public; `Hamiltonian` removed in P3.1-a |
+| `core.basis` | `BasisBase`, `LinMolBasis`, `VibLadderBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; remaining model bases to their `models.*` owners | temporary public; `Hamiltonian` removed in P3.1-a and `TwoLevelBasis` moved in P6.1-c |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `Frequency`, `TimeQuantity`, `DipoleMoment`, `ElectricFieldAmplitude`, `GroupDelayDispersion`, `ThirdOrderDispersion`, `converter`, `UnitValidator`, `validator` | immutable constants and frozen explicit conversion boundaries under `core.units`; typed config handles parameter conversion | target public quantity and pure-conversion surface; generic processor deleted by D-045 |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 | `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
@@ -154,14 +160,15 @@ and demo factories are deleted rather than deprecated.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `dipole` | `LinMolDipoleMatrix`, `TwoLevelDipoleMatrix`, `VibLadderDipoleMatrix`, `SymTopDipoleMatrix`, `create_dipole_matrix` | respective `models.*` packages | temporary public; generic factory becomes internal |
+| `dipole` | `LinMolDipoleMatrix`, `VibLadderDipoleMatrix`, `SymTopDipoleMatrix` | respective `models.*` packages | temporary public; TwoLevel and generic-factory convenience exports removed in P6.1-c |
 | `dipole.linmol` | `LinMolDipoleMatrix` | `models.linear_molecule` | temporary public |
-| `dipole.twolevel` | `TwoLevelDipoleMatrix` | `models.two_level` | temporary public |
+| `dipole.factory` | `create_dipole_matrix` | settle with remaining model migrations | transitional explicit module; no longer re-exported by `dipole` |
 | `dipole.viblad` | `VibLadderDipoleMatrix` | `models.vib_ladder` | temporary public |
 | `dipole.symtop` | legacy `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public; not used by production D-053 and retained until Phase 6 removal |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
+| `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `build_mu`, `build_twolevel`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | target model package reached in P6.1-c; parameter schema move remains |
 | `models.symmetric_top` | `SymmetricTopBasis`, `SymmetricTopDipoleMatrix`, `build_symmetric_top_from_parameters` | production model owner | normal NumPy dense/CSR RK4 production path; split, CuPy, all-isomer pure state, and optimization explicitly unsupported |
 | `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | D-052 foundation; D-053 connects CH3F filtering to production SymTop, without supplying constants or weights |
 

@@ -27,7 +27,6 @@ import numpy as np  # noqa: E402
 
 from rovibrational_excitation.core.basis import (  # noqa: E402
     LinMolBasis,
-    TwoLevelBasis,
     VibLadderBasis,
 )
 from rovibrational_excitation.core.execution import (  # noqa: E402
@@ -39,7 +38,6 @@ from rovibrational_excitation.core.states import DensityState, PureState  # noqa
 from rovibrational_excitation.core.time import TimeGrid  # noqa: E402
 from rovibrational_excitation.dipole import (  # noqa: E402
     LinMolDipoleMatrix,
-    TwoLevelDipoleMatrix,
     VibLadderDipoleMatrix,
 )
 from rovibrational_excitation.dynamics import (  # noqa: E402
@@ -59,6 +57,10 @@ from rovibrational_excitation.dynamics.capabilities import (  # noqa: E402
 from rovibrational_excitation.fields import (  # noqa: E402
     ElectricField,
     gaussian_fwhm,
+)
+from rovibrational_excitation.models.two_level import (  # noqa: E402
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
 )
 
 DEFAULT_OUTPUT = ROOT / "benchmarks" / "baseline-v0.2.10.json"

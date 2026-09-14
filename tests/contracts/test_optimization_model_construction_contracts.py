@@ -7,10 +7,10 @@ import pytest
 
 from rovibrational_excitation.core.basis import (
     LinMolBasis,
-    TwoLevelBasis,
     VibLadderBasis,
 )
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 from rovibrational_excitation.optimization.model import (
     OptimizationModelConfigurationError,
     build_optimization_model,

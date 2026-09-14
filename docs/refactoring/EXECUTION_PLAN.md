@@ -1233,6 +1233,15 @@ central converter. The typed TwoLevel example changes by at most `1.142e-13`
 in population; dense/CSR and dimensional/nondimensional checks continue to
 pass. P6.1-c may now move ownership while preserving these new references.
 
+P6.1-c completes the structural move under D-065. `TwoLevelBasis`,
+`TwoLevelDipoleMatrix`, the stateless dipole builder, and model construction now
+share `models/two_level/`; the three superseded owners are removed. Active
+imports use the model package, while the transitional generic dipole factory is
+addressed explicitly as `dipole.factory`. The D-063/D-064 numerical references
+remain exact. P6.1-d may next move `TwoLevelParameters` out of the shared schema
+module and settle the transitional factory without combining that interface
+work with this file move.
+
 For each model:
 
 - add frozen parameter schema;

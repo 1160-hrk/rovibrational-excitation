@@ -9,9 +9,9 @@ import pytest
 from rovibrational_excitation.core.basis import (
     LinMolBasis,
     SymTopBasis,
-    TwoLevelBasis,
     VibLadderBasis,
 )
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 
 @pytest.mark.parametrize(

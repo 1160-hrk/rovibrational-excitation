@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-13
-Current checkpoint: Phase 4 closed; P6.1-b implements D-064 constant authority
+Current checkpoint: Phase 4 closed; P6.1-c moves TwoLevel ownership under D-065
 
 ## Purpose
 
@@ -218,6 +218,11 @@ missing public unit. P6.1-b resolves it under the approved D-064:
 that value, and Hamiltonian conversion methods use the central converter. The
 production TwoLevel builder now preserves its configured `rad/fs` gap across J
 storage; no public unit field or conversion boundary changed.
+
+P6.1-c moves the characterized TwoLevel implementation into
+`models/two_level/` without changing value/unit pairs, canonical units, or any
+conversion function. `TwoLevelParameters` remains in `models/parameters.py`
+until its own bounded ownership migration.
 
 ## Recommended implementation order
 

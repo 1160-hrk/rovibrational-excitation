@@ -6,13 +6,11 @@ from .base import BasisBase
 from .linmol import LinMolBasis
 from .states import DensityMatrix, StateVector
 from .symtop import SymTopBasis
-from .twolevel import TwoLevelBasis
 from .viblad import VibLadderBasis
 
 __all__ = [
     "BasisBase",
     "LinMolBasis",
-    "TwoLevelBasis",
     "VibLadderBasis",
     "SymTopBasis",
     "StateVector",

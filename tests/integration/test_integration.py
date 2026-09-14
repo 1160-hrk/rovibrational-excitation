@@ -9,7 +9,6 @@ from rovibrational_excitation.core.basis import (
     DensityMatrix,
     LinMolBasis,
     StateVector,
-    TwoLevelBasis,
     VibLadderBasis,
 )
 from rovibrational_excitation.core.states import IncoherentEnsemble
@@ -28,6 +27,7 @@ from rovibrational_excitation.fields import (
     ZeroField,
     gaussian,
 )
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

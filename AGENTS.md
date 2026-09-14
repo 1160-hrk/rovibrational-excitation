@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-13
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.1-b D-064 reduced Planck constant authority
+Verified structural checkpoint: P6.1-c D-065 TwoLevel model ownership
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -170,14 +170,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P6.1-b:
+Current local CPU baseline after P6.1-c:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1205 passed, 10 GPU tests skipped (1215 collected)
+1206 passed, 10 GPU tests skipped (1216 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -257,12 +257,15 @@ the actual CuPy low-level paths round-trip through host memory and no real CUDA
 job is available.
 P6.1-a characterizes the complete TwoLevel projection before its ownership
 move. P6.1-b resolves O-013 under D-064: `CONSTANTS.HBAR` is the sole derived
-authority and all conversion paths share it.
+authority and all conversion paths share it. P6.1-c implements D-065: basis,
+dipole, stateless dipole construction, and model builders now share
+`models/two_level/`; the three superseded owners are removed.
 The next work is:
 
-1. Continue Phase 6 TwoLevel ownership consolidation as P6.1-c. Its basis,
-   Hamiltonian, dipole, state mapping, scalar-x coupling, dense/CSR parity, and
-   builder routes are characterized; preserve the D-064 converted values.
+1. Continue Phase 6 TwoLevel consolidation as P6.1-d by moving the frozen
+   `TwoLevelParameters` schema into its model package and settling the
+   transitional generic dipole factory. Preserve every D-063/D-064 value and
+   keep schema/interface work separate from numerical logic.
 2. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

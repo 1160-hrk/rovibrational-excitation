@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.dipole.twolevel import TwoLevelDipoleMatrix
 
-from .common import build_initial_state
-from .parameters import TwoLevelParameters
-from .validation import model_parameters_from_mapping
+from ..common import build_initial_state
+from ..parameters import TwoLevelParameters
+from ..validation import model_parameters_from_mapping
+from .basis import TwoLevelBasis
+from .dipole import TwoLevelDipoleMatrix
 
 
 def build_twolevel(

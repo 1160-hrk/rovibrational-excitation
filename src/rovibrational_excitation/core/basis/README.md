@@ -9,7 +9,6 @@ basisモジュールは以下の基底クラスを提供します：
 - `BasisBase`: 全ての基底クラスの抽象基底クラス
 - `LinMolBasis`: 線形分子の振動・回転基底
 - `SymTopBasis`: 対称コマ分子の振動・回転基底
-- `TwoLevelBasis`: 二準位系の基底
 - `VibLadderBasis`: 振動準位のみの基底（回転なし）
 - `StateVector`: 純粋状態を表現するクラス
 - `DensityMatrix`: 混合状態を表現するクラス
@@ -40,7 +39,8 @@ def generate_H0(self) -> Hamiltonian:
 ### 1. 二準位系の例
 
 ```python
-from rovibrational_excitation.core.basis import TwoLevelBasis, StateVector
+from rovibrational_excitation.core.basis import StateVector
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 # 2.35 eVのエネルギーギャップを持つ二準位系
 basis = TwoLevelBasis(energy_gap=2.35, input_units="eV")
@@ -147,4 +147,4 @@ print(f"最大エネルギー差: {H0.max_energy_difference():.2e} J")
 ## 参考文献
 
 1. Cohen-Tannoudji, C., et al. "Quantum Mechanics"
-2. Herzberg, G. "Molecular Spectra and Molecular Structure" 
+2. Herzberg, G. "Molecular Spectra and Molecular Structure"

@@ -2529,6 +2529,33 @@ and must preserve the new reference values.
 
 Implementation commit: this checkpoint.
 
+### D-065: TwoLevel implementation has one model-owned package
+
+Status: Accepted and implemented on 2026-09-13 as P6.1-c.
+
+Scope: Structural ownership and import paths only; no physical or numerical
+behavior change.
+
+`TwoLevelBasis`, `TwoLevelDipoleMatrix`, the stateless dipole builder, and the
+production model builders now live together under `models/two_level/`. The
+former `core/basis/twolevel.py`, `dipole/twolevel/`, and `models/twolevel.py`
+owners are removed rather than retained as compatibility shims. Active callers
+import the TwoLevel API from `models.two_level`; callers of the transitional
+generic dipole factory import it explicitly from `dipole.factory`.
+
+The D-063 characterization suite and D-064 converted bit patterns remain the
+authority for the move. Basis order, state mapping, Hamiltonian formula and
+storage, Cartesian dipoles, scalar-x coupling, dense/CSR behavior, cache
+identity, and propagation values are unchanged. Architecture tests require the
+new files and reject all three former owners.
+
+`TwoLevelParameters` remains temporarily in the shared `models/parameters.py`,
+and `dipole.factory` remains transitional. Moving the schema and deciding the
+generic factory's final owner are separate follow-up units so this commit stays
+a pure ownership move.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

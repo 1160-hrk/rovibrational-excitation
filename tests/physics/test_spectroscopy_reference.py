@@ -5,9 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.units.constants import CONSTANTS
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
     ExperimentalConditions,

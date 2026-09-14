@@ -15,7 +15,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
@@ -24,7 +23,6 @@ from rovibrational_excitation.core.execution import (
 from rovibrational_excitation.core.validation import (
     validate_density_matrix_properties,
 )
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
     PropagatorFactory,
@@ -49,6 +47,10 @@ from rovibrational_excitation.dynamics.options import (
     ScalingMode,
 )
 from rovibrational_excitation.fields import ElectricField
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 
 pytestmark = pytest.mark.physics
 

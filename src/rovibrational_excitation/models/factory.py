@@ -21,7 +21,7 @@ from .parameters import (
     VibLadderParameters,
 )
 from .symmetric_top import build_symmetric_top_from_parameters
-from .twolevel import build_twolevel_from_parameters
+from .two_level import build_twolevel_from_parameters
 from .validation import (
     LinMolRepresentation,
     ModelConfigurationError,

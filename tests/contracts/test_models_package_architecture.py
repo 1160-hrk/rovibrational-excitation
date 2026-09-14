@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src" / "rovibrational_excitation"
 MODELS = PACKAGE / "models"
+TWO_LEVEL = MODELS / "two_level"
 LEGACY_MODELS = PACKAGE / "simulation" / "models"
 M_AVERAGE = PACKAGE / "simulation" / "m_average.py"
 
@@ -24,8 +25,15 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (MODELS / "factory.py").is_file()
     assert (MODELS / "validation.py").is_file()
     assert (MODELS / "linmol.py").is_file()
-    assert (MODELS / "twolevel.py").is_file()
+    assert (TWO_LEVEL / "__init__.py").is_file()
+    assert (TWO_LEVEL / "basis.py").is_file()
+    assert (TWO_LEVEL / "dipole.py").is_file()
+    assert (TWO_LEVEL / "dipole_builder.py").is_file()
+    assert (TWO_LEVEL / "model.py").is_file()
     assert (MODELS / "vibladder.py").is_file()
+    assert not (MODELS / "twolevel.py").exists()
+    assert not (PACKAGE / "core" / "basis" / "twolevel.py").exists()
+    assert not (PACKAGE / "dipole" / "twolevel").exists()
     assert M_AVERAGE.is_file()
     assert not LEGACY_MODELS.exists()
     assert ModelComponents.__module__ == "rovibrational_excitation.models.factory"

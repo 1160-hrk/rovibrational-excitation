@@ -4,14 +4,17 @@ from inspect import Parameter, signature
 
 import pytest
 
-from rovibrational_excitation.core.basis import TwoLevelBasis, VibLadderBasis
+from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.dipole import (
     LinMolDipoleMatrix,
     SymTopDipoleMatrix,
-    TwoLevelDipoleMatrix,
     VibLadderDipoleMatrix,
 )
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 from rovibrational_excitation.optimization.model import build_optimization_model
 
 

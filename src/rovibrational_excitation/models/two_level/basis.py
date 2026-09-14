@@ -4,10 +4,9 @@ Two-level system basis.
 
 import numpy as np
 
+from rovibrational_excitation.core.basis.base import BasisBase
+from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.converters import converter
-
-from ..operators import Hamiltonian
-from .base import BasisBase
 
 
 class TwoLevelBasis(BasisBase):

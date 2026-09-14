@@ -6,14 +6,13 @@ from typing import Any
 
 import numpy as np
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.states import (
     DensityState,
     IncoherentEnsemble,
     PureState,
 )
 from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole import create_dipole_matrix
+from rovibrational_excitation.dipole.factory import create_dipole_matrix
 from rovibrational_excitation.dynamics import (
     Axis,
     CouplingSpec,
@@ -21,6 +20,7 @@ from rovibrational_excitation.dynamics import (
     SystemModel,
 )
 from rovibrational_excitation.fields import ElectricField
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 PropagationState = PureState | IncoherentEnsemble | DensityState
 

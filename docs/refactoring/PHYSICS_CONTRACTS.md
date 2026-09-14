@@ -673,6 +673,12 @@ as `0.37 rad/fs`, rather than `0.3700000002267061 rad/fs`. The accompanying
 reference was updated explicitly; a structural model move must preserve the
 new value.
 
+P6.1-c performs that structural move under D-065. The same executable
+references now import `TwoLevelBasis`, `TwoLevelDipoleMatrix`, and their
+builders from `models.two_level`. No basis value, Hamiltonian entry, dipole
+entry, coupling axis, unit conversion, storage choice, or propagation result
+changed.
+
 ## 8. Coherent and incoherent observables
 
 A coherent initial superposition evolves one state vector and includes

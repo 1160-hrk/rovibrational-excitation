@@ -18,7 +18,7 @@ from rovibrational_excitation.models.parameters import (
     TwoLevelParameters,
     VibLadderParameters,
 )
-from rovibrational_excitation.models.twolevel import (
+from rovibrational_excitation.models.two_level import (
     build_twolevel_operators_from_parameters,
 )
 from rovibrational_excitation.models.validation import (

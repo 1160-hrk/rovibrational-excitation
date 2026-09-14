@@ -5,11 +5,9 @@ import inspect
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
 from rovibrational_excitation.dynamics import (
     Axis,
     CouplingMode,
@@ -21,6 +19,10 @@ from rovibrational_excitation.dynamics import (
     SystemModel,
 )
 from rovibrational_excitation.fields import CartesianField, ElectricField, ScalarField
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 
 
 def _model(*, hamiltonian=None, coupling=None):

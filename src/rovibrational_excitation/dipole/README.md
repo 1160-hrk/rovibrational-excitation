@@ -18,8 +18,9 @@
 ### 0. ファクトリー関数を使用した自動選択
 
 ```python
-from rovibrational_excitation.core.basis import LinMolBasis, TwoLevelBasis
-from rovibrational_excitation.dipole import create_dipole_matrix
+from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 # 線形分子の例
 basis_linmol = LinMolBasis(V_max=2, J_max=10, omega=2350, input_units="cm^-1")
@@ -127,11 +128,13 @@ mu_xyz = dipole.stacked("xyz")  # 3次元配列として取得
 ### 2. 二準位系
 
 ```python
-from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 
 # 基底の作成
-basis = TwoLevelBasis()
+basis = TwoLevelBasis(energy_gap=1.0, input_units="rad/fs")
 
 # 双極子行列の生成
 dipole = TwoLevelDipoleMatrix(basis, mu0=1.0, backend="numpy", units="C*m")
@@ -232,4 +235,4 @@ dipole_gpu = LinMolDipoleMatrix(
 1. Cohen-Tannoudji, C., et al. "Quantum Mechanics"
 2. Zare, R. N. "Angular Momentum"
 3. Herzberg, G. "Molecular Spectra and Molecular Structure"
-4. Townes, C. H. & Schawlow, A. L. "Microwave Spectroscopy" 
+4. Townes, C. H. & Schawlow, A. L. "Microwave Spectroscopy"

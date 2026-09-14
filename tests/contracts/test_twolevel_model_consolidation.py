@@ -8,13 +8,14 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.dipole.twolevel.builder import build_mu
 from rovibrational_excitation.models.factory import build_model_from_parameters
 from rovibrational_excitation.models.parameters import TwoLevelParameters
-from rovibrational_excitation.models.twolevel import (
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+    build_mu,
     build_twolevel_operators_from_parameters,
 )
 
@@ -40,6 +41,21 @@ def _unified_builder_gaps(gap_rad_per_fs: float) -> tuple[float, float]:
     return (
         float.fromhex("0x1.70868888018b1p-65"),
         float.fromhex("0x1.7ae147ae147aep-2"),
+    )
+
+
+def test_twolevel_types_and_builders_have_one_model_owned_home() -> None:
+    assert TwoLevelBasis.__module__ == (
+        "rovibrational_excitation.models.two_level.basis"
+    )
+    assert TwoLevelDipoleMatrix.__module__ == (
+        "rovibrational_excitation.models.two_level.dipole"
+    )
+    assert build_mu.__module__ == (
+        "rovibrational_excitation.models.two_level.dipole_builder"
+    )
+    assert build_twolevel_operators_from_parameters.__module__ == (
+        "rovibrational_excitation.models.two_level.model"
     )
 
 
