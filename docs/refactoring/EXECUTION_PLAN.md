@@ -1251,6 +1251,26 @@ route requires `potential_type` in the signature. All D-063/D-064 physics and
 numerical references pass unchanged. P6.2 begins VibLadder with a separate
 pre-move characterization unit.
 
+### P6.2 VibLadder
+
+P6.2-a completes the pre-move characterization on 2026-09-14 under D-067.
+Nine new contracts freeze the frozen-parameter projection, caller-unit
+provenance and canonical conversion, basis/state order, anharmonic
+Hamiltonian, coherent state, scalar-z capability, exact harmonic dipoles,
+dense/CSR storage, cache identity, and parity among every current construction
+path. The existing independent physics suite remains authoritative for the
+Morse formula, instance-local derived N, maximum bound level, zero-shift
+rejection, and propagation parity. No source implementation changed.
+
+P6.2-b should next move `VibLadderBasis`, `VibLadderDipoleMatrix`, and the
+production builders into `models/vib_ladder/` as one structural ownership
+unit. Active imports move in the same commit and the superseded owners are
+removed without compatibility shims. The frozen schema and generic factory
+cleanup remain a separate P6.2-c interface unit. The shared `dipole/vib`
+harmonic and Morse functions remain in place during P6.2-b because LinMol and
+legacy SymTop still consume them; their final owner is decided from all actual
+Phase 6 consumers rather than inferred during a VibLadder file move.
+
 For each model:
 
 - add frozen parameter schema;

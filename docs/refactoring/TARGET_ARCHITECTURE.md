@@ -33,9 +33,10 @@ A linear molecule is currently represented across:
 - `models/linmol.py`;
 - factories in both `dipole` and `models`.
 
-TwoLevel, VibLadder, and SymTop follow partial variations of the same pattern.
-This makes model capability, required parameters, and coupling semantics hard
-to discover.
+VibLadder and LinMol still follow split variations of this pattern. SymTop has
+a production model owner alongside legacy direct paths, while TwoLevel is
+consolidated under `models/two_level`. The remaining splits make model
+capability, required parameters, and coupling semantics hard to discover.
 
 ### 2.2 Propagation preparation is overloaded
 
@@ -513,6 +514,13 @@ constructs TwoLevel. Every P6.1-a behavioral contract and corrected conversion
 value remains unchanged. Shared strict scalar/unit conversion helpers live in
 private `_parameter_validation.py`, separate from every model schema.
 
+P6.2-a freezes the complete current VibLadder projection before ownership
+moves. P6.2-b moves only its basis, dipole class, and production builders into
+`models/vib_ladder/`; it does not move the shared `dipole/vib` harmonic and
+Morse element functions while LinMol and SymTop still import them. The frozen
+schema and transitional factory cleanup follow separately so an interface
+replacement is not hidden inside the file move.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -535,7 +543,9 @@ already constructed basis and weights, never molecule names.
 | `core/basis/states.py` | `core/states.py` | Remove model-specific assumptions |
 | `core/basis/hamiltonian.py` | `core/operators.py` | Complete in P3.1-a; implementation moved unchanged and old path removed |
 | `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
-| `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
+| `core/basis/viblad.py` | `models/vib_ladder/basis.py` | D-067 pre-move behavior guard complete; structural move is P6.2-b |
+| `dipole/viblad/*` | `models/vib_ladder/dipole.py` | D-067 freezes stateful/stateless and dense/CSR parity before P6.2-b |
+| `models/vibladder.py` | `models/vib_ladder/model.py` | D-067 freezes mapping/typed builder parity before P6.2-b |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Complete in P6.1-c; old path removed and D-063/D-064 values preserved |
 | `dipole/twolevel/*` | `models/two_level/dipole.py` | Implementation moved in P6.1-c; redundant stateless builder removed in P6.1-d |
 | `models/twolevel.py` | `models/two_level/model.py` | Complete in P6.1-c; registry and optimization imports moved |

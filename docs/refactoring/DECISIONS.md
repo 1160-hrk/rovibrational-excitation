@@ -2587,6 +2587,39 @@ the two new parameter modules, for 39 configured modules total.
 
 Implementation commit: this checkpoint.
 
+### D-067: VibLadder ownership migration starts from exact characterization
+
+Status: Accepted and implemented on 2026-09-14 as P6.2-a.
+
+Scope: Phase 6 VibLadder migration guard; no source implementation, public API,
+or numerical behavior change.
+
+Before moving VibLadder code, nine new executable cases freeze the production
+parameter projection, preservation of caller frequency values and units,
+canonical rad/fs and SI-dipole conversion, signed `|v>` basis order and state
+mapping, the anharmonic Hamiltonian, coherent initial-state construction,
+scalar-z coupling, exact harmonic Cartesian dipoles, dense/CSR parity, cache
+identity, and exact agreement among the mapping, typed, generic-dipole, and
+stateless-dipole construction paths.
+
+The existing independent VibLadder physics references remain part of the move
+guard. They separately fix harmonic and anharmonic energies, the
+`omega01` adjacent-spacing convention, Morse transition elements, the
+instance-local `N = (omega01 + delta_omega) / delta_omega - 1/2` derivation,
+the maximum-bound-level rejection, zero-anharmonicity rejection for Morse,
+scalar polarization independence, and dimensional/nondimensional propagation
+parity. The combined focused suite passes 61 cases exactly or at its previously
+justified tolerance.
+
+P6.2-b may move the basis, dipole class, and model builders into
+`models/vib_ladder/` while these references stay unchanged. The shared
+`dipole/vib` harmonic and Morse element functions still have LinMol and SymTop
+callers; they must not be claimed as VibLadder-only or moved speculatively in
+that structural unit. No formula, unit, threshold, storage choice, or Morse
+bound rule is approved to change.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

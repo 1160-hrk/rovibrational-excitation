@@ -1260,6 +1260,13 @@ Every major solver or model migration must cover the applicable rows:
 Tolerance values must be justified by algorithm order, machine precision, and
 problem scale. Do not use a loose constant solely to make a test pass.
 
+P6.2-a adds D-067 migration guards for VibLadder without changing these
+contracts. The new cases freeze `|v>` order, the current anharmonic Hamiltonian,
+scalar-z coupling, harmonic Cartesian dipoles, coherent state construction,
+dense/CSR parity, and construction-path equality. The existing independent
+physics cases remain authoritative for the Morse element formula, derived
+instance-local N, bound-level validation, and propagation tolerances.
+
 ## 13. Open physics/API decisions
 
 The first four Phase 2 propagation questions were resolved by D-026. These

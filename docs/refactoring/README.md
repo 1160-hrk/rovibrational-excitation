@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1203 passed, 10 skipped (1213 collected) |
+| Pytest | 1212 passed, 10 skipped (1222 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -56,7 +56,12 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-14. P6.1-d implements D-066:
+These rows were last verified locally on 2026-09-14. P6.2-a implements D-067:
+nine new contracts freeze VibLadder parameter/unit projection, basis/state
+order, Hamiltonian, scalar-z coupling, harmonic dipoles, dense/CSR storage,
+cache identity, and all current builder paths. Together with the existing
+independent Morse and propagation references, 61 focused cases pass without a
+source implementation change. P6.1-d implements D-066:
 the frozen schema joins `models/two_level`, TwoLevel is removed from the legacy
 generic dipole factory, and the unused mapping/stateless builders are deleted.
 All D-063/D-064 numerical references remain unchanged, completing P6.1.
@@ -297,7 +302,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1 TwoLevel complete under D-063 through D-066; P6.2 VibLadder characterization is next |
+| 6 | Model consolidation | In progress — P6.1 TwoLevel complete; P6.2-a VibLadder characterization complete under D-067 and P6.2-b ownership move is next |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

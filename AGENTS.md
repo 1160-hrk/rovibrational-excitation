@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-14
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.1-d D-066 TwoLevel consolidation complete
+Verified structural checkpoint: P6.2-a D-067 VibLadder characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -177,7 +177,7 @@ pytest -q
 ~~~
 
 ~~~text
-1203 passed, 10 GPU tests skipped (1213 collected)
+1212 passed, 10 GPU tests skipped (1222 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -263,31 +263,42 @@ dipole, stateless dipole construction, and model builders now share
 P6.1-d implements D-066: `TwoLevelParameters` joins that owner, the unused
 mapping/stateless builders are deleted, and the legacy generic dipole factory
 no longer imports or constructs TwoLevel. P6.1 is complete.
+P6.2-a implements D-067 without changing source behavior. Nine new contracts
+plus the existing independent physics references freeze VibLadder units,
+basis/state order, Hamiltonian and dipole values, Morse instance-local N and
+bounds, scalar-z coupling, dense/CSR storage, cache identity, propagation, and
+all current construction-path parity.
 The next work is:
 
-1. Begin Phase 6 VibLadder consolidation as P6.2-a with pre-move
-   characterization. Freeze its parameter projection, basis/state order,
-   harmonic and Morse Hamiltonian/dipole formulas, derived instance-local
-   Morse N, scalar-z coupling, and dense/CSR behavior before moving ownership.
-2. Keep Phase 5 open until a real CUDA job can remove and verify the current
+1. Continue Phase 6 VibLadder consolidation as P6.2-b with a pure ownership
+   move. Use `git mv` for `core/basis/viblad.py`, the stateful
+   `dipole/viblad` implementation, and `models/vibladder.py` into
+   `models/vib_ladder/{basis,dipole,model}.py`; update active imports and remove
+   superseded paths without changing formulas, loops, units, storage, or
+   validation.
+2. Leave `VibLadderParameters`, the generic dipole factory, and redundant
+   mapping/stateless builders for the separate P6.2-c interface cleanup. Keep
+   shared `dipole/vib` harmonic/Morse functions in place while LinMol and
+   SymTop consume them.
+3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.
-3. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
+4. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.
-4. Keep CuPy density propagation unsupported.
-5. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+5. Keep CuPy density propagation unsupported.
+6. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-6. Reduce exact transition debt only with Phase 6 model consolidation; never
+7. Reduce exact transition debt only with Phase 6 model consolidation; never
    broaden or hide the four recorded reverse imports.
-7. Preserve the characterized visualization debts and fix them only in a
+8. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
-8. Defer persistence schema versioning and checkpoint-manager redesign to its
+9. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
-9. Preserve private optimization adapters, especially
+10. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
    spectroscopy references before Phase 7 decomposition.
-10. Preserve the D-044 support boundary: active examples, benchmarks, and
+11. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.

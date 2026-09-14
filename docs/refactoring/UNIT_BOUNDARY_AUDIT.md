@@ -219,6 +219,12 @@ that value, and Hamiltonian conversion methods use the central converter. The
 production TwoLevel builder now preserves its configured `rad/fs` gap across J
 storage; no public unit field or conversion boundary changed.
 
+P6.2-a adds an ownership-migration guard without changing the VibLadder unit
+boundary. `VibLadderParameters` retains each caller frequency value and unit,
+exposes canonical `angular_rad_per_fs`, and converts the explicitly unit-labeled
+dipole once to C*m. The production builder still consumes only those canonical
+values. Exact construction parity is now tested before any file move.
+
 P6.1-c moves the characterized TwoLevel implementation into
 `models/two_level/` without changing value/unit pairs, canonical units, or any
 conversion function. `TwoLevelParameters` remains in `models/parameters.py`

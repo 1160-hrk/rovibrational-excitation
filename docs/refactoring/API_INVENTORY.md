@@ -3,7 +3,7 @@
 Last verified: 2026-09-14
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-066 TwoLevel consolidation complete
+Latest API checkpoint: D-067 VibLadder pre-move characterization
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -43,6 +43,11 @@ P6.1-d moves `TwoLevelParameters` from `models.parameters` to
 wrappers, and removes TwoLevel support from `dipole.factory`. The factory now
 serves only the remaining legacy vibrational models and requires
 `potential_type` explicitly.
+
+P6.2-a changes no import path, export, signature, or runtime implementation.
+It freezes the current `core.basis.VibLadderBasis`, `dipole.viblad`,
+`models.vibladder`, shared `models.parameters.VibLadderParameters`, and
+transitional factory/builder paths before P6.2-b moves ownership.
 
 ## 2. Package root
 
