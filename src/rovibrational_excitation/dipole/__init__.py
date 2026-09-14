@@ -15,7 +15,8 @@ All classes support automatic unit conversion between:
 
 Two-level basis and dipole types are owned by
 ``rovibrational_excitation.models.two_level``. The generic factory is available
-explicitly from ``rovibrational_excitation.dipole.factory``.
+explicitly from ``rovibrational_excitation.dipole.factory`` for the remaining
+legacy vibrational models only.
 """
 
 from .linmol import LinMolDipoleMatrix

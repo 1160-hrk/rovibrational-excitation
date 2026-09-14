@@ -15,7 +15,10 @@ from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
 from rovibrational_excitation.models import build_model
-from rovibrational_excitation.models.two_level import TwoLevelBasis
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -160,29 +163,21 @@ def test_scalar_model_numpy_csr_is_real_csr_with_dense_element_parity(params):
     assert csr_model.dipole.dense is False
 
 
-def test_generic_dipole_factory_preserves_scalar_model_csr_choice():
-    cases = [
-        (
-            TwoLevelBasis(energy_gap=1.0, input_units="rad/fs", output_units="J"),
-            {},
-            "x",
-        ),
-        (
-            VibLadderBasis(V_max=3, omega=1.0, delta_omega=0.01),
-            {"potential_type": "harmonic"},
-            "z",
-        ),
-    ]
+def test_generic_dipole_factory_preserves_vibladder_csr_choice():
+    basis = VibLadderBasis(V_max=3, omega=1.0, delta_omega=0.01)
+    dipole = create_dipole_matrix(
+        basis,
+        mu0=2.0e-30,
+        dense=False,
+        potential_type="harmonic",
+    )
 
-    for basis, extra, axis in cases:
-        dipole = create_dipole_matrix(basis, mu0=2.0e-30, dense=False, **extra)
-
-        assert dipole.dense is False
-        assert sp.isspmatrix_csr(dipole.mu(axis))
+    assert dipole.dense is False
+    assert sp.isspmatrix_csr(dipole.mu("z"))
 
 
 def test_scalar_dipole_rejects_cupy_csr_before_backend_allocation():
-    dipole = create_dipole_matrix(
+    dipole = TwoLevelDipoleMatrix(
         TwoLevelBasis(energy_gap=1.0, input_units="rad/fs", output_units="J"),
         mu0=2.0e-30,
         backend="cupy",

@@ -12,7 +12,6 @@ from rovibrational_excitation.core.states import (
     PureState,
 )
 from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
 from rovibrational_excitation.dynamics import (
     Axis,
     CouplingSpec,
@@ -20,7 +19,10 @@ from rovibrational_excitation.dynamics import (
     SystemModel,
 )
 from rovibrational_excitation.fields import ElectricField
-from rovibrational_excitation.models.two_level import TwoLevelBasis
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 
 PropagationState = PureState | IncoherentEnsemble | DensityState
 
@@ -44,7 +46,7 @@ def propagation_problem(
     if hamiltonian is None:
         hamiltonian = basis.generate_H0()
     if dipole is None:
-        dipole = create_dipole_matrix(basis, mu0=1.0e-30)
+        dipole = TwoLevelDipoleMatrix(basis, mu0=1.0e-30)
     if coupling is None:
         coupling = CouplingSpec.cartesian("xy")
 

@@ -5,13 +5,15 @@
 
 ## 特徴
 
-- 複数の分子系（対称コマ分子、直線分子、振動ラダーシステム、二準位系）に対応
+- 対称コマ分子、直線分子、振動ラダーシステムに対応
 - NumPy/CuPyバックエンド対応
 - 密/疎行列形式サポート
 - 自動単位変換機能
 - 効率的なキャッシュシステム
 - 物理的選択則の自動適用
 - 基底クラスに応じた双極子行列クラスの自動選択
+
+二準位系は `rovibrational_excitation.models.two_level` が直接所有します。
 
 ## 使用例
 
@@ -20,7 +22,6 @@
 ```python
 from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
-from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 # 線形分子の例
 basis_linmol = LinMolBasis(V_max=2, J_max=10, omega=2350, input_units="cm^-1")
@@ -31,14 +32,6 @@ dipole_linmol = create_dipole_matrix(
     backend="numpy",
     dense=True,
     units_input="D",  # 入力値の単位（デバイ）
-)
-
-# 二準位系の例
-basis_twolevel = TwoLevelBasis(energy_gap=2.35, input_units="eV")
-dipole_twolevel = create_dipole_matrix(
-    basis_twolevel,
-    mu0=0.5,
-    units_input="D",  # potential_typeは不要（二準位系）
 )
 
 # 双極子行列の取得

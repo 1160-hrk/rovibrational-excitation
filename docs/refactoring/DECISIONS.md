@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 ## How to use this log
 
@@ -2553,6 +2553,37 @@ new files and reject all three former owners.
 and `dipole.factory` remains transitional. Moving the schema and deciding the
 generic factory's final owner are separate follow-up units so this commit stays
 a pure ownership move.
+
+Implementation commit: this checkpoint.
+
+### D-066: TwoLevel consolidation removes transitional construction paths
+
+Status: Accepted and implemented on 2026-09-14 as P6.1-d.
+
+Scope: TwoLevel schema and construction ownership; no physical or numerical
+behavior change.
+
+`TwoLevelParameters` now lives in `models/two_level/parameters.py` and retains
+the exact validation and conversion functions characterized by D-063/D-064.
+Those unchanged generic helpers are extracted from the shared schema monolith
+to private `models/_parameter_validation.py`, so the TwoLevel package does not
+depend on other models' schema definitions.
+The model package exports the schema, basis, dipole class, and the two typed
+builders. The unused mapping builder `build_twolevel` and stateless dipole
+wrapper `build_mu` are removed rather than kept as compatibility APIs.
+
+The transitional `dipole.factory.create_dipole_matrix` no longer imports or
+constructs TwoLevel. It remains only for the not-yet-consolidated LinMol,
+SymTop, and VibLadder legacy bases, with `potential_type` required in its
+signature. TwoLevel callers directly construct the model-owned dipole or use
+the model-owned typed builders. This removes the reverse `dipole ->
+models.two_level` dependency.
+
+The frozen schema fields, `rad/fs` and energy-unit projection, SI dipole
+conversion, state order, Hamiltonian, scalar-x coupling, dense/CSR matrices,
+and optimization construction are unchanged. P6.1 is complete; P6.2 proceeds
+with VibLadder only after its own characterization guard. Strict mypy covers
+the two new parameter modules, for 39 configured modules total.
 
 Implementation commit: this checkpoint.
 

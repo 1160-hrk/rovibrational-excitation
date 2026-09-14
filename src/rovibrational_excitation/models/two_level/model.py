@@ -7,24 +7,9 @@ from typing import Any
 from rovibrational_excitation.core.execution import ExecutionPolicy
 
 from ..common import build_initial_state
-from ..parameters import TwoLevelParameters
-from ..validation import model_parameters_from_mapping
 from .basis import TwoLevelBasis
 from .dipole import TwoLevelDipoleMatrix
-
-
-def build_twolevel(
-    params: dict[str, Any], *, execution_policy: ExecutionPolicy
-) -> tuple[Any, Any, Any, Any]:
-    """Build the existing two-level simulation components."""
-    model_params = model_parameters_from_mapping(params)
-    if not isinstance(model_params, TwoLevelParameters):
-        raise TypeError("twolevel builder requires TwoLevelParameters")
-    return build_twolevel_from_parameters(
-        model_params,
-        params["initial_states"],
-        execution_policy=execution_policy,
-    )
+from .parameters import TwoLevelParameters
 
 
 def build_twolevel_from_parameters(

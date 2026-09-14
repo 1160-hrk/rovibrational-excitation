@@ -11,11 +11,10 @@ import scipy.sparse as sp
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.models.factory import build_model_from_parameters
-from rovibrational_excitation.models.parameters import TwoLevelParameters
 from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
-    build_mu,
+    TwoLevelParameters,
     build_twolevel_operators_from_parameters,
 )
 
@@ -51,11 +50,11 @@ def test_twolevel_types_and_builders_have_one_model_owned_home() -> None:
     assert TwoLevelDipoleMatrix.__module__ == (
         "rovibrational_excitation.models.two_level.dipole"
     )
-    assert build_mu.__module__ == (
-        "rovibrational_excitation.models.two_level.dipole_builder"
-    )
     assert build_twolevel_operators_from_parameters.__module__ == (
         "rovibrational_excitation.models.two_level.model"
+    )
+    assert TwoLevelParameters.__module__ == (
+        "rovibrational_excitation.models.two_level.parameters"
     )
 
 
@@ -162,15 +161,3 @@ def test_csr_operators_equal_dense_without_changing_hamiltonian_storage() -> Non
         np.testing.assert_array_equal(
             csr_dipole.mu(axis).toarray(), dense_dipole.mu(axis)
         )
-
-
-@pytest.mark.parametrize("axis", ["x", "y", "z"])
-def test_stateless_dipole_builder_matches_stateful_owner(axis: str) -> None:
-    basis, _, dipole = build_twolevel_operators_from_parameters(
-        _parameters(), execution_policy=_policy("dense")
-    )
-
-    np.testing.assert_array_equal(
-        build_mu(basis, axis, dipole.mu0, backend="numpy", dense=True),
-        dipole.mu(axis),
-    )

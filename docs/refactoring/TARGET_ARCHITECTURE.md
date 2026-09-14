@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 ## 1. Design goals
 
@@ -99,6 +99,7 @@ src/rovibrational_excitation/
 │   ├── base.py
 │   ├── registry.py
 │   ├── validation.py
+│   ├── _parameter_validation.py
 │   ├── symmetry/
 │   │   ├── groups.py
 │   │   ├── policy.py
@@ -107,7 +108,7 @@ src/rovibrational_excitation/
 │   │   ├── model.py
 │   │   ├── basis.py
 │   │   ├── dipole.py
-│   │   └── dipole_builder.py
+│   │   └── parameters.py
 │   ├── vib_ladder/
 │   │   ├── model.py
 │   │   ├── basis.py
@@ -505,11 +506,12 @@ their angular-frequency arguments until Phase 6.
 
 P6.1-a freezes the complete current TwoLevel projection before ownership
 moves. P6.1-b separately resolves O-013 through the central constant and unit
-converter. P6.1-c reaches the structural `models/two_level/` target for the
-basis, dipole, stateless dipole builder, and model builders while preserving
-the corrected conversion values and every P6.1-a behavioral contract. The
-frozen parameter schema and transitional generic dipole factory remain the
-next bounded ownership work.
+converter. P6.1-c moves the implementation, and P6.1-d completes the target
+owner with `parameters.py`. The unused mapping and stateless-dipole wrappers
+are deleted, and the legacy generic dipole factory no longer depends on or
+constructs TwoLevel. Every P6.1-a behavioral contract and corrected conversion
+value remains unchanged. Shared strict scalar/unit conversion helpers live in
+private `_parameter_validation.py`, separate from every model schema.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
@@ -535,8 +537,9 @@ already constructed basis and weights, never molecule names.
 | `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Co-locate Morse model data |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Complete in P6.1-c; old path removed and D-063/D-064 values preserved |
-| `dipole/twolevel/*` | `models/two_level/{dipole,dipole_builder}.py` | Complete in P6.1-c; old package removed |
+| `dipole/twolevel/*` | `models/two_level/dipole.py` | Implementation moved in P6.1-c; redundant stateless builder removed in P6.1-d |
 | `models/twolevel.py` | `models/two_level/model.py` | Complete in P6.1-c; registry and optimization imports moved |
+| `models/parameters.py::TwoLevelParameters` | `models/two_level/parameters.py` | Complete in P6.1-d; validation/conversion behavior unchanged |
 | `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | D-053 production owner complete for normal NumPy dense/CSR RK4; legacy direct path remains experimental until Phase 6 removal |
 | no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |

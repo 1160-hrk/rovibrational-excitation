@@ -6,9 +6,9 @@ from .factory import ModelComponents, build_model
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    TwoLevelParameters,
     VibLadderParameters,
 )
+from .two_level import TwoLevelParameters
 from .validation import LinMolRepresentation
 
 __all__ = [

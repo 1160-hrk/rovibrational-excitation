@@ -41,16 +41,13 @@ def test_vibrational_dipole_construction_requires_potential_type(dipole_type):
     )
 
 
-def test_generic_factory_requires_potential_only_for_vibrational_models():
+def test_generic_factory_is_limited_to_unmigrated_vibrational_models():
     twolevel = TwoLevelBasis(energy_gap=0.2)
-    dipole = create_dipole_matrix(twolevel, mu0=1.0)
-    assert isinstance(dipole, TwoLevelDipoleMatrix)
-
-    with pytest.raises(ValueError, match="not applicable"):
+    with pytest.raises(TypeError, match="未知の基底クラス"):
         create_dipole_matrix(twolevel, mu0=1.0, potential_type="harmonic")
 
     vibladder = VibLadderBasis(V_max=1, omega=0.2, delta_omega=0.0)
-    with pytest.raises(TypeError, match="potential_type is required"):
+    with pytest.raises(TypeError, match="potential_type"):
         create_dipole_matrix(vibladder, mu0=1.0)
 
 

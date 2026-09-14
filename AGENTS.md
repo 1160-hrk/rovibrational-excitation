@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-13
+Last verified: 2026-09-14
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.1-c D-065 TwoLevel model ownership
+Verified structural checkpoint: P6.1-d D-066 TwoLevel consolidation complete
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -170,14 +170,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P6.1-c:
+Current local CPU baseline after P6.1-d:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1206 passed, 10 GPU tests skipped (1216 collected)
+1203 passed, 10 GPU tests skipped (1213 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -242,7 +242,7 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 127 discovered modules import, internal modules avoid root
+are removed, all 128 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
@@ -260,12 +260,15 @@ move. P6.1-b resolves O-013 under D-064: `CONSTANTS.HBAR` is the sole derived
 authority and all conversion paths share it. P6.1-c implements D-065: basis,
 dipole, stateless dipole construction, and model builders now share
 `models/two_level/`; the three superseded owners are removed.
+P6.1-d implements D-066: `TwoLevelParameters` joins that owner, the unused
+mapping/stateless builders are deleted, and the legacy generic dipole factory
+no longer imports or constructs TwoLevel. P6.1 is complete.
 The next work is:
 
-1. Continue Phase 6 TwoLevel consolidation as P6.1-d by moving the frozen
-   `TwoLevelParameters` schema into its model package and settling the
-   transitional generic dipole factory. Preserve every D-063/D-064 value and
-   keep schema/interface work separate from numerical logic.
+1. Begin Phase 6 VibLadder consolidation as P6.2-a with pre-move
+   characterization. Freeze its parameter projection, basis/state order,
+   harmonic and Morse Hamiltonian/dipole formulas, derived instance-local
+   Morse N, scalar-z coupling, and dense/CSR behavior before moving ownership.
 2. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-13
+Last verified against source and tests: 2026-09-14
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -678,6 +678,10 @@ references now import `TwoLevelBasis`, `TwoLevelDipoleMatrix`, and their
 builders from `models.two_level`. No basis value, Hamiltonian entry, dipole
 entry, coupling axis, unit conversion, storage choice, or propagation result
 changed.
+
+P6.1-d moves the frozen `TwoLevelParameters` class into that owner and removes
+only unused construction wrappers. The parameter projection, physical units,
+operators, coupling, and all reference results remain unchanged.
 
 ## 8. Coherent and incoherent observables
 

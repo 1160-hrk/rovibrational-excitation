@@ -1242,6 +1242,15 @@ remain exact. P6.1-d may next move `TwoLevelParameters` out of the shared schema
 module and settle the transitional factory without combining that interface
 work with this file move.
 
+P6.1-d completes TwoLevel consolidation under D-066. The frozen schema moves
+to `models/two_level/parameters.py`; unchanged shared schema validators move to
+private `models/_parameter_validation.py`; the unused mapping and stateless-dipole
+wrappers are removed; and the transitional generic dipole factory no longer
+has a TwoLevel branch or model-layer dependency. Its remaining vibrational
+route requires `potential_type` in the signature. All D-063/D-064 physics and
+numerical references pass unchanged. P6.2 begins VibLadder with a separate
+pre-move characterization unit.
+
 For each model:
 
 - add frozen parameter schema;

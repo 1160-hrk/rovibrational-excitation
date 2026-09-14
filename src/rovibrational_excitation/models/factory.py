@@ -17,11 +17,10 @@ from .linmol import build_linmol_from_parameters
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    TwoLevelParameters,
     VibLadderParameters,
 )
 from .symmetric_top import build_symmetric_top_from_parameters
-from .two_level import build_twolevel_from_parameters
+from .two_level import TwoLevelParameters, build_twolevel_from_parameters
 from .validation import (
     LinMolRepresentation,
     ModelConfigurationError,

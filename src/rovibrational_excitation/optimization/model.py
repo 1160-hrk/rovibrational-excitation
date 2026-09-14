@@ -15,10 +15,10 @@ from rovibrational_excitation.models.linmol import (
 from rovibrational_excitation.models.parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    TwoLevelParameters,
     VibLadderParameters,
 )
 from rovibrational_excitation.models.two_level import (
+    TwoLevelParameters,
     build_twolevel_operators_from_parameters,
 )
 from rovibrational_excitation.models.validation import (

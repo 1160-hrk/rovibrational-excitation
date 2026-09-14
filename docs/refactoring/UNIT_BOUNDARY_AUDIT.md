@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-13
-Current checkpoint: Phase 4 closed; P6.1-c moves TwoLevel ownership under D-065
+Last verified: 2026-09-14
+Current checkpoint: Phase 4 closed; P6.1-d completes TwoLevel under D-066
 
 ## Purpose
 
@@ -223,6 +223,12 @@ P6.1-c moves the characterized TwoLevel implementation into
 `models/two_level/` without changing value/unit pairs, canonical units, or any
 conversion function. `TwoLevelParameters` remains in `models/parameters.py`
 until its own bounded ownership migration.
+
+P6.1-d completes that migration to `models/two_level/parameters.py`. The class
+continues to call the same finite-scalar, energy-or-frequency-unit, and dipole
+conversion helpers, so no validation threshold, accepted unit, or canonical
+value changes. Those helper bodies now live in private
+`models/_parameter_validation.py` rather than the shared schema monolith.
 
 ## Recommended implementation order
 

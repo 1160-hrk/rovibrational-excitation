@@ -10,7 +10,10 @@ from rovibrational_excitation.core.basis import (
     VibLadderBasis,
 )
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
-from rovibrational_excitation.models.two_level import TwoLevelBasis
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 from rovibrational_excitation.optimization.model import (
     OptimizationModelConfigurationError,
     build_optimization_model,
@@ -125,7 +128,7 @@ def test_twolevel_optimization_uses_production_frozen_schema_with_parity() -> No
         input_units="cm^-1",
         output_units="rad/fs",
     )
-    legacy_dipole = create_dipole_matrix(
+    legacy_dipole = TwoLevelDipoleMatrix(
         legacy_basis,
         mu0=0.3,
         backend="numpy",

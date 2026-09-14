@@ -9,7 +9,7 @@ import pytest
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import ScalarField
 from rovibrational_excitation.models.factory import build_model_from_parameters
-from rovibrational_excitation.models.parameters import TwoLevelParameters
+from rovibrational_excitation.models.two_level import TwoLevelParameters
 from rovibrational_excitation.simulation.case import SimulationCase
 from rovibrational_excitation.simulation.runner import _run_one
 from rovibrational_excitation.simulation.validation import validate_simulation_case
