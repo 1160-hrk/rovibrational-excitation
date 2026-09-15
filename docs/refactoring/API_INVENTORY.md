@@ -3,7 +3,7 @@
 Last verified: 2026-09-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-068 VibLadder model ownership move
+Latest API checkpoint: D-069 VibLadder consolidation complete
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -56,6 +56,11 @@ exports the basis, dipole, transitional stateless builder, and production
 builders; the frozen schema remains shared until P6.2-c. The generic dipole
 factory no longer accepts VibLadder, avoiding a reverse dependency on the
 model-owned class.
+
+P6.2-c moves `VibLadderParameters` into `models.vib_ladder` and removes the
+unused mapping `build_vibladder` and stateless `build_mu` wrappers. The final
+model package surface contains the schema, basis, stateful dipole, and typed
+state/operator builders only.
 
 ## 2. Package root
 
@@ -188,7 +193,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |
-| `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `build_mu`, `build_vibladder`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | basis, dipole, and builders moved in P6.2-b; schema and interface cleanup remain P6.2-c |
+| `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `VibLadderParameters`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | complete in P6.2-c; schema is model-owned and unused compatibility builders are removed |
 | `models.symmetric_top` | `SymmetricTopBasis`, `SymmetricTopDipoleMatrix`, `build_symmetric_top_from_parameters` | production model owner | normal NumPy dense/CSR RK4 production path; split, CuPy, all-isomer pure state, and optimization explicitly unsupported |
 | `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | D-052 foundation; D-053 connects CH3F filtering to production SymTop, without supplying constants or weights |
 

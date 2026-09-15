@@ -7,24 +7,9 @@ from typing import Any
 from rovibrational_excitation.core.execution import ExecutionPolicy
 
 from ..common import build_initial_state
-from ..parameters import VibLadderParameters
-from ..validation import model_parameters_from_mapping
 from .basis import VibLadderBasis
 from .dipole import VibLadderDipoleMatrix
-
-
-def build_vibladder(
-    params: dict[str, Any], *, execution_policy: ExecutionPolicy
-) -> tuple[Any, Any, Any, Any]:
-    """Build the existing vibrational-ladder simulation components."""
-    model_params = model_parameters_from_mapping(params)
-    if not isinstance(model_params, VibLadderParameters):
-        raise TypeError("vibladder builder requires VibLadderParameters")
-    return build_vibladder_from_parameters(
-        model_params,
-        params["initial_states"],
-        execution_policy=execution_policy,
-    )
+from .parameters import VibLadderParameters
 
 
 def build_vibladder_from_parameters(

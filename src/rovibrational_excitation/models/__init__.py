@@ -6,10 +6,10 @@ from .factory import ModelComponents, build_model
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    VibLadderParameters,
 )
 from .two_level import TwoLevelParameters
 from .validation import LinMolRepresentation
+from .vib_ladder import VibLadderParameters
 
 __all__ = [
     "CouplingSpec",

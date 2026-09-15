@@ -2655,6 +2655,29 @@ settle the remaining schema and wrapper interfaces separately.
 
 Implementation commit: this checkpoint.
 
+### D-069: VibLadder consolidation exposes only model-owned typed construction
+
+Status: Accepted and implemented on 2026-09-15 as P6.2-c.
+
+The frozen `VibLadderParameters` schema moves unchanged from the shared
+`models/parameters.py` module to `models/vib_ladder/parameters.py`. Its required
+keys, scalar validation, unit conversion, potential validation, and Morse
+zero-anharmonicity rejection are unchanged. Validation, normal simulation, and
+optimization import that single model-owned type.
+
+Caller audit found no production use of the mapping `build_vibladder` wrapper
+or stateless `build_mu` wrapper. Both are removed instead of retained as a
+second construction path. The model package now exports only its schema, basis,
+stateful dipole, and two typed builders. The shared `dipole/vib` harmonic and
+Morse transition functions remain because LinMol and legacy SymTop still use
+them; their final ownership is not inferred during this interface cleanup.
+
+All D-067 model arrays and propagation references pass unchanged. The complete
+suite passes 1208 tests with 10 optional-GPU skips, and strict mypy covers 40
+named modules. P6.2 is complete without a physical or numerical change.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

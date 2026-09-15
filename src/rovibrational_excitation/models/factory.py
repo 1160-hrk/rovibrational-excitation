@@ -17,7 +17,6 @@ from .linmol import build_linmol_from_parameters
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    VibLadderParameters,
 )
 from .symmetric_top import build_symmetric_top_from_parameters
 from .two_level import TwoLevelParameters, build_twolevel_from_parameters
@@ -29,7 +28,7 @@ from .validation import (
     validate_linmol_representation,
     validate_model_parameters,
 )
-from .vib_ladder import build_vibladder_from_parameters
+from .vib_ladder import VibLadderParameters, build_vibladder_from_parameters
 
 
 @dataclass(frozen=True)

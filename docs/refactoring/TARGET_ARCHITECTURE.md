@@ -518,10 +518,11 @@ P6.2-a freezes the complete current VibLadder projection before ownership
 moves. P6.2-b places its basis, dipole class, transitional stateless builder,
 and production builders in `models/vib_ladder/` and removes all three former
 owners. The shared `dipole/vib` harmonic and Morse element functions do not
-move while LinMol and SymTop still import them. The frozen schema and
-wrapper cleanup follow separately. The generic dipole factory drops VibLadder
-during the move because retaining it would create a new `dipole -> models`
-reverse dependency.
+move while LinMol and SymTop still import them. P6.2-c completes the owner by
+moving its frozen schema and deleting the unused mapping and stateless-dipole
+wrappers. The generic dipole factory drops VibLadder during the move because
+retaining it would create a new `dipole -> models` reverse dependency. All
+D-067 values remain unchanged.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
@@ -546,8 +547,9 @@ already constructed basis and weights, never molecule names.
 | `core/basis/hamiltonian.py` | `core/operators.py` | Complete in P3.1-a; implementation moved unchanged and old path removed |
 | `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Complete in P6.2-b; old path removed and D-067 values preserved |
-| `dipole/viblad/*` | `models/vib_ladder/{dipole,dipole_builder}.py` | Complete in P6.2-b; old package removed and stateful/stateless parity preserved |
-| `models/vibladder.py` | `models/vib_ladder/model.py` | Complete in P6.2-b; active registry and optimization imports moved |
+| `dipole/viblad/*` | `models/vib_ladder/dipole.py` | Complete in P6.2-c; old package removed and unused stateless wrapper deleted |
+| `models/vibladder.py` | `models/vib_ladder/model.py` | Complete in P6.2-c; typed builders remain and unused mapping wrapper is deleted |
+| `models/parameters.py::VibLadderParameters` | `models/vib_ladder/parameters.py` | Complete in P6.2-c; validation and unit conversion unchanged |
 | `core/basis/twolevel.py` | `models/two_level/basis.py` | Complete in P6.1-c; old path removed and D-063/D-064 values preserved |
 | `dipole/twolevel/*` | `models/two_level/dipole.py` | Implementation moved in P6.1-c; redundant stateless builder removed in P6.1-d |
 | `models/twolevel.py` | `models/two_level/model.py` | Complete in P6.1-c; registry and optimization imports moved |

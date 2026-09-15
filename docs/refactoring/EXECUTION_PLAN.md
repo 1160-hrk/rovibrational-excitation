@@ -1279,12 +1279,14 @@ their new location. The generic dipole factory drops VibLadder rather than
 adding a forbidden reverse dependency on the model package. Every D-067
 numerical and physical reference remains unchanged.
 
-P6.2-c should next move `VibLadderParameters` into the model package and remove
-the redundant mapping builder and stateless dipole wrapper after confirming
-their remaining callers. The transitional generic dipole factory already
-serves only not-yet-consolidated LinMol and legacy SymTop. Shared `dipole/vib`
-transition-element functions stay in place until their remaining model
-consumers are consolidated.
+P6.2-c completes VibLadder consolidation on 2026-09-15 under D-069.
+`VibLadderParameters` now belongs to `models/vib_ladder/parameters.py` with
+unchanged validation and conversion. Caller audit found no production use of
+the redundant mapping builder or stateless dipole wrapper, so both are removed.
+The package exposes only its schema, basis, stateful dipole, and typed builders.
+Shared `dipole/vib` transition-element functions stay in place until the
+remaining LinMol and legacy SymTop consumers are consolidated. All D-067
+references pass unchanged and P6.2 is complete.
 
 For each model:
 

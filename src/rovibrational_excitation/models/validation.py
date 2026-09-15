@@ -9,9 +9,9 @@ from typing import Any
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    VibLadderParameters,
 )
 from .two_level.parameters import TwoLevelParameters
+from .vib_ladder.parameters import VibLadderParameters
 
 ModelParameters = (
     LinMolParameters | SymmetricTopParameters | TwoLevelParameters | VibLadderParameters

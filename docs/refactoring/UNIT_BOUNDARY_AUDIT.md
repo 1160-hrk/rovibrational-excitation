@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-15
-Current checkpoint: Phase 4 closed; P6.2-b moves VibLadder ownership under D-068
+Current checkpoint: Phase 4 closed; P6.2-c completes VibLadder ownership under D-069
 
 ## Purpose
 
@@ -40,6 +40,10 @@ generated-field time, carrier, peak field, modulation delay, GDD, and TOD are
 validated as explicit pairs. The input mapping and saved JSON retain the
 submitted pair; frozen model and generated-field schemas contain canonical
 values.
+
+D-069 moves the unchanged VibLadder frozen quantity boundary into its model
+package. Required caller value/unit pairs, canonical `rad/fs` and C*m values,
+and provenance are unchanged; no conversion is added, removed, or repeated.
 
 Spectroscopy is Class A under D-046. Experimental conditions retain required
 value/unit pairs and expose frozen canonical K, Pa, m, ps, and kg fields.

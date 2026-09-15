@@ -15,7 +15,6 @@ from rovibrational_excitation.models.linmol import (
 from rovibrational_excitation.models.parameters import (
     LinMolParameters,
     SymmetricTopParameters,
-    VibLadderParameters,
 )
 from rovibrational_excitation.models.two_level import (
     TwoLevelParameters,
@@ -30,6 +29,7 @@ from rovibrational_excitation.models.validation import (
     validate_linmol_representation,
 )
 from rovibrational_excitation.models.vib_ladder import (
+    VibLadderParameters,
     build_vibladder_operators_from_parameters,
 )
 

@@ -11,13 +11,10 @@ import scipy.sparse as sp
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
 from rovibrational_excitation.models.factory import build_model_from_parameters
-from rovibrational_excitation.models.parameters import VibLadderParameters
 from rovibrational_excitation.models.vib_ladder import (
     VibLadderBasis,
     VibLadderDipoleMatrix,
-    build_mu,
-    build_vibladder,
-    build_vibladder_from_parameters,
+    VibLadderParameters,
     build_vibladder_operators_from_parameters,
 )
 
@@ -41,21 +38,6 @@ def _parameters(
     )
 
 
-def _mapping() -> dict[str, object]:
-    return {
-        "basis_type": "vibladder",
-        "V_max": 3,
-        "vibrational_frequency": 0.37,
-        "vibrational_frequency_units": "rad/fs",
-        "anharmonic_shift": 0.015,
-        "anharmonic_shift_units": "rad/fs",
-        "dipole_scale": 0.3,
-        "dipole_scale_units": "D",
-        "potential_type": "harmonic",
-        "initial_states": [0, 2],
-    }
-
-
 def _policy(storage: str) -> ExecutionPolicy:
     return ExecutionPolicy.from_strings(backend="numpy", storage=storage)
 
@@ -73,17 +55,11 @@ def test_vibladder_types_and_builders_have_one_model_owned_home() -> None:
     assert VibLadderDipoleMatrix.__module__ == (
         "rovibrational_excitation.models.vib_ladder.dipole"
     )
-    assert build_mu.__module__ == (
-        "rovibrational_excitation.models.vib_ladder.dipole_builder"
-    )
-    assert build_vibladder.__module__ == (
-        "rovibrational_excitation.models.vib_ladder.model"
-    )
     assert build_vibladder_operators_from_parameters.__module__ == (
         "rovibrational_excitation.models.vib_ladder.model"
     )
     assert VibLadderParameters.__module__ == (
-        "rovibrational_excitation.models.parameters"
+        "rovibrational_excitation.models.vib_ladder.parameters"
     )
 
 
@@ -205,44 +181,3 @@ def test_csr_operators_equal_dense_without_changing_hamiltonian_storage() -> Non
         np.testing.assert_array_equal(
             csr_dipole.mu(axis).toarray(), dense_dipole.mu(axis)
         )
-
-
-@pytest.mark.parametrize("axis", ["x", "y", "z"])
-def test_transitional_dipole_builders_match_stateful_class(axis: str) -> None:
-    parameters = _parameters()
-    basis = VibLadderBasis(
-        V_max=parameters.v_max,
-        omega=parameters.vibrational_frequency.angular_rad_per_fs,
-        delta_omega=parameters.anharmonic_shift.angular_rad_per_fs,
-    )
-    stateful = VibLadderDipoleMatrix(
-        basis,
-        mu0=parameters.dipole_c_m,
-        potential_type=parameters.potential_type,
-        dense=False,
-    )
-    one_shot = build_mu(
-        basis,
-        axis,
-        parameters.dipole_c_m,
-        potential_type=parameters.potential_type,
-        dense=False,
-    )
-
-    np.testing.assert_array_equal(one_shot.toarray(), stateful.mu(axis).toarray())
-
-
-def test_mapping_and_frozen_parameter_builders_are_exactly_equivalent() -> None:
-    policy = _policy("dense")
-    mapping_result = build_vibladder(_mapping(), execution_policy=policy)
-    typed_result = build_vibladder_from_parameters(
-        _parameters(), [0, 2], execution_policy=policy
-    )
-
-    mapping_basis, mapping_state, mapping_hamiltonian, mapping_dipole = mapping_result
-    typed_basis, typed_state, typed_hamiltonian, typed_dipole = typed_result
-    np.testing.assert_array_equal(mapping_basis.basis, typed_basis.basis)
-    np.testing.assert_array_equal(mapping_state.data, typed_state.data)
-    np.testing.assert_array_equal(mapping_hamiltonian.matrix, typed_hamiltonian.matrix)
-    for axis in "xyz":
-        np.testing.assert_array_equal(mapping_dipole.mu(axis), typed_dipole.mu(axis))

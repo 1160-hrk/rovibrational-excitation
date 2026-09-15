@@ -36,6 +36,8 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (VIB_LADDER / "basis.py").is_file()
     assert (VIB_LADDER / "dipole.py").is_file()
     assert (VIB_LADDER / "model.py").is_file()
+    assert (VIB_LADDER / "parameters.py").is_file()
+    assert not (VIB_LADDER / "dipole_builder.py").exists()
     assert not (MODELS / "vibladder.py").exists()
     assert not (PACKAGE / "core" / "basis" / "viblad.py").exists()
     assert not (PACKAGE / "dipole" / "viblad").exists()

@@ -16,6 +16,11 @@ Changing a decided contract requires:
 
 A file move or interface cleanup must not change any contract in this document.
 
+P6.2-c/D-069 completes VibLadder ownership by moving its unchanged frozen
+schema and removing two unused wrapper entry points. Its Hamiltonian, Morse
+derivation and bounds, dipole matrices, units, state construction, and
+propagation outputs remain governed by the existing contracts below.
+
 ## 1. Hamiltonian and evolution equations
 
 The interaction Hamiltonian convention is:
