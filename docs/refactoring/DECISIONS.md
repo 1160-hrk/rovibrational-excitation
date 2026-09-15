@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
 ## How to use this log
 
@@ -2617,6 +2617,41 @@ P6.2-b may move the basis, dipole class, and model builders into
 callers; they must not be claimed as VibLadder-only or moved speculatively in
 that structural unit. No formula, unit, threshold, storage choice, or Morse
 bound rule is approved to change.
+
+Implementation commit: this checkpoint.
+
+### D-068: VibLadder basis, dipole, and builders have one model owner
+
+Status: Accepted and implemented on 2026-09-15 as P6.2-b.
+
+Scope: VibLadder file ownership and active imports; no physical or numerical
+behavior change.
+
+`VibLadderBasis`, `VibLadderDipoleMatrix`, the transitional stateless dipole
+builder, and production model builders now live together under
+`models/vib_ladder/`. The former `core/basis/viblad.py`, `dipole/viblad/`, and
+`models/vibladder.py` owners are removed rather than retained as compatibility
+shims. Active source, tests, and benchmarks import the model-owned API, and
+the old `core.basis` and `dipole` convenience exports no longer advertise the
+moved types.
+
+Only import statements and the new package export surface change inside the
+moved implementation. The D-067 guards preserve the parameter projection,
+basis order, state mapping, Hamiltonian formula and units, scalar-z coupling,
+harmonic and Morse dipoles, instance-local Morse N, bound validation,
+dense/CSR behavior, cache identity, optimizer construction, and propagation
+results. A module-ownership contract requires the new paths and rejects all
+three former owners.
+
+The shared `dipole/vib` harmonic and Morse element functions remain in their
+current location because LinMol and legacy SymTop still consume them.
+`VibLadderParameters` remains in the shared schema module, and the mapping
+and stateless builders remain temporarily available under the new ownership
+path. The transitional generic dipole factory drops its VibLadder branch in
+the same ownership boundary: retaining it would introduce a new forbidden
+`dipole -> models.vib_ladder` reverse dependency. Direct construction uses the
+same moved class and arguments, so no matrix calculation changes. P6.2-c will
+settle the remaining schema and wrapper interfaces separately.
 
 Implementation commit: this checkpoint.
 

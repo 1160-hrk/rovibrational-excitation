@@ -8,15 +8,14 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
-from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
-from rovibrational_excitation.dipole.viblad.builder import build_mu
 from rovibrational_excitation.models.factory import build_model_from_parameters
 from rovibrational_excitation.models.parameters import VibLadderParameters
-from rovibrational_excitation.models.vibladder import (
+from rovibrational_excitation.models.vib_ladder import (
+    VibLadderBasis,
+    VibLadderDipoleMatrix,
+    build_mu,
     build_vibladder,
     build_vibladder_from_parameters,
     build_vibladder_operators_from_parameters,
@@ -65,6 +64,27 @@ def _expected_energies() -> np.ndarray:
     levels = np.arange(4, dtype=np.float64)
     vterm = levels + 0.5
     return (0.37 + 0.015) * vterm - (0.015 / 2.0) * vterm**2
+
+
+def test_vibladder_types_and_builders_have_one_model_owned_home() -> None:
+    assert VibLadderBasis.__module__ == (
+        "rovibrational_excitation.models.vib_ladder.basis"
+    )
+    assert VibLadderDipoleMatrix.__module__ == (
+        "rovibrational_excitation.models.vib_ladder.dipole"
+    )
+    assert build_mu.__module__ == (
+        "rovibrational_excitation.models.vib_ladder.dipole_builder"
+    )
+    assert build_vibladder.__module__ == (
+        "rovibrational_excitation.models.vib_ladder.model"
+    )
+    assert build_vibladder_operators_from_parameters.__module__ == (
+        "rovibrational_excitation.models.vib_ladder.model"
+    )
+    assert VibLadderParameters.__module__ == (
+        "rovibrational_excitation.models.parameters"
+    )
 
 
 def test_parameters_preserve_input_quantities_and_freeze_canonical_values() -> None:
@@ -201,12 +221,6 @@ def test_transitional_dipole_builders_match_stateful_class(axis: str) -> None:
         potential_type=parameters.potential_type,
         dense=False,
     )
-    generic = create_dipole_matrix(
-        basis,
-        mu0=parameters.dipole_c_m,
-        potential_type=parameters.potential_type,
-        dense=False,
-    )
     one_shot = build_mu(
         basis,
         axis,
@@ -215,9 +229,6 @@ def test_transitional_dipole_builders_match_stateful_class(axis: str) -> None:
         dense=False,
     )
 
-    np.testing.assert_array_equal(
-        generic.mu(axis).toarray(), stateful.mu(axis).toarray()
-    )
     np.testing.assert_array_equal(one_shot.toarray(), stateful.mu(axis).toarray())
 
 

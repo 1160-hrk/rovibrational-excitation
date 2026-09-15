@@ -25,10 +25,7 @@ if str(SOURCE_ROOT) not in sys.path:
 
 import numpy as np  # noqa: E402
 
-from rovibrational_excitation.core.basis import (  # noqa: E402
-    LinMolBasis,
-    VibLadderBasis,
-)
+from rovibrational_excitation.core.basis import LinMolBasis  # noqa: E402
 from rovibrational_excitation.core.execution import (  # noqa: E402
     ArrayBackend,
     ExecutionPolicy,
@@ -36,10 +33,7 @@ from rovibrational_excitation.core.execution import (  # noqa: E402
 )
 from rovibrational_excitation.core.states import DensityState, PureState  # noqa: E402
 from rovibrational_excitation.core.time import TimeGrid  # noqa: E402
-from rovibrational_excitation.dipole import (  # noqa: E402
-    LinMolDipoleMatrix,
-    VibLadderDipoleMatrix,
-)
+from rovibrational_excitation.dipole import LinMolDipoleMatrix  # noqa: E402
 from rovibrational_excitation.dynamics import (  # noqa: E402
     Axis,
     CouplingSpec,
@@ -61,6 +55,10 @@ from rovibrational_excitation.fields import (  # noqa: E402
 from rovibrational_excitation.models.two_level import (  # noqa: E402
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
+)
+from rovibrational_excitation.models.vib_ladder import (  # noqa: E402
+    VibLadderBasis,
+    VibLadderDipoleMatrix,
 )
 
 DEFAULT_OUTPUT = ROOT / "benchmarks" / "baseline-v0.2.10.json"

@@ -9,14 +9,10 @@ from rovibrational_excitation.core.basis import (
     DensityMatrix,
     LinMolBasis,
     StateVector,
-    VibLadderBasis,
 )
 from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.dipole import (
-    LinMolDipoleMatrix,
-    VibLadderDipoleMatrix,
-)
+from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics import (
     LiouvillePropagator,
     MixedStatePropagator,
@@ -28,6 +24,10 @@ from rovibrational_excitation.fields import (
     gaussian,
 )
 from rovibrational_excitation.models.two_level import TwoLevelBasis
+from rovibrational_excitation.models.vib_ladder import (
+    VibLadderBasis,
+    VibLadderDipoleMatrix,
+)
 from tests.propagation_options import propagation_options
 from tests.propagation_problem import propagation_problem
 

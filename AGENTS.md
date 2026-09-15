@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-14
+Last verified: 2026-09-15
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.2-a D-067 VibLadder characterization
+Verified structural checkpoint: P6.2-b D-068 VibLadder ownership move
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -268,18 +268,19 @@ plus the existing independent physics references freeze VibLadder units,
 basis/state order, Hamiltonian and dipole values, Morse instance-local N and
 bounds, scalar-z coupling, dense/CSR storage, cache identity, propagation, and
 all current construction-path parity.
+P6.2-b implements D-068: the basis, dipole class, stateless builder, and model
+builders now share `models/vib_ladder/`; all three former owners and their
+convenience exports are removed. The generic dipole factory drops VibLadder to
+avoid introducing a fifth reverse dependency. D-067 values remain unchanged.
 The next work is:
 
-1. Continue Phase 6 VibLadder consolidation as P6.2-b with a pure ownership
-   move. Use `git mv` for `core/basis/viblad.py`, the stateful
-   `dipole/viblad` implementation, and `models/vibladder.py` into
-   `models/vib_ladder/{basis,dipole,model}.py`; update active imports and remove
-   superseded paths without changing formulas, loops, units, storage, or
-   validation.
-2. Leave `VibLadderParameters`, the generic dipole factory, and redundant
-   mapping/stateless builders for the separate P6.2-c interface cleanup. Keep
-   shared `dipole/vib` harmonic/Morse functions in place while LinMol and
-   SymTop consume them.
+1. Complete VibLadder consolidation as P6.2-c. Move
+   `VibLadderParameters` into `models/vib_ladder/parameters.py` with unchanged
+   validators, remove the redundant mapping builder and stateless `build_mu`
+   wrapper after auditing callers, and export only the schema, basis, dipole,
+   and typed builders.
+2. Keep shared `dipole/vib` harmonic/Morse functions in place while LinMol and
+   SymTop consume them; do not assign a final owner by inference.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.dipole.viblad import VibLadderDipoleMatrix
 
-from .common import build_initial_state
-from .parameters import VibLadderParameters
-from .validation import model_parameters_from_mapping
+from ..common import build_initial_state
+from ..parameters import VibLadderParameters
+from ..validation import model_parameters_from_mapping
+from .basis import VibLadderBasis
+from .dipole import VibLadderDipoleMatrix
 
 
 def build_vibladder(

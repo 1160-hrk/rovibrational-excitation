@@ -7,12 +7,15 @@ import pytest
 
 from rovibrational_excitation.core.basis import (
     LinMolBasis,
-    VibLadderBasis,
 )
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
 from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
+)
+from rovibrational_excitation.models.vib_ladder import (
+    VibLadderBasis,
+    VibLadderDipoleMatrix,
 )
 from rovibrational_excitation.optimization.model import (
     OptimizationModelConfigurationError,
@@ -50,7 +53,7 @@ def test_vibladder_optimization_uses_production_frozen_schema_with_parity() -> N
         input_units="cm^-1",
         output_units="rad/fs",
     )
-    legacy_dipole = create_dipole_matrix(
+    legacy_dipole = VibLadderDipoleMatrix(
         legacy_basis,
         mu0=0.3,
         potential_type="harmonic",

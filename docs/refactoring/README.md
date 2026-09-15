@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-14
+Last verified: 2026-09-15
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -56,7 +56,11 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-14. P6.2-a implements D-067:
+These rows were last verified locally on 2026-09-15. P6.2-b implements D-068:
+the VibLadder basis, dipole class, stateless builder, and production builders
+now share `models/vib_ladder/`; the three former owners are removed and the
+generic dipole factory rejects the moved model rather than creating a new
+reverse dependency. All D-067 values remain unchanged. P6.2-a implements D-067:
 nine new contracts freeze VibLadder parameter/unit projection, basis/state
 order, Hamiltonian, scalar-z coupling, harmonic dipoles, dense/CSR storage,
 cache identity, and all current builder paths. Together with the existing
@@ -302,7 +306,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1 TwoLevel complete; P6.2-a VibLadder characterization complete under D-067 and P6.2-b ownership move is next |
+| 6 | Model consolidation | In progress — P6.1 TwoLevel complete; P6.2-b VibLadder ownership move complete under D-068 and P6.2-c schema/interface cleanup is next |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

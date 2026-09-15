@@ -1,6 +1,6 @@
 """Stateless vibrational-ladder dipole builder.
 
-The authoritative stateful class lives in :mod:`.cache`; this module only
+The authoritative stateful class lives in :mod:`.dipole`; this module only
 provides the explicit one-shot :func:`build_mu` convenience.
 """
 
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from rovibrational_excitation.dipole.viblad.cache import (
+from .dipole import (
     VibLadderDipoleMatrix as _CacheVibLadderDipoleMatrix,
 )
 

@@ -29,7 +29,7 @@ from rovibrational_excitation.models.validation import (
     model_parameters_from_physical_mapping,
     validate_linmol_representation,
 )
-from rovibrational_excitation.models.vibladder import (
+from rovibrational_excitation.models.vib_ladder import (
     build_vibladder_operators_from_parameters,
 )
 

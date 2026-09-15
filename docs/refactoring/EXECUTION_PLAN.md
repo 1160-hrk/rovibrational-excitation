@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-13
+Last updated: 2026-09-15
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1270,6 +1270,21 @@ cleanup remain a separate P6.2-c interface unit. The shared `dipole/vib`
 harmonic and Morse functions remain in place during P6.2-b because LinMol and
 legacy SymTop still consume them; their final owner is decided from all actual
 Phase 6 consumers rather than inferred during a VibLadder file move.
+
+P6.2-b completes the structural ownership move on 2026-09-15 under D-068.
+The basis, stateful dipole, transitional stateless builder, and model builders
+now share `models/vib_ladder/`; all active imports use that path and the three
+former owners are absent. The moved bodies change only the imports required by
+their new location. The generic dipole factory drops VibLadder rather than
+adding a forbidden reverse dependency on the model package. Every D-067
+numerical and physical reference remains unchanged.
+
+P6.2-c should next move `VibLadderParameters` into the model package and remove
+the redundant mapping builder and stateless dipole wrapper after confirming
+their remaining callers. The transitional generic dipole factory already
+serves only not-yet-consolidated LinMol and legacy SymTop. Shared `dipole/vib`
+transition-element functions stay in place until their remaining model
+consumers are consolidated.
 
 For each model:
 

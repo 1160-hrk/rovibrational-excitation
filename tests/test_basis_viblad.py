@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import VibLadderBasis
+from rovibrational_excitation.models.vib_ladder import VibLadderBasis
 
 
 def test_viblad_basic():

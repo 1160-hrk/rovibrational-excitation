@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-14
+Last verified against source and tests: 2026-09-15
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -438,7 +438,7 @@ shared implementation of this formula. Their numeric results must agree when
 given the same physical parameters and output units.
 
 Primary implementation:
-`core/basis/viblad.py`.
+`models/vib_ladder/basis.py`.
 
 ### 6.2 Morse bound levels
 
@@ -1266,6 +1266,11 @@ scalar-z coupling, harmonic Cartesian dipoles, coherent state construction,
 dense/CSR parity, and construction-path equality. The existing independent
 physics cases remain authoritative for the Morse element formula, derived
 instance-local N, bound-level validation, and propagation tolerances.
+
+P6.2-b implements the D-068 ownership move without changing any physical or
+numerical contract. The basis, Hamiltonian formula, dipole loops, scalar-z
+coupling, Morse derivation and bound checks, backend/storage choices, and
+propagation results remain guarded by D-067 at the model-owned paths.
 
 ## 13. Open physics/API decisions
 

@@ -10,12 +10,10 @@ from rovibrational_excitation.core.basis import (
     BasisBase,
     LinMolBasis,
     SymTopBasis,
-    VibLadderBasis,
 )
 
 from .linmol import LinMolDipoleMatrix
 from .symtop import SymTopDipoleMatrix
-from .viblad import VibLadderDipoleMatrix
 
 
 def create_dipole_matrix(
@@ -27,7 +25,7 @@ def create_dipole_matrix(
     dense: bool = True,
     units: Literal["C*m", "D", "ea0"] = "C*m",
     units_input: Literal["C*m", "D", "ea0"] = "C*m",
-) -> Union[LinMolDipoleMatrix, SymTopDipoleMatrix, VibLadderDipoleMatrix]:
+) -> Union[LinMolDipoleMatrix, SymTopDipoleMatrix]:
     """
     基底クラスの型に応じて適切な双極子行列クラスを自動的に選択し、インスタンスを生成します。
 
@@ -50,7 +48,7 @@ def create_dipole_matrix(
 
     Returns
     -------
-    Union[LinMolDipoleMatrix, SymTopDipoleMatrix, VibLadderDipoleMatrix]
+    Union[LinMolDipoleMatrix, SymTopDipoleMatrix]
         基底に対応する双極子行列クラスのインスタンス
 
     Examples
@@ -95,21 +93,10 @@ def create_dipole_matrix(
             units=units,
             units_input=units_input,
         )
-    elif isinstance(basis, VibLadderBasis):
-        return VibLadderDipoleMatrix(
-            basis=basis,
-            mu0=mu0,
-            potential_type=potential_type,
-            backend=backend,
-            dense=dense,
-            units=units,
-            units_input=units_input,
-        )
     else:
         raise TypeError(
             f"未知の基底クラス: {type(basis).__name__}\n"
             "サポートされている基底クラス:\n"
             "- LinMolBasis（線形分子）\n"
-            "- SymTopBasis（対称コマ分子）\n"
-            "- VibLadderBasis（振動準位系）"
+            "- SymTopBasis（対称コマ分子）"
         )

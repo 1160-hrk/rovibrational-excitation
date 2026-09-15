@@ -141,14 +141,17 @@ mu_z = dipole.mu_z  # ゼロ行列
 ### 3. 振動ラダー系
 
 ```python
-from rovibrational_excitation.core.basis import VibLadderBasis
-from rovibrational_excitation.dipole import VibLadderDipoleMatrix
+from rovibrational_excitation.models.vib_ladder import (
+    VibLadderBasis,
+    VibLadderDipoleMatrix,
+)
 
 # 基底の作成（3準位系）
 basis = VibLadderBasis(
     V_max=2,
-    omega_rad_pfs=1.0,  # 振動周波数
-    delta_omega_rad_pfs=0.0,  # 非調和性
+    omega=1.0,  # 0→1 遷移角周波数
+    delta_omega=0.0,  # 隣接遷移周波数の準位ごとの減少量
+    input_units="rad/fs",
 )
 
 # 双極子行列の生成
@@ -157,6 +160,8 @@ dipole = VibLadderDipoleMatrix(
     mu0=1.0,
     potential_type="harmonic",  # または "morse"
     backend="numpy",
+    units_input="C*m",
+    units="C*m",
 )
 
 # z方向のみ非ゼロの遷移

@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-14
-Current checkpoint: Phase 4 closed; P6.1-d completes TwoLevel under D-066
+Last verified: 2026-09-15
+Current checkpoint: Phase 4 closed; P6.2-b moves VibLadder ownership under D-068
 
 ## Purpose
 
@@ -224,6 +224,12 @@ boundary. `VibLadderParameters` retains each caller frequency value and unit,
 exposes canonical `angular_rad_per_fs`, and converts the explicitly unit-labeled
 dipole once to C*m. The production builder still consumes only those canonical
 values. Exact construction parity is now tested before any file move.
+
+P6.2-b changes only module ownership and imports. The same basis constructor
+still converts its explicit low-level input unit to rad/fs, the frozen schema
+still supplies canonical rad/fs and C*m values, and the same Hamiltonian and
+dipole objects cross the unchanged workflow boundaries. No value is converted,
+renamed, defaulted, or reinterpreted by the move.
 
 P6.1-c moves the characterized TwoLevel implementation into
 `models/two_level/` without changing value/unit pairs, canonical units, or any

@@ -4,13 +4,11 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from rovibrational_excitation.core.basis import VibLadderBasis
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
     MatrixStorage,
 )
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
 from rovibrational_excitation.dynamics.capabilities import (
     PropagationAlgorithm,
 )
@@ -161,19 +159,6 @@ def test_scalar_model_numpy_csr_is_real_csr_with_dense_element_parity(params):
     np.testing.assert_array_equal(csr_mu.toarray(), dense_mu)
     assert csr_model.dipole.backend == "numpy"
     assert csr_model.dipole.dense is False
-
-
-def test_generic_dipole_factory_preserves_vibladder_csr_choice():
-    basis = VibLadderBasis(V_max=3, omega=1.0, delta_omega=0.01)
-    dipole = create_dipole_matrix(
-        basis,
-        mu0=2.0e-30,
-        dense=False,
-        potential_type="harmonic",
-    )
-
-    assert dipole.dense is False
-    assert sp.isspmatrix_csr(dipole.mu("z"))
 
 
 def test_scalar_dipole_rejects_cupy_csr_before_backend_allocation():

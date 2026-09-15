@@ -23,7 +23,7 @@ except ImportError:
 # Forward-refs for static type checkers only
 # ----------------------------------------------------------------------
 if TYPE_CHECKING:
-    from rovibrational_excitation.core.basis import VibLadderBasis
+    from .basis import VibLadderBasis
 
 # Runtime用の型エイリアス
 if cp is not None:

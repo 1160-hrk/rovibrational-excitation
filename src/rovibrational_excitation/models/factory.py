@@ -29,7 +29,7 @@ from .validation import (
     validate_linmol_representation,
     validate_model_parameters,
 )
-from .vibladder import build_vibladder_from_parameters
+from .vib_ladder import build_vibladder_from_parameters
 
 
 @dataclass(frozen=True)

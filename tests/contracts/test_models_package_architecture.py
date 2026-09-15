@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src" / "rovibrational_excitation"
 MODELS = PACKAGE / "models"
 TWO_LEVEL = MODELS / "two_level"
+VIB_LADDER = MODELS / "vib_ladder"
 LEGACY_MODELS = PACKAGE / "simulation" / "models"
 M_AVERAGE = PACKAGE / "simulation" / "m_average.py"
 
@@ -31,7 +32,13 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (TWO_LEVEL / "model.py").is_file()
     assert (TWO_LEVEL / "parameters.py").is_file()
     assert not (TWO_LEVEL / "dipole_builder.py").exists()
-    assert (MODELS / "vibladder.py").is_file()
+    assert (VIB_LADDER / "__init__.py").is_file()
+    assert (VIB_LADDER / "basis.py").is_file()
+    assert (VIB_LADDER / "dipole.py").is_file()
+    assert (VIB_LADDER / "model.py").is_file()
+    assert not (MODELS / "vibladder.py").exists()
+    assert not (PACKAGE / "core" / "basis" / "viblad.py").exists()
+    assert not (PACKAGE / "dipole" / "viblad").exists()
     assert not (MODELS / "twolevel.py").exists()
     assert not (PACKAGE / "core" / "basis" / "twolevel.py").exists()
     assert not (PACKAGE / "dipole" / "twolevel").exists()
