@@ -1288,6 +1288,22 @@ Shared `dipole/vib` transition-element functions stay in place until the
 remaining LinMol and legacy SymTop consumers are consolidated. All D-067
 references pass unchanged and P6.2 is complete.
 
+### P6.3 LinMol
+
+P6.3-a completes pre-move characterization on 2026-09-15 under D-070. Nine new
+cases freeze current ownership, parameter/unit projection, signed
+`|v,J,M>` order, Hamiltonian construction, Cartesian coupling, coherent
+basis-index state construction, stateful/stateless dipole parity, cache
+identity, dense/CSR parity, and mapping/typed builder parity. The 29 existing
+independent physics cases retain authority for selection rules, M-incoherent
+averaging, Morse behavior, and propagation. No source implementation changes.
+
+P6.3-b should next move the basis, dipole implementation, and typed model
+builders into `models/linear_molecule/` without formula or ordering changes.
+The frozen schema and transitional wrapper/factory cleanup remain a separate
+interface unit. `simulation/m_average.py` remains a workflow owner and must not
+be folded into the model package.
+
 For each model:
 
 - add frozen parameter schema;

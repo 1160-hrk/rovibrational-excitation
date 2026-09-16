@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1208 passed, 10 skipped (1218 collected) |
+| Pytest | 1217 passed, 10 skipped (1227 collected) |
 | Measured branch coverage | 75% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -56,7 +56,11 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-15. P6.2-c implements D-069:
+These rows were last verified locally on 2026-09-15. P6.3-a implements D-070
+without changing source: nine new cases freeze the complete current LinMol
+ownership and construction projection before its move, while 29 existing
+physics cases retain independent authority over selection rules, M averaging,
+Morse behavior, and propagation. P6.2-c implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
 and stateless dipole wrappers are removed after a complete caller audit. The
 remaining typed builders use the same validation, unit conversion, basis,
@@ -312,7 +316,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1 TwoLevel and P6.2 VibLadder complete; LinMol is next, followed by legacy SymTop cleanup |
+| 6 | Model consolidation | In progress — P6.1 TwoLevel and P6.2 VibLadder complete; P6.3-a LinMol characterization complete, ownership move next |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

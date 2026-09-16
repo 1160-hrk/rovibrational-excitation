@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-15
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.2-c D-069 VibLadder consolidation complete
+Verified structural checkpoint: P6.3-a D-070 LinMol pre-move characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -273,11 +273,16 @@ builders moved to `models/vib_ladder/`. P6.2-c implements D-069: the frozen
 schema joins that owner and the unused mapping and stateless wrappers are
 deleted. The generic dipole factory no longer handles VibLadder. D-067 values
 remain unchanged and P6.2 is complete.
+P6.3-a implements D-070 without changing source behavior. Nine new contracts
+plus 29 independent physics cases freeze LinMol parameter conversion, signed
+basis order, Hamiltonian, Cartesian dipoles and coupling, coherent basis-index
+states, dense/CSR parity, M averaging, Morse behavior, propagation, and every
+current construction path before ownership moves.
 The next work is:
 
-1. Begin P6.3 LinMol with an exact pre-move characterization checkpoint, then
-   move its schema, basis, Hamiltonian, dipole/selection rules, coupling, and
-   typed builders without changing formulas or basis order.
+1. Implement P6.3-b by moving the LinMol basis, dipole implementation, and
+   typed builders to `models/linear_molecule/` without changing formulas,
+   basis order, field axes, state indices, storage, or backend behavior.
 2. Keep shared `dipole/vib` harmonic/Morse functions in place while LinMol and
    SymTop consume them; do not assign a final owner by inference.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current

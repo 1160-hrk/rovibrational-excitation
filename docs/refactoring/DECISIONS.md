@@ -2678,6 +2678,35 @@ named modules. P6.2 is complete without a physical or numerical change.
 
 Implementation commit: this checkpoint.
 
+### D-070: LinMol ownership migration starts from exact characterization
+
+Status: Accepted and implemented on 2026-09-15 as P6.3-a.
+
+Scope: Phase 6 LinMol migration guard; no source implementation, import path,
+public API, formula, or numerical behavior changes.
+
+Nine new contract cases freeze the current owner paths, frozen parameter and
+unit projection, signed `|v,J,M>` basis order and index map, rovibrational
+Hamiltonian, M-resolved Cartesian coupling, coherent basis-index state
+construction, stateful/stateless dipole parity and cache identity, dense/CSR
+parity, and mapping/typed builder parity. The existing 29-case independent
+LinMol physics suite remains authoritative for energies, Cartesian selection
+rules, M-incoherent averaging, polarization restrictions, Morse behavior, and
+propagation.
+
+The characterization also records three existing boundary details rather than
+changing them: model-builder `initial_states` are basis indices, Cartesian
+`axes` contain at most two distinct axes, and the stored-Joule Hamiltonian
+round-trip differs from the direct analytical `rad/fs` expression by at most
+`1.11e-16` in this reference. The complete suite passes 1217 tests with 10
+optional-GPU skips.
+
+P6.3-b may move ownership only after these values are protected. Any proposal
+to change the state-input meaning, axis limit, or Hamiltonian storage/rounding
+is a separate public or numerical contract decision.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

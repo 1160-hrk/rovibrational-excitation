@@ -3,7 +3,7 @@
 Last verified: 2026-09-15
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-069 VibLadder consolidation complete
+Latest API checkpoint: D-070 LinMol pre-move characterization
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -61,6 +61,11 @@ P6.2-c moves `VibLadderParameters` into `models.vib_ladder` and removes the
 unused mapping `build_vibladder` and stateless `build_mu` wrappers. The final
 model package surface contains the schema, basis, stateful dipole, and typed
 state/operator builders only.
+
+P6.3-a changes no import path, export, signature, or implementation. It freezes
+the current `core.basis.LinMolBasis`, `dipole.linmol`, shared
+`models.parameters.LinMolParameters`, `models.linmol`, and transitional
+factory/builder paths before the ownership move.
 
 ## 2. Package root
 

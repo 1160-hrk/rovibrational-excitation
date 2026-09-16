@@ -524,6 +524,13 @@ wrappers. The generic dipole factory drops VibLadder during the move because
 retaining it would create a new `dipole -> models` reverse dependency. All
 D-067 values remain unchanged.
 
+P6.3-a freezes the complete current LinMol ownership and construction
+projection before any move. Its signed basis order, parameter conversion,
+Hamiltonian, M-resolved Cartesian dipoles, coherent basis-index state input,
+dense/CSR behavior, and current builder paths are executable contracts under
+D-070. The independent physics suite continues to own selection-rule,
+M-average, Morse, and propagation references.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
