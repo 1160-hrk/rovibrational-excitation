@@ -8,7 +8,7 @@ Package for rovibrational wave-packet simulation.
 core            … 汎用状態、演算子、時間、単位
 fields          … 電場波形、包絡線、変調
 dynamics        … 時間発展facade、数値solver、実行契約
-dipole          … 双極子モーメント行列の高速生成
+models          … 分子モデルと双極子モーメント行列
 visualization   … 可視化ユーティリティ
 simulation      … バッチ実行・結果管理
 spectroscopy    … 線形応答理論による分光計算 (吸収、PFID、放射スペクトルなど)
@@ -68,7 +68,6 @@ __all__: list[str] = [
 # ------------------------------------------------------------------
 from . import (  # noqa: E402, F401
     core,
-    dipole,
     fields,
     simulation,
     spectroscopy,
@@ -78,7 +77,6 @@ from .core.basis import DensityMatrix, StateVector  # noqa: E402, F401
 from .core.operators import Hamiltonian  # noqa: E402, F401
 
 # Note: procedural propagators have been removed from public API in favor of class-based propagators
-# dipole
 from .fields import ElectricField  # noqa: E402, F401
 from .models.linear_molecule import (  # noqa: E402, F401
     LinMolBasis,

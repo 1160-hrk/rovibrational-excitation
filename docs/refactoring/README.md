@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1223 passed, 10 skipped (1233 collected) |
+| Pytest | 1224 passed, 10 skipped (1234 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -95,6 +95,10 @@ to `models.dipole_base` and adds a type-only `core.dipole.DipoleOperator` for
 propagation and spectroscopy. Both dynamics reverse imports are gone. A
 pre-move test freezes conversion, cache identity, SI views, and the legacy
 fallback. Strict mypy now covers 42 modules; CUDA remains unverified.
+P6.4-f/D-081 removes the now-empty `dipole` package and its eager root import.
+The wheel contains no old package files; physics and numerical paths are
+unchanged. Phase 6 remains open for the two exact `models -> dynamics.problem`
+imports, to be characterized separately in P6.5.
 
 P6.2-c
 implements D-069:
@@ -353,7 +357,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-e complete; empty dipole package cleanup and acceptance audit remain |
+| 6 | Model consolidation | In progress — P6.1-P6.4-f complete; P6.5 ownership consolidation and acceptance audit remain |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

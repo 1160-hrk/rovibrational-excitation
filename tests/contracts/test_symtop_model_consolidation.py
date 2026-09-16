@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import rovibrational_excitation.dipole as dipole_package
 from rovibrational_excitation.models.symmetric_top import (
     SymmetricTopBasis,
     SymmetricTopDipoleMatrix,
@@ -19,7 +18,10 @@ def test_production_symtop_has_one_model_owner() -> None:
     assert SymmetricTopDipoleMatrix.__module__ == (
         "rovibrational_excitation.models.symmetric_top.dipole"
     )
-    assert dipole_package.__all__ == []
+
+
+def test_obsolete_dipole_package_is_absent() -> None:
+    assert not (PACKAGE / "dipole").exists()
 
 
 def test_experimental_legacy_symtop_paths_are_absent() -> None:

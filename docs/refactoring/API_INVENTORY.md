@@ -3,7 +3,7 @@
 Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-080 separated dipole protocol and concrete mixin
+Latest API checkpoint: D-081 removed the obsolete dipole package shell
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -104,6 +104,9 @@ P6.4-e/D-080 moves the unchanged concrete mixin from `dipole.base` to
 lower-layer access. There is no old-path shim. The `dipole` package has no
 remaining Python implementation beyond its empty package initializer.
 
+P6.4-f/D-081 removes that empty initializer and the obsolete package README.
+The root no longer imports `dipole`; archived v0.2 examples remain historical.
+
 ## 2. Package root
 
 ### 2.1 Names declared in `rovibrational_excitation.__all__`
@@ -128,9 +131,10 @@ Every current root `__all__` name therefore has an explicit disposition. Only
 ### 2.2 Other accessible root attributes
 
 `__version__` and `__author__` are accessible but absent from `__all__`.
-`core`, `dipole`, `fields`, `simulation`, `spectroscopy`, and
-`visualization` are bound by eager root imports. Each now has an explicit
-package initializer. `simulation` narrowly exports `run_simulation_case`.
+`core`, `fields`, `simulation`, `spectroscopy`, and `visualization` are bound
+by eager root imports. Each now has an explicit package initializer.
+`dipole` is no longer a root attribute after D-081. `simulation` narrowly
+exports `run_simulation_case`.
 
 | Current name | Target | Disposition |
 |---|---|---|
@@ -138,7 +142,7 @@ package initializer. `simulation` narrowly exports `run_simulation_case`.
 | `__author__` | package metadata only | internal; do not promise as API |
 | `core` | explicit `core/__init__.py` with narrow exports | target public subpackage |
 | `fields` | explicit field construction, envelopes, and modulation package | target public subpackage; `ElectricField` remains a temporary root re-export pending O-008 |
-| `dipole` | functionality moves under model ownership | temporary public; delete package after migration |
+| `dipole` | removed under D-081 | no replacement package or compatibility shim; use `models.*` |
 | `visualization` | explicit target package with module-level plotting helpers | target public subpackage; root import does not load optional Matplotlib |
 | `simulation` | typed `simulation` workflows | target public subpackage |
 | `spectroscopy` | decomposed `spectroscopy` package | target public subpackage |
@@ -229,7 +233,7 @@ and demo factories are deleted rather than deprecated.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `dipole` | no exports or implementation | remove code-empty package in P6.4-f | temporary empty shell after P6.4-e |
+| `dipole` | removed | model-owned implementations and `core.dipole` type protocol | complete in P6.4-f; no compatibility shim |
 | `dipole.base` | removed | `models.dipole_base` concrete mixin; `core.dipole.DipoleOperator` access protocol | complete in P6.4-e; no compatibility shim |
 | `dipole.linmol` | removed | `models.linear_molecule` | complete in P6.3-b; no compatibility shim |
 | `dipole.factory` | removed | direct `models.*` construction | complete in P6.4-b; no compatibility shim |

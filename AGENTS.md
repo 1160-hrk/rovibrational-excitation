@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.4-e D-080 dipole protocol and mixin split
+Verified structural checkpoint: P6.4-f D-081 obsolete dipole package removal
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -306,6 +306,10 @@ P6.4-e/D-080 moves the unchanged concrete dipole mixin to `models.dipole_base`
 and adds the type-only `core.dipole.DipoleOperator`. The two
 `dynamics -> dipole.base` transitions are gone. The full suite has 1223 passes
 and 10 optional-GPU skips, 77% branch coverage, and strict mypy for 42 modules.
+P6.4-f/D-081 removes the empty `dipole` shell and its root import. The full
+suite has 1224 passes and 10 optional-GPU skips; branch coverage remains 77%,
+and the wheel contains no obsolete `dipole` files. The two exact
+`models -> dynamics.problem` dependencies remain for P6.5.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -314,8 +318,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Audit/remove the now code-empty `dipole` package shell in P6.4-f and run
-   the Phase 6 acceptance matrix. Do not combine that with numerical cleanup.
+1. Characterize `CouplingSpec`/`SystemModel` ownership and projection in P6.5,
+   then remove the two exact `models -> dynamics.problem` reverse imports.
+   Run the Phase 6 acceptance matrix without numerical cleanup.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

@@ -572,6 +572,12 @@ P6.4-e/D-080 moves the unchanged concrete cache/unit/persistence mixin to
 production SymTop need not inherit the concrete mixin. The now code-empty
 `dipole` package shell is audited separately in P6.4-f.
 
+P6.4-f/D-081 removes that obsolete shell and root convenience import. The
+model-specific code has one owner per model, and shared vibration code stays
+neutral under `models.vibration`. Phase 6 remains open for the two exact
+`models -> dynamics.problem` edges; moving coupling/problem contracts needs
+its own characterization before dependency-direction acceptance.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 

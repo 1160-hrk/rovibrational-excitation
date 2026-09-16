@@ -2991,6 +2991,32 @@ import/execution pass. Real CUDA remains unverified.
 
 Implementation commit: this checkpoint.
 
+### D-081: Remove the empty dipole package shell
+
+Status: Implemented on 2026-09-16 as P6.4-f.
+
+After D-080, `src/rovibrational_excitation/dipole/` has no tracked numerical
+implementation or active source caller. Delete its empty initializer and
+obsolete README without a compatibility shim under D-001; both remain
+recoverable in Git history. Remove the exact ignored `__pycache__` directories
+left by the former base, rotational, and vibrational modules. Remove the
+package-root convenience import of `dipole` and update the ownership test.
+Historical `examples/archives/` imports remain archival under D-044; they are
+not advertised as working examples. No numerical formula, state, unit,
+fallback, backend, or persistence behavior changes.
+
+The Phase 6 audit finds the two previously recorded `models ->
+dynamics.problem` imports still present in `models/__init__.py` and
+`models/factory.py`; do not mark the dependency-direction acceptance complete
+or hide them. Resolve them in a separately characterized P6.5 unit before
+closing Phase 6.
+
+Acceptance: 1224 passed, 10 optional-GPU skips, 77% measured branch coverage,
+42-module strict mypy, active example smoke, sdist/wheel build and Twine pass.
+The wheel contains no old `dipole/` entry. CUDA remains unverified.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

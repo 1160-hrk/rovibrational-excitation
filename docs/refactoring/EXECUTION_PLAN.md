@@ -1377,6 +1377,16 @@ audit and remove the now code-empty `dipole` package shell, then evaluate the
 Phase 6 acceptance list without broad numerical cleanup. Do not change the
 legacy `get_dipole_component_SI` fallback in that structural unit.
 
+P6.4-f removes the now code-empty `dipole` package on 2026-09-16 under
+D-081, including its obsolete README and root convenience import. The
+historic archived examples are unchanged. Full tests pass 1224 cases with
+10 optional-GPU skips, coverage stays 77%, and the wheel has no old package
+files. Phase 6 is still open: `models/__init__.py` and `models/factory.py`
+import `dynamics.problem`, exactly matching the two recorded upper-layer
+dependencies. P6.5 should characterize `CouplingSpec`/`SystemModel` ownership
+and remove those edges without altering coupling semantics, model component
+values, or projection behavior. Do not fold this into a numerical change.
+
 For each model:
 
 - add frozen parameter schema;
