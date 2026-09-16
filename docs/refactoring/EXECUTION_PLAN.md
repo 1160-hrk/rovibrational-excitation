@@ -1366,6 +1366,17 @@ below dynamics, retain cache/unit/persistence implementation with the models,
 and eliminate the two documented reverse dependencies without changing
 runtime fallback or conversion behavior.
 
+P6.4-e completes on 2026-09-16 under D-080. A separate pre-move test commit
+freezes conversion, cache identity, SI views, and the legacy fallback. The
+concrete base moves unchanged into `models.dipole_base`; a type-only
+`core.dipole.DipoleOperator` expresses the four required accessors. Both
+`dynamics -> dipole.base` reverse imports are eliminated. CPU tests pass 1223
+cases with 10 optional-GPU skips; branch coverage remains 77%, strict mypy
+covers 42 modules, and active examples plus wheel checks pass. P6.4-f should
+audit and remove the now code-empty `dipole` package shell, then evaluate the
+Phase 6 acceptance list without broad numerical cleanup. Do not change the
+legacy `get_dipole_component_SI` fallback in that structural unit.
+
 For each model:
 
 - add frozen parameter schema;

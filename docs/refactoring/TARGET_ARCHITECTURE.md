@@ -566,6 +566,12 @@ P6.4-d/D-079 moves the shared harmonic and Morse functions byte-for-byte to
 keeps its independent formula. `dipole.base` is the remaining transitional
 shared class and needs a separate protocol/cache split.
 
+P6.4-e/D-080 moves the unchanged concrete cache/unit/persistence mixin to
+`models.dipole_base` and defines the minimal structural access protocol in
+`core.dipole`. Dynamics and spectroscopy reference only the protocol;
+production SymTop need not inherit the concrete mixin. The now code-empty
+`dipole` package shell is audited separately in P6.4-f.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -599,7 +605,7 @@ already constructed basis and weights, never molecule names.
 | `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | Legacy skeleton removed in P6.4-b; D-053 production owner unchanged |
 | no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
-| `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
+| `dipole/base.py` | `core/dipole.py` protocol plus `models/dipole_base.py` concrete mixin | Complete in P6.4-e; concrete body unchanged and both dynamics reverse imports removed |
 | `dipole/rot/jm.py` | `models/linear_molecule/rotational.py` | Complete in P6.4-c; analytic body unchanged and Wigner reference test-only |
 | `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
 | `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |

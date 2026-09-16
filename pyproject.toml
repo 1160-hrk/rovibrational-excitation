@@ -114,6 +114,7 @@ ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_configs = true
 files = [
+    "src/rovibrational_excitation/core/dipole.py",
     "src/rovibrational_excitation/core/execution.py",
     "src/rovibrational_excitation/dynamics/scaling/scales.py",
     "src/rovibrational_excitation/dynamics/base.py",

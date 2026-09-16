@@ -63,6 +63,12 @@ copied into the final public typed API.
 
 ## P2: cleanup and observability
 
+D-080/P6.4-e moves the dipole mixin and removes dynamics' type dependency on
+the old package. The raw-attribute fallback in
+`dynamics.utils.get_dipole_component_SI` is unchanged and now has a direct
+characterization test. Its removal would be a separate behavior change, not
+part of the ownership move.
+
 - visualization/plot_all.py still catches errors inside optional spectrum and
   spectrogram branches. The optimization runner no longer catches the top-level
   plot call. Optional branch failures may remain non-fatal only if returned in

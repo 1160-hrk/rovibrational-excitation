@@ -19,8 +19,8 @@ from .utils import _HBAR
 
 # 型ヒント用 (循環参照を避けるため文字列で書く)
 if TYPE_CHECKING:  # pragma: no cover
+    from rovibrational_excitation.core.dipole import DipoleOperator
     from rovibrational_excitation.core.operators import Hamiltonian
-    from rovibrational_excitation.dipole.base import DipoleMatrixBase
     from rovibrational_excitation.fields import ElectricField
 
 
@@ -389,7 +389,7 @@ def create_dimensionless_time_array(
 
 def nondimensionalize_from_objects(
     hamiltonian: Hamiltonian,
-    dipole_matrix: DipoleMatrixBase,
+    dipole_matrix: DipoleOperator,
     efield: ElectricField,
     *,
     coupling_axes: tuple[str, ...],
@@ -408,13 +408,13 @@ def nondimensionalize_from_objects(
     NondimensionalizationScales,
 ]:
     """
-    HamiltonianとDipoleMatrixBaseクラスから自動的にSI単位系に変換して無次元化を実行
+    HamiltonianとDipoleOperatorから自動的にSI単位系に変換して無次元化を実行
 
     Parameters
     ----------
     hamiltonian : Hamiltonian
         ハミルトニアンオブジェクト（内部単位管理）
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         双極子行列オブジェクト（内部単位管理）
     efield : ElectricField
         電場オブジェクト
@@ -443,7 +443,7 @@ def nondimensionalize_from_objects(
             eigenvals = hamiltonian.get_eigenvalues(units="J")
             print(f"   Eigenvalues: {eigenvals[0]:.3e} to {eigenvals[-1]:.3e} J")
 
-    # 2. DipoleMatrixBaseクラスからSI単位系（C·m）で双極子行列を取得
+    # 2. DipoleOperatorからSI単位系（C·m）で双極子行列を取得
     mu_x_Cm = _as_numpy(dipole_matrix.get_mu_x_SI(dense=True))
     mu_y_Cm = _as_numpy(dipole_matrix.get_mu_y_SI(dense=True))
     mu_z_Cm = _as_numpy(dipole_matrix.get_mu_z_SI(dense=True))

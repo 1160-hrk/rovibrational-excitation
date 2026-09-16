@@ -2963,6 +2963,34 @@ and must not be reported as verified by this structural move.
 
 Implementation commit: this checkpoint.
 
+### D-080: Separate the dipole access protocol from the concrete model mixin
+
+Status: Implemented on 2026-09-16 as P6.4-e.
+
+`dipole.base.DipoleMatrixBase` supplies cache, unit conversion, backend
+selection, SI views, stacking, and HDF5 persistence to LinMol, VibLadder, and
+TwoLevel. Production SymTop has the needed accessors but does not inherit this
+class. Move the complete concrete implementation unchanged to
+`models.dipole_base`; no conversion, cache key, persistence schema, fallback,
+default, or matrix expression changes. Remove the old path without a shim.
+
+Introduce `core.dipole.DipoleOperator` as a structural typing protocol with
+only the four accessors actually used by propagation, scaling, and
+spectroscopy: `get_mu_in_units` and the three `get_mu_*_SI` methods. It is not
+a runtime validator, base class, backend selector, or new conversion path.
+Return values remain backend-native. The two exact `dynamics -> dipole.base`
+imports become lower-layer `core.dipole` imports, including the prior
+type-checking-only edge; spectroscopy uses the same protocol annotation.
+The raw-attribute fallback in `dynamics.utils.get_dipole_component_SI` is
+unchanged and explicitly characterized, not endorsed as a new public route.
+
+Acceptance: pre-move cache/conversion/fallback guards, 1223 passing tests and
+10 optional-GPU skips, 77% measured branch coverage, strict mypy for 42
+modules, active example smoke, sdist/wheel build, Twine, and isolated wheel
+import/execution pass. Real CUDA remains unverified.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

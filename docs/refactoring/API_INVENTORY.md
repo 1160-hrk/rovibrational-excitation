@@ -3,7 +3,7 @@
 Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-079 moved shared vibration kernels to models
+Latest API checkpoint: D-080 separated dipole protocol and concrete mixin
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -99,6 +99,11 @@ P6.4-d/D-079 moves `dipole.vib` unchanged to `models.vibration`, shared by
 LinMol and VibLadder. The old path is removed without a shim. `dipole.base`
 is the remaining transitional shared implementation.
 
+P6.4-e/D-080 moves the unchanged concrete mixin from `dipole.base` to
+`models.dipole_base` and adds the type-only `core.dipole.DipoleOperator` for
+lower-layer access. There is no old-path shim. The `dipole` package has no
+remaining Python implementation beyond its empty package initializer.
+
 ## 2. Package root
 
 ### 2.1 Names declared in `rovibrational_excitation.__all__`
@@ -159,6 +164,7 @@ not treated as intentional API.
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `core` | no re-exported names yet | narrow generic state/operator/time/unit surface pending O-008 | target public package created in P3.1-a |
+| `core.dipole` | `DipoleOperator` | structural access contract for backend-native dipole matrices | internal type boundary added in P6.4-e; no runtime validation |
 | `core.operators` | `Hamiltonian` is directly importable; no package `__all__` yet | generic unit-aware operator owner | target public module; root re-export remains temporary |
 | `core.basis` | `BasisBase`, `StateVector`, `DensityMatrix` | generic states to `core` | temporary public; all model-specific bases have moved to their `models.*` owners |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `Frequency`, `TimeQuantity`, `DipoleMoment`, `ElectricFieldAmplitude`, `GroupDelayDispersion`, `ThirdOrderDispersion`, `converter`, `UnitValidator`, `validator` | immutable constants and frozen explicit conversion boundaries under `core.units`; typed config handles parameter conversion | target public quantity and pure-conversion surface; generic processor deleted by D-045 |
@@ -223,13 +229,15 @@ and demo factories are deleted rather than deprecated.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `dipole` | no model exports | shared internal dipole infrastructure | internal transition package; all model-specific classes live in `models.*` |
+| `dipole` | no exports or implementation | remove code-empty package in P6.4-f | temporary empty shell after P6.4-e |
+| `dipole.base` | removed | `models.dipole_base` concrete mixin; `core.dipole.DipoleOperator` access protocol | complete in P6.4-e; no compatibility shim |
 | `dipole.linmol` | removed | `models.linear_molecule` | complete in P6.3-b; no compatibility shim |
 | `dipole.factory` | removed | direct `models.*` construction | complete in P6.4-b; no compatibility shim |
 | `dipole.viblad` | removed | `models.vib_ladder` | complete in P6.2-b; no compatibility shim |
 | `dipole.symtop` | removed | `models.symmetric_top` | complete in P6.4-b; no compatibility shim |
 | `dipole.rot` | removed | `models.linear_molecule.rotational`; Wigner reference under tests | complete in P6.4-c; no compatibility shim |
 | `dipole.vib` | removed | `models.vibration` | complete in P6.4-d; no compatibility shim |
+| `models.dipole_base` | `DipoleMatrixBase` and internal `Array`/`_xp` helpers | shared concrete cache/unit/persistence mixin for three models | internal owner added in P6.4-e; SymTop remains structurally compatible without inheritance |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |
 | `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `VibLadderParameters`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | complete in P6.2-c; schema is model-owned and unused compatibility builders are removed |

@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1219 passed, 10 skipped (1229 collected) |
+| Pytest | 1223 passed, 10 skipped (1233 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -90,6 +90,11 @@ follow-up units; no transition formula or production matrix path changes.
 P6.4-d/D-079 moves the shared harmonic/Morse function files unchanged to
 `models.vibration`, retaining one function object for LinMol and VibLadder.
 SymTop remains independent. The old path is removed; CUDA remains unverified.
+P6.4-e/D-080 moves the unchanged concrete dipole cache/unit/persistence mixin
+to `models.dipole_base` and adds a type-only `core.dipole.DipoleOperator` for
+propagation and spectroscopy. Both dynamics reverse imports are gone. A
+pre-move test freezes conversion, cache identity, SI views, and the legacy
+fallback. Strict mypy now covers 42 modules; CUDA remains unverified.
 
 P6.2-c
 implements D-069:
@@ -348,7 +353,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-d complete; dipole base/protocol separation remains |
+| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-e complete; empty dipole package cleanup and acceptance audit remain |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

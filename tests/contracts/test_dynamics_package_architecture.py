@@ -73,9 +73,6 @@ def test_dynamics_has_only_explicit_lower_layer_dependencies():
                 elif level > 1 and parts[0] in forbidden:
                     violations.append(f"{path.relative_to(ROOT)} imports {module}")
 
-    expected_transition_debt = {
-        "src/rovibrational_excitation/dynamics/utils.py imports dipole.base",
-        "src/rovibrational_excitation/dynamics/scaling/converter.py imports rovibrational_excitation.dipole.base",
-    }
+    expected_transition_debt: set[str] = set()
     assert len(violations) == len(expected_transition_debt)
     assert set(violations) == expected_transition_debt

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
 
-from rovibrational_excitation.dipole.base import Array, DipoleMatrixBase, _xp
+from rovibrational_excitation.models.dipole_base import Array, DipoleMatrixBase, _xp
 
 try:
     import cupy as cp  # optional GPU backend

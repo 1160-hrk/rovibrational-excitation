@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-import rovibrational_excitation.dipole.base as dipole_base
+import rovibrational_excitation.models.dipole_base as dipole_base
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,

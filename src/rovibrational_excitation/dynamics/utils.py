@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any, Literal, Union
 import numpy as np
 import scipy.sparse
 
+from ..core.dipole import DipoleOperator
 from ..core.operators import Hamiltonian
 from ..core.time import FIELD_INTERVALS_PER_PROPAGATION_STEP
 from ..core.units.constants import CONSTANTS
-from ..dipole.base import DipoleMatrixBase
 from ..fields import ElectricField
 
 if TYPE_CHECKING:
@@ -218,7 +218,7 @@ def validate_axes(axes: str) -> tuple[str, str]:
 def prepare_propagation_args(
     hamiltonian: Hamiltonian,
     efield: ElectricField,
-    dipole_matrix: DipoleMatrixBase,
+    dipole_matrix: DipoleOperator,
     *,
     axes: str = "xy",
     mu_x_override: Array | None = None,
@@ -248,7 +248,7 @@ def prepare_propagation_args(
         Hamiltonian object
     efield : ElectricField
         Electric field object
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         Dipole matrix object
     axes : str
         Polarization axes

@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-15
-Current checkpoint: Phase 4 closed; P6.4-d moves shared vibration code under D-079
+Current checkpoint: Phase 4 closed; P6.4-e moves concrete dipole mixin under D-080
 
 ## Purpose
 
@@ -44,6 +44,11 @@ values.
 D-069 moves the unchanged VibLadder frozen quantity boundary into its model
 package. Required caller value/unit pairs, canonical `rad/fs` and C*m values,
 and provenance are unchanged; no conversion is added, removed, or repeated.
+
+D-080 moves the concrete dipole mixin unchanged to `models.dipole_base` and
+introduces only a type-level access protocol in `core.dipole`. Existing
+input-to-internal dipole conversion, SI views, and caller arrays are unchanged;
+the protocol performs no conversion or validation.
 
 Spectroscopy is Class A under D-046. Experimental conditions retain required
 value/unit pairs and expose frozen canonical K, Pa, m, ps, and kg fields.

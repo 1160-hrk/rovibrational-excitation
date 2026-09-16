@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.dipole.base import DipoleMatrixBase
 from rovibrational_excitation.dynamics.utils import get_dipole_component_SI
+from rovibrational_excitation.models.dipole_base import DipoleMatrixBase
 from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,

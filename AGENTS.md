@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.4-d D-079 shared vibration ownership
+Verified structural checkpoint: P6.4-e D-080 dipole protocol and mixin split
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -302,6 +302,10 @@ the independent Wigner reference to tests. The full suite has 1218 passes and
 P6.4-d/D-079 moves the unchanged harmonic/Morse files to `models.vibration`
 for LinMol and VibLadder. The full suite has 1219 passes and 10 optional-GPU
 skips; real CUDA execution remains unverified.
+P6.4-e/D-080 moves the unchanged concrete dipole mixin to `models.dipole_base`
+and adds the type-only `core.dipole.DipoleOperator`. The two
+`dynamics -> dipole.base` transitions are gone. The full suite has 1223 passes
+and 10 optional-GPU skips, 77% branch coverage, and strict mypy for 42 modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -310,11 +314,11 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Characterize and split `dipole.base` in P6.4-e: move only the minimal
-   operator protocol below dynamics and keep concrete cache/unit/persistence
-   behavior with the model layer. Remove the two exact reverse dependencies.
-2. Preserve the existing `dynamics.utils` fallback and all unit conversion
-   behavior; do not infer a stricter runtime interface during the move.
+1. Audit/remove the now code-empty `dipole` package shell in P6.4-f and run
+   the Phase 6 acceptance matrix. Do not combine that with numerical cleanup.
+2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
+   fallback until a separately approved behavior change; preserve all unit
+   conversion and persistence behavior.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.
@@ -325,8 +329,8 @@ The next work is:
 6. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-7. Reduce exact transition debt only with Phase 6 model consolidation; never
-   broaden or hide the four recorded reverse imports.
+7. The only remaining recorded reverse imports are the two
+   `models -> dynamics.problem` edges; never broaden or hide that debt.
 8. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
 9. Defer persistence schema versioning and checkpoint-manager redesign to its

@@ -13,9 +13,9 @@ import numpy as np
 from scipy import ndimage
 
 from rovibrational_excitation.core.basis import BasisBase
+from rovibrational_excitation.core.dipole import DipoleOperator
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
-from rovibrational_excitation.dipole.base import DipoleMatrixBase
 
 # Short aliases refer to the authoritative constants layer; no local values.
 H_DIRAC = CONSTANTS.HBAR
@@ -122,7 +122,7 @@ class AbsorbanceCalculator:
         量子基底オブジェクト
     hamiltonian : Hamiltonian
         ハミルトニアンオブジェクト（J単位推奨）
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         双極子行列オブジェクト（SI単位）
     conditions : ExperimentalConditions
         Explicit experimental conditions
@@ -157,7 +157,7 @@ class AbsorbanceCalculator:
         self,
         basis: BasisBase,
         hamiltonian: Hamiltonian,
-        dipole_matrix: DipoleMatrixBase,
+        dipole_matrix: DipoleOperator,
         conditions: ExperimentalConditions,
         *,
         phase_matching: Literal["unfiltered", "pump_probe"],
@@ -974,7 +974,7 @@ class AbsorbanceCalculator:
 def create_calculator_from_params(
     basis: BasisBase,
     hamiltonian: Hamiltonian,
-    dipole_matrix: DipoleMatrixBase,
+    dipole_matrix: DipoleOperator,
     *,
     temperature: float,
     temperature_units: str,
@@ -1000,7 +1000,7 @@ def create_calculator_from_params(
         量子基底
     hamiltonian : Hamiltonian
         ハミルトニアン
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         双極子行列
     temperature, temperature_units
         温度と必須単位。現在は ``K`` のみ。
