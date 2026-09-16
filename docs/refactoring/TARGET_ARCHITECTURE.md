@@ -544,6 +544,12 @@ dipole implementation becomes the private `_build_mu` kernel used by the
 stateful class. Only the schema, basis, stateful dipole, and typed builders are
 exported. All D-070 values remain unchanged.
 
+P6.4-a/D-076 audits the two SymTop implementations before cleanup. The legacy
+core/dipole skeleton has no production caller, uses different ordering,
+filtering, anharmonic semantics, and transverse phases, and its dense and CSR
+dipole routes fail directly. It is therefore a deletion target; none of its
+formulae migrate into the independently referenced D-053 production owner.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 

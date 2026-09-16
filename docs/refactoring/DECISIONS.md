@@ -2843,6 +2843,49 @@ P6.3 is complete.
 
 Implementation commit: this checkpoint.
 
+### D-076: Experimental legacy SymTop is not an alternate production model
+
+Status: Recorded and characterized on 2026-09-16 as P6.4-a.
+
+Scope: SymTop caller and numerical-convention audit only; no implementation,
+formula, import path, or runtime behavior change.
+
+The D-053 `models.symmetric_top` implementation is the sole production model.
+It is used by the model registry and normal runner and is protected by an
+independent SymPy/Wigner reference, signed `|v,J,K,M>` ordering, CH3F
+ortho/para filtering, two vibration-rotation couplings, Cartesian selection
+rules, dense/CSR parity, and RK4 propagation tests.
+
+The remaining `core.basis.SymTopBasis` and `dipole.symtop.SymTopDipoleMatrix`
+are an experimental skeleton and first draft. Caller audit found no production
+simulation, optimization, spectroscopy, benchmark, script, or active example
+using them. Their only active surfaces are the legacy `core.basis`/`dipole`
+exports, `dipole.factory`, one required-input signature test, and one direct
+basis required-constant test.
+
+They are not aliases of production behavior:
+
+- legacy stores `|v,J,M,K>` and includes every K, while production stores
+  `|v,J,K,M>` and filters one nuclear-spin isomer;
+- for the audit values, legacy has 20 states and CH3F ortho production has 8;
+- legacy uses `omega*x - delta*x**2`, while production's accepted omega01
+  convention uses `(omega01 + shift)*x - 0.5*shift*x**2`; the corresponding
+  ground frequencies are `0.18125` and `0.190625 rad/fs`;
+- legacy transverse Cartesian primitives have the opposite x/y phase from the
+  independently referenced production convention, while z agrees;
+- a direct audit found the legacy dense path fails Numba typing on the SymPy
+  rotational helper, and the CSR path fails on a negative NumPy integer power.
+
+Because backward compatibility is not required and no working production path
+depends on the skeleton, P6.4-b should delete the legacy basis, dipole package,
+generic dipole factory, and now-unreferenced legacy `jmk` helper. It must not
+copy any legacy formula or phase into production. Three new characterization
+tests make the ownership and numerical differences explicit before deletion;
+the production reference suite remains authoritative. The complete suite
+passes 1220 tests with 10 optional-GPU skips.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

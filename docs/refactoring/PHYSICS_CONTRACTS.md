@@ -1279,6 +1279,12 @@ public construction names. Its validation, canonical frequency conversion,
 dipole kernel, model arrays, and every physical contract above remain
 unchanged.
 
+P6.4-a/D-076 confirms that only `models.symmetric_top` implements the accepted
+production SymTop contracts in this document. The experimental legacy
+core/dipole skeleton uses different ordering, filtering, anharmonic semantics,
+and x/y phases and must not be treated as a reference or merged into
+production.
+
 P6.2-a adds D-067 migration guards for VibLadder without changing these
 contracts. The new cases freeze `|v>` order, the current anharmonic Hamiltonian,
 scalar-z coupling, harmonic Cartesian dipoles, coherent state construction,

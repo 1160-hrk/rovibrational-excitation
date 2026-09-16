@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.3-c D-075 LinMol consolidation complete
+Verified structural checkpoint: P6.4-a D-076 legacy SymTop audit
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -287,6 +287,11 @@ P6.3-c implements D-075: `LinMolParameters` joins that owner unchanged, the
 unused mapping wrapper is removed, and the required dipole function becomes a
 private model kernel. The package exports only its schema, basis, stateful
 dipole, and typed builders. Strict mypy covers 41 modules and P6.3 is complete.
+P6.4-a/D-076 finds no production caller of the experimental legacy SymTop
+core/dipole paths. They differ from production ordering/filtering, anharmonic
+semantics, and x/y phase, and both legacy dipole storage paths fail direct
+execution. Delete them without migrating formulae; D-053 production remains
+authoritative. The complete suite passes 1220 tests with 10 optional-GPU skips.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -295,9 +300,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Start P6.4-a by characterizing and auditing legacy
-   `core/basis/symtop.py` and `dipole/symtop/` against the D-053 production
-   `models/symmetric_top/` owner. Do not merge differing formulas by inference.
+1. Implement P6.4-b by deleting legacy `core/basis/symtop.py`,
+   `dipole/symtop/`, `dipole.factory`, and the legacy-only `dipole/rot/jmk.py`.
+   Update direct tests/docs to production imports; migrate no legacy formula.
 2. Keep shared `dipole/vib` harmonic/Morse functions in place while LinMol and
    SymTop consume them; do not assign a final owner by inference.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current

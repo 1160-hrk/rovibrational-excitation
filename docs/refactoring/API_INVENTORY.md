@@ -80,6 +80,11 @@ implementation function private as `_build_mu`. The final package surface is
 the schema, basis, stateful dipole, and typed state/operator builders. The
 temporary `models` transition facade continues to re-export the schema.
 
+P6.4-a/D-076 changes no API. It records that legacy `core.basis.SymTopBasis`,
+`dipole.SymTopDipoleMatrix`, and `dipole.factory` have no production caller,
+are numerically distinct from the D-053 model, and do not execute a complete
+dense or CSR dipole build. They are deletion targets, not compatibility paths.
+
 ## 2. Package root
 
 ### 2.1 Names declared in `rovibrational_excitation.__all__`
@@ -206,9 +211,9 @@ and demo factories are deleted rather than deprecated.
 |---|---|---|---|
 | `dipole` | `SymTopDipoleMatrix` | `models.symmetric_top` | temporary public; TwoLevel, VibLadder, LinMol, and generic-factory convenience exports removed during P6.1-P6.3 |
 | `dipole.linmol` | removed | `models.linear_molecule` | complete in P6.3-b; no compatibility shim |
-| `dipole.factory` | `create_dipole_matrix` | delete after remaining model migrations | transitional legacy-SymTop-only module; `potential_type` required and consolidated models are rejected explicitly |
+| `dipole.factory` | `create_dipole_matrix` | delete in P6.4-b | legacy-SymTop-only module with no production caller; D-076 records broken dense/CSR construction |
 | `dipole.viblad` | removed | `models.vib_ladder` | complete in P6.2-b; no compatibility shim |
-| `dipole.symtop` | legacy `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public; not used by production D-053 and retained until Phase 6 removal |
+| `dipole.symtop` | legacy `SymTopDipoleMatrix` | delete in favor of `models.symmetric_top` | experimental skeleton; D-076 proves it is not a production-compatible alias |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
