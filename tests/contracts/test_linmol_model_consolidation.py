@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -22,6 +23,11 @@ from rovibrational_excitation.models.linear_molecule import (
     build_linmol_operators_from_parameters,
 )
 from rovibrational_excitation.models.linear_molecule.dipole_builder import _build_mu
+from rovibrational_excitation.models.linear_molecule.rotational import (
+    tdm_jm_x,
+    tdm_jm_y,
+    tdm_jm_z,
+)
 from rovibrational_excitation.models.validation import LinMolRepresentation
 
 
@@ -88,6 +94,18 @@ def test_current_linmol_owners_and_transitional_builders_are_explicit() -> None:
     assert LinMolParameters.__module__ == (
         "rovibrational_excitation.models.linear_molecule.parameters"
     )
+
+
+def test_linear_rotational_kernel_has_one_model_owner() -> None:
+    for kernel in (tdm_jm_x, tdm_jm_y, tdm_jm_z):
+        assert kernel.__module__ == (
+            "rovibrational_excitation.models.linear_molecule.rotational"
+        )
+    old_rot = (
+        Path(__file__).resolve().parents[2] / "src/rovibrational_excitation/dipole/rot"
+    )
+    for old_file in ("jm.py", "jm_wigner.py", "j.py", "__init__.py"):
+        assert not (old_rot / old_file).exists()
 
 
 def test_parameters_preserve_input_quantities_and_freeze_canonical_values() -> None:

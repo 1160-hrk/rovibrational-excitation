@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1217 passed, 10 skipped (1227 collected) |
+| Pytest | 1218 passed, 10 skipped (1228 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -83,6 +83,10 @@ The three legacy-only audit tests were replaced with two ownership guards and
 one obsolete factory test was removed, yielding 1217 passing tests. Strict
 mypy (41 modules), active example smoke tests, sdist/wheel build, Twine, and
 isolated wheel import pass; optional CUDA tests remain unverified.
+P6.4-c/D-078 assigns the sole production linear-rotor kernel to LinMol,
+moves the independent Wigner reference under tests, and removes an unused
+rotation export. The shared dipole base and vibration formulas remain separate
+follow-up units; no transition formula or production matrix path changes.
 
 P6.2-c
 implements D-069:
@@ -341,7 +345,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-b complete; P6.4-c audits shared dipole helpers |
+| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-c complete; shared dipole base/vibration ownership remains |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

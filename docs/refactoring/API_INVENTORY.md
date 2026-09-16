@@ -3,7 +3,7 @@
 Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-077 removed experimental legacy SymTop paths
+Latest API checkpoint: D-078 moved linear-rotor kernels to LinMol
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -88,6 +88,12 @@ dense or CSR dipole build. They are deletion targets, not compatibility paths.
 P6.4-b/D-077 removes those legacy paths and the legacy-only `dipole.rot.jmk`
 helper without compatibility shims. `models.symmetric_top` remains the only
 supported SymTop owner; shared dipole infrastructure remains internal.
+
+P6.4-c/D-078 moves the sole production `dipole.rot.jm` consumer's kernel to
+`models.linear_molecule.rotational` and the Wigner reference to tests. The
+unused `dipole.rot.j` and old package export are removed; no compatibility
+shim is retained. Shared `dipole.base` and `dipole.vib` remain pending their
+separately characterized ownership units.
 
 ## 2. Package root
 
@@ -218,7 +224,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.factory` | removed | direct `models.*` construction | complete in P6.4-b; no compatibility shim |
 | `dipole.viblad` | removed | `models.vib_ladder` | complete in P6.2-b; no compatibility shim |
 | `dipole.symtop` | removed | `models.symmetric_top` | complete in P6.4-b; no compatibility shim |
-| `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear-molecule kernels | internal; legacy-only `jmk` removed in P6.4-b |
+| `dipole.rot` | removed | `models.linear_molecule.rotational`; Wigner reference under tests | complete in P6.4-c; no compatibility shim |
 | `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |

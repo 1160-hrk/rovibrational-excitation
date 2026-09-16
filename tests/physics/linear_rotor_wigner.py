@@ -1,5 +1,5 @@
 """
-rovibrational_excitation.dipole.rot.jm_wigner
+tests.physics.linear_rotor_wigner
 ===========================================
 Rigid-rotor transition-dipole matrix elements  |J M⟩ ↔ |J' M'⟩
 (Linear molecule) evaluated via Wigner-3j symbols.
@@ -15,7 +15,8 @@ dipole operator.  Cartesian components are obtained through
     μ_y =  i(μ_{+1} + μ_{−1}) / √2
     μ_z =  μ_0
 
-This module reproduces the analytic implementation in ``jm.py`` but
+This module checks the analytic implementation in
+``models.linear_molecule.rotational`` but
 serves as an independent cross-check using general angular-momentum
 algebra.
 """
@@ -52,7 +53,8 @@ def _tdm_spherical(J1: int, M1: int, J2: int, M2: int, q: int):
                               ( J₁  1  J₂ ;  0   0   0 ).
 
     This expression exactly reproduces the Hönl–London factors implemented
-    analytically in ``jm.py`` after the Cartesian transformation below.
+    analytically in ``models.linear_molecule.rotational`` after the Cartesian
+    transformation below.
     """
 
     # Overall phase / reduced-element factor

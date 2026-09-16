@@ -1,5 +1,5 @@
 """
-rovibrational_excitation.dipole.rot.jm
+rovibrational_excitation.models.linear_molecule.rotational
 =====================================
 Rigid-rotor transition-dipole matrix elements  |J M⟩ ↔ |J′ M′⟩
 (Linear molecule, K = 0) evaluated in closed form.

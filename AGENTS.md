@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.4-b D-077 legacy SymTop removal
+Verified structural checkpoint: P6.4-c D-078 linear-rotor ownership
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -296,6 +296,9 @@ P6.4-b/D-077 removes those legacy paths and their factory/`jmk` helper; direct
 tests now point to production `models.symmetric_top`. No production formula,
 phase, array, or RK4 path changes. The full suite has 1217 passes and 10
 optional-GPU skips; measured branch coverage is 77%.
+P6.4-c/D-078 moves the unchanged linear-rotor analytic kernel to LinMol and
+the independent Wigner reference to tests. The full suite has 1218 passes and
+10 optional-GPU skips; shared dipole base/vibration ownership remains.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -304,10 +307,11 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Audit remaining consumers of `dipole.base`, `dipole.rot.jm`, and
-   `dipole.vib` in P6.4-c; move only with exact characterization tests.
-2. Keep shared `dipole/vib` harmonic/Morse functions in place while actual
-   consumers are audited; do not assign a final owner by inference.
+1. Characterize both consumers of `dipole.vib` and move the unchanged shared
+   functions to a neutral `models/vibration` owner in P6.4-d; preserve all
+   Morse boundaries and CPU/GPU array paths.
+2. Keep `dipole.base` transitional until a minimal operator protocol and
+   concrete cache/unit/persistence owner are separately characterized.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

@@ -17,12 +17,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.dipole.rot.jm import tdm_jm_x, tdm_jm_y, tdm_jm_z
 from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
 from rovibrational_excitation.dipole.vib.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
     validate_morse_v_max,
+)
+from rovibrational_excitation.models.linear_molecule.rotational import (
+    tdm_jm_x,
+    tdm_jm_y,
+    tdm_jm_z,
 )
 from rovibrational_excitation.models.vib_ladder import (
     VibLadderBasis,

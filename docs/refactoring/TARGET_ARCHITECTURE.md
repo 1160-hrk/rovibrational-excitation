@@ -555,6 +555,12 @@ helper. The production `models.symmetric_top` formulas and references remain
 unchanged. Shared `dipole.base`, `dipole.rot.jm`, and `dipole.vib` remain for a
 separately characterized ownership unit.
 
+P6.4-c/D-078 moves the uniquely LinMol-owned analytic rotation kernel into
+`models.linear_molecule.rotational`, moves its independent Wigner reference
+to tests, and deletes the unused `J`-only helper. `dipole.base` remains a
+shared transition class; `dipole.vib` remains shared by LinMol/VibLadder.
+Neither is merged with the distinct production SymTop implementation.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -589,6 +595,7 @@ already constructed basis and weights, never molecule names.
 | no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
+| `dipole/rot/jm.py` | `models/linear_molecule/rotational.py` | Complete in P6.4-c; analytic body unchanged and Wigner reference test-only |
 | `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
 | `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
 | `models/parameters.py::LinMolParameters` | `models/linear_molecule/parameters.py` | Complete in P6.3-c; validation and unit conversion unchanged |

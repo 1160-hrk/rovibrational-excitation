@@ -1346,6 +1346,17 @@ P6.4-c should audit the actual consumers of shared `dipole.base`,
 each transition element and all model arrays; do not merge distinct Morse or
 rotational formulas by inference.
 
+P6.4-c completes the consumer audit and the unambiguous rotational move on
+2026-09-16 under D-078. The analytic `J,M` kernel now belongs to LinMol;
+its independent Wigner reference is test-only. The unused `J`-only helper and
+old rotation package are removed. Full tests pass 1218 cases with 10
+optional-GPU skips. `dipole.base` stays as a transitional shared class until
+an operator protocol and concrete cache/unit/persistence owner are separately
+characterized. P6.4-d should first freeze both consumers of `dipole.vib`,
+including Morse boundaries and CPU/GPU modes, then move the exact shared
+functions to a neutral `models/vibration` owner. SymTop's independently
+referenced functions must not be merged by inference.
+
 For each model:
 
 - add frozen parameter schema;

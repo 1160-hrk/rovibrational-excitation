@@ -2908,6 +2908,39 @@ wheel import pass. CUDA remains unverified.
 
 Implementation commit: this checkpoint.
 
+### D-078: Own the linear-rotor kernel in LinMol; separate shared dipole debt
+
+Status: Implemented on 2026-09-16 as P6.4-c for the rotational owner.
+
+The production `dipole.rot.jm` analytic Cartesian functions have exactly one
+production caller, `models.linear_molecule.dipole_builder`. Move the file
+unchanged to `models.linear_molecule.rotational` and update imports. The
+independent Wigner-3j cross-check has only a test caller, so move it to
+`tests.physics.linear_rotor_wigner`; it is not shipped as a production
+alternative. `dipole.rot.j` and the aggregate export have no active callers
+and are removed under D-001. No rotational formula, phase, J/M selection
+rule, Numba decorator, or dense/CSR/GPU construction logic changes.
+
+The remaining `dipole.base` is shared by three model implementations and is
+also named by dynamics/spectroscopy type boundaries. Production SymTop has a
+separate matrix class. Moving the base wholesale into one model would create
+a misleading owner and preserve the two recorded `dynamics -> dipole`
+transitions. A later unit should separate the minimal operator protocol from
+the concrete cache/unit/persistence implementation, with exact API and
+runtime characterization first. Do not change the current fallback behavior
+inside `dynamics.utils` as part of this ownership move.
+
+`dipole.vib` is used by both LinMol and VibLadder. Production SymTop contains
+its own independently referenced vibrational formula. Keep these formulas
+distinct: a future P6.4-d may move the existing shared functions byte-for-byte
+to a neutral `models/vibration` owner after dense/CSR, Numba, CuPy, and Morse
+boundary characterization; it must not silently replace SymTop's formula.
+
+Acceptance: the independent Wigner comparison, LinMol physics references,
+and full suite pass (1218 passed, 10 optional-GPU skips).
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
