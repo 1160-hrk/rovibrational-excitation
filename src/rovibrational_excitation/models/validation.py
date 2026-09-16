@@ -6,10 +6,8 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Any
 
-from .parameters import (
-    LinMolParameters,
-    SymmetricTopParameters,
-)
+from .linear_molecule.parameters import LinMolParameters
+from .parameters import SymmetricTopParameters
 from .two_level.parameters import TwoLevelParameters
 from .vib_ladder.parameters import VibLadderParameters
 

@@ -1274,6 +1274,11 @@ Hamiltonian, Cartesian dipoles, selection rules, coherent state indices,
 fixed-linear M-incoherent workflow, dense/CSR arrays, and all tolerances in
 this document remain unchanged.
 
+P6.3-c/D-075 moves the LinMol schema unchanged and removes only redundant
+public construction names. Its validation, canonical frequency conversion,
+dipole kernel, model arrays, and every physical contract above remain
+unchanged.
+
 P6.2-a adds D-067 migration guards for VibLadder without changing these
 contracts. The new cases freeze `|v>` order, the current anharmonic Hamiltonian,
 scalar-z coupling, harmonic Cartesian dipoles, coherent state construction,

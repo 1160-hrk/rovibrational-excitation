@@ -21,8 +21,8 @@ from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
     LinMolDipoleMatrix,
+    LinMolParameters,
 )
-from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.models.validation import model_parameters_from_mapping
 
 _LINEAR_POLARIZATION_TOL = 128.0 * np.finfo(np.float64).eps

@@ -3,10 +3,8 @@
 from rovibrational_excitation.dynamics.problem import CouplingSpec
 
 from .factory import ModelComponents, build_model
-from .parameters import (
-    LinMolParameters,
-    SymmetricTopParameters,
-)
+from .linear_molecule import LinMolParameters
+from .parameters import SymmetricTopParameters
 from .two_level import TwoLevelParameters
 from .validation import LinMolRepresentation
 from .vib_ladder import VibLadderParameters

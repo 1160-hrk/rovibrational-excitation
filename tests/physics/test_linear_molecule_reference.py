@@ -21,8 +21,8 @@ from rovibrational_excitation.fields import (
 from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
     LinMolDipoleMatrix,
+    LinMolParameters,
 )
-from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.simulation.m_average import (
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,

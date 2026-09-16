@@ -16,6 +16,7 @@ M_AVERAGE = PACKAGE / "simulation" / "m_average.py"
 
 
 def test_model_construction_and_m_average_workflow_have_distinct_owners():
+    import rovibrational_excitation.models.linear_molecule as linear_molecule
     from rovibrational_excitation.models import ModelComponents, build_model
     from rovibrational_excitation.simulation.m_average import (
         MAveragePropagationResult,
@@ -31,6 +32,16 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (LINEAR_MOLECULE / "dipole.py").is_file()
     assert (LINEAR_MOLECULE / "dipole_builder.py").is_file()
     assert (LINEAR_MOLECULE / "model.py").is_file()
+    assert (LINEAR_MOLECULE / "parameters.py").is_file()
+    assert linear_molecule.__all__ == [
+        "LinMolBasis",
+        "LinMolDipoleMatrix",
+        "LinMolParameters",
+        "build_linmol_from_parameters",
+        "build_linmol_operators_from_parameters",
+    ]
+    assert not hasattr(linear_molecule, "build_linmol")
+    assert not hasattr(linear_molecule, "build_mu")
     assert not (MODELS / "linmol.py").exists()
     assert not (PACKAGE / "core" / "basis" / "linmol.py").exists()
     assert not (PACKAGE / "dipole" / "linmol").exists()

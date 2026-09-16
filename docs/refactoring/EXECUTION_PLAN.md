@@ -1307,11 +1307,26 @@ adding a reverse dependency on the model package. Formulae, signed basis order,
 selection rules, state indices, M averaging, dense/CSR behavior, and all D-070
 references remain unchanged.
 
-P6.3-c should next move the frozen schema into this owner, audit and remove
-unused mapping/stateless wrappers, and reduce the public package surface. That
-interface cleanup remains separate from the completed file move.
-`simulation/m_average.py` remains a workflow owner and must not be folded into
-the model package.
+P6.3-c completes LinMol consolidation on 2026-09-16 under D-075. The frozen
+schema moves unchanged into the model package. The unused mapping wrapper is
+removed, and the dipole implementation function becomes the private
+`_build_mu` kernel used by the stateful class. The package exports only its
+schema, basis, stateful dipole, and typed builders. The production mapping
+entry retains exact parity with typed construction, strict mypy covers 41
+modules, and all D-070 references remain unchanged. P6.3 is complete.
+`simulation/m_average.py` remains a workflow owner outside the model package.
+
+### P6.4 SymTop and shared dipole debt
+
+P6.4-a should first characterize and audit the remaining experimental
+`core/basis/symtop.py` and `dipole/symtop/` callers against the D-053 production
+`models/symmetric_top/` owner. No legacy formula is merged into production by
+inference. If the two implementations disagree physically, present the exact
+formulae and outputs to the user before changing either calculation.
+
+After that audit, remove unused legacy owners or migrate only independently
+protected behavior, then resolve `dipole.factory`, `dipole.base`, and shared
+rotational/vibrational kernel ownership from their actual remaining consumers.
 
 For each model:
 

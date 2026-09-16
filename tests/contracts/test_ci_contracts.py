@@ -98,6 +98,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/simulation/generated.py",
         "src/rovibrational_excitation/models/_parameter_validation.py",
         "src/rovibrational_excitation/models/parameters.py",
+        "src/rovibrational_excitation/models/linear_molecule/parameters.py",
         "src/rovibrational_excitation/models/two_level/parameters.py",
         "src/rovibrational_excitation/models/vib_ladder/parameters.py",
         "src/rovibrational_excitation/models/validation.py",

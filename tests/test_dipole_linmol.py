@@ -11,8 +11,8 @@ import pytest
 from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
     LinMolDipoleMatrix,
-    build_mu,
 )
+from rovibrational_excitation.models.linear_molecule.dipole_builder import _build_mu
 
 # CuPyが利用可能か判定
 try:
@@ -366,8 +366,8 @@ class TestLinMolDipoleMatrix:
         assert mu_x1 is mu_x2
 
 
-class TestBuildMuFunction:
-    """build_mu関数の直接テスト"""
+class TestBuildMuKernel:
+    """内部 _build_mu kernel の直接テスト"""
 
     def test_build_mu_basic(self):
         """基本的なbuild_muテスト"""
@@ -375,7 +375,7 @@ class TestBuildMuFunction:
             V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
         )
 
-        mu_x = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_x = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
 
         assert mu_x.shape == (basis.size(), basis.size())
         assert mu_x.dtype == np.complex128
@@ -386,9 +386,9 @@ class TestBuildMuFunction:
             V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
         )
 
-        mu_x = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
-        mu_y = build_mu(basis, "y", mu0=1.0, potential_type="harmonic")
-        mu_z = build_mu(basis, "z", mu0=1.0, potential_type="harmonic")
+        mu_x = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_y = _build_mu(basis, "y", mu0=1.0, potential_type="harmonic")
+        mu_z = _build_mu(basis, "z", mu0=1.0, potential_type="harmonic")
 
         # 形状は同じ
         assert mu_x.shape == mu_y.shape == mu_z.shape
@@ -404,8 +404,8 @@ class TestBuildMuFunction:
             V_max=2, J_max=1, use_M=True, delta_omega=0.1, omega=1.0, B=0.001, alpha=0.0
         )
 
-        mu_harm = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
-        mu_morse = build_mu(basis, "x", mu0=1.0, potential_type="morse")
+        mu_harm = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_morse = _build_mu(basis, "x", mu0=1.0, potential_type="morse")
 
         assert mu_harm.shape == mu_morse.shape
         # 非ゼロ要素がある場合は値が異なることが期待される
@@ -421,8 +421,8 @@ class TestBuildMuFunction:
             V_max=2, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
         )
 
-        mu_dense = build_mu(basis, "x", mu0=1.0, dense=True, potential_type="harmonic")
-        mu_sparse = build_mu(
+        mu_dense = _build_mu(basis, "x", mu0=1.0, dense=True, potential_type="harmonic")
+        mu_sparse = _build_mu(
             basis, "x", mu0=1.0, dense=False, potential_type="harmonic"
         )
 
@@ -446,8 +446,8 @@ class TestBuildMuFunction:
             V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
         )
 
-        mu1 = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
-        mu2 = build_mu(basis, "x", mu0=2.5, potential_type="harmonic")
+        mu1 = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu2 = _build_mu(basis, "x", mu0=2.5, potential_type="harmonic")
 
         # 比例関係になっているはず
         np.testing.assert_array_almost_equal(mu2, 2.5 * mu1)
@@ -460,7 +460,7 @@ class TestBuildMuFunction:
 
         with pytest.raises(ValueError, match="axis must be x, y or z"):
             # 型チェッカー回避のためキャスト
-            build_mu(basis, "invalid", mu0=1.0, potential_type="harmonic")  # type: ignore
+            _build_mu(basis, "invalid", mu0=1.0, potential_type="harmonic")  # type: ignore
 
     def test_build_mu_invalid_potential(self):
         """無効なpotential_typeのエラーテスト"""
@@ -472,7 +472,7 @@ class TestBuildMuFunction:
             ValueError, match="potential_type must be harmonic or morse"
         ):
             # 型チェッカー回避のためキャスト
-            build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
+            _build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
 
     @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
@@ -482,7 +482,7 @@ class TestBuildMuFunction:
             V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
         )
 
-        mu_cupy = build_mu(
+        mu_cupy = _build_mu(
             basis, "x", mu0=1.0, backend="cupy", potential_type="harmonic"
         )
 
@@ -498,8 +498,8 @@ class TestBuildMuFunction:
 
         # 型チェッカー回避のため実行時に文字列操作
         axis_upper = "x".upper()
-        mu_x = build_mu(basis, axis_upper, mu0=1.0, potential_type="harmonic")  # type: ignore
-        mu_x_lower = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_x = _build_mu(basis, axis_upper, mu0=1.0, potential_type="harmonic")  # type: ignore
+        mu_x_lower = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
 
         np.testing.assert_array_equal(mu_x, mu_x_lower)
 

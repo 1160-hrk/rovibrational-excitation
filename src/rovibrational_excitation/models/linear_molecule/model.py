@@ -7,34 +7,9 @@ from typing import Any
 from rovibrational_excitation.core.execution import ExecutionPolicy
 
 from ..common import build_initial_state
-from ..parameters import LinMolParameters
-from ..validation import (
-    LinMolRepresentation,
-    model_parameters_from_mapping,
-    validate_linmol_representation,
-)
 from .basis import LinMolBasis
 from .dipole import LinMolDipoleMatrix
-
-
-def build_linmol(
-    params: dict[str, Any], *, execution_policy: ExecutionPolicy
-) -> tuple[Any, Any, Any, Any]:
-    """Build basis, initial state, Hamiltonian, and dipole without changing formulas."""
-    representation = validate_linmol_representation(params)
-    model_params = model_parameters_from_mapping(params)
-    if not isinstance(model_params, LinMolParameters):
-        raise TypeError("linmol builder requires LinMolParameters")
-    if representation is not LinMolRepresentation.M_RESOLVED:
-        raise ValueError(
-            "representation=m_incoherent_average is a multi-block workflow "
-            "and cannot be built as one pure-state model; use the simulation runner"
-        )
-    return build_linmol_from_parameters(
-        model_params,
-        params["initial_states"],
-        execution_policy=execution_policy,
-    )
+from .parameters import LinMolParameters
 
 
 def build_linmol_from_parameters(

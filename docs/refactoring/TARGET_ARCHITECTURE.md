@@ -538,6 +538,12 @@ factory drops LinMol to preserve the dependency direction. The shared schema
 and transitional wrapper cleanup remain P6.3-c, and
 `simulation/m_average.py` remains a workflow rather than model owner.
 
+P6.3-c completes the owner under D-075. The frozen schema joins the model
+package unchanged, the unused mapping wrapper is deleted, and the stateless
+dipole implementation becomes the private `_build_mu` kernel used by the
+stateful class. Only the schema, basis, stateful dipole, and typed builders are
+exported. All D-070 values remain unchanged.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -574,6 +580,7 @@ already constructed basis and weights, never molecule names.
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
 | `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
 | `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
+| `models/parameters.py::LinMolParameters` | `models/linear_molecule/parameters.py` | Complete in P6.3-c; validation and unit conversion unchanged |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
 | `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
 | model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |

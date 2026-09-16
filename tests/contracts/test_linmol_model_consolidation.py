@@ -10,16 +10,18 @@ import scipy.sparse as sp
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.models.factory import build_model_from_parameters
+from rovibrational_excitation.models.factory import (
+    build_model,
+    build_model_from_parameters,
+)
 from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
     LinMolDipoleMatrix,
-    build_linmol,
+    LinMolParameters,
     build_linmol_from_parameters,
     build_linmol_operators_from_parameters,
-    build_mu,
 )
-from rovibrational_excitation.models.parameters import LinMolParameters
+from rovibrational_excitation.models.linear_molecule.dipole_builder import _build_mu
 from rovibrational_excitation.models.validation import LinMolRepresentation
 
 
@@ -29,6 +31,7 @@ def _mapping() -> dict[str, object]:
         "V_max": 1,
         "J_max": 2,
         "representation": "m_resolved",
+        "axes": "xz",
         "vibrational_frequency": 0.37,
         "vibrational_frequency_units": "rad/fs",
         "anharmonic_shift": 0.015,
@@ -76,16 +79,15 @@ def test_current_linmol_owners_and_transitional_builders_are_explicit() -> None:
     assert LinMolDipoleMatrix.__module__ == (
         "rovibrational_excitation.models.linear_molecule.dipole"
     )
-    assert build_mu.__module__ == (
+    assert _build_mu.__module__ == (
         "rovibrational_excitation.models.linear_molecule.dipole_builder"
-    )
-    assert build_linmol.__module__ == (
-        "rovibrational_excitation.models.linear_molecule.model"
     )
     assert build_linmol_operators_from_parameters.__module__ == (
         "rovibrational_excitation.models.linear_molecule.model"
     )
-    assert LinMolParameters.__module__ == ("rovibrational_excitation.models.parameters")
+    assert LinMolParameters.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.parameters"
+    )
 
 
 def test_parameters_preserve_input_quantities_and_freeze_canonical_values() -> None:
@@ -159,11 +161,11 @@ def test_model_builder_owns_cartesian_coupling_and_coherent_state_order() -> Non
 
 
 @pytest.mark.parametrize("axis", ["x", "y", "z"])
-def test_stateless_and_stateful_dipole_paths_are_exactly_equal(axis: str) -> None:
+def test_internal_kernel_and_stateful_dipole_paths_are_exactly_equal(axis: str) -> None:
     basis, _hamiltonian, stateful = build_linmol_operators_from_parameters(
         _parameters(), execution_policy=_policy("csr")
     )
-    one_shot = build_mu(
+    one_shot = _build_mu(
         basis,
         axis,
         _parameters().dipole_c_m,
@@ -197,15 +199,18 @@ def test_dense_and_csr_model_operators_are_exactly_equal() -> None:
 
 
 def test_mapping_and_frozen_parameter_builders_are_exactly_equivalent() -> None:
-    mapping_result = build_linmol(_mapping(), execution_policy=_policy("dense"))
+    mapping_model = build_model(_mapping(), execution_policy=_policy("dense"))
     typed_result = build_linmol_from_parameters(
         _parameters(), _mapping()["initial_states"], execution_policy=_policy("dense")
     )
 
-    mapping_basis, mapping_state, mapping_hamiltonian, mapping_dipole = mapping_result
     typed_basis, typed_state, typed_hamiltonian, typed_dipole = typed_result
-    np.testing.assert_array_equal(mapping_basis.basis, typed_basis.basis)
-    np.testing.assert_array_equal(mapping_state.data, typed_state.data)
-    np.testing.assert_array_equal(mapping_hamiltonian.matrix, typed_hamiltonian.matrix)
+    np.testing.assert_array_equal(mapping_model.basis.basis, typed_basis.basis)
+    np.testing.assert_array_equal(mapping_model.state.data, typed_state.data)
+    np.testing.assert_array_equal(
+        mapping_model.hamiltonian.matrix, typed_hamiltonian.matrix
+    )
     for axis in "xyz":
-        np.testing.assert_array_equal(mapping_dipole.mu(axis), typed_dipole.mu(axis))
+        np.testing.assert_array_equal(
+            mapping_model.dipole.mu(axis), typed_dipole.mu(axis)
+        )

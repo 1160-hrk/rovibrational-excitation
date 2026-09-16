@@ -44,7 +44,7 @@ if cp is not None:
 else:
     Array: type = np.ndarray  # type: ignore[assignment,no-redef]
 
-from .dipole_builder import build_mu
+from .dipole_builder import _build_mu
 
 
 # ----------------------------------------------------------------------
@@ -69,7 +69,7 @@ class LinMolDipoleMatrix(DipoleMatrixBase):
     # ------------------------------------------------------------------
     def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
         """Build dipole matrix for LinMol system (no caching here)."""
-        return build_mu(
+        return _build_mu(
             self.basis,
             axis,
             self.mu0,

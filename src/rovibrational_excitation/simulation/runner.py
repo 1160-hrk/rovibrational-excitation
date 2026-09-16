@@ -40,8 +40,8 @@ from ..io import (
 from ..io import (
     update_summary as _update_summary,
 )
-from ..models import LinMolParameters
 from ..models.factory import build_model_from_parameters
+from ..models.linear_molecule import LinMolParameters
 from ..models.validation import LinMolRepresentation
 from .case import SimulationCase
 from .config import (

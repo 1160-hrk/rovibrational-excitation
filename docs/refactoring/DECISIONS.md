@@ -2813,6 +2813,36 @@ optional-GPU skips.
 
 Implementation commit: this checkpoint.
 
+### D-075: LinMol schema and supported construction surface are model-owned
+
+Status: Accepted and implemented on 2026-09-16 as P6.3-c.
+
+Scope: Phase 6 interface ownership and redundant-wrapper cleanup; no schema
+field, validation, unit conversion, formula, array, or numerical behavior
+change.
+
+`LinMolParameters` moves unchanged from `models.parameters` to
+`models.linear_molecule.parameters` and remains re-exported by the temporary
+`models` transition facade. The production registry, optimization builder,
+normal runner, and M-average workflow all consume the model-owned class.
+Strict mypy now includes this schema explicitly and covers 41 named modules.
+
+Caller audit found no production caller of the mapping-level `build_linmol`
+wrapper; the supported mapping entry is already `models.build_model`. The
+duplicate wrapper is removed. The stateless `build_mu` name is not a second
+algorithm: the stateful dipole requires its implementation. It is therefore
+renamed `_build_mu`, kept private to the model, and remains directly covered by
+kernel/stateful exact-parity tests. The final model package exports only its
+schema, basis, stateful dipole, and typed state/operator builders.
+
+The mapping-versus-typed parity test now exercises the production mapping
+entry and supplies its already-required `axes="xz"`; no default or axis
+behavior is introduced. All D-070 values, 29 independent LinMol physics cases,
+and the complete suite pass unchanged: 1217 passed and 10 optional-GPU skips.
+P6.3 is complete.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
