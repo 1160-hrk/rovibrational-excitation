@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-15
+Last verified: 2026-09-16
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -56,7 +56,10 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-15. P6.3-a implements D-070
+These rows were last verified locally on 2026-09-15. On 2026-09-16, D-071
+through D-073 make device-native CUDA plus a real-GPU run mandatory for v0.3,
+define independent optimization/spectroscopy reference construction, and fix
+the exact minimal typed root API. P6.3-a implements D-070
 without changing source: nine new cases freeze the complete current LinMol
 ownership and construction projection before its move, while 29 existing
 physics cases retain independent authority over selection rules, M averaging,

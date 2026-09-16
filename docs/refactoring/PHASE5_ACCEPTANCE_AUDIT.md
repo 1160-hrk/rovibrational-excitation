@@ -1,7 +1,7 @@
 # Phase 5 numerical-engine acceptance audit
 
-Last verified: 2026-09-13
-Checkpoint: P5.4-a / D-062
+Last verified: 2026-09-16
+Checkpoint: P5.4-a / D-062 acceptance evidence; D-071 CUDA release scope
 
 ## Scope
 
@@ -72,12 +72,14 @@ different public contract.
 | No repeated transfer on CuPy execution | Fail until CUDA migration |
 
 Phase 5 must remain **in progress**. CPU work is accepted; CUDA closure is not.
-The external hardware blocker does not prevent independently tested Phase 6
-CPU model consolidation, but Phase 5 must not be marked complete.
+Under D-071, CUDA is an explicit v0.3 supported target rather than a deferred
+extension. The external hardware blocker does not prevent independently tested
+Phase 6 CPU model consolidation, but Phase 5 must not be marked complete and
+the final v0.3.0 tag must not be created before the required real-GPU run.
 
 ## Required CUDA closure unit
 
-When a real CUDA job is available:
+Implementation may proceed without local CUDA, but closure requires a real GPU:
 
 1. separate Schrödinger RK4 and split CuPy kernels from mixed CPU modules;
 2. keep prepared operators, fields, trajectories, and final states on device;

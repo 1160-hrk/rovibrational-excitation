@@ -586,19 +586,18 @@ after movement tests pass.
 
 ## 10. Public API target
 
-Root `rovibrational_excitation.__init__` should export a small, intentional set.
-A proposed minimum:
+Under D-073, root `rovibrational_excitation.__init__` exports exactly:
 
-- model parameter/build entry points;
-- `ElectricField` and common envelopes;
-- `PropagationProblem`, `PropagationOptions`, `PropagationResult`;
-- a high-level `propagate` or solver factory;
-- package version.
+- `__version__`;
+- `ElectricField`;
+- `TimeGrid` and `ExecutionPolicy`;
+- `PropagationProblem`, `PropagationOptions`, and `PropagationResult`;
+- `run_simulation_case`.
 
 Low-level kernels, cache implementations, converter internals, and runner
-helpers must require submodule imports.
-
-The exact v0.3 root namespace remains decision O-008.
+helpers must require submodule imports. Model, optimization, spectroscopy,
+advanced field, and low-level core names remain public only through their
+explicit subpackages. Root loading does not import optional heavy subpackages.
 
 ## 11. Configuration and result schemas
 

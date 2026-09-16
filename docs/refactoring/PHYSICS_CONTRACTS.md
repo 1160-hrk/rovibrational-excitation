@@ -813,6 +813,10 @@ Additional constraints:
   cross host memory before `PropagationResult` restores device ownership.
   This violates the Phase 5 no-repeated-transfer target and remains explicitly
   unverified until a real CUDA job can test a backend-native replacement.
+- D-071 makes device-native CuPy RK4 and split operator part of the supported
+  v0.3 target. Collected or source-inspection-only GPU tests are not numerical
+  evidence. The v0.3.0 tag requires a successful real-GPU run of both paths;
+  requested CuPy execution never falls back to NumPy.
 
 ### Numba CSR RK4 reference anchor
 

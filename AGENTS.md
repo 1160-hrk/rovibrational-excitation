@@ -1,6 +1,6 @@
 # Codex repository instructions
 
-Last verified: 2026-09-15
+Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
 Verified structural checkpoint: P6.3-a D-070 LinMol pre-move characterization
 Latest infrastructure checkpoint: `7d4368b`
@@ -278,6 +278,12 @@ plus 29 independent physics cases freeze LinMol parameter conversion, signed
 basis order, Hamiltonian, Cartesian dipoles and coupling, coherent basis-index
 states, dense/CSR parity, M averaging, Morse behavior, propagation, and every
 current construction path before ownership moves.
+The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
+target and final release requires real-GPU evidence after device-native kernel
+separation. Optimization and spectroscopy decomposition require independent
+transparent test-only references; discrepancies must be presented before any
+formula change. The Phase 8 root API is exactly the eight-name typed surface
+recorded by D-073.
 The next work is:
 
 1. Implement P6.3-b by moving the LinMol basis, dipole implementation, and

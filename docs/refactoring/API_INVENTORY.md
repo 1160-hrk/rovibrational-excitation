@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-15
+Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-070 LinMol pre-move characterization
+Latest API checkpoint: D-073 accepted minimal v0.3 root namespace
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -20,8 +20,8 @@ behavior are understood.
 | **internal** | Required by package orchestration; not a supported user API |
 | **delete** | Remove after its replacement and characterization tests exist |
 
-The proposed root namespace is recorded under O-008 in `DECISIONS.md`. It is a
-working proposal, not yet an accepted API decision.
+The exact target root namespace is accepted under D-073. Current root exports
+remain an implementation migration surface until Phase 8.
 
 P6.1-a changes no import path, export, signature, or runtime implementation.
 It adds behavior guards before the planned TwoLevel ownership move. The
@@ -84,7 +84,9 @@ factory/builder paths before the ownership move.
 | `create_calculator_from_params` | spectroscopy examples and tests | typed spectroscopy constructor under `spectroscopy` | D-046 requires and forwards every condition unit; temporary public at root; target public in subpackage |
 
 Every current root `__all__` name therefore has an explicit disposition. Only
-`ElectricField` is proposed to remain a root re-export.
+`ElectricField` remains from that list. D-073 additionally adds `__version__`,
+`TimeGrid`, `ExecutionPolicy`, the three typed propagation contracts, and
+`run_simulation_case` to the final root.
 
 ### 2.2 Other accessible root attributes
 

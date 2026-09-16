@@ -2707,6 +2707,79 @@ is a separate public or numerical contract decision.
 
 Implementation commit: this checkpoint.
 
+### D-071: v0.3 CUDA support requires device-native execution and real-GPU evidence
+
+Status: Accepted by the user on 2026-09-16; implementation pending.
+
+CUDA remains a supported v0.3 target. Schrödinger RK4 and split-operator CuPy
+paths must keep prepared operators, fields, intermediate trajectories, and
+returned states on device. `.get()` and `cp.asnumpy` are forbidden before an
+explicit host boundary such as `PropagationResult.to_numpy()` or persistence.
+No CPU fallback is permitted for a requested CuPy execution policy.
+
+Development may proceed without a local GPU by separating kernels, adding
+source-level transfer guards, and writing collected GPU tests. Those checks are
+not numerical evidence. The final v0.3.0 tag requires at least one successful
+run on a GPU-equipped runner covering RK4 and static Cartesian, rotating
+Cartesian, and helicity-projected split propagation, including final-only and
+trajectory results, CPU/GPU parity, norm, shape, dtype, and backend identity.
+Until then the capability is documented as implemented but unverified, and
+Phase 5 remains open.
+
+### D-072: Scientific decomposition uses independent transparent references
+
+Status: Accepted by the user on 2026-09-16; implementation pending.
+
+Characterization protects current behavior but is not proof that the original
+formula is correct. Before algorithmic optimization or spectroscopy
+decomposition, tests will use deliberately independent, slow, transparent
+oracles that are never called by production code.
+
+Optimization references comprise: central finite-difference objective
+gradients for GRAPE on a small system with step-size convergence; a direct
+one-iteration Krotov construction exposing forward state, costate, updated
+field, and objective; direct local-control update expressions while preserving
+the frozen legacy grid and indices; and direct DFT/convolution references for
+spectral constraints. An initial normalized gradient target of `1e-5` relative
+error may guide the convergence study, but the final tolerance is fixed only
+from the observed convergence plateau and recorded with the test.
+
+Spectroscopy references comprise: an analytic two-level Lorentzian response,
+direct Boltzmann populations, the analytic transform of a decaying coherence,
+Gaussian/Lorentzian/Voigt limiting cases and normalization, and simple
+single-coherence PFID/radiation phase and sign cases. Existing accepted Fourier,
+linewidth, polarization, pathway, and observable conventions are tested rather
+than silently redefined. If an independent reference disagrees with production
+code, no production formula is changed until the competing formulas, outputs,
+and best recommendation are presented to the user.
+
+### D-073: v0.3 root API is minimal and typed
+
+Status: Accepted by the user on 2026-09-16; implementation pending Phase 8.
+
+The exact supported root `rovibrational_excitation.__all__` for v0.3 is:
+
+~~~python
+[
+    "__version__",
+    "ElectricField",
+    "TimeGrid",
+    "ExecutionPolicy",
+    "PropagationProblem",
+    "PropagationOptions",
+    "PropagationResult",
+    "run_simulation_case",
+]
+~~~
+
+Model schemas and advanced basis/dipole types require `models` imports;
+optimization functions require `optimization`; spectroscopy types require
+`spectroscopy`; low-level states/operators require `core`; and additional
+field construction requires `fields`. No nonexistent convenience `propagate`
+function or `*Model` facade is invented for v0.3. Old root exports are removed
+without compatibility shims under D-001. Root loading must not eagerly import
+optional plotting, persistence, optimization, or spectroscopy dependencies.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -2739,6 +2812,9 @@ explicitly unsupported rather than open physics choices.
 
 ### O-006: Optimization reference behavior
 
+Status: Resolved procedurally by D-072 on 2026-09-16. Numerical discrepancies
+found by the independent references remain decision points, not inferred fixes.
+
 D-027 resolves the local optimizer time-array, segment-index, shared-boundary,
 and legacy RK4-consumption contracts with exact and bitwise-equivalence tests.
 D-028 and D-029 resolve GRAPE and Krotov direction, grid-spacing, and
@@ -2753,6 +2829,9 @@ tolerances, including the spectral-constraint update.
 
 ### O-007: Spectroscopy reference behavior
 
+Status: Resolved procedurally by D-072 on 2026-09-16. Numerical discrepancies
+found by the analytic references remain decision points, not inferred fixes.
+
 `spectroscopy/absorbance_calculator.py` has 11% measured coverage and several
 APIs. Before decomposition, define trusted spectra or sum rules for absorption,
 PFID, emission, thermal state handling, broadening, and FFT conventions.
@@ -2764,6 +2843,8 @@ O-007 remains open only for independent scientific references and acceptable
 tolerances beyond the exact-route equivalence tests.
 
 ### O-008: Public v0.3 namespace
+
+Status: Resolved by D-073 on 2026-09-16.
 
 The target packages are proposed, but the exact root re-exports remain open.
 Decide which small set should be available as

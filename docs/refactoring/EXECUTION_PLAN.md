@@ -1203,8 +1203,9 @@ row is not complete.
 P5.4-a records the row-by-row disposition in
 `PHASE5_ACCEPTANCE_AUDIT.md`. Phase 5 remains in progress only for real-CUDA
 parity, backend-native low-level CuPy output, and removal of repeated
-device/host transfer. These external-infrastructure items do not block
-independent Phase 6 CPU model consolidation.
+device/host transfer. D-071 makes these mandatory v0.3 release gates. They do
+not block independent Phase 6 CPU model consolidation, but v0.3.0 cannot be
+tagged until the device-native implementation passes on a GPU-equipped runner.
 
 ## 9. Phase 6 — model consolidation
 
@@ -1402,9 +1403,12 @@ explicit result writing.
 
 ### P7.3 Optimization
 
-Before changes, add one trusted objective and gradient/reference test for each
-supported algorithm. Introduce common Objective, Evaluator, OptimizationResult,
-and constraint interfaces only after behavior is characterized.
+Implement D-072 before changes: central finite-difference GRAPE gradients with
+step-size convergence, a direct one-iteration Krotov oracle, direct local
+updates on the frozen legacy grid, and direct DFT/convolution spectral
+constraints. Introduce common Objective, Evaluator, OptimizationResult, and
+constraint interfaces only after these independent references pass or any
+discrepancy is explicitly resolved by the user.
 
 ### P7.4 Spectroscopy
 
@@ -1417,7 +1421,7 @@ Before splitting the 898-line module, characterize:
 - absorption/PFID/emission observables;
 - normalization or sum rules.
 
-Then split by scientific responsibility.
+Use D-072 analytic/direct references, then split by scientific responsibility.
 
 ### Phase 7 acceptance
 
@@ -1432,7 +1436,7 @@ Then split by scientific responsibility.
 
 Tasks:
 
-- decide O-008 and reduce root exports;
+- implement the exact D-073 root exports and remove the old root surface;
 - rewrite README and Japanese README against the actual API;
 - execute documentation code snippets;
 - update every supported example — completed early under D-044 with three
