@@ -9,16 +9,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
-from rovibrational_excitation.dipole.vib.morse import (
-    omega01_domega_to_N,
-    tdm_vib_morse,
-)
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import ElectricField
 from rovibrational_excitation.models.vib_ladder import (
     VibLadderBasis,
     VibLadderDipoleMatrix,
+)
+from rovibrational_excitation.models.vibration.harmonic import tdm_vib_harm
+from rovibrational_excitation.models.vibration.morse import (
+    omega01_domega_to_N,
+    tdm_vib_morse,
 )
 
 pytestmark = pytest.mark.physics

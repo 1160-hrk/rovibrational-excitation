@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-15
-Current checkpoint: Phase 4 closed; P6.4-b removes legacy SymTop under D-077
+Current checkpoint: Phase 4 closed; P6.4-d moves shared vibration code under D-079
 
 ## Purpose
 

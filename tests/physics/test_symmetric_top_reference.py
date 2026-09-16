@@ -7,7 +7,6 @@ import pytest
 from scipy import sparse
 from sympy.physics.wigner import wigner_3j
 
-from rovibrational_excitation.dipole.vib.morse import tdm_vib_morse
 from rovibrational_excitation.models.parameters import SymmetricTopParameters
 from rovibrational_excitation.models.symmetric_top import (
     SymmetricTopBasis,
@@ -16,6 +15,7 @@ from rovibrational_excitation.models.symmetric_top import (
 from rovibrational_excitation.models.symmetric_top.rotational import (
     parallel_spherical_direction_cosine,
 )
+from rovibrational_excitation.models.vibration.morse import tdm_vib_morse
 
 pytestmark = pytest.mark.physics
 

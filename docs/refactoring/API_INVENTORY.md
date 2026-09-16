@@ -3,7 +3,7 @@
 Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-078 moved linear-rotor kernels to LinMol
+Latest API checkpoint: D-079 moved shared vibration kernels to models
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -94,6 +94,10 @@ P6.4-c/D-078 moves the sole production `dipole.rot.jm` consumer's kernel to
 unused `dipole.rot.j` and old package export are removed; no compatibility
 shim is retained. Shared `dipole.base` and `dipole.vib` remain pending their
 separately characterized ownership units.
+
+P6.4-d/D-079 moves `dipole.vib` unchanged to `models.vibration`, shared by
+LinMol and VibLadder. The old path is removed without a shim. `dipole.base`
+is the remaining transitional shared implementation.
 
 ## 2. Package root
 
@@ -225,7 +229,7 @@ and demo factories are deleted rather than deprecated.
 | `dipole.viblad` | removed | `models.vib_ladder` | complete in P6.2-b; no compatibility shim |
 | `dipole.symtop` | removed | `models.symmetric_top` | complete in P6.4-b; no compatibility shim |
 | `dipole.rot` | removed | `models.linear_molecule.rotational`; Wigner reference under tests | complete in P6.4-c; no compatibility shim |
-| `dipole.vib` | `tdm_vib_harm`, `tdm_vib_morse`, `omega01_domega_to_N`, `validate_morse_v_max` | private/shared vibration kernels under model ownership | internal |
+| `dipole.vib` | removed | `models.vibration` | complete in P6.4-d; no compatibility shim |
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |
 | `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `VibLadderParameters`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | complete in P6.2-c; schema is model-owned and unused compatibility builders are removed |

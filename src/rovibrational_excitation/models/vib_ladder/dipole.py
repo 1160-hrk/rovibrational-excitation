@@ -31,8 +31,8 @@ if cp is not None:
 else:
     Array: type = np.ndarray  # type: ignore[assignment,no-redef]
 
-from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm
-from rovibrational_excitation.dipole.vib.morse import (
+from rovibrational_excitation.models.vibration.harmonic import tdm_vib_harm
+from rovibrational_excitation.models.vibration.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
     validate_morse_v_max,

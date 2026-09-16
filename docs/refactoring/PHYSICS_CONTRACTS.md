@@ -472,7 +472,7 @@ V_max <= floor(N) - 1
 A basis exceeding the limit is an error.
 
 Primary implementation:
-`dipole/vib/morse.py`.
+`models/vibration/morse.py` (moved unchanged under D-079).
 
 Required characterization cases:
 

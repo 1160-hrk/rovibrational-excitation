@@ -1357,6 +1357,15 @@ including Morse boundaries and CPU/GPU modes, then move the exact shared
 functions to a neutral `models/vibration` owner. SymTop's independently
 referenced functions must not be merged by inference.
 
+P6.4-d completes that exact-file shared-vibration move on 2026-09-16 under
+D-079. Both model consumers import the same functions, CPU physics and Morse
+boundary references pass, and SymTop is unchanged. The full suite has 1219
+passes and 10 optional-GPU skips; CUDA remains unverified. P6.4-e should
+characterize and split `dipole.base`: put only the minimum operator protocol
+below dynamics, retain cache/unit/persistence implementation with the models,
+and eliminate the two documented reverse dependencies without changing
+runtime fallback or conversion behavior.
+
 For each model:
 
 - add frozen parameter schema;

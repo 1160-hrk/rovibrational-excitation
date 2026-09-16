@@ -23,8 +23,8 @@ except ImportError:
     _cp = None
     _csp = None
 
-from rovibrational_excitation.dipole.vib.harmonic import tdm_vib_harm  # Python 版
-from rovibrational_excitation.dipole.vib.morse import (
+from rovibrational_excitation.models.vibration.harmonic import tdm_vib_harm  # Python 版
+from rovibrational_excitation.models.vibration.morse import (
     omega01_domega_to_N,
     tdm_vib_morse,
     validate_morse_v_max,

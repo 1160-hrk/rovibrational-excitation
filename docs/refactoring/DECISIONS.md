@@ -2941,6 +2941,28 @@ and full suite pass (1218 passed, 10 optional-GPU skips).
 
 Implementation commit: this checkpoint.
 
+### D-079: Place shared vibration elements under the model layer
+
+Status: Implemented on 2026-09-16 as P6.4-d.
+
+The harmonic and Morse transition functions in `dipole.vib` are production
+dependencies of both LinMol and VibLadder. Move their three tracked files by
+`git mv` to the neutral `models.vibration` package and update those two
+consumers plus direct reference tests. All four function bodies, Morse level
+derivation and bound check, signs, factors, and return values are unchanged.
+The LinMol Numba wrapper and CuPy vectorization still receive the same Python
+function objects, now imported from the model-layer owner. A contract test
+checks that both consumers share those objects and that the old files are
+absent. Existing independent references cover the CPU matrices and Morse
+boundaries. SymTop retains its distinct production implementation; this move
+does not merge or substitute it.
+
+No compatibility shim remains under D-001. CPU tests pass 1219 cases with 10
+optional-GPU skips. The CuPy path has not been validated on real CUDA hardware
+and must not be reported as verified by this structural move.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

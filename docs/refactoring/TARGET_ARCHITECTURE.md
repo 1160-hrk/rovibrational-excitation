@@ -561,6 +561,11 @@ to tests, and deletes the unused `J`-only helper. `dipole.base` remains a
 shared transition class; `dipole.vib` remains shared by LinMol/VibLadder.
 Neither is merged with the distinct production SymTop implementation.
 
+P6.4-d/D-079 moves the shared harmonic and Morse functions byte-for-byte to
+`models.vibration`. LinMol and VibLadder now import one neutral owner; SymTop
+keeps its independent formula. `dipole.base` is the remaining transitional
+shared class and needs a separate protocol/cache split.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -599,7 +604,7 @@ already constructed basis and weights, never molecule names.
 | `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
 | `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
 | `models/parameters.py::LinMolParameters` | `models/linear_molecule/parameters.py` | Complete in P6.3-c; validation and unit conversion unchanged |
-| `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
+| `dipole/vib/*` | `models/vibration/{harmonic,morse}.py` | Complete in P6.4-d; exact shared functions moved without SymTop substitution |
 | `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
 | model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
