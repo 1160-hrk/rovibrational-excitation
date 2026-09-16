@@ -2886,6 +2886,28 @@ passes 1220 tests with 10 optional-GPU skips.
 
 Implementation commit: this checkpoint.
 
+### D-077: Remove the non-production legacy SymTop skeleton
+
+Status: Implemented on 2026-09-16 as P6.4-b after the D-076 audit.
+
+The unused `core/basis/symtop.py`, `dipole/symtop/`, `dipole/factory.py`, and
+legacy-only `dipole/rot/jmk.py` are removed without compatibility shims under
+D-001. The old `core.basis` and `dipole` exports are removed. Direct tests now
+check the production `models.symmetric_top` owner and absence of the old paths.
+Only generated caches under the removed legacy directory were discarded.
+
+No formula, phase, selection rule, state order, nuclear-spin filter, physical
+input conversion, or production RK4 path changes. The D-053 independent
+SymTop physics references and propagation contracts remain authoritative.
+The experimental formulas documented in D-076 are not migrated into the
+production model. Shared `dipole.base`, `dipole.rot.jm`, and `dipole.vib` remain
+for their actual consumers and require a separate ownership audit.
+Acceptance: 1217 passed, 10 optional-GPU skips; 77% measured branch coverage;
+strict mypy, active example smoke, build, Twine, wheel content, and isolated
+wheel import pass. CUDA remains unverified.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

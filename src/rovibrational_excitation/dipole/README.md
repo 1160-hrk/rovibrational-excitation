@@ -12,7 +12,7 @@
 - 効率的なキャッシュシステム
 - 物理的選択則の自動適用
 
-二準位系、振動ラダー、直線分子の双極子実装は、それぞれの
+二準位系、振動ラダー、直線分子、対称コマ分子の双極子実装は、それぞれの
 `rovibrational_excitation.models.*` パッケージが直接所有します。
 
 ## 使用例
@@ -51,40 +51,11 @@ mu_x_debye = dipole_linmol.get_mu_in_units("x", "D")  # デバイ単位
 
 ### 1. 対称コマ分子系
 
-```python
-from rovibrational_excitation.core.basis import SymTopBasis
-from rovibrational_excitation.dipole import SymTopDipoleMatrix
-
-# 基底の作成（V_max=2, J_max=2, K_max=2の場合）
-basis = SymTopBasis(
-    V_max=2,
-    J_max=2,
-    omega=1.0,  # 振動周波数
-    delta_omega=0.0,  # 非調和性
-    B=0.01,
-    C=0.005,
-)
-
-# 双極子行列の生成
-dipole = SymTopDipoleMatrix(
-    basis,
-    mu0=1.0,  # 双極子モーメントの大きさ
-    potential_type="harmonic",  # または "morse"
-    backend="numpy",  # 現在はnumpyのみサポート
-    dense=True,  # または False で疎行列形式
-    units="C*m",  # 内部保存単位（"C*m", "D", "ea0"）
-    units_input="D",  # 入力値の単位
-)
-
-# 双極子行列要素の取得
-mu_x = dipole.mu_x  # x成分
-mu_y = dipole.mu_y  # y成分
-mu_z = dipole.mu_z  # z成分
-
-# 単位変換と行列の取得
-mu_x_SI = dipole.get_mu_x_SI()  # SI単位（C·m）
-mu_xyz = dipole.stacked("xyz")  # 全成分を3次元配列として取得
-```
+production 実装は `rovibrational_excitation.models.symmetric_top` が所有します。
+CH3F の核スピン異性体、全ての物理量と単位、Cartesian 軸を明示して
+`models.build_model` から構築します。実行可能な設定例と物理契約は
+`tests/contracts/test_symmetric_top_model_contracts.py` および
+`tests/physics/test_symmetric_top_reference.py` を参照してください。
 
 ### 2. 直線分子系
 
@@ -196,12 +167,9 @@ dipole_gpu = LinMolDipoleMatrix(
 各分子系で自動的に適用される選択則：
 
 ### 対称コマ分子
-- 振動遷移: ΔV = ±1
-- 回転遷移: 
-  - ΔJ = ±1
-  - ΔK = 0
-  - ΔM = 0, ±1
-- 行列要素は回転部分（tdm_jmk_{x,y,z}）と振動部分の積
+
+production の rigid parallel-band 選択則と核スピン異性体フィルタは
+`docs/refactoring/PHYSICS_CONTRACTS.md` を参照してください。
 
 ### 線形分子
 - 振動遷移: ΔV = ±1

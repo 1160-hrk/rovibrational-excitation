@@ -45,8 +45,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1220 passed, 10 skipped (1230 collected) |
-| Measured branch coverage | 75% |
+| Pytest | 1217 passed, 10 skipped (1227 collected) |
+| Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
@@ -76,6 +76,13 @@ It has no production caller, differs from the independently referenced D-053
 model in basis order/filtering, anharmonic semantics, and transverse phases,
 and its dense and CSR dipole routes both fail direct execution. Three new
 guards record those differences; no production formula changes.
+P6.4-b/D-077 removes that broken legacy basis/dipole, factory, and `jmk`
+helper without a compatibility shim. Direct tests now use the production
+`models.symmetric_top` owner; D-053 physics references remain unchanged.
+The three legacy-only audit tests were replaced with two ownership guards and
+one obsolete factory test was removed, yielding 1217 passing tests. Strict
+mypy (41 modules), active example smoke tests, sdist/wheel build, Twine, and
+isolated wheel import pass; optional CUDA tests remain unverified.
 
 P6.2-c
 implements D-069:
@@ -334,7 +341,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.3 complete; P6.4-a audits legacy SymTop, deletion next |
+| 6 | Model consolidation | In progress — P6.1-P6.3 and P6.4-b complete; P6.4-c audits shared dipole helpers |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

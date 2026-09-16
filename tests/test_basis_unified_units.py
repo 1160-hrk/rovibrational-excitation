@@ -6,9 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import (
-    SymTopBasis,
-)
 from rovibrational_excitation.models.linear_molecule import LinMolBasis
 from rovibrational_excitation.models.two_level import TwoLevelBasis
 from rovibrational_excitation.models.vib_ladder import VibLadderBasis
@@ -20,7 +17,6 @@ from rovibrational_excitation.models.vib_ladder import VibLadderBasis
         (lambda: LinMolBasis(V_max=0, J_max=0), "omega, B, alpha, delta_omega"),
         (lambda: VibLadderBasis(V_max=0), "omega, delta_omega"),
         (TwoLevelBasis, "energy_gap"),
-        (lambda: SymTopBasis(V_max=0, J_max=0), "omega, B, C, alpha, delta_omega"),
     ],
 )
 def test_basis_requires_physical_constants(constructor, missing):

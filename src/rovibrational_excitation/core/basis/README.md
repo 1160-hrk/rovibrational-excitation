@@ -7,7 +7,6 @@
 basisモジュールは以下の基底クラスを提供します：
 
 - `BasisBase`: 全ての基底クラスの抽象基底クラス
-- `SymTopBasis`: 対称コマ分子の振動・回転基底
 - `StateVector`: 純粋状態を表現するクラス
 - `DensityMatrix`: 混合状態を表現するクラス
 
@@ -105,27 +104,6 @@ H0 = basis.generate_H0()
 print("振動エネルギー準位:")
 for v, E in enumerate(H0.eigenvalues):
     print(f"|v={v}⟩: {E:.2e} J")
-```
-
-### 4. 対称コマ分子の例
-
-```python
-from rovibrational_excitation.core.basis import SymTopBasis
-
-# メチルフルオライド（CH3F）のような対称コマ分子
-basis = SymTopBasis(
-    V_max=1,  # 最大振動量子数
-    J_max=5,  # 最大回転量子数
-    omega=1000,  # 代表的な振動モード
-    B=1.0,  # 回転定数B
-    C=0.8,  # 回転定数C
-    input_units="cm^-1",
-)
-
-# ハミルトニアンを生成
-H0 = basis.generate_H0()
-print(f"基底の次元: {basis.size()}")
-print(f"最大エネルギー差: {H0.max_energy_difference():.2e} J")
 ```
 
 ## 注意事項

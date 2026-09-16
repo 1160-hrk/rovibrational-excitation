@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.4-a D-076 legacy SymTop audit
+Verified structural checkpoint: P6.4-b D-077 legacy SymTop removal
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -292,6 +292,10 @@ core/dipole paths. They differ from production ordering/filtering, anharmonic
 semantics, and x/y phase, and both legacy dipole storage paths fail direct
 execution. Delete them without migrating formulae; D-053 production remains
 authoritative. The complete suite passes 1220 tests with 10 optional-GPU skips.
+P6.4-b/D-077 removes those legacy paths and their factory/`jmk` helper; direct
+tests now point to production `models.symmetric_top`. No production formula,
+phase, array, or RK4 path changes. The full suite has 1217 passes and 10
+optional-GPU skips; measured branch coverage is 77%.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -300,11 +304,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Implement P6.4-b by deleting legacy `core/basis/symtop.py`,
-   `dipole/symtop/`, `dipole.factory`, and the legacy-only `dipole/rot/jmk.py`.
-   Update direct tests/docs to production imports; migrate no legacy formula.
-2. Keep shared `dipole/vib` harmonic/Morse functions in place while LinMol and
-   SymTop consume them; do not assign a final owner by inference.
+1. Audit remaining consumers of `dipole.base`, `dipole.rot.jm`, and
+   `dipole.vib` in P6.4-c; move only with exact characterization tests.
+2. Keep shared `dipole/vib` harmonic/Morse functions in place while actual
+   consumers are audited; do not assign a final owner by inference.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

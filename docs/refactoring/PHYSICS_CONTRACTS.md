@@ -273,8 +273,7 @@ and `delta_omega`; or TwoLevel `energy_gap`. Production SymTop construction
 uses the frozen schema in the table above; its six frequency quantities are
 vibrational frequency, anharmonic shift, perpendicular/parallel rotational
 constants, and perpendicular/parallel vibration-rotation couplings. The legacy
-`core.basis.SymTopBasis` is not its input path. Direct legacy dipole construction
-requires `mu0`. Krotov optimization requires a
+`core.basis.SymTopBasis` input path was removed under D-077. Krotov optimization requires a
 positive finite `duration_initial` before any model or field work begins.
 
 For raw-array nondimensionalization, `H0_units` and `time_units` are
@@ -604,9 +603,9 @@ Independent SymPy Wigner-3j references cover low-J elements through J=3.
 Hamiltonian references cover both vibration-rotation couplings and signed-K/M
 degeneracy. Dense/CSR dipoles are exactly equal; dense/CSR and
 dimensional/nondimensional RK4 populations agree. CuPy, split operator, and
-optimization routes raise before allocation or propagation. The legacy
-`core.basis.SymTopBasis` and `dipole.symtop` remain experimental and are not
-used by this production model.
+optimization routes raise before allocation or propagation. The experimental
+legacy `core.basis.SymTopBasis` and `dipole.symtop` paths were removed under
+D-077; they are not aliases for this production model.
 
 ### Split-operator polarization reference
 

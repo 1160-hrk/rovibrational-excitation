@@ -1336,10 +1336,15 @@ shows both legacy dense and CSR dipole construction are broken. The D-053
 production implementation and its independent references remain unchanged;
 the complete suite passes 1220 tests with 10 optional-GPU skips.
 
-P6.4-b should delete the legacy basis/dipole/factory and the legacy-only `jmk`
-helper without migrating any formula. Update the two direct legacy tests and
-all package/docs exports to the production owner, then rerun the D-053 physics
-and propagation matrix.
+P6.4-b removes the legacy basis/dipole/factory and legacy-only `jmk` helper
+on 2026-09-16 under D-077. The direct tests and package/docs exports now
+point to production `models.symmetric_top`; no legacy formula was migrated.
+The D-053 physics and propagation matrix remains the acceptance gate.
+
+P6.4-c should audit the actual consumers of shared `dipole.base`,
+`dipole.rot.jm`, and `dipole.vib` before assigning their final owner. Preserve
+each transition element and all model arrays; do not merge distinct Morse or
+rotational formulas by inference.
 
 For each model:
 

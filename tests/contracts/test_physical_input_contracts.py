@@ -4,20 +4,10 @@ from inspect import Parameter, signature
 
 import pytest
 
-from rovibrational_excitation.dipole import SymTopDipoleMatrix
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
-from rovibrational_excitation.models.linear_molecule import (
-    LinMolBasis,
-    LinMolDipoleMatrix,
-)
-from rovibrational_excitation.models.two_level import (
-    TwoLevelBasis,
-    TwoLevelDipoleMatrix,
-)
-from rovibrational_excitation.models.vib_ladder import (
-    VibLadderBasis,
-    VibLadderDipoleMatrix,
-)
+from rovibrational_excitation.models.linear_molecule import LinMolDipoleMatrix
+from rovibrational_excitation.models.symmetric_top import SymmetricTopDipoleMatrix
+from rovibrational_excitation.models.two_level import TwoLevelDipoleMatrix
+from rovibrational_excitation.models.vib_ladder import VibLadderDipoleMatrix
 from rovibrational_excitation.optimization.model import build_optimization_model
 
 
@@ -25,7 +15,7 @@ from rovibrational_excitation.optimization.model import build_optimization_model
     "dipole_type",
     [
         LinMolDipoleMatrix,
-        SymTopDipoleMatrix,
+        SymmetricTopDipoleMatrix,
         TwoLevelDipoleMatrix,
         VibLadderDipoleMatrix,
     ],
@@ -36,33 +26,12 @@ def test_direct_dipole_construction_requires_mu0(dipole_type):
 
 @pytest.mark.parametrize(
     "dipole_type",
-    [LinMolDipoleMatrix, SymTopDipoleMatrix, VibLadderDipoleMatrix],
+    [LinMolDipoleMatrix, SymmetricTopDipoleMatrix, VibLadderDipoleMatrix],
 )
 def test_vibrational_dipole_construction_requires_potential_type(dipole_type):
     assert (
         signature(dipole_type).parameters["potential_type"].default is Parameter.empty
     )
-
-
-def test_generic_factory_rejects_model_owned_systems():
-    twolevel = TwoLevelBasis(energy_gap=0.2)
-    with pytest.raises(TypeError, match="未知の基底クラス"):
-        create_dipole_matrix(twolevel, mu0=1.0, potential_type="harmonic")
-
-    vibladder = VibLadderBasis(V_max=1, omega=0.2, delta_omega=0.0)
-    with pytest.raises(TypeError, match="未知の基底クラス"):
-        create_dipole_matrix(vibladder, mu0=1.0, potential_type="harmonic")
-
-    linmol = LinMolBasis(
-        V_max=0,
-        J_max=0,
-        omega=0.2,
-        B=0.01,
-        alpha=0.0,
-        delta_omega=0.0,
-    )
-    with pytest.raises(TypeError, match="未知の基底クラス"):
-        create_dipole_matrix(linmol, mu0=1.0, potential_type="harmonic")
 
 
 def test_optimization_twolevel_does_not_require_irrelevant_potential_type():

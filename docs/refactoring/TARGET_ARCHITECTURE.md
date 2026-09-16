@@ -550,6 +550,11 @@ filtering, anharmonic semantics, and transverse phases, and its dense and CSR
 dipole routes fail directly. It is therefore a deletion target; none of its
 formulae migrate into the independently referenced D-053 production owner.
 
+P6.4-b/D-077 removes that legacy basis/dipole/factory and its private `jmk`
+helper. The production `models.symmetric_top` formulas and references remain
+unchanged. Shared `dipole.base`, `dipole.rot.jm`, and `dipole.vib` remain for a
+separately characterized ownership unit.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -580,7 +585,7 @@ already constructed basis and weights, never molecule names.
 | `dipole/twolevel/*` | `models/two_level/dipole.py` | Implementation moved in P6.1-c; redundant stateless builder removed in P6.1-d |
 | `models/twolevel.py` | `models/two_level/model.py` | Complete in P6.1-c; registry and optimization imports moved |
 | `models/parameters.py::TwoLevelParameters` | `models/two_level/parameters.py` | Complete in P6.1-d; validation/conversion behavior unchanged |
-| `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | D-053 production owner complete for normal NumPy dense/CSR RK4; legacy direct path remains experimental until Phase 6 removal |
+| `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | Legacy skeleton removed in P6.4-b; D-053 production owner unchanged |
 | no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
