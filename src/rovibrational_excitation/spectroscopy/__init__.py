@@ -25,8 +25,11 @@ Examples
 Basic usage:
 
 >>> from rovibrational_excitation.spectroscopy import AbsorbanceCalculator, ExperimentalConditions
->>> from rovibrational_excitation.core.basis import LinMolBasis
 >>> from rovibrational_excitation.core.units.constants import CONSTANTS
+>>> from rovibrational_excitation.models.linear_molecule import (
+...     LinMolBasis,
+...     LinMolDipoleMatrix,
+... )
 >>>
 >>> # Create basis and other components
 >>> basis = LinMolBasis(V_max=5, J_max=10, use_M=True)

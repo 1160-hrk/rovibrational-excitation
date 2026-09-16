@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
 Last verified: 2026-09-15
-Current checkpoint: Phase 4 closed; P6.2-c completes VibLadder ownership under D-069
+Current checkpoint: Phase 4 closed; P6.3-b moves LinMol ownership under D-074
 
 ## Purpose
 

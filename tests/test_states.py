@@ -5,7 +5,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import DensityMatrix, LinMolBasis, StateVector
+from rovibrational_excitation.core.basis import DensityMatrix, StateVector
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 
 
 def test_statevector_basic():

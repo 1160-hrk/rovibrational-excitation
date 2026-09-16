@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import numpy as np
 
-from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 
 
 def test_generate_H0_LinMol_shape_and_value():

@@ -1,18 +1,16 @@
 """
-双極子行列クラスの自動選択機能を提供するファクトリーモジュール。
+legacy SymTop 双極子行列を構築する移行用ファクトリーモジュール。
 
-基底クラスの型に応じて適切な双極子行列クラスを自動的に選択します。
+統合済みモデルは各 ``models.*`` パッケージから直接構築します。
 """
 
-from typing import Literal, Union
+from typing import Literal
 
 from rovibrational_excitation.core.basis import (
     BasisBase,
-    LinMolBasis,
     SymTopBasis,
 )
 
-from .linmol import LinMolDipoleMatrix
 from .symtop import SymTopDipoleMatrix
 
 
@@ -25,9 +23,9 @@ def create_dipole_matrix(
     dense: bool = True,
     units: Literal["C*m", "D", "ea0"] = "C*m",
     units_input: Literal["C*m", "D", "ea0"] = "C*m",
-) -> Union[LinMolDipoleMatrix, SymTopDipoleMatrix]:
+) -> SymTopDipoleMatrix:
     """
-    基底クラスの型に応じて適切な双極子行列クラスを自動的に選択し、インスタンスを生成します。
+    legacy SymTop 基底から双極子行列インスタンスを生成します。
 
     Parameters
     ----------
@@ -48,42 +46,15 @@ def create_dipole_matrix(
 
     Returns
     -------
-    Union[LinMolDipoleMatrix, SymTopDipoleMatrix]
+    SymTopDipoleMatrix
         基底に対応する双極子行列クラスのインスタンス
-
-    Examples
-    --------
-    >>> # 線形分子の例
-    >>> basis = LinMolBasis(
-    ...     V_max=2, J_max=10, omega=2350, B=0.4,
-    ...     alpha=0.0, delta_omega=0.0, input_units="cm^-1",
-    ... )
-    >>> dipole = create_dipole_matrix(
-    ...     basis,
-    ...     mu0=1.0,
-    ...     potential_type="morse",
-    ...     backend="numpy",
-    ...     dense=True
-    ... )
-    >>> print(dipole.mu_z)  # z方向の双極子行列を取得
 
     Raises
     ------
     TypeError
         未知の基底クラスが渡された場合
     """
-    # 基底クラスの型に応じて適切な双極子行列クラスを選択
-    if isinstance(basis, LinMolBasis):
-        return LinMolDipoleMatrix(
-            basis=basis,
-            mu0=mu0,
-            potential_type=potential_type,
-            backend=backend,
-            dense=dense,
-            units=units,
-            units_input=units_input,
-        )
-    elif isinstance(basis, SymTopBasis):
+    if isinstance(basis, SymTopBasis):
         return SymTopDipoleMatrix(
             basis=basis,
             mu0=mu0,
@@ -97,6 +68,5 @@ def create_dipole_matrix(
         raise TypeError(
             f"未知の基底クラス: {type(basis).__name__}\n"
             "サポートされている基底クラス:\n"
-            "- LinMolBasis（線形分子）\n"
             "- SymTopBasis（対称コマ分子）"
         )

@@ -5,10 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import (
+from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
+    LinMolDipoleMatrix,
 )
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
 from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
@@ -92,7 +92,7 @@ def test_linmol_optimization_uses_m_resolved_production_order_with_parity() -> N
         input_units="cm^-1",
         output_units="rad/fs",
     )
-    legacy_dipole = create_dipole_matrix(
+    legacy_dipole = LinMolDipoleMatrix(
         legacy_basis,
         mu0=0.3,
         potential_type="harmonic",

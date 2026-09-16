@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.states import IncoherentEnsemble
 from rovibrational_excitation.core.units.converters import converter
@@ -16,6 +15,7 @@ from rovibrational_excitation.dynamics import (
 )
 from rovibrational_excitation.dynamics.utils import get_backend
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 from rovibrational_excitation.models.two_level import TwoLevelBasis
 from tests.mock_objects import MockDipole, MockEfield
 from tests.propagation_options import propagation_options

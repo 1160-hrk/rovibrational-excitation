@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 
-from .common import build_initial_state
-from .parameters import LinMolParameters
-from .validation import (
+from ..common import build_initial_state
+from ..parameters import LinMolParameters
+from ..validation import (
     LinMolRepresentation,
     model_parameters_from_mapping,
     validate_linmol_representation,
 )
+from .basis import LinMolBasis
+from .dipole import LinMolDipoleMatrix
 
 
 def build_linmol(

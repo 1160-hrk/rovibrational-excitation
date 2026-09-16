@@ -11,24 +11,26 @@
 - 自動単位変換機能
 - 効率的なキャッシュシステム
 - 物理的選択則の自動適用
-- 基底クラスに応じた双極子行列クラスの自動選択
 
-二準位系は `rovibrational_excitation.models.two_level` が直接所有します。
+二準位系、振動ラダー、直線分子の双極子実装は、それぞれの
+`rovibrational_excitation.models.*` パッケージが直接所有します。
 
 ## 使用例
 
-### 0. ファクトリー関数を使用した自動選択
+### 0. モデル所有クラスの直接使用
 
 ```python
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
 
 # 線形分子の例
 basis_linmol = LinMolBasis(V_max=2, J_max=10, omega=2350, input_units="cm^-1")
-dipole_linmol = create_dipole_matrix(
+dipole_linmol = LinMolDipoleMatrix(
     basis_linmol,
     mu0=1.0,
-    potential_type="morse",  # 振動を含む系のみ指定可能
+    potential_type="morse",
     backend="numpy",
     dense=True,
     units_input="D",  # 入力値の単位（デバイ）
@@ -87,8 +89,10 @@ mu_xyz = dipole.stacked("xyz")  # 全成分を3次元配列として取得
 ### 2. 直線分子系
 
 ```python
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole import LinMolDipoleMatrix
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
 
 # 基底の作成（V_max=2, J_max=1の場合）
 basis = LinMolBasis(V_max=2, J_max=1)

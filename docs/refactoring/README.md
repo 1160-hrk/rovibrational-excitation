@@ -56,14 +56,17 @@ physics changes are detected by tests.
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-15. On 2026-09-16, D-071
+These rows were last verified locally on 2026-09-16. On 2026-09-16, D-071
 through D-073 make device-native CUDA plus a real-GPU run mandatory for v0.3,
 define independent optimization/spectroscopy reference construction, and fix
-the exact minimal typed root API. P6.3-a implements D-070
-without changing source: nine new cases freeze the complete current LinMol
-ownership and construction projection before its move, while 29 existing
-physics cases retain independent authority over selection rules, M averaging,
-Morse behavior, and propagation. P6.2-c implements D-069:
+the exact minimal typed root API. P6.3-b implements D-074: the LinMol basis,
+dipole implementation, and model builders now share
+`models/linear_molecule/`, the former owners are removed, and the generic
+dipole factory drops LinMol to avoid a reverse dependency. All D-070 values
+and the M-average workflow remain unchanged. P6.3-a supplied the nine move
+guards, while 29 existing physics cases retain independent authority over
+selection rules, M averaging, Morse behavior, and propagation. P6.2-c
+implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
 and stateless dipole wrappers are removed after a complete caller audit. The
 remaining typed builders use the same validation, unit conversion, basis,
@@ -319,7 +322,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1 TwoLevel and P6.2 VibLadder complete; P6.3-a LinMol characterization complete, ownership move next |
+| 6 | Model consolidation | In progress — P6.1 TwoLevel and P6.2 VibLadder complete; P6.3-b LinMol ownership moved, schema/interface cleanup next |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

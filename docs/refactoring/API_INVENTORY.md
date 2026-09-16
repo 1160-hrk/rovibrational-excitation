@@ -3,7 +3,7 @@
 Last verified: 2026-09-16
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-073 accepted minimal v0.3 root namespace
+Latest API checkpoint: D-074 moved LinMol implementation ownership
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -67,13 +67,20 @@ the current `core.basis.LinMolBasis`, `dipole.linmol`, shared
 `models.parameters.LinMolParameters`, `models.linmol`, and transitional
 factory/builder paths before the ownership move.
 
+P6.3-b replaces `core.basis.LinMolBasis`, `dipole.LinMolDipoleMatrix`,
+`dipole.linmol`, and `models.linmol` with `models.linear_molecule`. No
+compatibility shim is retained. The new package exports the basis, stateful
+dipole, transitional stateless builder, and mapping/typed model builders; the
+frozen schema remains shared until P6.3-c. The generic dipole factory no longer
+accepts LinMol, avoiding a reverse dependency on the model-owned class.
+
 ## 2. Package root
 
 ### 2.1 Names declared in `rovibrational_excitation.__all__`
 
 | Current root name | Observed callers | Target path or replacement | Disposition |
 |---|---|---|---|
-| `LinMolBasis` | README and direct subpackage examples use the concept; no source file imports it from root | `models.linear_molecule.LinearMoleculeModel` and typed parameters | temporary public |
+| `LinMolBasis` | README and direct subpackage examples use the concept; no source file imports it from root | `models.linear_molecule.LinMolBasis` | temporary public |
 | `Hamiltonian` | Root re-export remains; internal callers now use the target module | `core.operators.Hamiltonian` | temporary root re-export pending O-008; target submodule complete |
 | `StateVector` | Tests and examples use `core.basis.StateVector` | `core.states.StateVector` | temporary public |
 | `DensityMatrix` | Tests use `core.basis.DensityMatrix` | `core.states.DensityMatrix` | temporary public |
@@ -128,7 +135,7 @@ not treated as intentional API.
 |---|---|---|---|
 | `core` | no re-exported names yet | narrow generic state/operator/time/unit surface pending O-008 | target public package created in P3.1-a |
 | `core.operators` | `Hamiltonian` is directly importable; no package `__all__` yet | generic unit-aware operator owner | target public module; root re-export remains temporary |
-| `core.basis` | `BasisBase`, `LinMolBasis`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; remaining model bases to their `models.*` owners | temporary public; `Hamiltonian`, `TwoLevelBasis`, and `VibLadderBasis` have moved to target owners |
+| `core.basis` | `BasisBase`, `SymTopBasis`, `StateVector`, `DensityMatrix` | generic states to `core`; remaining SymTop basis to its model owner | temporary public; `Hamiltonian`, `TwoLevelBasis`, `VibLadderBasis`, and `LinMolBasis` have moved to target owners |
 | `core.units` | `PhysicalConstants`, `UnitConverter`, `Frequency`, `TimeQuantity`, `DipoleMoment`, `ElectricFieldAmplitude`, `GroupDelayDispersion`, `ThirdOrderDispersion`, `converter`, `UnitValidator`, `validator` | immutable constants and frozen explicit conversion boundaries under `core.units`; typed config handles parameter conversion | target public quantity and pure-conversion surface; generic processor deleted by D-045 |
 | `core.time` | `TimeGrid`, `FIELD_INTERVALS_PER_PROPAGATION_STEP` | immutable time invariant under `core.time` | target public module; root re-export remains subject to O-008 |
 | `core.execution` | `ArrayBackend`, `MatrixStorage`, `ExecutionPolicy` | one explicit backend/storage choice | target public module; normal runner/model wiring complete in P2.3-b |
@@ -191,9 +198,9 @@ and demo factories are deleted rather than deprecated.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `dipole` | `LinMolDipoleMatrix`, `SymTopDipoleMatrix` | respective `models.*` packages | temporary public; TwoLevel, VibLadder, and generic-factory convenience exports removed during P6.1/P6.2 |
-| `dipole.linmol` | `LinMolDipoleMatrix` | `models.linear_molecule` | temporary public |
-| `dipole.factory` | `create_dipole_matrix` | delete after remaining model migrations | transitional LinMol/SymTop-only module; `potential_type` required, TwoLevel removed in P6.1-d, and VibLadder removed in P6.2-b |
+| `dipole` | `SymTopDipoleMatrix` | `models.symmetric_top` | temporary public; TwoLevel, VibLadder, LinMol, and generic-factory convenience exports removed during P6.1-P6.3 |
+| `dipole.linmol` | removed | `models.linear_molecule` | complete in P6.3-b; no compatibility shim |
+| `dipole.factory` | `create_dipole_matrix` | delete after remaining model migrations | transitional legacy-SymTop-only module; `potential_type` required and consolidated models are rejected explicitly |
 | `dipole.viblad` | removed | `models.vib_ladder` | complete in P6.2-b; no compatibility shim |
 | `dipole.symtop` | legacy `SymTopDipoleMatrix` | `models.symmetric_top` | experimental temporary public; not used by production D-053 and retained until Phase 6 removal |
 | `dipole.rot` | `tdm_jm_x`, `tdm_jm_y`, `tdm_jm_z`, `tdm_j` | private linear/symmetric-top kernels | internal |
@@ -201,6 +208,7 @@ and demo factories are deleted rather than deprecated.
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |
 | `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `VibLadderParameters`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | complete in P6.2-c; schema is model-owned and unused compatibility builders are removed |
+| `models.linear_molecule` | `LinMolBasis`, `LinMolDipoleMatrix`, transitional `build_mu`/`build_linmol`, and typed builders | final LinMol model owner | structural owner reached in P6.3-b; schema and wrapper cleanup remain P6.3-c |
 | `models.symmetric_top` | `SymmetricTopBasis`, `SymmetricTopDipoleMatrix`, `build_symmetric_top_from_parameters` | production model owner | normal NumPy dense/CSR RK4 production path; split, CuPy, all-isomer pure state, and optimization explicitly unsupported |
 | `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | D-052 foundation; D-053 connects CH3F filtering to production SymTop, without supplying constants or weights |
 

@@ -6,8 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics.scaling import (
     NondimensionalizationScales,
     analyze_regime,
@@ -19,6 +17,10 @@ from rovibrational_excitation.fields import (
     ElectricField,
     ZeroField,
     gaussian_fwhm,
+)
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
 )
 
 

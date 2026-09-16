@@ -10,6 +10,7 @@ PACKAGE = ROOT / "src" / "rovibrational_excitation"
 MODELS = PACKAGE / "models"
 TWO_LEVEL = MODELS / "two_level"
 VIB_LADDER = MODELS / "vib_ladder"
+LINEAR_MOLECULE = MODELS / "linear_molecule"
 LEGACY_MODELS = PACKAGE / "simulation" / "models"
 M_AVERAGE = PACKAGE / "simulation" / "m_average.py"
 
@@ -25,7 +26,14 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (MODELS / "__init__.py").is_file()
     assert (MODELS / "factory.py").is_file()
     assert (MODELS / "validation.py").is_file()
-    assert (MODELS / "linmol.py").is_file()
+    assert (LINEAR_MOLECULE / "__init__.py").is_file()
+    assert (LINEAR_MOLECULE / "basis.py").is_file()
+    assert (LINEAR_MOLECULE / "dipole.py").is_file()
+    assert (LINEAR_MOLECULE / "dipole_builder.py").is_file()
+    assert (LINEAR_MOLECULE / "model.py").is_file()
+    assert not (MODELS / "linmol.py").exists()
+    assert not (PACKAGE / "core" / "basis" / "linmol.py").exists()
+    assert not (PACKAGE / "dipole" / "linmol").exists()
     assert (TWO_LEVEL / "__init__.py").is_file()
     assert (TWO_LEVEL / "basis.py").is_file()
     assert (TWO_LEVEL / "dipole.py").is_file()

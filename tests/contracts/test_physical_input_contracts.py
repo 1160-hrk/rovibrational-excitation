@@ -4,11 +4,12 @@ from inspect import Parameter, signature
 
 import pytest
 
-from rovibrational_excitation.dipole import (
-    LinMolDipoleMatrix,
-    SymTopDipoleMatrix,
-)
+from rovibrational_excitation.dipole import SymTopDipoleMatrix
 from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
 from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
@@ -51,6 +52,17 @@ def test_generic_factory_rejects_model_owned_systems():
     vibladder = VibLadderBasis(V_max=1, omega=0.2, delta_omega=0.0)
     with pytest.raises(TypeError, match="未知の基底クラス"):
         create_dipole_matrix(vibladder, mu0=1.0, potential_type="harmonic")
+
+    linmol = LinMolBasis(
+        V_max=0,
+        J_max=0,
+        omega=0.2,
+        B=0.01,
+        alpha=0.0,
+        delta_omega=0.0,
+    )
+    with pytest.raises(TypeError, match="未知の基底クラス"):
+        create_dipole_matrix(linmol, mu0=1.0, potential_type="harmonic")
 
 
 def test_optimization_twolevel_does_not_require_irrelevant_potential_type():

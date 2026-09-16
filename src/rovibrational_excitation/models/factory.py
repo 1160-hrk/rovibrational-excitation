@@ -13,7 +13,7 @@ from rovibrational_excitation.dynamics.problem import (
     SystemModel,
 )
 
-from .linmol import build_linmol_from_parameters
+from .linear_molecule import build_linmol_from_parameters
 from .parameters import (
     LinMolParameters,
     SymmetricTopParameters,

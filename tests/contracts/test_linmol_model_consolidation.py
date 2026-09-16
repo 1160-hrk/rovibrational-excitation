@@ -8,16 +8,16 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.units.converters import converter
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.dipole.linmol.builder import build_mu
 from rovibrational_excitation.models.factory import build_model_from_parameters
-from rovibrational_excitation.models.linmol import (
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
     build_linmol,
     build_linmol_from_parameters,
     build_linmol_operators_from_parameters,
+    build_mu,
 )
 from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.models.validation import LinMolRepresentation
@@ -70,14 +70,20 @@ def _expected_energies() -> np.ndarray:
 
 
 def test_current_linmol_owners_and_transitional_builders_are_explicit() -> None:
-    assert LinMolBasis.__module__ == "rovibrational_excitation.core.basis.linmol"
-    assert LinMolDipoleMatrix.__module__ == (
-        "rovibrational_excitation.dipole.linmol.cache"
+    assert LinMolBasis.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.basis"
     )
-    assert build_mu.__module__ == "rovibrational_excitation.dipole.linmol.builder"
-    assert build_linmol.__module__ == "rovibrational_excitation.models.linmol"
+    assert LinMolDipoleMatrix.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.dipole"
+    )
+    assert build_mu.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.dipole_builder"
+    )
+    assert build_linmol.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.model"
+    )
     assert build_linmol_operators_from_parameters.__module__ == (
-        "rovibrational_excitation.models.linmol"
+        "rovibrational_excitation.models.linear_molecule.model"
     )
     assert LinMolParameters.__module__ == ("rovibrational_excitation.models.parameters")
 

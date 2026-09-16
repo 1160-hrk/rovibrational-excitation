@@ -7,11 +7,9 @@ from typing import Any, Literal
 
 import numpy as np
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import ExecutionPolicy
 from rovibrational_excitation.core.states import PureState
 from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics.options import PropagationOptions
 from rovibrational_excitation.dynamics.problem import (
     Axis,
@@ -20,6 +18,10 @@ from rovibrational_excitation.dynamics.problem import (
     SystemModel,
 )
 from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
 from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.models.validation import model_parameters_from_mapping
 

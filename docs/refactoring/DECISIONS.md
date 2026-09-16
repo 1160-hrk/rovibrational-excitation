@@ -2780,6 +2780,39 @@ function or `*Model` facade is invented for v0.3. Old root exports are removed
 without compatibility shims under D-001. Root loading must not eagerly import
 optional plotting, persistence, optimization, or spectroscopy dependencies.
 
+### D-074: LinMol implementation belongs to one model package
+
+Status: Accepted and implemented on 2026-09-16 as P6.3-b.
+
+Scope: Phase 6 structural ownership only; no formula, basis order, selection
+rule, state-index meaning, M-average workflow, storage, backend, or numerical
+behavior change.
+
+`LinMolBasis`, `LinMolDipoleMatrix`, the stateless dipole builder, and the
+mapping/typed model builders move together to `models/linear_molecule/`. All
+active source, test, example, and benchmark imports use that owner. The former
+`core/basis/linmol.py`, `dipole/linmol/`, and `models/linmol.py` paths are
+removed without compatibility shims under D-001. The temporary root exports
+point at the new owner until the exact D-073 root cleanup in Phase 8.
+
+Retaining LinMol construction in `dipole.factory` would introduce a forbidden
+`dipole -> models` dependency. The generic factory therefore rejects LinMol,
+as it already rejects the consolidated TwoLevel and VibLadder models. Direct
+`LinMolDipoleMatrix` construction retains the same arguments and behavior;
+the factory remains only for the not-yet-consolidated legacy SymTop path.
+
+`simulation/m_average.py` remains the owner of the fixed-linear incoherent
+M-block workflow and imports the moved model objects. Shared `dipole/vib`
+transition functions remain in place because LinMol and legacy SymTop still
+consume them. The shared frozen schema and redundant transitional wrappers are
+deliberately left for P6.3-c rather than combined with this file move.
+
+All nine D-070 ownership/construction contracts, the 29 independent LinMol
+physics cases, and the complete suite pass unchanged: 1217 passed and 10
+optional-GPU skips.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

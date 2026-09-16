@@ -32,8 +32,6 @@ import numba
 import numpy as np
 import scipy
 
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
     rk4_schrodinger,
 )
@@ -42,6 +40,10 @@ from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger imp
     _propagate_rotating_xy_numpy,
     build_helicity_projected_interaction,
     splitop_schrodinger,
+)
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
 )
 
 

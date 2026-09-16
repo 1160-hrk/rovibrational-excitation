@@ -6,9 +6,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.dynamics.scaling import nondimensionalize_system
 from rovibrational_excitation.fields import ElectricField, gaussian_fwhm
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 
 
 def test_hamiltonian_unit_consistency():
@@ -201,8 +201,8 @@ def test_backward_compatibility():
 
 def test_physical_regime_analysis():
     """物理レジーム分析の妥当性テスト"""
-    from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
     from rovibrational_excitation.dynamics.scaling import analyze_regime
+    from rovibrational_excitation.models.linear_molecule import LinMolDipoleMatrix
 
     # 現実的なCO2系
     basis = LinMolBasis(

@@ -74,17 +74,16 @@ from . import (  # noqa: E402, F401
     spectroscopy,
     visualization,
 )
-from .core.basis import (  # noqa: E402, F401
-    DensityMatrix,
-    LinMolBasis,
-    StateVector,
-)
+from .core.basis import DensityMatrix, StateVector  # noqa: E402, F401
 from .core.operators import Hamiltonian  # noqa: E402, F401
 
 # Note: procedural propagators have been removed from public API in favor of class-based propagators
 # dipole
-from .dipole.linmol.cache import LinMolDipoleMatrix  # noqa: E402, F401
 from .fields import ElectricField  # noqa: E402, F401
+from .models.linear_molecule import (  # noqa: E402, F401
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
 
 # spectroscopy - Modern API (推奨)
 from .spectroscopy import (

@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from rovibrational_excitation.core.execution import ExecutionPolicy
-from rovibrational_excitation.models.linmol import (
+from rovibrational_excitation.models.linear_molecule import (
     build_linmol_operators_from_parameters,
 )
 from rovibrational_excitation.models.parameters import (

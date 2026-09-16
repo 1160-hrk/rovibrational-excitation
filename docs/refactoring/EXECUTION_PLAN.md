@@ -1299,11 +1299,19 @@ identity, dense/CSR parity, and mapping/typed builder parity. The 29 existing
 independent physics cases retain authority for selection rules, M-incoherent
 averaging, Morse behavior, and propagation. No source implementation changes.
 
-P6.3-b should next move the basis, dipole implementation, and typed model
-builders into `models/linear_molecule/` without formula or ordering changes.
-The frozen schema and transitional wrapper/factory cleanup remain a separate
-interface unit. `simulation/m_average.py` remains a workflow owner and must not
-be folded into the model package.
+P6.3-b completes the structural ownership move on 2026-09-16 under D-074. The
+basis, stateful/stateless dipole implementation, and mapping/typed model
+builders now live in `models/linear_molecule/`; all former owner paths are
+removed without shims. The generic dipole factory drops LinMol rather than
+adding a reverse dependency on the model package. Formulae, signed basis order,
+selection rules, state indices, M averaging, dense/CSR behavior, and all D-070
+references remain unchanged.
+
+P6.3-c should next move the frozen schema into this owner, audit and remove
+unused mapping/stateless wrappers, and reduce the public package surface. That
+interface cleanup remains separate from the completed file move.
+`simulation/m_average.py` remains a workflow owner and must not be folded into
+the model package.
 
 For each model:
 

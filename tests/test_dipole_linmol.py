@@ -8,9 +8,11 @@ import tempfile
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.dipole.linmol.builder import build_mu
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+    build_mu,
+)
 
 # CuPyが利用可能か判定
 try:

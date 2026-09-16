@@ -1269,6 +1269,11 @@ Every major solver or model migration must cover the applicable rows:
 Tolerance values must be justified by algorithm order, machine precision, and
 problem scale. Do not use a loose constant solely to make a test pass.
 
+P6.3-b/D-074 changes only LinMol module ownership. The signed basis order,
+Hamiltonian, Cartesian dipoles, selection rules, coherent state indices,
+fixed-linear M-incoherent workflow, dense/CSR arrays, and all tolerances in
+this document remain unchanged.
+
 P6.2-a adds D-067 migration guards for VibLadder without changing these
 contracts. The new cases freeze `|v>` order, the current anharmonic Hamiltonian,
 scalar-z coupling, harmonic Cartesian dipoles, coherent state construction,

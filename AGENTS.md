@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-16
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.3-a D-070 LinMol pre-move characterization
+Verified structural checkpoint: P6.3-b D-074 LinMol ownership move
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -278,6 +278,11 @@ plus 29 independent physics cases freeze LinMol parameter conversion, signed
 basis order, Hamiltonian, Cartesian dipoles and coupling, coherent basis-index
 states, dense/CSR parity, M averaging, Morse behavior, propagation, and every
 current construction path before ownership moves.
+P6.3-b implements D-074: basis, stateful/stateless dipole implementation, and
+all model builders now share `models/linear_molecule/`; the former owners are
+removed without shims. The generic dipole factory drops LinMol to avoid a
+reverse dependency. D-070 values and the simulation-owned M-average workflow
+remain unchanged.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -286,9 +291,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Implement P6.3-b by moving the LinMol basis, dipole implementation, and
-   typed builders to `models/linear_molecule/` without changing formulas,
-   basis order, field axes, state indices, storage, or backend behavior.
+1. Implement P6.3-c by moving `LinMolParameters` into
+   `models/linear_molecule/`, auditing/removing unused mapping and stateless
+   wrappers, and narrowing the package surface without changing validation,
+   unit conversion, formulae, or arrays.
 2. Keep shared `dipole/vib` harmonic/Morse functions in place while LinMol and
    SymTop consume them; do not assign a final owner by inference.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current

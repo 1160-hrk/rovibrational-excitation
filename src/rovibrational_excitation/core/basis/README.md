@@ -7,11 +7,12 @@
 basisモジュールは以下の基底クラスを提供します：
 
 - `BasisBase`: 全ての基底クラスの抽象基底クラス
-- `LinMolBasis`: 線形分子の振動・回転基底
 - `SymTopBasis`: 対称コマ分子の振動・回転基底
-- `VibLadderBasis`: 振動準位のみの基底（回転なし）
 - `StateVector`: 純粋状態を表現するクラス
 - `DensityMatrix`: 混合状態を表現するクラス
+
+モデル固有基底は各 `rovibrational_excitation.models.*` パッケージが
+所有します。
 
 ## 基本的な使い方
 
@@ -57,7 +58,7 @@ print(f"エネルギーギャップ: {H0.eigenvalues[1]} J")
 ### 2. 線形分子（CO2など）の例
 
 ```python
-from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 
 # CO2分子のパラメータ（cm^-1単位）
 basis = LinMolBasis(

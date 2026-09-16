@@ -1,5 +1,5 @@
 """
-rovibrational_excitation.dipole.linmol/builder.py
+rovibrational_excitation.models.linear_molecule.dipole_builder
 ========================
 μ-axis 行列 (x, y, z) を高速生成
 
@@ -35,7 +35,7 @@ from rovibrational_excitation.dipole.vib.morse import (
 # 型エイリアス
 # ----------------------------------------------------------------------
 if TYPE_CHECKING:
-    from rovibrational_excitation.core.basis import LinMolBasis
+    from .basis import LinMolBasis
 
 if _cp is not None:
     Array: type = Union[_np.ndarray, _cp.ndarray]  # type: ignore

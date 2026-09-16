@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
 from rovibrational_excitation.core.execution import (
     ArrayBackend,
     ExecutionPolicy,
@@ -13,12 +12,15 @@ from rovibrational_excitation.core.execution import (
 )
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.core.units import Frequency
-from rovibrational_excitation.dipole import LinMolDipoleMatrix
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.fields import (
     ElectricField,
     ScalarField,
     gaussian_fwhm,
+)
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
 )
 from rovibrational_excitation.models.parameters import LinMolParameters
 from rovibrational_excitation.simulation.m_average import (

@@ -7,9 +7,9 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.basis import (
-    LinMolBasis,
     SymTopBasis,
 )
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 from rovibrational_excitation.models.two_level import TwoLevelBasis
 from rovibrational_excitation.models.vib_ladder import VibLadderBasis
 

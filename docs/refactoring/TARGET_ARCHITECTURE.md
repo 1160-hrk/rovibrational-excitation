@@ -531,6 +531,13 @@ dense/CSR behavior, and current builder paths are executable contracts under
 D-070. The independent physics suite continues to own selection-rule,
 M-average, Morse, and propagation references.
 
+P6.3-b completes the ownership-only move under D-074. `LinMolBasis`, the
+stateful/stateless dipole implementation, and all model builders now share
+`models/linear_molecule/`; former owner paths are absent. The generic dipole
+factory drops LinMol to preserve the dependency direction. The shared schema
+and transitional wrapper cleanup remain P6.3-c, and
+`simulation/m_average.py` remains a workflow rather than model owner.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -552,7 +559,7 @@ already constructed basis and weights, never molecule names.
 | `core/basis/base.py` | `core/states.py` and `models/base.py` | Separate generic state protocol from model basis |
 | `core/basis/states.py` | `core/states.py` | Remove model-specific assumptions |
 | `core/basis/hamiltonian.py` | `core/operators.py` | Complete in P3.1-a; implementation moved unchanged and old path removed |
-| `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Move without formula changes first |
+| `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Complete in P6.3-b; old path removed and D-070 values preserved |
 | `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Complete in P6.2-b; old path removed and D-067 values preserved |
 | `dipole/viblad/*` | `models/vib_ladder/dipole.py` | Complete in P6.2-c; old package removed and unused stateless wrapper deleted |
 | `models/vibladder.py` | `models/vib_ladder/model.py` | Complete in P6.2-c; typed builders remain and unused mapping wrapper is deleted |
@@ -565,7 +572,8 @@ already constructed basis and weights, never molecule names.
 | no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
 | `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
 | `dipole/base.py` | `core/operators.py` or `models/base.py` | Split generic operator/cache from model builder |
-| `dipole/linmol/*` | `models/linear_molecule/dipole.py` | Keep rotation kernels private to model |
+| `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
+| `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
 | `dipole/vib/*` | `models/vib_ladder/morse.py` or shared vibration module | Decide sharing from actual users |
 | `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
 | model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |

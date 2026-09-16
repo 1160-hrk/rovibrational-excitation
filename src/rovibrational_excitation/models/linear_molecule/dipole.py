@@ -1,7 +1,7 @@
 """
-rovibrational_excitation.dipole.linmol/cache.py
+rovibrational_excitation.models.linear_molecule.dipole
 ======================
-Lazy, cached wrapper around ``rovibrational_excitation.dipole.linmol.builder`` that supports
+Lazy, cached wrapper around :mod:`.dipole_builder` that supports
 
 * NumPy / CuPy backend
 * dense or CSR-sparse matrices
@@ -36,7 +36,7 @@ except ImportError:
 # Forward-refs for static type checkers only
 # ----------------------------------------------------------------------
 if TYPE_CHECKING:
-    from rovibrational_excitation.core.basis import LinMolBasis
+    from .basis import LinMolBasis
 
 # Runtime用の型エイリアス
 if cp is not None:
@@ -44,7 +44,7 @@ if cp is not None:
 else:
     Array: type = np.ndarray  # type: ignore[assignment,no-redef]
 
-from rovibrational_excitation.dipole.linmol.builder import build_mu
+from .dipole_builder import build_mu
 
 
 # ----------------------------------------------------------------------
