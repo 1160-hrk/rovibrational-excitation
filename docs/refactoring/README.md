@@ -109,6 +109,10 @@ pass. Phase 6 acceptance audit and real CUDA verification remain separate.
 P6.6-a characterizes the remaining simulation-owned fixed-M LinMol basis
 before its ownership-only move. Basis order, mapping, Hamiltonian, and invalid
 M behavior are frozen; the M-average workflow is unchanged.
+P6.6-b/D-083 moves that unchanged class to `models.linear_molecule.basis`.
+Simulation retains only the D-017 block workflow and incoherent reduction.
+All Phase 6 CPU ownership, validation, and dense/CSR reference criteria pass;
+Phase 6 is complete. Real CUDA remains a separate Phase 5 release gate.
 
 P6.2-c
 implements D-069:
@@ -367,7 +371,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.5-b complete; P6.6 acceptance audit remains |
+| 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

@@ -3039,6 +3039,35 @@ acceptance is audited separately.
 
 Implementation commit: this checkpoint.
 
+### D-083: Fixed-M basis is model-owned; M averaging remains a workflow
+
+Status: Implemented on 2026-09-17 as P6.6-b.
+
+`FixedMLinMolBasis` defines LinMol basis membership, order, index mapping, and
+Hamiltonian inputs, so its single owner is `models.linear_molecule.basis`.
+Move its body unchanged from `simulation.m_average` and export it with the
+other LinMol basis type. The simulation module retains only the approved D-017
+workflow: reduced-state validation, non-negative `|M|` block construction,
+multiplicities and normalized weights, scalar-z propagation, explicit host
+conversion, and incoherent population reduction. Those workflow semantics are
+not generalized or moved in this structural change.
+
+The Phase 6 acceptance audit finds one owner for every model formula, no model
+class or formula defined by simulation, no duplicate dipole/model factory,
+strict frozen model-parameter validation, zero model-to-upper-layer imports,
+and passing references for every advertised NumPy dense/CSR model path.
+TwoLevel's optional CuPy reference remains skipped locally and is not treated
+as evidence; real CUDA remains the separate Phase 5 release gate. SymTop's
+unsupported CuPy, split-operator, all-isomer pure-state, and optimization paths
+continue to raise explicitly.
+
+Acceptance: 1232 passed, 10 optional-GPU skips, 77% branch coverage, strict
+mypy for 43 modules, all 121 modules import, active examples pass, and
+sdist/wheel, Twine, and isolated wheel ownership checks pass. Phase 6 is
+complete without changing an M-average weight, index, matrix, or trajectory.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

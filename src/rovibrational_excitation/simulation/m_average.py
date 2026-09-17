@@ -19,7 +19,7 @@ from rovibrational_excitation.dynamics.problem import (
 )
 from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.models.linear_molecule import (
-    LinMolBasis,
+    FixedMLinMolBasis,
     LinMolDipoleMatrix,
     LinMolParameters,
 )
@@ -50,50 +50,6 @@ def canonicalize_fixed_linear_polarization(polarization: Any) -> np.ndarray:
         )
     real_vector = vector.real
     return real_vector / np.linalg.norm(real_vector)
-
-
-class FixedMLinMolBasis(LinMolBasis):
-    """Linear-molecule basis containing one conserved magnetic quantum number."""
-
-    def __init__(
-        self,
-        V_max: int,
-        J_max: int,
-        *,
-        M: int,
-        omega: float,
-        B: float,
-        alpha: float,
-        delta_omega: float,
-        input_units: str = "rad/fs",
-        output_units: str = "J",
-    ) -> None:
-        if isinstance(M, bool) or not isinstance(M, (int, np.integer)):
-            raise TypeError("M must be an integer")
-        if abs(M) > J_max:
-            raise ValueError("abs(M) must not exceed J_max")
-        self.fixed_M = int(M)
-        super().__init__(
-            V_max,
-            J_max,
-            use_M=True,
-            omega=omega,
-            B=B,
-            alpha=alpha,
-            delta_omega=delta_omega,
-            input_units=input_units,
-            output_units=output_units,
-        )
-
-    def _generate_basis(self) -> np.ndarray:
-        return np.asarray(
-            [
-                [v, j, self.fixed_M]
-                for v in range(self.V_max + 1)
-                for j in range(abs(self.fixed_M), self.J_max + 1)
-            ],
-            dtype=np.int64,
-        )
 
 
 @dataclass(frozen=True)

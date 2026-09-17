@@ -16,6 +16,7 @@ from rovibrational_excitation.models.factory import (
     build_model_from_parameters,
 )
 from rovibrational_excitation.models.linear_molecule import (
+    FixedMLinMolBasis,
     LinMolBasis,
     LinMolDipoleMatrix,
     LinMolParameters,
@@ -79,6 +80,9 @@ def _expected_energies() -> np.ndarray:
 
 
 def test_current_linmol_owners_and_transitional_builders_are_explicit() -> None:
+    assert FixedMLinMolBasis.__module__ == (
+        "rovibrational_excitation.models.linear_molecule.basis"
+    )
     assert LinMolBasis.__module__ == (
         "rovibrational_excitation.models.linear_molecule.basis"
     )

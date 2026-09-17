@@ -1,6 +1,6 @@
 """Linear-molecule basis, dipole, and typed construction."""
 
-from .basis import LinMolBasis
+from .basis import FixedMLinMolBasis, LinMolBasis
 from .dipole import LinMolDipoleMatrix
 from .model import (
     build_linmol_from_parameters,
@@ -9,6 +9,7 @@ from .model import (
 from .parameters import LinMolParameters
 
 __all__ = [
+    "FixedMLinMolBasis",
     "LinMolBasis",
     "LinMolDipoleMatrix",
     "LinMolParameters",

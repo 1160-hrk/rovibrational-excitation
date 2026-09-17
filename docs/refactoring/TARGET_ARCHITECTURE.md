@@ -1,6 +1,6 @@
 # Target architecture for v0.3
 
-Status: Accepted working target; Phase 3 migration complete
+Status: Accepted working target; Phase 6 model consolidation complete
 Last updated: 2026-09-17
 
 ## 1. Design goals
@@ -589,6 +589,12 @@ model-layer architecture test now requires zero higher-layer imports. Phase 6
 remains open only for its explicit acceptance audit; real CUDA is a separate
 Phase 5 release gate.
 
+P6.6-a freezes the last misplaced model class. P6.6-b/D-083 moves the unchanged
+`FixedMLinMolBasis` to `models.linear_molecule.basis`. The D-017 M-average
+workflow remains in simulation and imports that owner; it defines no model
+class or formula. Phase 6 model consolidation is complete. Real CUDA evidence
+remains required independently by Phase 5.
+
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.
 
@@ -628,7 +634,7 @@ already constructed basis and weights, never molecule names.
 | `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
 | `models/parameters.py::LinMolParameters` | `models/linear_molecule/parameters.py` | Complete in P6.3-c; validation and unit conversion unchanged |
 | `dipole/vib/*` | `models/vibration/{harmonic,morse}.py` | Complete in P6.4-d; exact shared functions moved without SymTop substitution |
-| `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | P3.1-f moved construction to flat `models` and kept propagation workflow in `simulation`; model-specific split pending Phase 6 |
+| `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | Complete in P6.6-b; fixed-M basis is model-owned while D-017 block orchestration/reduction remains a simulation workflow |
 | model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |
 | `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
 | `dynamics/algorithms/rk4/lvne.py` mixed boundary/kernel | `dynamics/algorithms/rk4/{lvne,liouville_numpy}.py` | P5.1-b separates validated preparation from the unchanged dense NumPy/Numba loop; final solver-package move remains later |

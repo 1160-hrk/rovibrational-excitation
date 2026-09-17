@@ -1409,6 +1409,15 @@ changes; the full suite passes 1232 cases with 10 optional-GPU skips. P6.6-b
 may move only that class to `models.linear_molecule`; block creation, weights,
 propagation, and incoherent reduction remain in `simulation.m_average`.
 
+P6.6-b/D-083 moves the unchanged fixed-M basis class to
+`models.linear_molecule.basis`. The D-017 block workflow remains in simulation
+with identical construction arguments, weights, indices, and reduction. The
+acceptance audit passes all five criteria below on CPU: model formulas have one
+owner; simulation defines no model class/formula; duplicate factories are
+gone; frozen schemas validate required inputs; and all supported NumPy
+dense/CSR references pass. Phase 6 is complete. Optional CuPy skips are not
+acceptance evidence and remain under the separate Phase 5 real-CUDA gate.
+
 For each model:
 
 - add frozen parameter schema;
@@ -1434,6 +1443,10 @@ Morse `N` remains derived instance-local data.
 - no duplicate model/dipole factory path;
 - model construction validates all required parameters;
 - reference tests pass for dense/sparse/backend combinations supported.
+
+Accepted on 2026-09-17 under D-083. The D-017 fixed-M averaging algorithm is a
+simulation workflow, not a second LinMol model owner: it imports the model-owned
+basis and operators and owns only block orchestration and observable reduction.
 
 ## 10. Phase 7 — workflows, optimization, and spectroscopy
 

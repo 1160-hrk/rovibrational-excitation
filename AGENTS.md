@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-17
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.6-a fixed-M LinMol basis characterization
+Verified structural checkpoint: P6.6-b D-083 Phase 6 model consolidation complete
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -321,6 +321,12 @@ strict-mypy modules. Real CUDA remains unverified.
 P6.6-a freezes the remaining simulation-owned `FixedMLinMolBasis`: exact basis
 order, index mapping, M values, Hamiltonian diagonal, and invalid-M errors.
 The suite has 1232 passes and 10 optional-GPU skips; source is unchanged.
+P6.6-b/D-083 moves the unchanged class to `models.linear_molecule.basis`.
+Simulation retains only the D-017 M-block orchestration and incoherent
+reduction. Phase 6 acceptance passes: one model-formula owner, no simulation
+model classes, no duplicate factory, strict schemas, zero model reverse
+imports, and all supported CPU dense/CSR references. The suite has 1232
+passes, 10 optional-GPU skips, 77% branch coverage, and 43 strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -329,9 +335,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Move only `FixedMLinMolBasis` to `models.linear_molecule` in P6.6-b. Keep
-   block construction, weights, propagation, and incoherent reduction in the
-   simulation workflow, then run the Phase 6 acceptance matrix.
+1. Begin Phase 7 with P7.1 simulation workflow decomposition. Characterize
+   runner orchestration before separating preparation, execution, result
+   assembly, persistence, and batch-failure reporting. Do not move D-017
+   M-average weights/indices or change numerical behavior during that split.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

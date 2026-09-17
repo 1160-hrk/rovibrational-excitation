@@ -34,6 +34,7 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert (LINEAR_MOLECULE / "model.py").is_file()
     assert (LINEAR_MOLECULE / "parameters.py").is_file()
     assert linear_molecule.__all__ == [
+        "FixedMLinMolBasis",
         "LinMolBasis",
         "LinMolDipoleMatrix",
         "LinMolParameters",
@@ -64,6 +65,10 @@ def test_model_construction_and_m_average_workflow_have_distinct_owners():
     assert not (PACKAGE / "core" / "basis" / "twolevel.py").exists()
     assert not (PACKAGE / "dipole" / "twolevel").exists()
     assert M_AVERAGE.is_file()
+    m_average_tree = ast.parse(M_AVERAGE.read_text(), filename=str(M_AVERAGE))
+    assert "FixedMLinMolBasis" not in {
+        node.name for node in ast.walk(m_average_tree) if isinstance(node, ast.ClassDef)
+    }
     assert not LEGACY_MODELS.exists()
     assert ModelComponents.__module__ == "rovibrational_excitation.models.factory"
     assert build_model.__module__ == "rovibrational_excitation.models.factory"

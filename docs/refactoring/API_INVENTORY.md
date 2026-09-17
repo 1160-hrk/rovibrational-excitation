@@ -3,7 +3,7 @@
 Last verified: 2026-09-17
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-082 moved model/coupling contract ownership to core
+Latest API checkpoint: D-083 completed model ownership consolidation
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -250,7 +250,7 @@ and demo factories are deleted rather than deprecated.
 | `models` | `CouplingSpec`, `LinMolRepresentation`, `ModelComponents`, four frozen parameter schemas, `build_model`; model validation remains explicit under `models.validation` | transition facade plus D-053 SymTop package | internal transition facade; `build_model` now accepts `symtop` as well as the three established models |
 | `models.two_level` | `TwoLevelBasis`, `TwoLevelDipoleMatrix`, `TwoLevelParameters`, `build_twolevel_from_parameters`, `build_twolevel_operators_from_parameters` | final TwoLevel model owner | complete in P6.1-d; unused compatibility builders removed |
 | `models.vib_ladder` | `VibLadderBasis`, `VibLadderDipoleMatrix`, `VibLadderParameters`, `build_vibladder_from_parameters`, `build_vibladder_operators_from_parameters` | final VibLadder model owner | complete in P6.2-c; schema is model-owned and unused compatibility builders are removed |
-| `models.linear_molecule` | `LinMolBasis`, `LinMolDipoleMatrix`, `LinMolParameters`, `build_linmol_from_parameters`, `build_linmol_operators_from_parameters` | final LinMol model owner | complete in P6.3-c; schema is model-owned and unused compatibility wrappers are removed |
+| `models.linear_molecule` | `FixedMLinMolBasis`, `LinMolBasis`, `LinMolDipoleMatrix`, `LinMolParameters`, `build_linmol_from_parameters`, `build_linmol_operators_from_parameters` | final LinMol model owner | complete in P6.6-b; fixed-M basis is model-owned and D-017 averaging remains in simulation |
 | `models.symmetric_top` | `SymmetricTopBasis`, `SymmetricTopDipoleMatrix`, `build_symmetric_top_from_parameters` | production model owner | normal NumPy dense/CSR RK4 production path; split, CuPy, all-isomer pure state, and optimization explicitly unsupported |
 | `models.symmetry` | point-group descriptors, rotational symmetry state, nuclear-spin policies, and `resolve_molecule_preset` | reusable model-layer symmetry owner | D-052 foundation; D-053 connects CH3F filtering to production SymTop, without supplying constants or weights |
 

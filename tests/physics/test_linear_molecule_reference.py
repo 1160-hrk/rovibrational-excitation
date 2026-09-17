@@ -19,12 +19,12 @@ from rovibrational_excitation.fields import (
     gaussian_fwhm,
 )
 from rovibrational_excitation.models.linear_molecule import (
+    FixedMLinMolBasis,
     LinMolBasis,
     LinMolDipoleMatrix,
     LinMolParameters,
 )
 from rovibrational_excitation.simulation.m_average import (
-    FixedMLinMolBasis,
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,
 )
