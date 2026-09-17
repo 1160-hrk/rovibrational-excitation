@@ -1387,6 +1387,13 @@ dependencies. P6.5 should characterize `CouplingSpec`/`SystemModel` ownership
 and remove those edges without altering coupling semantics, model component
 values, or projection behavior. Do not fold this into a numerical change.
 
+P6.5-a freezes `ModelComponents.to_system_model()` identity, ordered Cartesian
+and scalar-axis projection, model dimension, and defensive metadata snapshot
+before moving contract ownership. No source implementation changes; the full
+suite passes 1226 cases with 10 optional-GPU skips. P6.5-b may move the
+unchanged coupling/model contracts to a lower neutral owner, retaining the
+existing dynamics access path while eliminating exactly the two reverse imports.
+
 For each model:
 
 - add frozen parameter schema;

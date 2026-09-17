@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1224 passed, 10 skipped (1234 collected) |
+| Pytest | 1226 passed, 10 skipped (1236 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -99,6 +99,9 @@ P6.4-f/D-081 removes the now-empty `dipole` package and its eager root import.
 The wheel contains no old package files; physics and numerical paths are
 unchanged. Phase 6 remains open for the two exact `models -> dynamics.problem`
 imports, to be characterized separately in P6.5.
+P6.5-a adds direct model-component projection characterization without changing
+source. Its identity, axis-order, and metadata-snapshot guards pass alongside
+the full CPU suite; CUDA remains unverified.
 
 P6.2-c
 implements D-069:
