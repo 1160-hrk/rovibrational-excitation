@@ -699,6 +699,11 @@ time grid, representation/axes, and propagation controls. Model construction
 receives the frozen schema directly and does not inspect the original simulation
 mapping.
 
+P7.1-a/D-084 gives generated-field sampling the single internal owner
+`simulation.field_preparation`. `runner` remains the caller; waveform formulas,
+canonical units, polarization semantics, modulation, and sampled-field types
+are unchanged. This is the first extraction from one-case orchestration.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

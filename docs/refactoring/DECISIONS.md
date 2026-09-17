@@ -3068,6 +3068,26 @@ complete without changing an M-average weight, index, matrix, or trajectory.
 
 Implementation commit: this checkpoint.
 
+### D-084: Generated-field sampling has one simulation preparation owner
+
+Status: Implemented on 2026-09-17 as P7.1-a.
+
+Move the already-characterized `_generated_sampled_field` body unchanged from
+the orchestration monolith to `simulation.field_preparation`. The runner imports
+that exact function object. Envelope dispatch, polarization deserialization,
+fixed-linear M-average canonicalization, modulation, scalar/Cartesian choice,
+sample values, and helicity metadata are unchanged. Static `cast()` calls only
+express the complete sinusoidal option pairs already enforced by
+`GeneratedFieldParameters`; they emit no runtime operation.
+
+Tests that directly exercised the private polarization decoder now import its
+existing `io` owner instead of relying on a runner import side effect. This is
+private ownership cleanup, not a serialization change. The full suite passes
+1233 tests with 10 optional-GPU skips; strict mypy covers 44 modules. No field,
+model, propagation, persistence, or fallback behavior changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

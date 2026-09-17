@@ -17,6 +17,10 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
+from rovibrational_excitation.simulation.field_preparation import (
+    _generated_sampled_field as _prepare_generated_sampled_field,
+)
+from rovibrational_excitation.simulation.runner import _generated_sampled_field
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -57,6 +61,13 @@ def _twolevel_case(**overrides):
     }
     params.update(overrides)
     return params
+
+
+def test_generated_field_preparation_has_one_workflow_owner():
+    assert _generated_sampled_field is _prepare_generated_sampled_field
+    assert _generated_sampled_field.__module__ == (
+        "rovibrational_excitation.simulation.field_preparation"
+    )
 
 
 @pytest.mark.parametrize(

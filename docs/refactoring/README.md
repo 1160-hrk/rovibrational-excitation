@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1232 passed, 10 skipped (1242 collected) |
+| Pytest | 1233 passed, 10 skipped (1243 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -113,6 +113,9 @@ P6.6-b/D-083 moves that unchanged class to `models.linear_molecule.basis`.
 Simulation retains only the D-017 block workflow and incoherent reduction.
 All Phase 6 CPU ownership, validation, and dense/CSR reference criteria pass;
 Phase 6 is complete. Real CUDA remains a separate Phase 5 release gate.
+P7.1-a/D-084 extracts the unchanged generated-field sampling body to
+`simulation.field_preparation`. Existing waveform and helicity references pass;
+strict mypy covers 44 modules. No public API or numerical behavior changes.
 
 P6.2-c
 implements D-069:

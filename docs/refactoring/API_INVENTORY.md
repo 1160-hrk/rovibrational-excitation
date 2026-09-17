@@ -141,6 +141,11 @@ by eager root imports. Each now has an explicit package initializer.
 `dipole` is no longer a root attribute after D-081. `simulation` narrowly
 exports `run_simulation_case`.
 
+P7.1-a/D-084 adds the internal `simulation.field_preparation` owner for
+generated waveform sampling. It adds no public export. Private polarization
+deserialization tests use `io.deserialize_polarization` directly rather than
+the former runner import side effect.
+
 | Current name | Target | Disposition |
 |---|---|---|
 | `__version__` | root metadata | target public; add to `__all__` |

@@ -20,9 +20,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from rovibrational_excitation.io import deserialize_polarization as _deserialize_pol
 from rovibrational_excitation.simulation.runner import (
     CheckpointManager,
-    _deserialize_pol,
     _expand_cases,
     _json_safe,
 )

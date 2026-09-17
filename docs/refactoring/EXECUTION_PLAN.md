@@ -1510,6 +1510,15 @@ alter the local optimizer frozen arrays and indices.
 One-case execution must be a deterministic pure application service aside from
 explicit result writing.
 
+P7.1-a/D-084 begins the decomposition on 2026-09-17. The byte-identical
+generated-field sampling body moves to `simulation.field_preparation`; the
+runner imports that exact function. Existing direct unit/frequency/envelope,
+modulation, scalar/Cartesian, M-average, and helicity references pass. Private
+polarization-decoder tests now use its existing `io` owner. The full suite has
+1233 passes and 10 optional-GPU skips, and strict mypy covers 44 modules.
+Next isolate one-case result assembly/writing without changing the unversioned
+schema, overwrite behavior, or the current single-write M-average NPZ path.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

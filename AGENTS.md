@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-17
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.6-b D-083 Phase 6 model consolidation complete
+Verified structural checkpoint: P7.1-a D-084 generated-field preparation extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -327,6 +327,10 @@ reduction. Phase 6 acceptance passes: one model-formula owner, no simulation
 model classes, no duplicate factory, strict schemas, zero model reverse
 imports, and all supported CPU dense/CSR references. The suite has 1232
 passes, 10 optional-GPU skips, 77% branch coverage, and 43 strict-mypy modules.
+P7.1-a/D-084 moves the unchanged generated-field sampling body to
+`simulation.field_preparation`; runner imports the exact function. Private
+decoder tests now import `io` directly. The suite has 1233 passes and 10
+optional-GPU skips; strict mypy covers 44 modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -335,10 +339,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Begin Phase 7 with P7.1 simulation workflow decomposition. Characterize
-   runner orchestration before separating preparation, execution, result
-   assembly, persistence, and batch-failure reporting. Do not move D-017
-   M-average weights/indices or change numerical behavior during that split.
+1. Continue P7.1 by characterizing and extracting one-case result
+   assembly/writing. Preserve the unversioned persistence schema, overwrite
+   behavior, and current single-write M-average NPZ path. Do not change D-017
+   weights/indices or numerical results.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
