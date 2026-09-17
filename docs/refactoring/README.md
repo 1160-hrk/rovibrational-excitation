@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1227 passed, 10 skipped (1237 collected) |
+| Pytest | 1232 passed, 10 skipped (1242 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -106,6 +106,9 @@ P6.5-b/D-082 moves the byte-identical coupling/model contract definitions to
 `core.model`. Dynamics keeps the same class objects; models has no upper-layer
 imports. Strict mypy covers 43 modules, and active examples plus wheel checks
 pass. Phase 6 acceptance audit and real CUDA verification remain separate.
+P6.6-a characterizes the remaining simulation-owned fixed-M LinMol basis
+before its ownership-only move. Basis order, mapping, Hamiltonian, and invalid
+M behavior are frozen; the M-average workflow is unchanged.
 
 P6.2-c
 implements D-069:

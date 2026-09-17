@@ -1402,6 +1402,13 @@ remain. Full tests pass 1227 cases with 10 optional-GPU skips, coverage is
 checks pass. P6.6 should audit the Phase 6 acceptance matrix, especially
 supported dense/CSR references and the separately unverified real-CUDA path.
 
+P6.6-a freezes the simulation-owned `FixedMLinMolBasis` before correcting its
+owner. Five direct cases record fixed-M basis order, index mapping, M array,
+Hamiltonian diagonal, and invalid-M rejection. No source implementation
+changes; the full suite passes 1232 cases with 10 optional-GPU skips. P6.6-b
+may move only that class to `models.linear_molecule`; block creation, weights,
+propagation, and incoherent reduction remain in `simulation.m_average`.
+
 For each model:
 
 - add frozen parameter schema;

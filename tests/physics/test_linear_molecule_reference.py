@@ -24,6 +24,7 @@ from rovibrational_excitation.models.linear_molecule import (
     LinMolParameters,
 )
 from rovibrational_excitation.simulation.m_average import (
+    FixedMLinMolBasis,
     build_m_average_blocks,
     canonicalize_fixed_linear_polarization,
 )
@@ -455,6 +456,53 @@ def test_block_weights_are_normalized_and_reduce_dense_work():
     full_dimension = (params["V_max"] + 1) * (params["J_max"] + 1) ** 2
     block_matrix_elements = sum(block.basis.size() ** 2 for block in blocks)
     assert block_matrix_elements < full_dimension**2
+
+
+def test_fixed_m_basis_order_mapping_and_hamiltonian_are_exact():
+    basis = FixedMLinMolBasis(
+        1,
+        3,
+        M=2,
+        omega=OMEGA_RAD_PER_FS,
+        delta_omega=ANHARMONIC_SHIFT_RAD_PER_FS,
+        B=ROTATION_RAD_PER_FS,
+        alpha=VIBRATION_ROTATION_RAD_PER_FS,
+        input_units="rad/fs",
+        output_units="J",
+    )
+    expected = np.asarray([[0, 2, 2], [0, 3, 2], [1, 2, 2], [1, 3, 2]], dtype=np.int64)
+
+    np.testing.assert_array_equal(basis.basis, expected)
+    np.testing.assert_array_equal(basis.M_array, [2, 2, 2, 2])
+    assert basis.index_map == {
+        tuple(state): index for index, state in enumerate(expected)
+    }
+    np.testing.assert_allclose(
+        basis.generate_H0().get_matrix("rad/fs").diagonal(),
+        [
+            0.214025,
+            0.237425,
+            0.582825,
+            0.605025,
+        ],
+        rtol=0.0,
+        atol=3.0e-17,
+    )
+
+
+@pytest.mark.parametrize("fixed_m", [True, 1.0, 4, -4])
+def test_fixed_m_basis_rejects_invalid_quantum_number(fixed_m):
+    error = TypeError if fixed_m is True or isinstance(fixed_m, float) else ValueError
+    with pytest.raises(error):
+        FixedMLinMolBasis(
+            1,
+            3,
+            M=fixed_m,
+            omega=OMEGA_RAD_PER_FS,
+            delta_omega=ANHARMONIC_SHIFT_RAD_PER_FS,
+            B=ROTATION_RAD_PER_FS,
+            alpha=VIBRATION_ROTATION_RAD_PER_FS,
+        )
 
 
 def _model_frequency_value(rad_per_fs, unit):

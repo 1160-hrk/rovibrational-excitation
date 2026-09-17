@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-17
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.5-b D-082 core-owned model contracts
+Verified structural checkpoint: P6.6-a fixed-M LinMol basis characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -318,6 +318,9 @@ P6.5-b/D-082 moves the byte-identical coupling/model definitions to
 `models` imports core directly. The two reverse imports are eliminated; the
 suite has 1227 passes, 10 optional-GPU skips, 77% branch coverage, and 43
 strict-mypy modules. Real CUDA remains unverified.
+P6.6-a freezes the remaining simulation-owned `FixedMLinMolBasis`: exact basis
+order, index mapping, M values, Hamiltonian diagonal, and invalid-M errors.
+The suite has 1232 passes and 10 optional-GPU skips; source is unchanged.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -326,9 +329,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Run the P6.6 Phase 6 acceptance matrix against dense/CSR model references
-   and architecture boundaries without numerical cleanup. Keep real CUDA
-   verification in the separate Phase 5 release gate.
+1. Move only `FixedMLinMolBasis` to `models.linear_molecule` in P6.6-b. Keep
+   block construction, weights, propagation, and incoherent reduction in the
+   simulation workflow, then run the Phase 6 acceptance matrix.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
