@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-16
+Last verified: 2026-09-17
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-081 removed the obsolete dipole package shell
+Latest API checkpoint: D-082 moved model/coupling contract ownership to core
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -106,6 +106,11 @@ remaining Python implementation beyond its empty package initializer.
 
 P6.4-f/D-081 removes that empty initializer and the obsolete package README.
 The root no longer imports `dipole`; archived v0.2 examples remain historical.
+
+P6.5-b/D-082 defines `Axis`, `CouplingMode`, `CouplingSpec`, and `SystemModel`
+once in `core.model`. `dynamics.problem` and `dynamics` continue to expose the
+same objects for typed propagation; `models` imports the core owner directly.
+There is no duplicate coupling definition or model-to-dynamics import.
 
 ## 2. Package root
 

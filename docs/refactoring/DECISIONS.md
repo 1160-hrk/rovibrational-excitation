@@ -3017,6 +3017,28 @@ The wheel contains no old `dipole/` entry. CUDA remains unverified.
 
 Implementation commit: this checkpoint.
 
+### D-082: Core owns model and coupling contracts
+
+Status: Implemented on 2026-09-17 as P6.5-b.
+
+`Axis`, `CouplingMode`, `CouplingSpec`, and `SystemModel` are model-neutral
+immutable contracts shared by model construction and propagation. Their
+single definition belongs to `core.model`; `models` imports it directly.
+`dynamics.problem` re-exports the exact same objects so existing typed solver
+imports and `isinstance` checks retain identity. The class and validation
+bodies were compared byte-for-byte with the pre-move definitions. No coupling
+axis, projection, dimension check, metadata snapshot, operator, numerical
+formula, or propagation behavior changes.
+
+The two recorded `models -> dynamics.problem` imports are gone. An
+architecture test now rejects every model-to-upper-layer import. The full
+suite passes 1227 tests with 10 optional-GPU skips, coverage remains 77%,
+strict mypy covers 43 modules, active examples pass, and sdist/wheel, Twine,
+and isolated wheel import checks pass. Real CUDA remains unverified; Phase 6
+acceptance is audited separately.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

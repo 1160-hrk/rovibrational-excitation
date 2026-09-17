@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-16
+Last verified: 2026-09-17
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1226 passed, 10 skipped (1236 collected) |
+| Pytest | 1227 passed, 10 skipped (1237 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -102,6 +102,10 @@ imports, to be characterized separately in P6.5.
 P6.5-a adds direct model-component projection characterization without changing
 source. Its identity, axis-order, and metadata-snapshot guards pass alongside
 the full CPU suite; CUDA remains unverified.
+P6.5-b/D-082 moves the byte-identical coupling/model contract definitions to
+`core.model`. Dynamics keeps the same class objects; models has no upper-layer
+imports. Strict mypy covers 43 modules, and active examples plus wheel checks
+pass. Phase 6 acceptance audit and real CUDA verification remain separate.
 
 P6.2-c
 implements D-069:
@@ -360,7 +364,7 @@ These commits are the starting point, not the final architecture.
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
-| 6 | Model consolidation | In progress — P6.1-P6.4-f complete; P6.5 ownership consolidation and acceptance audit remain |
+| 6 | Model consolidation | In progress — P6.1-P6.5-b complete; P6.6 acceptance audit remains |
 | 7 | Simulation, optimization, spectroscopy decomposition | Pending |
 | 8 | Public API, documentation, and release | Pending |
 

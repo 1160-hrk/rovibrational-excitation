@@ -1,7 +1,7 @@
 # Target architecture for v0.3
 
 Status: Accepted working target; Phase 3 migration complete
-Last updated: 2026-09-15
+Last updated: 2026-09-17
 
 ## 1. Design goals
 
@@ -83,6 +83,7 @@ src/rovibrational_excitation/
 │   ├── __init__.py
 │   ├── arrays.py
 │   ├── operators.py
+│   ├── model.py
 │   ├── states.py
 │   ├── time.py
 │   └── units/
@@ -311,6 +312,9 @@ class SystemModel:
 
 The model owns basis/Hamiltonian/dipole consistency. Construction validates
 matrix dimensions and the state-index mapping once.
+Under D-082, the immutable coupling and `SystemModel` contracts are defined
+once in `core.model`, which both model construction and dynamics may import.
+`dynamics.problem` exposes those same objects; it does not redefine them.
 
 ### 5.4 PropagationProblem
 
@@ -577,6 +581,13 @@ model-specific code has one owner per model, and shared vibration code stays
 neutral under `models.vibration`. Phase 6 remains open for the two exact
 `models -> dynamics.problem` edges; moving coupling/problem contracts needs
 its own characterization before dependency-direction acceptance.
+
+P6.5-a freezes model-component projection. P6.5-b/D-082 moves the unchanged
+shared model/coupling contracts to `core.model`; the dynamics facade keeps
+object identity. The two recorded reverse imports are eliminated and the
+model-layer architecture test now requires zero higher-layer imports. Phase 6
+remains open only for its explicit acceptance audit; real CUDA is a separate
+Phase 5 release gate.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.

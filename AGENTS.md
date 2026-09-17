@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-16
+Last verified: 2026-09-17
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P6.5-a model/coupling projection characterization
+Verified structural checkpoint: P6.5-b D-082 core-owned model contracts
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -313,6 +313,11 @@ and the wheel contains no obsolete `dipole` files. The two exact
 P6.5-a adds direct characterization of `ModelComponents.to_system_model()`
 identity, ordered axes, dimension, and metadata snapshot. The suite has 1226
 passes and 10 optional-GPU skips; no implementation has changed yet.
+P6.5-b/D-082 moves the byte-identical coupling/model definitions to
+`core.model`. `dynamics.problem` re-exports the exact class objects, and
+`models` imports core directly. The two reverse imports are eliminated; the
+suite has 1227 passes, 10 optional-GPU skips, 77% branch coverage, and 43
+strict-mypy modules. Real CUDA remains unverified.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -321,9 +326,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Characterize `CouplingSpec`/`SystemModel` ownership and projection in P6.5,
-   then remove the two exact `models -> dynamics.problem` reverse imports.
-   Run the Phase 6 acceptance matrix without numerical cleanup.
+1. Run the P6.6 Phase 6 acceptance matrix against dense/CSR model references
+   and architecture boundaries without numerical cleanup. Keep real CUDA
+   verification in the separate Phase 5 release gate.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
@@ -337,8 +342,8 @@ The next work is:
 6. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-7. The only remaining recorded reverse imports are the two
-   `models -> dynamics.problem` edges; never broaden or hide that debt.
+7. No recorded model-to-upper-layer reverse imports remain; preserve the
+   architecture test that rejects their reintroduction.
 8. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
 9. Defer persistence schema versioning and checkpoint-manager redesign to its

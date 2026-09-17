@@ -1394,6 +1394,14 @@ suite passes 1226 cases with 10 optional-GPU skips. P6.5-b may move the
 unchanged coupling/model contracts to a lower neutral owner, retaining the
 existing dynamics access path while eliminating exactly the two reverse imports.
 
+P6.5-b/D-082 moves the byte-identical `Axis`, `CouplingMode`, `CouplingSpec`,
+and `SystemModel` definitions to `core.model`. Dynamics re-exports the exact
+objects and models imports them directly; no model-to-upper-layer imports
+remain. Full tests pass 1227 cases with 10 optional-GPU skips, coverage is
+77%, strict mypy covers 43 modules, and active example/build/isolated-wheel
+checks pass. P6.6 should audit the Phase 6 acceptance matrix, especially
+supported dense/CSR references and the separately unverified real-CUDA path.
+
 For each model:
 
 - add frozen parameter schema;

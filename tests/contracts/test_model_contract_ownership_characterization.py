@@ -2,6 +2,9 @@
 
 from types import SimpleNamespace
 
+from rovibrational_excitation.core.model import Axis as CoreAxis
+from rovibrational_excitation.core.model import CouplingSpec as CoreCouplingSpec
+from rovibrational_excitation.core.model import SystemModel as CoreSystemModel
 from rovibrational_excitation.dynamics.problem import Axis, CouplingSpec, SystemModel
 from rovibrational_excitation.models.factory import ModelComponents
 
@@ -41,3 +44,9 @@ def test_model_components_projection_preserves_objects_and_coupling_order():
 def test_scalar_coupling_projection_keeps_existing_axis_labels():
     assert CouplingSpec.scalar(Axis.X).propagation_kwargs() == {"coupling_axis": "x"}
     assert CouplingSpec.scalar(Axis.Z).propagation_kwargs() == {"coupling_axis": "z"}
+
+
+def test_core_owns_the_exact_dynamics_model_contract_objects():
+    assert Axis is CoreAxis
+    assert CouplingSpec is CoreCouplingSpec
+    assert SystemModel is CoreSystemModel
