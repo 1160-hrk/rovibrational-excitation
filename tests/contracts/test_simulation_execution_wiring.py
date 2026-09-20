@@ -17,6 +17,11 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
+from rovibrational_excitation.simulation.execution import (
+    _generated_sampled_field,
+    prepare_simulation_case,
+    propagate_simulation_case,
+)
 from rovibrational_excitation.simulation.field_preparation import (
     _generated_sampled_field as _prepare_generated_sampled_field,
 )
@@ -24,12 +29,17 @@ from rovibrational_excitation.simulation.result_persistence import (
     persist_m_average_result,
     persist_wavefunction_result,
 )
-from rovibrational_excitation.simulation.runner import _generated_sampled_field
 from rovibrational_excitation.simulation.runner import (
     persist_m_average_result as runner_persist_m_average_result,
 )
 from rovibrational_excitation.simulation.runner import (
     persist_wavefunction_result as runner_persist_wavefunction_result,
+)
+from rovibrational_excitation.simulation.runner import (
+    prepare_simulation_case as runner_prepare_simulation_case,
+)
+from rovibrational_excitation.simulation.runner import (
+    propagate_simulation_case as runner_propagate_simulation_case,
 )
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
@@ -78,6 +88,13 @@ def test_generated_field_preparation_has_one_workflow_owner():
     assert _generated_sampled_field.__module__ == (
         "rovibrational_excitation.simulation.field_preparation"
     )
+
+
+def test_one_case_preparation_and_propagation_have_one_application_owner():
+    assert runner_prepare_simulation_case is prepare_simulation_case
+    assert runner_propagate_simulation_case is propagate_simulation_case
+    assert prepare_simulation_case.__module__.endswith("simulation.execution")
+    assert propagate_simulation_case.__module__.endswith("simulation.execution")
 
 
 def test_one_case_result_persistence_has_one_workflow_owner():

@@ -233,7 +233,9 @@ def test_generated_field_rejects_invalid_carrier_frequency(value, unit):
     ],
 )
 def test_generated_carrier_frequency_units_preserve_the_same_field(value, unit):
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     reference_params = _base_case()
     params = _base_case(
@@ -298,7 +300,9 @@ def test_optional_dispersion_requires_value_and_unit_together(value_key, unit_ke
 
 
 def test_generated_units_share_one_conversion_boundary_without_mutating_input():
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     canonical = _base_case(
         gdd=2.0,
@@ -641,7 +645,9 @@ def _without_generated_field_keys(params):
 def test_generated_envelope_kind_preserves_existing_samples(
     envelope_kind, envelope_func
 ):
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     params = _base_case(envelope_kind=envelope_kind)
     grid = TimeGrid.from_bounds(params["t_start"], params["t_end"], params["dt"])
@@ -682,7 +688,9 @@ def test_generated_envelope_kind_preserves_existing_samples(
 def test_sinusoidal_modulation_kind_matches_field_api(
     modulation_type, phase_parameters, expected_phase
 ):
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     params = _base_case(
         modulation_kind="sinusoidal",
@@ -732,7 +740,9 @@ def test_sinusoidal_modulation_kind_matches_field_api(
 
 
 def test_sinusoidal_modulation_delay_units_are_physically_equivalent():
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     fs_params = _base_case(
         modulation_kind="sinusoidal",
@@ -887,7 +897,9 @@ def test_external_field_rejects_generation_parameters_and_wrong_field_kind():
 
 
 def test_generated_cartesian_field_retains_legacy_helicity_inputs():
-    from rovibrational_excitation.simulation.runner import _generated_sampled_field
+    from rovibrational_excitation.simulation.field_preparation import (
+        _generated_sampled_field,
+    )
 
     params = _base_case(
         polarization=np.array([1.0, 1.0j]) / np.sqrt(2.0),

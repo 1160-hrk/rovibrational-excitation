@@ -150,6 +150,11 @@ P7.1-c/D-085 adds internal `simulation.result_persistence` for the existing
 normal and M-average payloads. It adds no public export and deliberately keeps
 the current unversioned files and overwrite behavior until P7.2.
 
+P7.1-e/D-086 adds internal `simulation.execution` with typed preparation and
+propagation stages. It adds no public export: `simulation.run_simulation_case`
+remains the sole normal-simulation package entry. The internal result bundle
+does not alter the public NumPy population return.
+
 | Current name | Target | Disposition |
 |---|---|---|
 | `__version__` | root metadata | target public; add to `__all__` |

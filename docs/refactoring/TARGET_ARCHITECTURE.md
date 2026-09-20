@@ -710,6 +710,14 @@ arrays and lower-layer IO serialization; it contains no propagation or model
 formula. The runner decides whether saving is enabled. P7.2 still owns any
 future schema versioning or persistence redesign.
 
+P7.1-e/D-086 gives one-case preparation and propagation the internal application
+owner `simulation.execution`. `prepare_simulation_case` validates and freezes
+the field-backed case; `propagate_simulation_case` consumes that immutable case
+and returns a typed normal or M-average result. `runner` now owns only the
+public/batch entry orchestration, explicit save decision, persistence dispatch,
+and population projection. The established call order, backend-native
+evolution, explicit host boundary, and D-017 block workflow remain fixed.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

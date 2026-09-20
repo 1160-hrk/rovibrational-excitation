@@ -127,6 +127,12 @@ construction, propagation-time nondimensionalization, post-propagation regime
 analysis, and explicit host conversion. Source behavior remains unchanged;
 1236 tests pass with 10 optional-GPU skips.
 
+P7.1-e/D-086 moves those guarded stages to `simulation.execution`. Runner now
+coordinates preparation, propagation, save policy, and persistence without
+owning model construction or numerical evolution. D-017 branching, explicit
+host conversion, persistence, and numerical results remain unchanged; strict
+mypy covers 46 modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -3111,6 +3111,35 @@ unit, fallback, population, or persistence behavior changes.
 
 Implementation commit: this checkpoint.
 
+### D-086: One-case preparation and propagation have one application owner
+
+Status: Implemented on 2026-09-20 as P7.1-e.
+
+Move the characterized one-case preparation and propagation stages from
+`simulation.runner` to `simulation.execution`. Preparation performs the same
+validation, generated-versus-external field selection, and immutable
+`SimulationCase` construction in the frozen order. Propagation accepts only
+that case, retains the D-017 M-average branch, and otherwise constructs the
+same model, problem, and Schrödinger propagator.
+
+The internal `WavefunctionCaseResult` groups the already host-converted
+`PropagationResult`, population, and optional regime report. It performs no
+conversion, resampling, normalization, or repair. The runner remains
+responsible for the explicit save decision, persistence dispatch, and public
+population return.
+
+Preserve propagation-time nondimensionalization, post-propagation regime
+analysis, the single explicit `to_numpy()` boundary, population shape handling,
+backend/storage/algorithm selection, split-interaction forwarding, and all
+M-average weights and trajectories. The new module is internal and adds no
+public package export.
+
+Acceptance: 1237 passed, 10 optional-GPU skips, 77% branch coverage, strict
+mypy for 46 modules, and all three active simulation examples pass. No field,
+model, propagation, numerical, persistence, unit, or fallback behavior changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

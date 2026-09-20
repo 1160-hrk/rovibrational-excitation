@@ -37,14 +37,11 @@ from ..io import (
 from ..io import (
     update_summary as _update_summary,
 )
-from ..models.factory import build_model_from_parameters
-from ..models.linear_molecule import LinMolParameters
-from ..models.validation import LinMolRepresentation
-from .case import SimulationCase
 from .config import (
     load_params_file as _load_params_file,
 )
-from .field_preparation import _generated_sampled_field
+from .execution import prepare_simulation_case, propagate_simulation_case
+from .m_average import MAveragePropagationResult
 from .result_persistence import (
     persist_m_average_result,
     persist_wavefunction_result,
@@ -133,151 +130,35 @@ def _run_one(params: dict[str, Any]) -> np.ndarray:
 
 def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.ndarray:
     """Execute one validated generated-field or sampled-field case."""
-    from rovibrational_excitation.core.states import PureState
-    from rovibrational_excitation.dynamics.problem import PropagationProblem
-    from rovibrational_excitation.dynamics.scaling.reporting import analyze_regime
-    from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
+    simulation_case = prepare_simulation_case(params, field=field)
+    field_times_fs = simulation_case.time_grid.field_times_fs
+    sampled_field = simulation_case.field
+    result = propagate_simulation_case(simulation_case)
 
-    from .validation import _resolve_simulation_case
-
-    validated = _resolve_simulation_case(params, field=field)
-    options = validated.options
-    execution_policy = options.execution
-    use_m_average = (
-        params["basis_type"].lower() == "linmol"
-        and params["representation"] == LinMolRepresentation.M_INCOHERENT_AVERAGE.value
-    )
-    expects_cartesian = params["basis_type"].lower() == "symtop" or (
-        params["basis_type"].lower() == "linmol"
-        and params["representation"] == LinMolRepresentation.M_RESOLVED.value
-    )
-    if field is None:
-        generated_parameters = validated.generated_field
-        if generated_parameters is None:
-            raise RuntimeError("validated generated field parameters are unavailable")
-        time_grid = generated_parameters.time_grid
-        E = _generated_sampled_field(
-            params,
-            generated_parameters=generated_parameters,
-            use_m_average=use_m_average,
-            expects_cartesian=expects_cartesian,
-        )
-    else:
-        time_grid = field.time_grid
-        E = field
-    simulation_case = SimulationCase.from_validated_mapping(
-        params,
-        field=E,
-        options=options,
-    )
-    time_grid = simulation_case.time_grid
-    E = simulation_case.field
-    t_E = time_grid.field_times_fs
-
-    if simulation_case.uses_m_average:
-        from .m_average import propagate_m_average
-
-        model_parameters = simulation_case.model_parameters
-        if not isinstance(model_parameters, LinMolParameters):
-            raise RuntimeError("M-average case does not contain LinMolParameters")
-        result = propagate_m_average(
-            model_parameters,
-            simulation_case.initial_states,
-            E,
-            time_grid=time_grid,
-            options=simulation_case.options,
-            validate_units=simulation_case.validate_units,
-            verbose=simulation_case.verbose,
-        )
+    if isinstance(result, MAveragePropagationResult):
         if params.get("save", True):
             persist_m_average_result(
                 outdir=Path(params["outdir"]),
                 params=params,
-                field_times_fs=t_E,
-                sampled_field=E,
+                field_times_fs=field_times_fs,
+                sampled_field=sampled_field,
                 result=result,
             )
         return result.population
-
-    model = build_model_from_parameters(
-        simulation_case.model_parameters,
-        initial_states=simulation_case.initial_states,
-        representation=simulation_case.representation,
-        axes=simulation_case.axes,
-        execution_policy=execution_policy,
-    )
-    problem = PropagationProblem(
-        model=model.to_system_model(),
-        field=E,
-        time_grid=time_grid,
-        initial_state=PureState(model.state.data.ravel()),
-    )
-    H0 = problem.model.hamiltonian
-    dip = problem.model.dipole
-
-    use_nondimensional = options.nondimensional
-    backend = options.backend_name
-    algorithm_name = options.algorithm_name
-    sparse = options.sparse
-    split_interaction = simulation_case.split_interaction
-    prop = SchrodingerPropagator(
-        backend=backend,
-        algorithm=algorithm_name,
-        split_interaction=split_interaction,
-        validate_units=simulation_case.validate_units,
-        renorm=options.renorm,
-        sparse=sparse,
-    )
-    propagation_result = prop.propagate(
-        problem,
-        options=options,
-        verbose=simulation_case.verbose,
-        split_interaction=(
-            split_interaction if algorithm_name == "split_operator" else None
-        ),
-    )
-
-    regime_info = None
-    if use_nondimensional:
-        from rovibrational_excitation.dynamics.scaling.converter import (
-            nondimensionalize_from_objects,
-        )
-
-        coupling_axes = problem.coupling.axes
-        *_, scales = nondimensionalize_from_objects(
-            H0,
-            dip,
-            E,
-            coupling_axes=coupling_axes,
-            scalar_coupling=problem.coupling_mode == "scalar",
-            verbose=False,
-        )
-        regime_info = analyze_regime(scales)
-
-    host_result = propagation_result.to_numpy()
-    t_p = host_result.times_fs
-    psi_t = host_result.state
-
-    pop_t = np.abs(psi_t) ** 2
-    if isinstance(pop_t, np.ndarray):
-        if pop_t.ndim == 0:
-            pop_t = np.array([[float(pop_t)]], dtype=float)
-        elif pop_t.ndim == 1:
-            pop_t = pop_t.reshape(1, -1)
 
     if params.get("save", True):
         persist_wavefunction_result(
             outdir=Path(params["outdir"]),
             params=params,
-            field_times_fs=t_E,
-            sampled_field=E,
-            times_fs=t_p,
-            state=psi_t,
-            population=pop_t,
-            regime_info=regime_info,
+            field_times_fs=field_times_fs,
+            sampled_field=sampled_field,
+            times_fs=result.propagation.times_fs,
+            state=result.propagation.state,
+            population=result.population,
+            regime_info=result.regime_info,
         )
 
-    return pop_t
+    return result.population
 
 
 # ---------------------------------------------------------------------

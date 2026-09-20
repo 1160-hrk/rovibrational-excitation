@@ -87,7 +87,7 @@ def test_runner_builds_from_the_frozen_model_schema():
     params = _twolevel_case()
 
     with patch(
-        "rovibrational_excitation.simulation.runner.build_model_from_parameters",
+        "rovibrational_excitation.simulation.execution.build_model_from_parameters",
         wraps=build_model_from_parameters,
     ) as typed_builder:
         population = _run_one(params)

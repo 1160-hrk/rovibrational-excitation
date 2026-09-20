@@ -1542,6 +1542,15 @@ and the explicit `to_numpy()` boundary in their current order. No source
 implementation changes; the full suite passes 1236 cases with 10 optional-GPU
 skips. P7.1-e may now separate preparation and propagation under this guard.
 
+P7.1-e/D-086 moves the guarded preparation and propagation stages to
+`simulation.execution`. Preparation still validates before sampling and freezes
+one `SimulationCase`; propagation consumes only that case and returns either
+the unchanged D-017 M-average result or an internal typed wavefunction bundle.
+Runner retains save policy, persistence dispatch, and the population return.
+The full suite passes 1237 cases with 10 optional-GPU skips, branch coverage is
+77%, strict mypy covers 46 modules, and all three active examples pass. Next
+characterize retry/error and batch/checkpoint orchestration before extraction.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

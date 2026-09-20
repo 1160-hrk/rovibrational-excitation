@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-20
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-d one-case execution-order characterization
+Verified structural checkpoint: P7.1-e D-086 one-case execution extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -344,6 +344,11 @@ P7.1-d freezes validation and immutable-case construction before propagation,
 the two established nondimensionalization calls around propagation, regime
 analysis, and the single explicit host conversion. Source is unchanged; the
 suite has 1236 passes and 10 optional-GPU skips.
+P7.1-e/D-086 moves the guarded preparation and propagation stages to
+`simulation.execution`. Runner retains save policy, persistence dispatch, and
+population projection. D-017 branching, nondimensionalization order, explicit
+host conversion, and numerical behavior are unchanged. The suite has 1237
+passes, 10 optional-GPU skips, 77% coverage, and 46 strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -352,9 +357,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 by separating the characterized one-case preparation and
-   propagation stages. Preserve the frozen order, D-017 branching,
-   backend-native evolution, explicit host conversion, and numerical results.
+1. Continue P7.1 by characterizing retry/error handling and batch/checkpoint
+   orchestration before separating those services. Preserve retry counts,
+   checkpoint cadence/schema, process behavior, summaries, and error files.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
