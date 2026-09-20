@@ -1519,6 +1519,14 @@ polarization-decoder tests now use its existing `io` owner. The full suite has
 Next isolate one-case result assembly/writing without changing the unversioned
 schema, overwrite behavior, or the current single-write M-average NPZ path.
 
+P7.1-b freezes one-case persistence before extraction on 2026-09-20. Direct
+normal and D-017 M-average cases assert one compressed-NPZ write, exact key
+sets, returned/stored population identity, absence of a fictitious aggregate
+M-average wavefunction, normalized M weights, and unchanged caller parameters
+in JSON. No source implementation changes; the full suite passes 1234 cases
+with 10 optional-GPU skips. The next unit may move payload assembly/writing
+without changing any key, array, path, count, encoding, or overwrite behavior.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

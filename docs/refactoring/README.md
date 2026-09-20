@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1233 passed, 10 skipped (1243 collected) |
+| Pytest | 1234 passed, 10 skipped (1244 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -116,6 +116,9 @@ Phase 6 is complete. Real CUDA remains a separate Phase 5 release gate.
 P7.1-a/D-084 extracts the unchanged generated-field sampling body to
 `simulation.field_preparation`. Existing waveform and helicity references pass;
 strict mypy covers 44 modules. No public API or numerical behavior changes.
+P7.1-b directly freezes the normal and M-average NPZ schemas, single-write
+count, stored population, normalized weights, and caller-parameter JSON before
+moving result persistence. Source behavior remains unchanged.
 
 P6.2-c
 implements D-069:

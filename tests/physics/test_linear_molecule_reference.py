@@ -541,14 +541,36 @@ def test_m_average_dense_csr_population_parity():
     np.testing.assert_allclose(csr, dense, rtol=0.0, atol=PROPAGATION_ATOL)
 
 
-def test_saved_m_average_has_no_fictitious_aggregate_wavefunction(tmp_path):
+def test_saved_m_average_has_exact_schema_and_one_npz_write(tmp_path, monkeypatch):
     params = _runner_params(save=True, outdir=str(tmp_path))
-    _run_one(params)
+    original_savez = np.savez_compressed
+    written_paths = []
+
+    def record_savez(path, **arrays):
+        written_paths.append(path)
+        return original_savez(path, **arrays)
+
+    monkeypatch.setattr(np, "savez_compressed", record_savez)
+
+    population = _run_one(params)
+
+    assert written_paths == [tmp_path / "result.npz"]
     with np.load(tmp_path / "result.npz", allow_pickle=False) as result:
+        assert set(result.files) == {
+            "t_E",
+            "pop",
+            "E",
+            "t_p",
+            "representation",
+            "abs_m",
+            "m_multiplicity",
+            "m_weight",
+            "psi_abs_m_0",
+            "psi_abs_m_1",
+        }
         assert result["representation"] == "m_incoherent_average"
         assert "psi" not in result.files
-        assert "psi_abs_m_0" in result.files
-        assert "psi_abs_m_1" in result.files
+        np.testing.assert_array_equal(result["pop"], population)
         np.testing.assert_allclose(result["m_weight"].sum(), 1.0)
 
 

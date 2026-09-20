@@ -132,6 +132,26 @@ def test_final_state_only_uses_final_physical_time_and_state_axis(tmp_path):
         assert data["t_E"][-1] == params["t_end"]
 
 
+def test_normal_result_persistence_schema_and_single_npz_write(tmp_path, monkeypatch):
+    params = _base_case(save=True, outdir=str(tmp_path))
+    original_savez = np.savez_compressed
+    written_paths = []
+
+    def record_savez(path, **arrays):
+        written_paths.append(Path(path))
+        return original_savez(path, **arrays)
+
+    monkeypatch.setattr(np, "savez_compressed", record_savez)
+
+    population = _run_one(params)
+
+    assert written_paths == [tmp_path / "result.npz"]
+    with np.load(tmp_path / "result.npz", allow_pickle=False) as data:
+        assert set(data.files) == {"t_E", "psi", "pop", "E", "t_p"}
+        np.testing.assert_array_equal(data["pop"], population)
+    assert json.loads((tmp_path / "parameters.json").read_text()) == params
+
+
 def test_validation_rejects_missing_physical_parameter_before_building():
     params = _base_case()
     del params["dipole_scale"]
