@@ -45,7 +45,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1234 passed, 10 skipped (1244 collected) |
+| Pytest | 1235 passed, 10 skipped (1245 collected) |
 | Measured branch coverage | 77% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -119,6 +119,9 @@ strict mypy covers 44 modules. No public API or numerical behavior changes.
 P7.1-b directly freezes the normal and M-average NPZ schemas, single-write
 count, stored population, normalized weights, and caller-parameter JSON before
 moving result persistence. Source behavior remains unchanged.
+P7.1-c/D-085 extracts the fixed payload assembly and file writes to
+`simulation.result_persistence`. Runner keeps the explicit save decision;
+schemas and overwrite behavior are unchanged. Strict mypy covers 45 modules.
 
 P6.2-c
 implements D-069:

@@ -704,6 +704,12 @@ P7.1-a/D-084 gives generated-field sampling the single internal owner
 canonical units, polarization semantics, modulation, and sampled-field types
 are unchanged. This is the first extraction from one-case orchestration.
 
+P7.1-c/D-085 gives existing unversioned result payload assembly and writing the
+single application owner `simulation.result_persistence`. It consumes computed
+arrays and lower-layer IO serialization; it contains no propagation or model
+formula. The runner decides whether saving is enabled. P7.2 still owns any
+future schema versioning or persistence redesign.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

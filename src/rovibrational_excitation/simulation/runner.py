@@ -45,6 +45,10 @@ from .config import (
     load_params_file as _load_params_file,
 )
 from .field_preparation import _generated_sampled_field
+from .result_persistence import (
+    persist_m_average_result,
+    persist_wavefunction_result,
+)
 from .sweep import expand_cases as _expand_cases
 from .sweep import label as _label
 
@@ -111,17 +115,6 @@ def _parallel_run_safe(
 # ---------------------------------------------------------------------
 # 1 ケース実行
 # ---------------------------------------------------------------------
-def _field_samples_for_storage(sampled_field: Any) -> np.ndarray:
-    """Return canonical sampled values without changing their meaning."""
-    from rovibrational_excitation.fields import CartesianField, ScalarField
-
-    if isinstance(sampled_field, ScalarField):
-        return sampled_field.samples_v_per_m
-    if isinstance(sampled_field, CartesianField):
-        return sampled_field.components_v_per_m
-    return np.asarray(sampled_field.Efield)
-
-
 def run_simulation_case(
     params: Mapping[str, Any],
     *,
@@ -197,24 +190,13 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
             verbose=simulation_case.verbose,
         )
         if params.get("save", True):
-            outdir = Path(params["outdir"])
-            save_data: dict[str, Any] = {
-                "t_E": t_E,
-                "pop": result.population,
-                "E": _field_samples_for_storage(E),
-                "t_p": result.time_fs,
-                "representation": np.array("m_incoherent_average"),
-                "abs_m": np.array([block.abs_m for block in result.blocks]),
-                "m_multiplicity": np.array(
-                    [block.multiplicity for block in result.blocks]
-                ),
-                "m_weight": np.array([block.weight for block in result.blocks]),
-            }
-            for block, wavefunction in zip(result.blocks, result.block_wavefunctions):
-                save_data[f"psi_abs_m_{block.abs_m}"] = wavefunction
-            np.savez_compressed(outdir / "result.npz", **save_data)
-            with open(outdir / "parameters.json", "w") as f:
-                json.dump(_json_safe(params), f, indent=2)
+            persist_m_average_result(
+                outdir=Path(params["outdir"]),
+                params=params,
+                field_times_fs=t_E,
+                sampled_field=E,
+                result=result,
+            )
         return result.population
 
     model = build_model_from_parameters(
@@ -284,22 +266,16 @@ def _execute_one(params: dict[str, Any], *, field: SampledField | None) -> np.nd
             pop_t = pop_t.reshape(1, -1)
 
     if params.get("save", True):
-        outdir = Path(params["outdir"])
-        save_data = {
-            "t_E": t_E,
-            "psi": psi_t,
-            "pop": pop_t,
-            "E": _field_samples_for_storage(E),
-            "t_p": t_p,
-        }
-        if regime_info is not None:
-            save_data["regime_info"] = regime_info
-        np.savez_compressed(outdir / "result.npz", **save_data)
-        with open(outdir / "parameters.json", "w") as f:
-            json.dump(_json_safe(params), f, indent=2)
-        if regime_info is not None:
-            with open(outdir / "regime_analysis.json", "w") as f:
-                json.dump(_json_safe(regime_info), f, indent=2)
+        persist_wavefunction_result(
+            outdir=Path(params["outdir"]),
+            params=params,
+            field_times_fs=t_E,
+            sampled_field=E,
+            times_fs=t_p,
+            state=psi_t,
+            population=pop_t,
+            regime_info=regime_info,
+        )
 
     return pop_t
 

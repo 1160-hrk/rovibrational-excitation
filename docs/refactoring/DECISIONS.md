@@ -3088,6 +3088,29 @@ model, propagation, persistence, or fallback behavior changes.
 
 Implementation commit: this checkpoint.
 
+### D-085: One-case result persistence has one simulation application owner
+
+Status: Implemented on 2026-09-20 as P7.1-c.
+
+Move the characterized normal and D-017 M-average payload assembly and writing
+from `simulation.runner` to `simulation.result_persistence`. This application
+module may depend on the lower `io.json_safe` serializer but does not change
+the deferred persistence schema or checkpoint manager. The runner retains the
+explicit `save` decision and passes already-computed arrays/results to the
+writer.
+
+Preserve every NPZ key and array, insertion order, one compressed write per
+case, `result.npz`/`parameters.json`/conditional `regime_analysis.json` paths,
+JSON indentation, caller value/unit pairs, overwrite behavior, and D-017
+per-block wavefunctions. The M-average payload still has no fictitious `psi`.
+No version field is added before the separately planned P7.2 schema change.
+
+Acceptance: 1235 passed, 10 optional-GPU skips, 77% branch coverage, strict
+mypy for 45 modules, and active examples pass. No propagation, field, model,
+unit, fallback, population, or persistence behavior changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

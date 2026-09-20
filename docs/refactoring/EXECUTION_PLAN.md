@@ -1527,6 +1527,14 @@ in JSON. No source implementation changes; the full suite passes 1234 cases
 with 10 optional-GPU skips. The next unit may move payload assembly/writing
 without changing any key, array, path, count, encoding, or overwrite behavior.
 
+P7.1-c/D-085 extracts that exact payload assembly/writing to
+`simulation.result_persistence`. Runner retains only the `save` decision and
+passes computed results to the new owner. Normal and M-average schemas, one
+write per case, JSON and conditional regime file behavior remain fixed. The
+full suite passes 1235 cases with 10 optional-GPU skips, branch coverage stays
+77%, strict mypy covers 45 modules, and active examples pass. P7.1-d should
+separate one-case preparation from propagation without changing call order.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

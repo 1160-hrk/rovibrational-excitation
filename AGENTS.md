@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-17
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-b one-case persistence characterization
+Verified structural checkpoint: P7.1-c D-085 one-case persistence extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -335,6 +335,11 @@ P7.1-b freezes exact normal and M-average NPZ keys, one write per result,
 stored/returned population identity, M-weight normalization, and unchanged
 caller parameters in JSON. The suite has 1234 passes and 10 optional-GPU
 skips; source is unchanged.
+P7.1-c/D-085 moves exact payload assembly/writing to
+`simulation.result_persistence`. Runner retains the save decision. NPZ/JSON
+schemas, paths, single-write count, overwrite behavior, and D-017 block data
+are unchanged. The suite has 1235 passes, 10 optional-GPU skips, 77% branch
+coverage, and 45 strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -343,9 +348,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Extract the now-characterized one-case payload assembly/writing in P7.1-c.
-   Preserve every NPZ key/array, one-write count, unversioned schema, JSON,
-   overwrite behavior, D-017 weight/index, and numerical result.
+1. Continue P7.1 by characterizing and separating one-case preparation from
+   propagation. Preserve validation/construction call order, D-017 branching,
+   backend-native evolution, host conversion, and all numerical results.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

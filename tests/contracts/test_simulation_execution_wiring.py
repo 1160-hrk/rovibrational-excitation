@@ -20,7 +20,17 @@ from rovibrational_excitation.models.two_level import (
 from rovibrational_excitation.simulation.field_preparation import (
     _generated_sampled_field as _prepare_generated_sampled_field,
 )
+from rovibrational_excitation.simulation.result_persistence import (
+    persist_m_average_result,
+    persist_wavefunction_result,
+)
 from rovibrational_excitation.simulation.runner import _generated_sampled_field
+from rovibrational_excitation.simulation.runner import (
+    persist_m_average_result as runner_persist_m_average_result,
+)
+from rovibrational_excitation.simulation.runner import (
+    persist_wavefunction_result as runner_persist_wavefunction_result,
+)
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -67,6 +77,17 @@ def test_generated_field_preparation_has_one_workflow_owner():
     assert _generated_sampled_field is _prepare_generated_sampled_field
     assert _generated_sampled_field.__module__ == (
         "rovibrational_excitation.simulation.field_preparation"
+    )
+
+
+def test_one_case_result_persistence_has_one_workflow_owner():
+    assert runner_persist_m_average_result is persist_m_average_result
+    assert runner_persist_wavefunction_result is persist_wavefunction_result
+    assert persist_m_average_result.__module__ == (
+        "rovibrational_excitation.simulation.result_persistence"
+    )
+    assert persist_wavefunction_result.__module__ == (
+        "rovibrational_excitation.simulation.result_persistence"
     )
 
 

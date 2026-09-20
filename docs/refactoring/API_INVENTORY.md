@@ -146,6 +146,10 @@ generated waveform sampling. It adds no public export. Private polarization
 deserialization tests use `io.deserialize_polarization` directly rather than
 the former runner import side effect.
 
+P7.1-c/D-085 adds internal `simulation.result_persistence` for the existing
+normal and M-average payloads. It adds no public export and deliberately keeps
+the current unversioned files and overwrite behavior until P7.2.
+
 | Current name | Target | Disposition |
 |---|---|---|
 | `__version__` | root metadata | target public; add to `__all__` |
