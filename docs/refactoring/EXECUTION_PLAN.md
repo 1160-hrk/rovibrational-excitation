@@ -1535,6 +1535,13 @@ full suite passes 1235 cases with 10 optional-GPU skips, branch coverage stays
 77%, strict mypy covers 45 modules, and active examples pass. P7.1-d should
 separate one-case preparation from propagation without changing call order.
 
+P7.1-d freezes that order before extraction on 2026-09-20. A direct normal-case
+contract records validation, immutable case construction, propagation-time
+nondimensionalization, propagation completion, post-propagation scale analysis,
+and the explicit `to_numpy()` boundary in their current order. No source
+implementation changes; the full suite passes 1236 cases with 10 optional-GPU
+skips. P7.1-e may now separate preparation and propagation under this guard.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

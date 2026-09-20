@@ -7,9 +7,14 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.dynamics.result import PropagationResult
+from rovibrational_excitation.dynamics.scaling import converter as scaling_converter
+from rovibrational_excitation.dynamics.scaling import reporting as scaling_reporting
+from rovibrational_excitation.dynamics.schrodinger import SchrodingerPropagator
 from rovibrational_excitation.fields import ScalarField
 from rovibrational_excitation.models.factory import build_model_from_parameters
 from rovibrational_excitation.models.two_level import TwoLevelParameters
+from rovibrational_excitation.simulation import validation as simulation_validation
 from rovibrational_excitation.simulation.case import SimulationCase
 from rovibrational_excitation.simulation.runner import _run_one
 from rovibrational_excitation.simulation.validation import validate_simulation_case
@@ -91,3 +96,80 @@ def test_runner_builds_from_the_frozen_model_schema():
     model_parameters = typed_builder.call_args.args[0]
     assert isinstance(model_parameters, TwoLevelParameters)
     assert typed_builder.call_args.kwargs["initial_states"] == (0,)
+
+
+def test_one_case_preserves_preparation_scaling_and_host_conversion_order(
+    monkeypatch,
+):
+    events = []
+
+    original_resolve = simulation_validation._resolve_simulation_case
+
+    def tracked_resolve(*args, **kwargs):
+        events.append("validate")
+        return original_resolve(*args, **kwargs)
+
+    original_freeze = SimulationCase.from_validated_mapping.__func__
+
+    def tracked_freeze(cls, *args, **kwargs):
+        events.append("freeze")
+        return original_freeze(cls, *args, **kwargs)
+
+    original_propagate = SchrodingerPropagator.propagate
+
+    def tracked_propagate(self, *args, **kwargs):
+        events.append("propagate_start")
+        result = original_propagate(self, *args, **kwargs)
+        events.append("propagate_end")
+        return result
+
+    original_nondimensionalize = scaling_converter.nondimensionalize_from_objects
+
+    def tracked_nondimensionalize(*args, **kwargs):
+        events.append("nondimensionalize")
+        return original_nondimensionalize(*args, **kwargs)
+
+    original_analyze = scaling_reporting.analyze_regime
+
+    def tracked_analyze(*args, **kwargs):
+        events.append("analyze_regime")
+        return original_analyze(*args, **kwargs)
+
+    original_to_numpy = PropagationResult.to_numpy
+
+    def tracked_to_numpy(self):
+        events.append("to_numpy")
+        return original_to_numpy(self)
+
+    monkeypatch.setattr(
+        simulation_validation, "_resolve_simulation_case", tracked_resolve
+    )
+    monkeypatch.setattr(
+        SimulationCase,
+        "from_validated_mapping",
+        classmethod(tracked_freeze),
+    )
+    monkeypatch.setattr(SchrodingerPropagator, "propagate", tracked_propagate)
+    monkeypatch.setattr(
+        scaling_converter,
+        "nondimensionalize_from_objects",
+        tracked_nondimensionalize,
+    )
+    monkeypatch.setattr(scaling_reporting, "analyze_regime", tracked_analyze)
+    monkeypatch.setattr(PropagationResult, "to_numpy", tracked_to_numpy)
+
+    population = _run_one(
+        {**_twolevel_case(), "amplitude": 1.0e8, "nondimensional": True}
+    )
+
+    assert population.shape == (11, 2)
+    assert events == [
+        "validate",
+        "freeze",
+        "propagate_start",
+        "nondimensionalize",
+        "propagate_end",
+        "nondimensionalize",
+        "analyze_regime",
+        "to_numpy",
+    ]

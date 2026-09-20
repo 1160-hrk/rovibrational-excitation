@@ -122,6 +122,10 @@ moving result persistence. Source behavior remains unchanged.
 P7.1-c/D-085 extracts the fixed payload assembly and file writes to
 `simulation.result_persistence`. Runner keeps the explicit save decision;
 schemas and overwrite behavior are unchanged. Strict mypy covers 45 modules.
+P7.1-d freezes the current one-case order across validation, immutable case
+construction, propagation-time nondimensionalization, post-propagation regime
+analysis, and explicit host conversion. Source behavior remains unchanged;
+1236 tests pass with 10 optional-GPU skips.
 
 P6.2-c
 implements D-069:
