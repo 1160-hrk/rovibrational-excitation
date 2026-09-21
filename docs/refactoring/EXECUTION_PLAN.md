@@ -1629,6 +1629,16 @@ strict mypy covers 50 modules. Next characterize resume validation and
 reporting before deciding whether their application-level coordination
 should be separated from runner; persistence schema redesign remains P7.2.
 
+P7.1-n freezes resume entry/report ordering before ownership extraction on
+2026-09-21. An unreadable checkpoint errors before parameter loading. A valid
+checkpoint with missing `params.py` prints prior progress, then raises
+`FileNotFoundError`. If all cases are complete, resume creates the existing
+case directories, returns an empty list, and does not rewrite summary.
+Otherwise the new-completion message precedes the file-backed summary call.
+No source behavior changes; 1252 tests pass with 10 optional-GPU skips.
+P7.1-o may isolate resume preparation/reporting while preserving these
+observable details and deferring validation-policy changes to P7.2.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

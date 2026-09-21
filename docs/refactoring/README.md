@@ -173,6 +173,11 @@ assembly to `simulation.reporting`. Resume keeps its file-backed summary
 owner. The full suite has 1248 passes, 10 optional-GPU skips, 78% coverage,
 and 50 strict-mypy modules.
 
+P7.1-n fixes unreadable-checkpoint and missing-parameter error order,
+all-complete early exit without summary rewrite, and the resume completion
+message before the file-backed summary call. Source is unchanged; 1252
+tests pass with 10 optional-GPU skips.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

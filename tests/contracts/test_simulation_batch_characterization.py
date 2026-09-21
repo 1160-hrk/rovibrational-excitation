@@ -8,6 +8,7 @@ from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from rovibrational_excitation.io import CheckpointManager, json_safe
 from rovibrational_excitation.simulation.runner import (
@@ -405,3 +406,71 @@ def test_normal_report_limits_failure_previews_and_omits_empty_success_csv(tmp_p
     assert not any("issue-5" in message or "issue-6" in message for message in messages)
     assert pd.read_csv(tmp_path / "summary.csv")["status"].tolist() == ["failed"] * 7
     assert not (tmp_path / "summary_success.csv").exists()
+
+
+def test_resume_rejects_unreadable_checkpoint_before_loading_params(tmp_path, capsys):
+    (tmp_path / "checkpoint.json").write_text("{not json")
+    with pytest.raises(ValueError, match="チェックポイントの読み込みに失敗"):
+        resume_run(tmp_path)
+
+    assert "チェックポイント読み込み失敗" in capsys.readouterr().out
+    assert not (tmp_path / "summary.csv").exists()
+
+
+def test_resume_requires_saved_params_after_reading_checkpoint(tmp_path, capsys):
+    CheckpointManager(tmp_path).save_checkpoint([], [], 1, 0.0)
+    with pytest.raises(FileNotFoundError, match="パラメータファイルが見つかりません"):
+        resume_run(tmp_path)
+
+    output = capsys.readouterr().out
+    assert f"📁 再開: {tmp_path}" in output
+    assert "🔄 前回の進捗: 0/1 完了" in output
+    assert not (tmp_path / "summary.csv").exists()
+
+
+def test_resume_all_completed_returns_without_summary_rewrite(tmp_path):
+    (tmp_path / "params.py").write_text("amplitude = [1.0]\n")
+    case_dir = tmp_path / "amplitude_1"
+    CheckpointManager(tmp_path).save_checkpoint(
+        [{"amplitude": 1.0, "save": True, "outdir": str(case_dir)}],
+        [],
+        1,
+        0.0,
+    )
+    with (
+        patch("rovibrational_excitation.simulation.runner._run_one_safe") as execute,
+        patch("rovibrational_excitation.simulation.runner._update_summary") as summary,
+        patch("builtins.print") as printed,
+    ):
+        result = resume_run(tmp_path)
+
+    assert result == []
+    assert case_dir.is_dir()
+    execute.assert_not_called()
+    summary.assert_not_called()
+    assert call("✅ 全ケースが既に完了しています") in printed.call_args_list
+
+
+def test_resume_reports_new_completions_then_updates_file_summary(tmp_path):
+    (tmp_path / "params.py").write_text("amplitude = [1.0]\n")
+    CheckpointManager(tmp_path).save_checkpoint([], [], 1, 0.0)
+    returned = np.array([[0.25, 0.75]])
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner._run_one_safe",
+            return_value=(returned, None),
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._tqdm",
+            side_effect=lambda values, **kwargs: values,
+        ),
+        patch("rovibrational_excitation.simulation.runner._update_summary") as summary,
+        patch("builtins.print") as printed,
+    ):
+        results = resume_run(tmp_path)
+
+    np.testing.assert_array_equal(results[0], returned)
+    assert call("✅ 再開完了: 1 新規完了, 0 失敗") in printed.call_args_list
+    summary.assert_called_once()
+    assert summary.call_args.args[0] == tmp_path
+    assert summary.call_args.args[1][0]["outdir"] == str(tmp_path / "amplitude_1")
