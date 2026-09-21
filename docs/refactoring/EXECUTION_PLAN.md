@@ -1670,6 +1670,16 @@ path remain untouched. All 1257 CPU tests pass with 10 optional-GPU skips,
 78% branch coverage, and 51 strict-mypy modules. The acceptance audit is
 still required before assigning a P7.1 completion status.
 
+P7.1-r/D-093 completes the simulation-runner acceptance audit on
+2026-09-21. `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md` checks each application
+owner, exact normal/resume failure and summary behavior, import/architecture
+wiring, the full 1258-pass CPU suite with 10 optional-GPU skips, 78% branch
+coverage, 51 strict-mypy modules, all active examples, repository-wide Ruff,
+sdist/wheel construction, Twine, and installed-wheel import outside the
+workspace. P7.1 is complete. This does **not** complete Phase 7: schema
+versioning/atomic persistence, independent optimization/spectroscopy
+references and decomposition, and the Phase 5 real-CUDA gate remain open.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

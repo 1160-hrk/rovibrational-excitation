@@ -17,6 +17,9 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
+from rovibrational_excitation.simulation import runner as runner_module
+from rovibrational_excitation.simulation.batch import execute_case_batches
+from rovibrational_excitation.simulation.case_paths import materialize_sweep_cases
 from rovibrational_excitation.simulation.execution import (
     _generated_sampled_field,
     prepare_simulation_case,
@@ -25,10 +28,15 @@ from rovibrational_excitation.simulation.execution import (
 from rovibrational_excitation.simulation.field_preparation import (
     _generated_sampled_field as _prepare_generated_sampled_field,
 )
+from rovibrational_excitation.simulation.reporting import (
+    report_normal_batch,
+    report_resumed_batch,
+)
 from rovibrational_excitation.simulation.result_persistence import (
     persist_m_average_result,
     persist_wavefunction_result,
 )
+from rovibrational_excitation.simulation.resume import prepare_resume_run
 from rovibrational_excitation.simulation.runner import (
     persist_m_average_result as runner_persist_m_average_result,
 )
@@ -108,6 +116,14 @@ def test_safe_case_execution_has_one_application_owner():
     assert runner_run_case_safely is run_case_safely
     assert run_case_safely.__module__.endswith("simulation.safe_execution")
     assert issubclass(CaseRunOutcome, tuple)
+
+
+def test_batch_case_path_resume_and_reporting_have_one_owner():
+    assert runner_module.execute_case_batches is execute_case_batches
+    assert runner_module.materialize_sweep_cases is materialize_sweep_cases
+    assert runner_module.prepare_resume_run is prepare_resume_run
+    assert runner_module.report_normal_batch is report_normal_batch
+    assert runner_module.report_resumed_batch is report_resumed_batch
 
 
 def test_one_case_result_persistence_has_one_workflow_owner():

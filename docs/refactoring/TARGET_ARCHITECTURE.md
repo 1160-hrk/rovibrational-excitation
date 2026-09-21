@@ -756,6 +756,11 @@ P7.1-p/D-092 places shared strict checkpoint-interval validation with the
 `simulation.batch` process boundary. Both runner entry points call it before
 any case or checkpoint work. Valid positive-integer cadence is unchanged.
 
+P7.1-r/D-093 accepts this runner/application ownership split. The
+row-by-row evidence and deferred persistence, API, and CUDA work are in
+`PHASE7_RUNNER_ACCEPTANCE_AUDIT.md`; acceptance of P7.1 does not assert
+that Phase 7 or v0.3.0 release is complete.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

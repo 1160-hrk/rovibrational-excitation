@@ -3289,6 +3289,33 @@ mypy for 51 modules.
 
 Implementation commit: this checkpoint.
 
+### D-093: P7.1 runner decomposition is accepted independently of release
+
+Status: Implemented on 2026-09-21 as P7.1-r.
+
+The P7.1 acceptance audit assigns one testable application owner to
+configuration loading, typed case construction, field preparation,
+one-case propagation/persistence, sweep/path materialization, safe
+case failure, batch/checkpoint execution, resume preparation, and
+normal/resumed reporting. The runner remains the explicit coordinator,
+not a second implementation of those operations.
+
+The acceptance evidence is recorded row by row in
+`PHASE7_RUNNER_ACCEPTANCE_AUDIT.md`: 1258 passed CPU tests, 10
+optional-GPU skips, 78% branch coverage, strict mypy for 51 modules,
+repository-wide Ruff, active-example smoke, sdist/wheel build, Twine
+validation, and extracted-wheel import outside the workspace. The
+runner wiring test protects the single-owner delegation.
+
+P7.1 is complete; neither Phase 7 nor final v0.3.0 is complete. The
+unversioned/nonatomic result schema, validated resume provenance,
+independent optimization and spectroscopy references, D-073 root API,
+and real-CUDA execution/evidence remain separate mandatory work. This
+decision authorizes a development-version checkpoint only, not a
+release tag or a claim that GPU execution was verified.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

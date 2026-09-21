@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-q unused runner cleanup
+Verified structural checkpoint: P7.1-r D-093 runner acceptance audit
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -395,6 +395,10 @@ both normal and resume entries. Valid cadence is unchanged; the suite has
 1257 passes, 10 optional-GPU skips, 78% coverage, and 51 strict-mypy modules.
 P7.1-q removes the unused private parallel wrapper and discarded resume
 expression; the same full suite, coverage, and strict-mypy gates pass.
+P7.1-r/D-093 accepts runner ownership and deterministic normal/resume
+behavior under `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md`. The suite has 1258
+passes, 10 optional-GPU skips, 78% branch coverage, and 51 strict-mypy
+modules. Phase 7 and final v0.3.0 remain open.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -403,10 +407,11 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Perform the P7.1 acceptance audit before P7.2 persistence or further
-   validation-policy work. Preserve distinct normal in-memory and resume
-   file-backed summaries, checkpoint schema/cadence, process behavior,
-   paths, statuses, and final-population projection.
+1. P7.1 is accepted. Next record a development-version checkpoint
+   separately, then start P7.2 schema/persistence characterization.
+   Preserve the distinct normal in-memory and resume file-backed summaries
+   until an explicit tested policy decision changes them; do not conflate
+   this with final v0.3.0 release.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
