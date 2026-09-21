@@ -144,6 +144,11 @@ observable without changing existing unpacking or multiprocessing behavior.
 Retry/backoff, traceback files, checkpoint cadence, and calculations remain
 unchanged; strict mypy covers 47 modules.
 
+P7.1-h freezes normal in-memory and resume file-backed summaries, plus
+checkpoint-based case exclusion and sweep-path reconstruction. The two summary
+sources remain distinct during batch-manager extraction. Source behavior is
+unchanged; the full suite has 1243 passes and 10 optional-GPU skips.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
