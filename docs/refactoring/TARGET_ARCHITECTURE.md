@@ -738,6 +738,12 @@ and resumed runs use the same expansion order, labels, `save` flag, eager
 directory creation, and `outdir` encoding. Runner still owns results-root
 choice, dry-run, and checkpoint-based resume filtering.
 
+P7.1-m/D-090 gives normal-run completion reporting and returned-population
+CSV writing the internal owner `simulation.reporting`. It does not read
+result files or alter resume reporting. Resume's file-backed summary remains
+with `io.storage.update_summary` pending its separately tested P7.2
+persistence work.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

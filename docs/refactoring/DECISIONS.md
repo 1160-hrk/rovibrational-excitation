@@ -3216,6 +3216,30 @@ schema, fallback, or unit behavior changes.
 
 Implementation commit: this checkpoint.
 
+### D-090: Normal batch reporting has one application owner
+
+Status: Implemented on 2026-09-21 as P7.1-m.
+
+The normal-run completion message, first-five failure preview, and summary
+CSV assembly previously lived inline in `simulation.runner`. This exact
+body now belongs to `simulation.reporting.report_normal_batch`. It consumes
+already classified cases and outcomes; it does not choose a model, solver,
+process strategy, retry, checkpoint, or save policy.
+
+Normal summary rows continue to use returned in-memory populations, with
+0D scalar wrapping, 1D values, and the last row of multi-dimensional arrays.
+Failure rows retain the error value; `summary_success.csv` is written only
+when there is at least one success. Resume still uses
+`io.storage.update_summary` to read result files and may report corrupted
+files. The two sources are intentionally not unified in this ownership
+commit. No CSV schema, overwrite, numerical, unit, or fallback change is
+included.
+
+Acceptance: 1248 passed, 10 optional-GPU skips, 78% branch coverage, strict
+mypy for 50 modules.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

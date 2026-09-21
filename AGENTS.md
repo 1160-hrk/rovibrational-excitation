@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-l normal reporting characterization
+Verified structural checkpoint: P7.1-m D-090 normal reporting extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -378,6 +378,10 @@ P7.1-l fixes returned-population scalar/vector/final-time summary projection,
 first-five failure preview, and all-failed no-success-CSV behavior before
 reporting extraction. Source is unchanged; 1248 tests pass with 10 optional-GPU
 skips.
+P7.1-m/D-090 moves normal completion reporting and returned-population CSV
+writing to `simulation.reporting`. Resume still uses file-backed
+`io.storage.update_summary`. The full suite has 1248 passes, 10 optional-GPU
+skips, 78% coverage, and 50 strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -386,10 +390,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 by extracting the guarded normal-run reporting.
-   Preserve the distinct normal in-memory and resume file-backed summaries,
-   checkpoint schema/cadence, process behavior, paths, statuses, and
-   final-population projection.
+1. Continue P7.1 by characterizing resume validation and reporting before
+   any further ownership extraction. Preserve the distinct normal in-memory
+   and resume file-backed summaries, checkpoint schema/cadence, process
+   behavior, paths, statuses, and final-population projection.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

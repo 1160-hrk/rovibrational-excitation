@@ -168,6 +168,11 @@ P7.1-l fixes normal reporting's scalar/vector/final-time projection,
 failure previews, and the absence of a success-only CSV on all-failed
 runs. The source is unchanged; 1248 tests pass with 10 optional-GPU skips.
 
+P7.1-m/D-090 moves the guarded normal completion display and in-memory CSV
+assembly to `simulation.reporting`. Resume keeps its file-backed summary
+owner. The full suite has 1248 passes, 10 optional-GPU skips, 78% coverage,
+and 50 strict-mypy modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

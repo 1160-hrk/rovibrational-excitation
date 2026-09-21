@@ -1618,6 +1618,17 @@ behavior changes; 1248 tests pass with 10 optional-GPU skips. P7.1-m may
 move only this normal reporting body, leaving resume's file-backed summary
 in its existing IO owner.
 
+P7.1-m/D-090 moves only normal-run completion reporting and in-memory CSV
+generation to `simulation.reporting` on 2026-09-21. The runner still owns
+the save decision and result projection; resume still calls
+`io.storage.update_summary` and reads existing NPZ files. The exact
+first-five failure preview, final-population projection, status/error rows,
+and conditional success-only CSV remain unchanged. The full suite passes
+1248 cases with 10 optional-GPU skips; branch coverage stays 78%, and
+strict mypy covers 50 modules. Next characterize resume validation and
+reporting before deciding whether their application-level coordination
+should be separated from runner; persistence schema redesign remains P7.2.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;
