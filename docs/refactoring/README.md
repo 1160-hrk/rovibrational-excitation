@@ -199,6 +199,11 @@ P7.1-r/D-093 accepts the runner decomposition with a row-by-row audit in
 P7.1 is complete; result schema, optimization, spectroscopy, CUDA, and
 public release remain open.
 
+P7.1-s/D-094 marks the accepted runner checkpoint as package version
+`0.3.0.dev1` without tagging or publishing a release. P7.2 schema and
+persistence characterization is next; final `0.3.0` remains gated on
+Phase 7, Phase 8, and real-CUDA validation.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

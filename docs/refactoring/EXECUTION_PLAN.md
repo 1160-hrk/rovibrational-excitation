@@ -1680,6 +1680,14 @@ workspace. P7.1 is complete. This does **not** complete Phase 7: schema
 versioning/atomic persistence, independent optimization/spectroscopy
 references and decomposition, and the Phase 5 real-CUDA gate remain open.
 
+P7.1-s/D-094 records `0.3.0.dev1` as a development-version checkpoint on
+2026-09-21. Only package metadata, its contract test, and release/planning
+documentation change; numerical logic does not. No tag or publication is
+implied, and neither Phase 7 nor final `0.3.0` is complete. The full suite
+passes 1259 tests with 10 optional-GPU skips and 78% branch coverage; wheel
+build, Twine validation, and installed-wheel import pass. P7.2 is next,
+followed by the remaining Phase 7, Phase 8, and real-CUDA acceptance gates.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

@@ -67,6 +67,11 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert "import rovibrational_excitation" in build
 
 
+def test_refactor_checkpoint_has_development_not_release_version():
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert pyproject["project"]["version"] == "0.3.0.dev1"
+
+
 def test_mypy_is_mandatory_only_for_named_typed_modules():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     mypy = pyproject["tool"]["mypy"]

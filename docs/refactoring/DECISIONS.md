@@ -3316,6 +3316,21 @@ release tag or a claim that GPU execution was verified.
 
 Implementation commit: this checkpoint.
 
+### D-094: Mark P7.1 acceptance with a development version only
+
+Status: Implemented on 2026-09-21 as P7.1-s.
+
+The project version becomes `0.3.0.dev1` after the accepted P7.1 runner
+decomposition. This is a package-metadata and changelog checkpoint, not a
+Git tag, publication, or final `0.3.0` release. The version test protects
+that distinction. Numerical code and physical contracts are unchanged.
+
+P7.2 result-schema and persistence characterization starts next. Final
+release remains gated on the rest of Phase 7, Phase 8 public API and
+documentation, and real-CUDA execution evidence.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

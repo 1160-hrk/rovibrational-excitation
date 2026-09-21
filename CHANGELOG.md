@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms
 
+## [0.3.0.dev1] - 2026-09-21
+
+Development checkpoint for the `refactor/v0.3` branch; not a final release or
+Git tag. P7.1 simulation-runner decomposition has passed its acceptance audit
+without changing established physical calculations. Typed propagation, units,
+and consolidated CPU models are in place. The result schema, optimization and
+spectroscopy decomposition, public root API, and device-native CUDA with a
+real-GPU run remain required before `0.3.0`.
+
 ## [0.1.4] - 2024-12-XX
 
 ### 🚀 Added
