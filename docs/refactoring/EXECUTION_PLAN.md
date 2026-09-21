@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-15
+Last updated: 2026-09-21
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1559,6 +1559,16 @@ the existing JSON-safe complex representation. Five cases in batches of two
 save checkpoints after batch two and the final third batch. No source behavior
 changes; the full suite passes 1240 cases with 10 optional-GPU skips. P7.1-g
 may now extract safe-case execution under these guards.
+
+P7.1-g/D-087 moves the guarded retry and failure-file body to
+`simulation.safe_execution`. Its `CaseRunOutcome` remains tuple-compatible,
+and runner passes the existing `_run_one` callable through a top-level wrapper
+that remains safe for multiprocessing. OSError-only retry counts/backoff,
+immediate other failures, traceback/parameter file content, prints, and batch
+checkpoint cadence remain fixed. The full suite passes 1241 cases with 10
+optional-GPU skips, branch coverage is 77%, and strict mypy covers 47 modules.
+Next characterize resume reconstruction and both summary paths before moving
+batch management.
 
 ### P7.2 Result schema and I/O
 

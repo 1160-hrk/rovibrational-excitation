@@ -73,9 +73,11 @@ part of the ownership move.
   spectrogram branches. The optimization runner no longer catches the top-level
   plot call. Optional branch failures may remain non-fatal only if returned in
   result metadata; persistence failures must be surfaced.
-- simulation/runner.py intentionally catches case failures for batch runs and
-  writes tracebacks. Keep this behavior, but replace print-only reporting with
-  a structured failure result.
+- Resolved by D-087. `simulation.safe_execution` intentionally catches isolated
+  batch-case failures, retains the exact OSError-only retry/backoff and
+  traceback file behavior, and returns a named tuple-compatible
+  `CaseRunOutcome`. Existing prints remain supplemental rather than the sole
+  failure result.
 - get_dipole_component_SI in propagation/utils.py is unused compatibility code
   with a raw-attribute fallback. Delete it with the Phase 1 legacy cleanup.
 

@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-15
+Last updated: 2026-09-21
 
 ## How to use this log
 
@@ -3137,6 +3137,33 @@ public package export.
 Acceptance: 1237 passed, 10 optional-GPU skips, 77% branch coverage, strict
 mypy for 46 modules, and all three active simulation examples pass. No field,
 model, propagation, numerical, persistence, unit, or fallback behavior changes.
+
+Implementation commit: this checkpoint.
+
+### D-087: Safe batch-case execution has one simulation owner
+
+Status: Implemented on 2026-09-21 as P7.1-g.
+
+Move the characterized one-case retry and failure-file implementation from
+`simulation.runner` to `simulation.safe_execution`. The service receives the
+case executor explicitly, so it owns no model, field, propagation, sweep,
+checkpoint, or process-pool behavior. Runner retains a top-level wrapper for
+the existing multiprocessing call site.
+
+`CaseRunOutcome` is a named, tuple-compatible result. Existing `(result,
+error)` unpacking remains valid while failures become structurally observable.
+Only `OSError` is retried; the default two retries retain one- and two-second
+backoff. All other exceptions fail on their first attempt. The same returned
+traceback is written to `error.txt`, followed by the unchanged JSON-safe caller
+parameters when saving and an output directory are enabled.
+
+The former runner-only `json_safe` test import is removed; serializer tests now
+use its existing `io` owner. This is private ownership cleanup, not a schema or
+serialization change.
+
+Acceptance: 1241 passed, 10 optional-GPU skips, 77% branch coverage, and strict
+mypy for 47 modules. No numerical, physical, retry, failure-file, checkpoint,
+summary, persistence, unit, or fallback behavior changes.
 
 Implementation commit: this checkpoint.
 

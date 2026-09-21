@@ -155,6 +155,11 @@ propagation stages. It adds no public export: `simulation.run_simulation_case`
 remains the sole normal-simulation package entry. The internal result bundle
 does not alter the public NumPy population return.
 
+P7.1-g/D-087 adds internal `simulation.safe_execution` and its tuple-compatible
+`CaseRunOutcome`. It adds no public package export; the runner wrapper preserves
+the existing worker call shape. Tests no longer consume `runner._json_safe` as
+a private re-export and use `io.json_safe` directly.
+
 | Current name | Target | Disposition |
 |---|---|---|
 | `__version__` | root metadata | target public; add to `__all__` |

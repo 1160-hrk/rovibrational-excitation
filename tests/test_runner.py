@@ -6,21 +6,22 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
+from rovibrational_excitation.io import json_safe
 from rovibrational_excitation.simulation import runner
 
 
 def test_json_safe_basic():
     # 複素数
     c = 1 + 2j
-    safe = runner._json_safe(c)
+    safe = json_safe(c)
     assert safe["__complex__"] and safe["r"] == 1 and safe["i"] == 2
     # ndarray
     arr = np.array([1, 2, 3])
-    safe_arr = runner._json_safe(arr)
+    safe_arr = json_safe(arr)
     assert safe_arr == [1, 2, 3]
     # dict, list
     d = {"a": 1 + 1j, "b": [2 + 2j, 3]}
-    safe_d = runner._json_safe(d)
+    safe_d = json_safe(d)
     assert "a" in safe_d and "b" in safe_d
 
 

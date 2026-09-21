@@ -41,6 +41,13 @@ from rovibrational_excitation.simulation.runner import (
 from rovibrational_excitation.simulation.runner import (
     propagate_simulation_case as runner_propagate_simulation_case,
 )
+from rovibrational_excitation.simulation.runner import (
+    run_case_safely as runner_run_case_safely,
+)
+from rovibrational_excitation.simulation.safe_execution import (
+    CaseRunOutcome,
+    run_case_safely,
+)
 from rovibrational_excitation.simulation.validation import (
     SimulationConfigurationError,
     validate_simulation_case,
@@ -95,6 +102,12 @@ def test_one_case_preparation_and_propagation_have_one_application_owner():
     assert runner_propagate_simulation_case is propagate_simulation_case
     assert prepare_simulation_case.__module__.endswith("simulation.execution")
     assert propagate_simulation_case.__module__.endswith("simulation.execution")
+
+
+def test_safe_case_execution_has_one_application_owner():
+    assert runner_run_case_safely is run_case_safely
+    assert run_case_safely.__module__.endswith("simulation.safe_execution")
+    assert issubclass(CaseRunOutcome, tuple)
 
 
 def test_one_case_result_persistence_has_one_workflow_owner():

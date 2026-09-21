@@ -138,6 +138,12 @@ traceback/parameter error file, and every-second-or-final batch checkpoint
 cadence. Source behavior remains unchanged; 1240 tests pass with 10
 optional-GPU skips.
 
+P7.1-g/D-087 extracts those retry and error-file operations to
+`simulation.safe_execution`. A named tuple-compatible outcome makes failure
+observable without changing existing unpacking or multiprocessing behavior.
+Retry/backoff, traceback files, checkpoint cadence, and calculations remain
+unchanged; strict mypy covers 47 modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -12,10 +12,8 @@ rovibrational_excitation/simulation/runner.py
 
 from __future__ import annotations
 
-import json
 import shutil
 import time
-import traceback
 from collections.abc import Mapping
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
@@ -27,9 +25,6 @@ import pandas as pd
 from ..fields import SampledField
 from ..io import (
     CheckpointManager,
-)
-from ..io import (
-    json_safe as _json_safe,
 )
 from ..io import (
     make_results_root as _make_root,
@@ -46,6 +41,7 @@ from .result_persistence import (
     persist_m_average_result,
     persist_wavefunction_result,
 )
+from .safe_execution import CaseRunOutcome, run_case_safely
 from .sweep import expand_cases as _expand_cases
 from .sweep import label as _label
 
@@ -63,48 +59,19 @@ except ImportError:  # 進捗バーが無くても動く
 # ---------------------------------------------------------------------
 # エラーハンドリング付き実行関数
 # ---------------------------------------------------------------------
-def _run_one_safe(
-    params: dict[str, Any], max_retries: int = 2
-) -> tuple[np.ndarray | None, str | None]:
+def _run_one_safe(params: dict[str, Any], max_retries: int = 2) -> CaseRunOutcome:
     """
     1ケース実行（エラーハンドリング付き）
 
     Returns:
         (result, error_message): 成功時は(result, None)、失敗時は(None, error_message)
     """
-    for attempt in range(max_retries + 1):
-        try:
-            result = _run_one(params)
-            return result, None
-
-        except Exception as e:
-            error_msg = f"Attempt {attempt + 1}/{max_retries + 1} failed: {str(e)}"
-            if isinstance(e, OSError) and attempt < max_retries:
-                print(f"⚠ {error_msg} (再試行中...)")
-                time.sleep(2**attempt)  # 指数バックオフ
-            else:
-                full_error = f"{error_msg}\nTraceback:\n{traceback.format_exc()}"
-                print(f"✗ ケース失敗: {full_error}")
-
-                # 失敗ケースの情報を保存
-                if params.get("save", True) and "outdir" in params:
-                    outdir = Path(params["outdir"])
-                    outdir.mkdir(parents=True, exist_ok=True)
-                    with open(outdir / "error.txt", "w", encoding="utf-8") as f:
-                        f.write(full_error)
-                        f.write(
-                            f"\nParameters:\n{json.dumps(_json_safe(params), indent=2)}"
-                        )
-
-                return None, full_error
-
-    # この行に到達することはないが、型チェッカーのため
-    return None, "Unknown error"
+    return run_case_safely(params, execute=_run_one, max_retries=max_retries)
 
 
 def _parallel_run_safe(
     case_list: list[dict[str, Any]],
-) -> list[tuple[np.ndarray | None, str | None]]:
+) -> list[CaseRunOutcome]:
     """並列実行用のラッパー関数"""
     return [_run_one_safe(case) for case in case_list]
 

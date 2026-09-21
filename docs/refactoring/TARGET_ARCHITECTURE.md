@@ -718,6 +718,12 @@ public/batch entry orchestration, explicit save decision, persistence dispatch,
 and population projection. The established call order, backend-native
 evolution, explicit host boundary, and D-017 block workflow remain fixed.
 
+P7.1-g/D-087 gives isolated case retry and failure reporting the internal
+application owner `simulation.safe_execution`. It receives one executor and
+returns a tuple-compatible `CaseRunOutcome`; it does not choose a model,
+algorithm, backend, process strategy, or checkpoint policy. Runner retains the
+multiprocessing-safe wrapper and batch orchestration until their later units.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and
