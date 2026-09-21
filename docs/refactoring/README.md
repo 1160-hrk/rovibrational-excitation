@@ -188,6 +188,10 @@ normal and resume entries, including rejection of booleans. Five new
 parameterized cases pass; the suite has 1257 passes, 10 optional-GPU skips,
 78% coverage, and 51 strict-mypy modules.
 
+P7.1-q removes a verified-unused private parallel wrapper and a no-op
+resume expression. The suite remains at 1257 passes, 10 optional-GPU skips,
+78% branch coverage, and 51 strict-mypy modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -71,13 +71,6 @@ def _run_one_safe(params: dict[str, Any], max_retries: int = 2) -> CaseRunOutcom
     return run_case_safely(params, execute=_run_one, max_retries=max_retries)
 
 
-def _parallel_run_safe(
-    case_list: list[dict[str, Any]],
-) -> list[CaseRunOutcome]:
-    """並列実行用のラッパー関数"""
-    return [_run_one_safe(case) for case in case_list]
-
-
 # ---------------------------------------------------------------------
 # 1 ケース実行
 # ---------------------------------------------------------------------

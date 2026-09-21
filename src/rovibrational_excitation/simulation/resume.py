@@ -48,7 +48,6 @@ def prepare_resume_run(
         raise FileNotFoundError(f"パラメータファイルが見つかりません: {params_file}")
 
     base_dict = load_params_file(str(params_file))
-    base_dict.get("description", "resumed_run")
 
     all_cases = materialize_sweep_cases(base_dict, root=results_dir, save=True)
     remaining_cases = checkpoint_manager.filter_remaining_cases(all_cases)

@@ -1662,6 +1662,14 @@ normal route, then passed after the shared validator was added to
 skips, branch coverage remains 78%, and strict mypy covers 51 modules.
 The P7.1 acceptance audit is next.
 
+P7.1-q removes two verified-unused private artifacts during the acceptance
+cleanup: `runner._parallel_run_safe` had no callers, and the resume
+`base_dict.get("description", "resumed_run")` expression discarded its
+result. The existing `run_all`, CLI, case executor, and multiprocessing
+path remain untouched. All 1257 CPU tests pass with 10 optional-GPU skips,
+78% branch coverage, and 51 strict-mypy modules. The acceptance audit is
+still required before assigning a P7.1 completion status.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

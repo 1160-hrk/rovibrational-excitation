@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-p D-092 strict checkpoint interval
+Verified structural checkpoint: P7.1-q unused runner cleanup
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -393,6 +393,8 @@ strict-mypy modules.
 P7.1-p/D-092 requires an actual positive integer checkpoint interval at
 both normal and resume entries. Valid cadence is unchanged; the suite has
 1257 passes, 10 optional-GPU skips, 78% coverage, and 51 strict-mypy modules.
+P7.1-q removes the unused private parallel wrapper and discarded resume
+expression; the same full suite, coverage, and strict-mypy gates pass.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
