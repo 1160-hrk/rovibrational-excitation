@@ -324,3 +324,84 @@ def test_dry_run_still_creates_saved_case_directories_without_executing(tmp_path
     execute.assert_not_called()
     manager.assert_not_called()
     assert not (tmp_path / "summary.csv").exists()
+
+
+def test_normal_summary_preserves_scalar_vector_and_last_time_row(tmp_path):
+    outcomes = [
+        (np.array(0.2), None),
+        (np.array([0.3, 0.7]), None),
+        (np.array([[0.9, 0.1], [0.4, 0.6]]), None),
+        (None, "failed fourth"),
+    ]
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=Path(tmp_path),
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._run_one_safe",
+            side_effect=outcomes,
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._tqdm",
+            side_effect=lambda values, **kwargs: values,
+        ),
+    ):
+        run_all_with_checkpoint(
+            {"case_number": [0, 1, 2, 3]},
+            save=True,
+            checkpoint_interval=4,
+        )
+
+    summary = pd.read_csv(tmp_path / "summary.csv")
+    assert summary["case_number"].tolist() == [0, 1, 2, 3]
+    assert summary["status"].tolist() == [
+        "success",
+        "success",
+        "success",
+        "failed",
+    ]
+    assert summary["pop_0"].iloc[:3].tolist() == [0.2, 0.3, 0.4]
+    assert np.isnan(summary.loc[0, "pop_1"])
+    assert summary["pop_1"].iloc[1:3].tolist() == [0.7, 0.6]
+    assert summary.loc[3, "error"] == "failed fourth"
+    assert pd.read_csv(tmp_path / "summary_success.csv")["case_number"].tolist() == [
+        0,
+        1,
+        2,
+    ]
+
+
+def test_normal_report_limits_failure_previews_and_omits_empty_success_csv(tmp_path):
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=Path(tmp_path),
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._run_one_safe",
+            side_effect=[(None, f"issue-{index}") for index in range(7)],
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._tqdm",
+            side_effect=lambda values, **kwargs: values,
+        ),
+        patch("builtins.print") as printed,
+    ):
+        results = run_all_with_checkpoint(
+            {"case_number": list(range(7))},
+            save=True,
+            checkpoint_interval=7,
+        )
+
+    assert results == []
+    messages = [args.args[0] for args in printed.call_args_list if args.args]
+    assert "✅ 実行完了: 0/7 成功, 7 失敗" in messages
+    assert "⚠ 失敗ケース: 7 件" in messages
+    assert [message for message in messages if message.startswith("  ")][:5] == [
+        f"  {index + 1}. issue-{index}..." for index in range(5)
+    ]
+    assert "  ... (他 2 件)" in messages
+    assert not any("issue-5" in message or "issue-6" in message for message in messages)
+    assert pd.read_csv(tmp_path / "summary.csv")["status"].tolist() == ["failed"] * 7
+    assert not (tmp_path / "summary_success.csv").exists()

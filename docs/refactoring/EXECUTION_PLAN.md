@@ -1608,6 +1608,16 @@ branch coverage stays 78%, and strict mypy covers 49 modules. Next freeze
 and extract normal-run reporting without conflating it with resume's
 file-backed summary.
 
+P7.1-l freezes normal-run reporting before extraction on 2026-09-21.
+Returned scalar, vector, and time-series populations project to the current
+`pop_i` CSV columns; the last time row is used for multi-dimensional
+results, and missing columns remain missing. Failure rows retain their
+errors, previews show only the first five of seven failures with a remainder
+count, and an all-failed run writes no `summary_success.csv`. No source
+behavior changes; 1248 tests pass with 10 optional-GPU skips. P7.1-m may
+move only this normal reporting body, leaving resume's file-backed summary
+in its existing IO owner.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

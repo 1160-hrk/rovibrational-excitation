@@ -164,6 +164,10 @@ P7.1-k/D-089 moves normal/resume case-path materialization to
 still passes 1246 cases with 10 optional-GPU skips, 78% coverage, and 49
 strict-mypy modules.
 
+P7.1-l fixes normal reporting's scalar/vector/final-time projection,
+failure previews, and the absence of a success-only CSV on all-failed
+runs. The source is unchanged; 1248 tests pass with 10 optional-GPU skips.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
