@@ -204,6 +204,11 @@ P7.1-s/D-094 marks the accepted runner checkpoint as package version
 persistence characterization is next; final `0.3.0` remains gated on
 Phase 7, Phase 8, and real-CUDA validation.
 
+P7.2-a records the existing disk format and resume failure boundaries in
+`PHASE7_PERSISTENCE_BASELINE.md`. Its characterization test freezes numeric
+arrays and the legacy pickle-only NPZ regime field before any schema change.
+No writer, reader, or physical calculation has changed yet.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -8,12 +8,18 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import ScalarField
 from rovibrational_excitation.io import (
     CheckpointManager,
     deserialize_polarization,
     json_safe,
     storage,
+)
+from rovibrational_excitation.simulation.result_persistence import (
+    persist_wavefunction_result,
 )
 
 
@@ -85,6 +91,46 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
     assert overwritten["failed_cases"] == 0
     assert overwritten["failed_case_data"] == []
     assert json.loads((tmp_path / "failed_cases.json").read_text()) == []
+
+
+def test_legacy_result_keeps_exact_numeric_arrays_and_pickle_only_regime_info(tmp_path):
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    field_samples = np.array([0.0, 2.0, -3.0, 2.0, 0.0])
+    field = ScalarField(grid, field_samples)
+    times_fs = np.array([-1.0, 0.0, 1.0])
+    state = np.array(
+        [[1.0, 0.0], [0.5 + 0.5j, 0.5 - 0.5j], [0.0, 1.0]],
+        dtype=np.complex128,
+    )
+    population = np.abs(state) ** 2
+    params = {"basis_type": "twolevel", "amplitude": 2.0}
+    regime_info = {"energy_scale_eV": 0.25}
+
+    persist_wavefunction_result(
+        outdir=tmp_path,
+        params=params,
+        field_times_fs=grid.field_times_fs,
+        sampled_field=field,
+        times_fs=times_fs,
+        state=state,
+        population=population,
+        regime_info=regime_info,
+    )
+
+    with np.load(tmp_path / "result.npz", allow_pickle=False) as saved:
+        assert set(saved.files) == {"t_E", "psi", "pop", "E", "t_p", "regime_info"}
+        for key, expected in {
+            "t_E": grid.field_times_fs,
+            "psi": state,
+            "pop": population,
+            "E": field_samples,
+            "t_p": times_fs,
+        }.items():
+            np.testing.assert_array_equal(saved[key], expected)
+        with pytest.raises(ValueError, match="Object arrays cannot be loaded"):
+            _ = saved["regime_info"]
+    assert json.loads((tmp_path / "parameters.json").read_text()) == params
+    assert json.loads((tmp_path / "regime_analysis.json").read_text()) == regime_info
 
 
 def test_results_root_name_and_summary_files_are_preserved(tmp_path, monkeypatch):

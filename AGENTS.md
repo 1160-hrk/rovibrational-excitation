@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-s D-094 development-version checkpoint
+Verified structural checkpoint: P7.2-a persistence characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -400,7 +400,9 @@ behavior under `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md`. The suite has 1258
 passes, 10 optional-GPU skips, 78% branch coverage, and 51 strict-mypy
 modules. Phase 7 and final v0.3.0 remain open.
 P7.1-s/D-094 sets the package version to `0.3.0.dev1` as a development
-checkpoint only; no tag or publication is implied. P7.2 is next.
+checkpoint only; no tag or publication is implied. P7.2-a inventories the
+unversioned persistence boundary in `PHASE7_PERSISTENCE_BASELINE.md` and
+adds exact-array/regime-format characterization. No disk writer changes yet.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -410,7 +412,9 @@ recorded by D-073.
 The next work is:
 
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
-   Next start P7.2 schema/persistence characterization.
+   P7.2-a characterization is complete. Next design and implement an explicit
+   disk schema and loader, preserving numerical arrays and rejecting unknown
+   or unversioned formats without an explicit migration path.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.

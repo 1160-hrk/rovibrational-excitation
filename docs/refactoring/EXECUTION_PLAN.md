@@ -1690,6 +1690,14 @@ followed by the remaining Phase 7, Phase 8, and real-CUDA acceptance gates.
 
 ### P7.2 Result schema and I/O
 
+P7.2-a starts on 2026-09-21 with
+`PHASE7_PERSISTENCE_BASELINE.md`. The current disk artifacts, writer/reader
+ownership, missing schema and provenance checks, non-atomic publication,
+and optional pickle-only NPZ regime metadata are inventoried before any
+writer or resume policy changes. A new contract test preserves the exact
+legacy numerical arrays and separate JSON regime data. No disk schema or
+calculation changes in this unit.
+
 - add schema version;
 - serialize model, field, time, solver, backend, and scaling metadata;
 - atomic result/checkpoint writes;
