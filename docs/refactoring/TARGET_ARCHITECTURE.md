@@ -732,6 +732,12 @@ distinct normal/resume summary sources. This is an ownership change only:
 case ordering, pool lifetime, checkpoint contents/timing, and result
 projection remain fixed.
 
+P7.1-k/D-089 gives the side-effectful case-path materialization to
+`simulation.case_paths`, while `simulation.sweep` remains pure. Both normal
+and resumed runs use the same expansion order, labels, `save` flag, eager
+directory creation, and `outdir` encoding. Runner still owns results-root
+choice, dry-run, and checkpoint-based resume filtering.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

@@ -159,6 +159,11 @@ modules.
 P7.1-j freezes sweep-order case paths and saved dry-run directory creation.
 The source is unchanged; 1246 tests pass with 10 optional-GPU skips.
 
+P7.1-k/D-089 moves normal/resume case-path materialization to
+`simulation.case_paths` while keeping sweep expansion pure. The full suite
+still passes 1246 cases with 10 optional-GPU skips, 78% coverage, and 49
+strict-mypy modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

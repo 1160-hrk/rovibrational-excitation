@@ -3192,6 +3192,30 @@ and progress labels.
 
 Implementation commit: this checkpoint.
 
+### D-089: Case-path materialization has one simulation owner
+
+Status: Implemented on 2026-09-21 as P7.1-k.
+
+Both the normal and resumed runner previously repeated the same side-effectful
+sweep expansion and directory construction. The exact loop now belongs to
+`simulation.case_paths.materialize_sweep_cases`. The existing pure
+`simulation.sweep` keeps Cartesian expansion and label formatting; it does
+not gain file-system operations. The caller still supplies the root and
+`save` choice.
+
+This only changes ownership. The sweep-key order, `key_label` path layout,
+eager `mkdir(parents=True, exist_ok=True)`, stored string `outdir`, and
+`save` flag remain unchanged. A saved dry run still creates case
+directories before returning, without a checkpoint or summary. Resume still
+loads saved Python parameters and filters completed hashes after rebuilding
+all paths.
+
+Acceptance: 1246 passed, 10 optional-GPU skips, 78% branch coverage, strict
+mypy for 49 modules. No model, field, time, numerical, summary, checkpoint,
+schema, fallback, or unit behavior changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

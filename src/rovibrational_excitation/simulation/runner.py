@@ -33,6 +33,7 @@ from ..io import (
     update_summary as _update_summary,
 )
 from .batch import execute_case_batches
+from .case_paths import materialize_sweep_cases
 from .config import (
     load_params_file as _load_params_file,
 )
@@ -44,7 +45,6 @@ from .result_persistence import (
 )
 from .safe_execution import CaseRunOutcome, run_case_safely
 from .sweep import expand_cases as _expand_cases
-from .sweep import label as _label
 
 try:
     from tqdm import tqdm as _tqdm_impl
@@ -164,15 +164,7 @@ def run_all_with_checkpoint(
         shutil.copy(param_file_path, root / "params.py")
 
     # ---------- ケース展開 -----------------------------------------
-    cases: list[dict[str, Any]] = []
-    for case, sweep_keys in _expand_cases(base_dict):
-        case["save"] = save
-        if save and root is not None:
-            rel = Path(*[f"{k}_{_label(case[k])}" for k in sweep_keys])
-            outdir = root / rel
-            outdir.mkdir(parents=True, exist_ok=True)
-            case["outdir"] = str(outdir)
-        cases.append(case)
+    cases = materialize_sweep_cases(base_dict, root=root, save=save)
 
     if dry_run:
         print(f"[Dry-run] would execute {len(cases)} cases")
@@ -286,14 +278,7 @@ def resume_run(
     base_dict.get("description", "resumed_run")
 
     # 全ケースを再構築
-    all_cases: list[dict[str, Any]] = []
-    for case, sweep_keys in _expand_cases(base_dict):
-        case["save"] = True
-        rel = Path(*[f"{k}_{_label(case[k])}" for k in sweep_keys])
-        outdir = results_dir / rel
-        outdir.mkdir(parents=True, exist_ok=True)
-        case["outdir"] = str(outdir)
-        all_cases.append(case)
+    all_cases = materialize_sweep_cases(base_dict, root=results_dir, save=True)
 
     # 残りのケースをフィルタリング
     remaining_cases = checkpoint_manager.filter_remaining_cases(all_cases)

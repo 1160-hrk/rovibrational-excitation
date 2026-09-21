@@ -1598,6 +1598,16 @@ by P7.1-h. No source behavior changes; 1246 tests pass with 10 optional-GPU
 skips. P7.1-k may give both routes one case-path owner without changing
 these side effects.
 
+P7.1-k/D-089 gives normal and resumed case-path materialization one owner,
+`simulation.case_paths`, on 2026-09-21. The existing pure sweep expansion
+and label formatting remain in `simulation.sweep`; the new owner adds only
+the unchanged `save` flag, nested result path, eager mkdir, and `outdir`
+field. Runner still decides the results root, dry-run behavior, and resume
+filtering. The full suite passes 1246 cases with 10 optional-GPU skips,
+branch coverage stays 78%, and strict mypy covers 49 modules. Next freeze
+and extract normal-run reporting without conflating it with resume's
+file-backed summary.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;
