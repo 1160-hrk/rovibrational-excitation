@@ -724,6 +724,14 @@ returns a tuple-compatible `CaseRunOutcome`; it does not choose a model,
 algorithm, backend, process strategy, or checkpoint policy. Runner retains the
 multiprocessing-safe wrapper and batch orchestration until their later units.
 
+P7.1-i/D-088 gives fixed-size batch execution and checkpoint cadence the
+internal owner `simulation.batch`. The runner supplies the existing
+multiprocessing-safe executor, progress adapter, and pool factory; it retains
+configuration, process-count choice, save policy, resume filtering, and the
+distinct normal/resume summary sources. This is an ownership change only:
+case ordering, pool lifetime, checkpoint contents/timing, and result
+projection remain fixed.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

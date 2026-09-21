@@ -3167,6 +3167,31 @@ summary, persistence, unit, or fallback behavior changes.
 
 Implementation commit: this checkpoint.
 
+### D-088: Normal and resumed batch loops share one execution owner
+
+Status: Implemented on 2026-09-21 as P7.1-i.
+
+The normal and resumed runners had duplicate fixed-size batching, process
+pool creation, success/failure classification, and checkpoint updates.
+`simulation.batch.execute_case_batches` now owns those exact operations.
+The caller supplies the same top-level case function, progress wrapper, pool
+factory, and full case list. The process count is still chosen by the runner;
+one fresh pool per batch and the old progress labels remain unchanged.
+
+The service preserves the every-second-or-final checkpoint cadence and
+reincludes existing completed case hashes before each write. Resume still
+starts with prior failed records and returns only newly successful results;
+normal execution still projects non-None results and summarizes its in-memory
+outcomes. Resume still rebuilds its summary from result files. No schema,
+atomicity, overwrite, retry, fallback, or physical/numerical policy changes
+are included.
+
+Acceptance: 1244 passed, 10 optional-GPU skips, 78% branch coverage, strict
+mypy for 48 modules. A 2+1 parallel-batch test fixes pool count, ordering,
+and progress labels.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

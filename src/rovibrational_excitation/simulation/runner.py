@@ -32,6 +32,7 @@ from ..io import (
 from ..io import (
     update_summary as _update_summary,
 )
+from .batch import execute_case_batches
 from .config import (
     load_params_file as _load_params_file,
 )
@@ -186,67 +187,22 @@ def run_all_with_checkpoint(
 
     print(f"📊 実行開始: {len(cases)} ケース、{nproc} プロセス")
 
-    completed_cases = []
-    failed_cases = []
-    results = []
-    outcomes = []
-
-    # バッチ処理（チェックポイント間隔で分割）
-    for i in range(0, len(cases), checkpoint_interval):
-        batch = cases[i : i + checkpoint_interval]
-        batch_num = i // checkpoint_interval + 1
-        total_batches = (len(cases) + checkpoint_interval - 1) // checkpoint_interval
-
-        print(
-            f"🔄 バッチ {batch_num}/{total_batches} を実行中... ({len(batch)} ケース)"
-        )
-
-        # バッチ実行
-        if nproc > 1:
-            with Pool(nproc) as pool:
-                batch_results = list(
-                    _tqdm(
-                        pool.imap(_run_one_safe, batch),
-                        total=len(batch),
-                        desc=f"Batch {batch_num}",
-                    )
-                )
-        else:
-            batch_results = [
-                _run_one_safe(case) for case in _tqdm(batch, desc=f"Batch {batch_num}")
-            ]
-
-        # 結果を分類
-        for case, (result, error) in zip(batch, batch_results):
-            outcomes.append((case, result, error))
-            if error is None:
-                completed_cases.append(case)
-                results.append(result)
-            else:
-                failed_case = case.copy()
-                failed_case["error"] = error
-                failed_cases.append(failed_case)
-
-        # チェックポイント更新
-        if batch_num % 2 == 0 or batch_num == total_batches:
-            # 既存の完了ケースも含めて保存
-            all_completed = []
-            if checkpoint_manager is not None:
-                existing_checkpoint = checkpoint_manager.load_checkpoint()
-                if existing_checkpoint:
-                    completed_hashes = set(
-                        existing_checkpoint.get("completed_case_hashes", [])
-                    )
-                    for case in cases:
-                        case_hash = checkpoint_manager._case_hash(case)
-                        if case_hash in completed_hashes:
-                            all_completed.append(case)
-            all_completed.extend(completed_cases)
-
-            if checkpoint_manager is not None:
-                checkpoint_manager.save_checkpoint(
-                    all_completed, failed_cases, len(cases), start_time
-                )
+    batch_run = execute_case_batches(
+        cases,
+        all_cases=cases,
+        checkpoint_manager=checkpoint_manager,
+        checkpoint_interval=checkpoint_interval,
+        nproc=nproc,
+        start_time=start_time,
+        execute_case=_run_one_safe,
+        progress=_tqdm,
+        pool_factory=Pool,
+        progress_label="Batch",
+    )
+    completed_cases = batch_run.completed_cases
+    failed_cases = batch_run.failed_cases
+    results = batch_run.results
+    outcomes = batch_run.outcomes
 
     # ---------- 最終結果整理 ---------------------------------------
     print(
@@ -352,72 +308,26 @@ def resume_run(
     start_time = time.perf_counter()
     nproc = min(cpu_count(), nproc or 1)
 
-    completed_cases = []
-    failed_cases = []
-    results = []
-
-    # 既存の完了・失敗ケースを読み込み
     existing_checkpoint = checkpoint_manager.load_checkpoint()
-    if existing_checkpoint:
-        existing_failed = existing_checkpoint.get("failed_case_data", [])
-        failed_cases.extend(existing_failed)
-
-    # バッチ処理
-    for i in range(0, len(remaining_cases), checkpoint_interval):
-        batch = remaining_cases[i : i + checkpoint_interval]
-        batch_num = i // checkpoint_interval + 1
-        total_batches = (
-            len(remaining_cases) + checkpoint_interval - 1
-        ) // checkpoint_interval
-
-        print(
-            f"🔄 バッチ {batch_num}/{total_batches} を実行中... ({len(batch)} ケース)"
-        )
-
-        # バッチ実行
-        if nproc > 1:
-            with Pool(nproc) as pool:
-                batch_results = list(
-                    _tqdm(
-                        pool.imap(_run_one_safe, batch),
-                        total=len(batch),
-                        desc=f"Resume Batch {batch_num}",
-                    )
-                )
-        else:
-            batch_results = [
-                _run_one_safe(case)
-                for case in _tqdm(batch, desc=f"Resume Batch {batch_num}")
-            ]
-
-        # 結果を分類
-        for case, (result, error) in zip(batch, batch_results):
-            if error is None:
-                completed_cases.append(case)
-                results.append(result)
-            else:
-                failed_case = case.copy()
-                failed_case["error"] = error
-                failed_cases.append(failed_case)
-
-        # チェックポイント更新
-        if batch_num % 2 == 0 or batch_num == total_batches:
-            # 既存の完了ケースも含めて保存
-            all_completed = []
-            existing_checkpoint = checkpoint_manager.load_checkpoint()
-            if existing_checkpoint:
-                completed_hashes = set(
-                    existing_checkpoint.get("completed_case_hashes", [])
-                )
-                for case in all_cases:
-                    case_hash = checkpoint_manager._case_hash(case)
-                    if case_hash in completed_hashes:
-                        all_completed.append(case)
-            all_completed.extend(completed_cases)
-
-            checkpoint_manager.save_checkpoint(
-                all_completed, failed_cases, len(all_cases), start_time
-            )
+    existing_failed = (
+        existing_checkpoint.get("failed_case_data", []) if existing_checkpoint else []
+    )
+    batch_run = execute_case_batches(
+        remaining_cases,
+        all_cases=all_cases,
+        checkpoint_manager=checkpoint_manager,
+        checkpoint_interval=checkpoint_interval,
+        nproc=nproc,
+        start_time=start_time,
+        execute_case=_run_one_safe,
+        progress=_tqdm,
+        pool_factory=Pool,
+        progress_label="Resume Batch",
+        initial_failed_cases=existing_failed,
+    )
+    completed_cases = batch_run.completed_cases
+    failed_cases = batch_run.failed_cases
+    results = batch_run.results
 
     print(f"✅ 再開完了: {len(completed_cases)} 新規完了, {len(failed_cases)} 失敗")
 
@@ -436,7 +346,7 @@ def run_all(
     nproc: int | None = None,
     save: bool = True,
     dry_run: bool = False,
-):
+) -> list[Any]:
     """元のrun_all関数（チェックポイント無し）"""
     return run_all_with_checkpoint(
         params,

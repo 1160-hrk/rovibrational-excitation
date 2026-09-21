@@ -207,3 +207,48 @@ def test_resume_rebuilds_cases_skips_completed_and_uses_saved_results(tmp_path):
         1.0,
         2.0,
     ]
+
+
+def test_parallel_batches_keep_one_pool_per_batch_and_order():
+    pool = Mock()
+    pool.__enter__ = Mock(return_value=pool)
+    pool.__exit__ = Mock(return_value=False)
+    pool.imap.side_effect = lambda execute, batch: map(execute, batch)
+    populations = [
+        np.array([[0.1, 0.9]]),
+        np.array([[0.2, 0.8]]),
+        np.array([[0.3, 0.7]]),
+    ]
+    progress_desc = []
+
+    def progress(values, **kwargs):
+        progress_desc.append(kwargs["desc"])
+        return values
+
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner.Pool", return_value=pool
+        ) as pool_factory,
+        patch("rovibrational_excitation.simulation.runner.cpu_count", return_value=4),
+        patch(
+            "rovibrational_excitation.simulation.runner._run_one_safe",
+            side_effect=[(population, None) for population in populations],
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._tqdm",
+            side_effect=progress,
+        ),
+    ):
+        results = run_all_with_checkpoint(
+            {"amplitude": [1.0, 2.0, 3.0]},
+            nproc=2,
+            save=False,
+            checkpoint_interval=2,
+        )
+
+    assert pool_factory.call_args_list == [call(2), call(2)]
+    assert pool.imap.call_count == 2
+    assert [len(args.args[1]) for args in pool.imap.call_args_list] == [2, 1]
+    assert progress_desc == ["Batch 1", "Batch 2"]
+    for result, expected in zip(results, populations):
+        np.testing.assert_array_equal(result, expected)

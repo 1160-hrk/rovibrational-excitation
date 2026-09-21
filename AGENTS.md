@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-h batch/resume summary characterization
+Verified structural checkpoint: P7.1-i D-088 batch execution extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -362,6 +362,11 @@ P7.1-h freezes normal in-memory summary, resume file-backed summary,
 checkpoint-completed case exclusion, sweep-path reconstruction, and the
 completed/failed resume checkpoint totals. Source behavior is unchanged; the
 suite has 1243 passes and 10 optional-GPU skips.
+P7.1-i/D-088 gives fixed-size batch execution and checkpoint cadence to
+`simulation.batch`. Runner retains case construction, process-count choice,
+resume validation, and both distinct summary policies. Pool-per-batch
+behavior is tested; the suite has 1244 passes, 10 optional-GPU skips, 78%
+coverage, and 48 strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -370,9 +375,10 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 with batch-manager extraction. Preserve checkpoint
-   schema/cadence, process behavior, paths, statuses, and final-population
-   projection.
+1. Continue P7.1 by isolating reporting and case-path reconstruction.
+   Preserve the distinct normal in-memory and resume file-backed summaries,
+   checkpoint schema/cadence, process behavior, paths, statuses, and
+   final-population projection.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

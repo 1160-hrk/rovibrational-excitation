@@ -1577,6 +1577,18 @@ checkpoint totals. No source behavior changes; the full suite passes 1243
 cases with 10 optional-GPU skips. P7.1-i may now extract batch management
 under these guards without changing calculation or persistence policy.
 
+P7.1-i/D-088 moves the duplicated normal/resume batch loops to
+`simulation.batch.execute_case_batches` on 2026-09-21. Runner still owns
+case construction, resume validation, process-count choice, the
+multiprocessing-safe case callable, and the two intentionally different
+summary paths. The batch owner preserves case order, a fresh process pool
+per batch, progress labels, every-second-or-final checkpoint cadence,
+completed/failed hashing, and the original result projections. The new
+parallel-path test checks two pools for three cases split 2+1. The full suite
+passes 1244 cases with 10 optional-GPU skips; branch coverage is 78%, and
+strict mypy covers 48 modules. Next isolate reporting and case-path
+reconstruction under the same no-behavior-change policy.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

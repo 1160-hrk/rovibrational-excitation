@@ -149,6 +149,13 @@ checkpoint-based case exclusion and sweep-path reconstruction. The two summary
 sources remain distinct during batch-manager extraction. Source behavior is
 unchanged; the full suite has 1243 passes and 10 optional-GPU skips.
 
+P7.1-i/D-088 extracts fixed-size batch execution and checkpoint cadence to
+`simulation.batch`. The runner retains case preparation, process-count
+choice, resume validation, and separate normal/resume summary policies.
+Parallel pool-per-batch behavior is now tested. The full suite has 1244
+passes, 10 optional-GPU skips, 78% branch coverage, and 48 strict-mypy
+modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
