@@ -183,6 +183,11 @@ post-batch reporting to `simulation.reporting`, preserving the all-complete
 early return and file-backed summary source. The full suite has 1252
 passes, 10 optional-GPU skips, 78% coverage, and 51 strict-mypy modules.
 
+P7.1-p/D-092 requires a true positive-integer checkpoint interval at both
+normal and resume entries, including rejection of booleans. Five new
+parameterized cases pass; the suite has 1257 passes, 10 optional-GPU skips,
+78% coverage, and 51 strict-mypy modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

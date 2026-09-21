@@ -31,7 +31,7 @@ from ..io import (
 from ..io import (
     update_summary as _update_summary,
 )
-from .batch import execute_case_batches
+from .batch import execute_case_batches, validate_checkpoint_interval
 from .case_paths import materialize_sweep_cases
 from .config import (
     load_params_file as _load_params_file,
@@ -142,8 +142,7 @@ def run_all_with_checkpoint(
     checkpoint_interval: int = 10,
 ) -> list[Any]:
     """チェックポイント機能付きのバッチ実行"""
-    if not isinstance(checkpoint_interval, int) or checkpoint_interval < 1:
-        raise ValueError("checkpoint_interval must be a positive integer")
+    validate_checkpoint_interval(checkpoint_interval)
 
     # ---------- パラメータ読み込み ---------------------------------
     if isinstance(params, str):
@@ -216,6 +215,7 @@ def resume_run(
     checkpoint_interval: int = 10,
 ) -> list[Any]:
     """中断された計算を途中から再開"""
+    validate_checkpoint_interval(checkpoint_interval)
 
     resume_preparation = prepare_resume_run(
         results_dir,

@@ -474,3 +474,20 @@ def test_resume_reports_new_completions_then_updates_file_summary(tmp_path):
     summary.assert_called_once()
     assert summary.call_args.args[0] == tmp_path
     assert summary.call_args.args[1][0]["outdir"] == str(tmp_path / "amplitude_1")
+
+
+@pytest.mark.parametrize("interval", [0, -1, 1.5, "2", True])
+def test_batch_entries_reject_invalid_checkpoint_interval_before_io(tmp_path, interval):
+    with pytest.raises(
+        ValueError, match="checkpoint_interval must be a positive integer"
+    ):
+        run_all_with_checkpoint(
+            {"amplitude": [1.0]},
+            save=False,
+            checkpoint_interval=interval,
+        )
+
+    with pytest.raises(
+        ValueError, match="checkpoint_interval must be a positive integer"
+    ):
+        resume_run(tmp_path, checkpoint_interval=interval)

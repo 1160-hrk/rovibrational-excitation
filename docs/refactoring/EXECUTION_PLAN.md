@@ -1651,6 +1651,17 @@ audit. In particular, `resume_run` does not currently validate
 `checkpoint_interval` like normal batch execution; address this in a
 separate tested validation-policy unit, not this ownership commit.
 
+P7.1-p/D-092 closes that input-boundary gap on 2026-09-21. Both normal and
+resume entry points now require an actual positive Python integer
+`checkpoint_interval` before file I/O or case execution. Zero, negative,
+non-integer values, and booleans raise the same precise `ValueError`; valid
+integer batch cadence, checkpoint contents, and calculations are unchanged.
+Five parameterized tests first failed on the old resume route or boolean
+normal route, then passed after the shared validator was added to
+`simulation.batch`. The full suite passes 1257 cases with 10 optional-GPU
+skips, branch coverage remains 78%, and strict mypy covers 51 modules.
+The P7.1 acceptance audit is next.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

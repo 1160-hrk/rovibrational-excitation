@@ -3266,6 +3266,29 @@ change.
 
 Implementation commit: this checkpoint.
 
+### D-092: Both batch entries require a strict positive checkpoint interval
+
+Status: Implemented on 2026-09-21 as P7.1-p.
+
+Normal execution already rejected zero, negative, and non-integer
+`checkpoint_interval` values before work, while resume did not validate
+the option at all. Both entry points now call
+`simulation.batch.validate_checkpoint_interval` before I/O or execution.
+The validator requires `type(value) is int` and `value >= 1`. This also
+closes the inherited Python `bool`-as-`int` loophole in normal execution.
+Invalid input receives the same `ValueError` in both routes.
+
+This is an explicit workflow input-policy change, not a numerical or
+checkpoint-format change. All valid positive-integer batch sizes preserve
+the prior process scheduling, every-second-or-final save cadence, case order,
+and results. The five parameterized tests failed before implementation and
+pass afterward.
+
+Acceptance: 1257 passed, 10 optional-GPU skips, 78% branch coverage, strict
+mypy for 51 modules.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

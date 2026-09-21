@@ -12,6 +12,12 @@ Case: TypeAlias = dict[str, Any]
 CaseOutcome: TypeAlias = tuple[Case, Any, str | None]
 
 
+def validate_checkpoint_interval(value: int) -> None:
+    """Require an actual positive integer before any batch I/O or execution."""
+    if type(value) is not int or value < 1:
+        raise ValueError("checkpoint_interval must be a positive integer")
+
+
 class BatchRun(NamedTuple):
     """The existing per-case projections needed by batch callers."""
 

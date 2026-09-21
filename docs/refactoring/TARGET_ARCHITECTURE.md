@@ -752,6 +752,10 @@ and batch execution. Post-batch resume completion reporting belongs to
 file-backed `io.storage.update_summary` callback. No validation policy or
 persistence schema changes are included.
 
+P7.1-p/D-092 places shared strict checkpoint-interval validation with the
+`simulation.batch` process boundary. Both runner entry points call it before
+any case or checkpoint work. Valid positive-integer cadence is unchanged.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and
