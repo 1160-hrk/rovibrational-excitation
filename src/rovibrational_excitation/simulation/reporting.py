@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -60,3 +61,16 @@ def report_normal_batch(
         success_df = df[df["status"] == "success"]
         if not success_df.empty:
             success_df.to_csv(root / "summary_success.csv", index=False)
+
+
+def report_resumed_batch(
+    *,
+    results_dir: Path,
+    all_cases: list[dict[str, Any]],
+    completed_cases: list[dict[str, Any]],
+    failed_cases: list[dict[str, Any]],
+    update_summary: Callable[[Path, list[dict[str, Any]]], None],
+) -> None:
+    """Report newly completed cases, then rebuild the file-backed summary."""
+    print(f"✅ 再開完了: {len(completed_cases)} 新規完了, {len(failed_cases)} 失敗")
+    update_summary(results_dir, all_cases)

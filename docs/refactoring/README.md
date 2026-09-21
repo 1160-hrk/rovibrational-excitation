@@ -178,6 +178,11 @@ all-complete early exit without summary rewrite, and the resume completion
 message before the file-backed summary call. Source is unchanged; 1252
 tests pass with 10 optional-GPU skips.
 
+P7.1-o/D-091 moves resume entry preparation to `simulation.resume` and
+post-batch reporting to `simulation.reporting`, preserving the all-complete
+early return and file-backed summary source. The full suite has 1252
+passes, 10 optional-GPU skips, 78% coverage, and 51 strict-mypy modules.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

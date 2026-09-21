@@ -105,6 +105,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/simulation/batch.py",
         "src/rovibrational_excitation/simulation/case_paths.py",
         "src/rovibrational_excitation/simulation/reporting.py",
+        "src/rovibrational_excitation/simulation/resume.py",
         "src/rovibrational_excitation/models/_parameter_validation.py",
         "src/rovibrational_excitation/models/parameters.py",
         "src/rovibrational_excitation/models/linear_molecule/parameters.py",

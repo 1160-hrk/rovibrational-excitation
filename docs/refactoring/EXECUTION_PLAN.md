@@ -1639,6 +1639,18 @@ No source behavior changes; 1252 tests pass with 10 optional-GPU skips.
 P7.1-o may isolate resume preparation/reporting while preserving these
 observable details and deferring validation-policy changes to P7.2.
 
+P7.1-o/D-091 moves guarded resume preparation to `simulation.resume` and
+the post-batch completion report to `simulation.reporting` on 2026-09-21.
+The runner still decides process count, executes remaining cases, handles
+all-complete early return, and supplies the existing checkpoint/parameter
+loader and file-backed summary callback. Validation/error order, eager case
+paths, checkpoint contents, return values, and summary timing are unchanged.
+The full suite passes 1252 cases with 10 optional-GPU skips; branch coverage
+stays 78%, and strict mypy covers 51 modules. Next perform a P7.1 acceptance
+audit. In particular, `resume_run` does not currently validate
+`checkpoint_interval` like normal batch execution; address this in a
+separate tested validation-policy unit, not this ownership commit.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

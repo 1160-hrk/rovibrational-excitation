@@ -744,6 +744,14 @@ result files or alter resume reporting. Resume's file-backed summary remains
 with `io.storage.update_summary` pending its separately tested P7.2
 persistence work.
 
+P7.1-o/D-091 gives resume entry checks, saved-parameter loading, case
+reconstruction, and completed-case filtering the internal owner
+`simulation.resume`. The runner still coordinates the all-complete branch
+and batch execution. Post-batch resume completion reporting belongs to
+`simulation.reporting`, but the summary content remains owned by the
+file-backed `io.storage.update_summary` callback. No validation policy or
+persistence schema changes are included.
+
 The final mapping boundary is closed rather than permissive: an unknown name is
 an error, and known names are accepted only by the model, field route, and
 algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and

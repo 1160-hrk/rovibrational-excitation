@@ -38,11 +38,12 @@ from .config import (
 )
 from .execution import prepare_simulation_case, propagate_simulation_case
 from .m_average import MAveragePropagationResult
-from .reporting import report_normal_batch
+from .reporting import report_normal_batch, report_resumed_batch
 from .result_persistence import (
     persist_m_average_result,
     persist_wavefunction_result,
 )
+from .resume import prepare_resume_run
 from .safe_execution import CaseRunOutcome, run_case_safely
 from .sweep import expand_cases as _expand_cases
 
@@ -216,37 +217,15 @@ def resume_run(
 ) -> list[Any]:
     """中断された計算を途中から再開"""
 
-    results_dir = Path(results_dir)
-    if not results_dir.exists():
-        raise FileNotFoundError(f"結果ディレクトリが見つかりません: {results_dir}")
-
-    checkpoint_manager = CheckpointManager(results_dir)
-    if not checkpoint_manager.is_resumable():
-        raise ValueError(f"再開可能なチェックポイントが見つかりません: {results_dir}")
-
-    # チェックポイントから情報を読み込み
-    checkpoint = checkpoint_manager.load_checkpoint()
-    if checkpoint is None:
-        raise ValueError("チェックポイントの読み込みに失敗")
-
-    print(f"📁 再開: {results_dir}")
-    print(
-        f"🔄 前回の進捗: {checkpoint['completed_cases']}/{checkpoint['total_cases']} 完了"
+    resume_preparation = prepare_resume_run(
+        results_dir,
+        checkpoint_manager_factory=CheckpointManager,
+        load_params_file=_load_params_file,
     )
-
-    # 元のパラメータファイルを読み込み
-    params_file = results_dir / "params.py"
-    if not params_file.exists():
-        raise FileNotFoundError(f"パラメータファイルが見つかりません: {params_file}")
-
-    base_dict = _load_params_file(str(params_file))
-    base_dict.get("description", "resumed_run")
-
-    # 全ケースを再構築
-    all_cases = materialize_sweep_cases(base_dict, root=results_dir, save=True)
-
-    # 残りのケースをフィルタリング
-    remaining_cases = checkpoint_manager.filter_remaining_cases(all_cases)
+    results_dir = resume_preparation.results_dir
+    checkpoint_manager = resume_preparation.checkpoint_manager
+    all_cases = resume_preparation.all_cases
+    remaining_cases = resume_preparation.remaining_cases
 
     if not remaining_cases:
         print("✅ 全ケースが既に完了しています")
@@ -279,10 +258,13 @@ def resume_run(
     failed_cases = batch_run.failed_cases
     results = batch_run.results
 
-    print(f"✅ 再開完了: {len(completed_cases)} 新規完了, {len(failed_cases)} 失敗")
-
-    # 最終サマリー更新
-    _update_summary(results_dir, all_cases)
+    report_resumed_batch(
+        results_dir=results_dir,
+        all_cases=all_cases,
+        completed_cases=completed_cases,
+        failed_cases=failed_cases,
+        update_summary=_update_summary,
+    )
 
     return results
 

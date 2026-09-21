@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-n resume entry/report characterization
+Verified structural checkpoint: P7.1-o D-091 resume coordination extraction
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -386,6 +386,10 @@ P7.1-n fixes unreadable checkpoint/missing-parameter error order, all-complete
 early exit without summary rewrite, and resume completion reporting before
 the file-backed summary call. Source is unchanged; 1252 tests pass with
 10 optional-GPU skips.
+P7.1-o/D-091 moves resume preparation to `simulation.resume` and post-batch
+reporting to `simulation.reporting`; runner retains the all-complete branch.
+The suite has 1252 passes, 10 optional-GPU skips, 78% coverage, and 51
+strict-mypy modules.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -394,10 +398,12 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 by isolating the guarded resume preparation/reporting
-   coordination. Preserve distinct normal in-memory and resume file-backed
-   summaries, checkpoint schema/cadence, process behavior, paths, statuses,
-   and final-population projection; defer validation-policy changes to P7.2.
+1. Perform the P7.1 acceptance audit before starting a separate
+   resume-validation or P7.2 persistence policy unit. Preserve distinct
+   normal in-memory and resume file-backed summaries, checkpoint
+   schema/cadence, process behavior, paths, statuses, and final-population
+   projection. The inherited missing `resume_run.checkpoint_interval`
+   validation needs a separate regression-tested change.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.

@@ -3240,6 +3240,32 @@ mypy for 50 modules.
 
 Implementation commit: this checkpoint.
 
+### D-091: Resume preparation and completion reporting have application owners
+
+Status: Implemented on 2026-09-21 as P7.1-o.
+
+The exact resume entry sequence moves from `simulation.runner` to
+`simulation.resume.prepare_resume_run`: convert the path, check existence,
+construct and load the checkpoint, display prior progress, require/load the
+saved Python parameter file, rebuild case directories, and filter completed
+hashes. The runner supplies its existing checkpoint-manager factory and
+parameter loader, then retains the all-complete early return, process-count
+choice, and batch execution.
+
+The completion message and subsequent file-backed summary callback move to
+`simulation.reporting.report_resumed_batch`. An all-complete resume still
+returns without invoking that callback. Existing error messages, print order,
+checkpoint schema/cadence, summary source, and returned new results remain
+unchanged. This decision does not approve a new resume-validation policy;
+in particular, the inherited lack of `checkpoint_interval` validation is
+deferred to a separate tested unit.
+
+Acceptance: 1252 passed, 10 optional-GPU skips, 78% branch coverage, strict
+mypy for 51 modules. No physical, numerical, persistence, fallback, or unit
+change.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
