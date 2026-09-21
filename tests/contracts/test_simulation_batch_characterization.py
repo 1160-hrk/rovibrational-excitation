@@ -252,3 +252,75 @@ def test_parallel_batches_keep_one_pool_per_batch_and_order():
     assert progress_desc == ["Batch 1", "Batch 2"]
     for result, expected in zip(results, populations):
         np.testing.assert_array_equal(result, expected)
+
+
+def test_normal_case_paths_preserve_sweep_order_labels_and_directories(tmp_path):
+    executed = []
+
+    def run_case(case):
+        executed.append(case.copy())
+        return np.array([[1.0, 0.0]]), None
+
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=Path(tmp_path),
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._run_one_safe",
+            side_effect=run_case,
+        ),
+        patch(
+            "rovibrational_excitation.simulation.runner._tqdm",
+            side_effect=lambda values, **kwargs: values,
+        ),
+    ):
+        run_all_with_checkpoint(
+            {
+                "description": "path_contract",
+                "amplitude": [1.0, 2.0],
+                "phase_sweep": [0.1, 0.2],
+            },
+            save=True,
+            checkpoint_interval=4,
+        )
+
+    assert [(case["amplitude"], case["phase"]) for case in executed] == [
+        (1.0, 0.1),
+        (1.0, 0.2),
+        (2.0, 0.1),
+        (2.0, 0.2),
+    ]
+    assert [case["outdir"] for case in executed] == [
+        str(tmp_path / "amplitude_1" / "phase_0.1"),
+        str(tmp_path / "amplitude_1" / "phase_0.2"),
+        str(tmp_path / "amplitude_2" / "phase_0.1"),
+        str(tmp_path / "amplitude_2" / "phase_0.2"),
+    ]
+    assert all(case["save"] is True for case in executed)
+    assert all(Path(case["outdir"]).is_dir() for case in executed)
+
+
+def test_dry_run_still_creates_saved_case_directories_without_executing(tmp_path):
+    with (
+        patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=Path(tmp_path),
+        ),
+        patch("rovibrational_excitation.simulation.runner._run_one_safe") as execute,
+        patch(
+            "rovibrational_excitation.simulation.runner.CheckpointManager"
+        ) as manager,
+    ):
+        result = run_all_with_checkpoint(
+            {"amplitude": [1.0, 2.0]},
+            save=True,
+            dry_run=True,
+        )
+
+    assert result == []
+    assert (tmp_path / "amplitude_1").is_dir()
+    assert (tmp_path / "amplitude_2").is_dir()
+    execute.assert_not_called()
+    manager.assert_not_called()
+    assert not (tmp_path / "summary.csv").exists()

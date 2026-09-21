@@ -1589,6 +1589,15 @@ passes 1244 cases with 10 optional-GPU skips; branch coverage is 78%, and
 strict mypy covers 48 modules. Next isolate reporting and case-path
 reconstruction under the same no-behavior-change policy.
 
+P7.1-j freezes case-path construction before extraction on 2026-09-21.
+Normal sweep cases retain insertion-ordered Cartesian expansion and
+`key_label` nested paths; saved directories are created before execution.
+A saved dry run still creates those directories but executes no case and
+creates no checkpoint or summary. Resume reconstruction was already fixed
+by P7.1-h. No source behavior changes; 1246 tests pass with 10 optional-GPU
+skips. P7.1-k may give both routes one case-path owner without changing
+these side effects.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

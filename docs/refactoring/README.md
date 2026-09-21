@@ -156,6 +156,9 @@ Parallel pool-per-batch behavior is now tested. The full suite has 1244
 passes, 10 optional-GPU skips, 78% branch coverage, and 48 strict-mypy
 modules.
 
+P7.1-j freezes sweep-order case paths and saved dry-run directory creation.
+The source is unchanged; 1246 tests pass with 10 optional-GPU skips.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

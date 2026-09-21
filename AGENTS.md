@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-i D-088 batch execution extraction
+Verified structural checkpoint: P7.1-j case-path characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -367,6 +367,9 @@ P7.1-i/D-088 gives fixed-size batch execution and checkpoint cadence to
 resume validation, and both distinct summary policies. Pool-per-batch
 behavior is tested; the suite has 1244 passes, 10 optional-GPU skips, 78%
 coverage, and 48 strict-mypy modules.
+P7.1-j fixes insertion-ordered sweep paths and saved dry-run directory
+creation before extraction. The source is unchanged; 1246 tests pass with
+10 optional-GPU skips.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -375,7 +378,7 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 by isolating reporting and case-path reconstruction.
+1. Continue P7.1 by extracting the case-path owner, then reporting.
    Preserve the distinct normal in-memory and resume file-backed summaries,
    checkpoint schema/cadence, process behavior, paths, statuses, and
    final-population projection.
