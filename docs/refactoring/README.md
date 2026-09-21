@@ -133,6 +133,11 @@ owning model construction or numerical evolution. D-017 branching, explicit
 host conversion, persistence, and numerical results remain unchanged; strict
 mypy covers 46 modules.
 
+P7.1-f freezes the exact `OSError` retry/backoff, immediate non-OS failure,
+traceback/parameter error file, and every-second-or-final batch checkpoint
+cadence. Source behavior remains unchanged; 1240 tests pass with 10
+optional-GPU skips.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -1551,6 +1551,15 @@ The full suite passes 1237 cases with 10 optional-GPU skips, branch coverage is
 77%, strict mypy covers 46 modules, and all three active examples pass. Next
 characterize retry/error and batch/checkpoint orchestration before extraction.
 
+P7.1-f freezes retry, failure-file, and checkpoint cadence behavior before
+batch-service extraction on 2026-09-21. `OSError` alone receives the existing
+one- and two-second retries; other exceptions fail on the first attempt. The
+returned traceback is written verbatim before caller parameters, including
+the existing JSON-safe complex representation. Five cases in batches of two
+save checkpoints after batch two and the final third batch. No source behavior
+changes; the full suite passes 1240 cases with 10 optional-GPU skips. P7.1-g
+may now extract safe-case execution under these guards.
+
 ### P7.2 Result schema and I/O
 
 - add schema version;

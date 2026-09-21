@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-20
+Last verified: 2026-09-21
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.1-e D-086 one-case execution extraction
+Verified structural checkpoint: P7.1-f batch failure/cadence characterization
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -349,6 +349,10 @@ P7.1-e/D-086 moves the guarded preparation and propagation stages to
 population projection. D-017 branching, nondimensionalization order, explicit
 host conversion, and numerical behavior are unchanged. The suite has 1237
 passes, 10 optional-GPU skips, 77% coverage, and 46 strict-mypy modules.
+P7.1-f freezes OSError-only retries with one/two-second backoff, immediate
+non-OS failure, exact traceback/parameter error files, and the current
+every-second-or-final-batch checkpoint cadence. Source is unchanged; the suite
+has 1240 passes and 10 optional-GPU skips.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -357,9 +361,9 @@ formula change. The Phase 8 root API is exactly the eight-name typed surface
 recorded by D-073.
 The next work is:
 
-1. Continue P7.1 by characterizing retry/error handling and batch/checkpoint
-   orchestration before separating those services. Preserve retry counts,
-   checkpoint cadence/schema, process behavior, summaries, and error files.
+1. Continue P7.1 by extracting the characterized safe-case retry/error service,
+   then characterize resume and summary behavior before batch-manager
+   extraction. Preserve checkpoint schema/cadence and process behavior.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and persistence behavior.
