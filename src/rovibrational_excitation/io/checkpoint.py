@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
+from .atomic import atomic_write_json
 from .serialization import json_safe
 
 
@@ -42,10 +43,10 @@ class CheckpointManager:
             "completed_case_hashes": list(unique_completed),
             "failed_case_data": list(unique_failed.values()),
         }
-        with self.checkpoint_file.open("w", encoding="utf-8") as file:
-            json.dump(json_safe(checkpoint_data), file, indent=2)
-        with self.failed_cases_file.open("w", encoding="utf-8") as file:
-            json.dump(json_safe(list(unique_failed.values())), file, indent=2)
+        atomic_write_json(self.checkpoint_file, json_safe(checkpoint_data))
+        atomic_write_json(
+            self.failed_cases_file, json_safe(list(unique_failed.values()))
+        )
         print(f"✓ チェックポイント保存: {len(unique_completed)}/{total_cases} 完了")
 
     def load_checkpoint(self) -> dict[str, Any] | None:

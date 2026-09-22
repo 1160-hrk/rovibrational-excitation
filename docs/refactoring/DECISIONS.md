@@ -3401,6 +3401,27 @@ provenance remain separate work. No automatic recovery or fallback is added.
 
 Implementation commit: this checkpoint.
 
+### D-098: Atomically replace each checkpoint JSON file without changing resume
+
+Status: Implemented on 2026-09-22 as P7.2-e.
+
+`CheckpointManager.save_checkpoint` retains the exact checkpoint key set,
+case-hash computation, completed-over-failed deduplication, timestamp,
+`failed_cases.json` content, and write order. Each JSON file is now written
+and synced through the same destination-directory temporary-file writer as
+normal results, then installed with `os.replace`. A failed write or replace
+leaves the individual destination's previous bytes intact and removes its
+temporary file. Errors still propagate from `save_checkpoint`.
+
+This is **not** a transaction across `checkpoint.json` and
+`failed_cases.json`: failure of the second write may leave a new checkpoint
+with the previous failure-list sidecar. The current broad-catch
+`load_checkpoint` behavior, unversioned schema, case-hash meaning, and resume
+filtering are preserved until a separately tested validation/provenance unit.
+No calculation or optimizer behavior changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

@@ -1727,6 +1727,14 @@ an interrupted or mismatched group. Checkpoint atomicity and provenance
 remain separate P7.2 work. Full suite: 1275 passed, 10 optional-GPU
 skipped; branch coverage: 78%; strict mypy covers 54 modules.
 
+P7.2-e/D-098 atomically replaces each checkpoint JSON file while preserving
+its key set, hash/deduplication semantics, write order, and resume behavior.
+Failure injection proves that each existing destination is retained and its
+temporary file removed when replacement fails. The checkpoint/failure-list
+pair is not transactional; format versioning, validation, and provenance
+remain separate P7.2 units. Full suite: 1277 passed, 10 optional-GPU
+skipped; branch coverage: 78%; strict mypy covers 54 modules.
+
 - complete scientific input provenance;
 - cross-file result publication and checkpoint atomicity;
 - validated checkpoint resume;

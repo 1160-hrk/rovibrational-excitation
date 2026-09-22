@@ -215,7 +215,9 @@ P7.2-c/D-096 routes the resumed-run file-backed summary through the strict
 loader, preserving valid CSV values while raising on legacy, corrupt, or
 incomplete saved results. P7.2-d/D-097 atomically replaces each result
 payload and manifest file without changing numerical arrays. Multi-file
-publication and checkpoint validation remain open.
+publication and checkpoint validation remain open. P7.2-e/D-098 also
+atomically replaces each checkpoint JSON file, without changing checkpoint
+contents or resume behavior; the pair is not yet transactional.
 
 P6.2-c
 implements D-069:

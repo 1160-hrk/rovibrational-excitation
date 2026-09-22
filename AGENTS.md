@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-22
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-d D-097 atomic individual result files
+Verified structural checkpoint: P7.2-e D-098 atomic individual checkpoint files
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -171,14 +171,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.2-d:
+Current local CPU baseline after P7.2-e:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1275 passed, 10 GPU tests skipped (1285 collected)
+1277 passed, 10 GPU tests skipped (1287 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -411,7 +411,9 @@ the strict loader and surfaces invalid saved results before CSV writes;
 normal in-memory summaries are unchanged. P7.2-d/D-097 atomically replaces
 individual result NPZ/JSON/manifest files. It does not make the group
 transactional: a failed rerun can leave a manifest/payload mismatch, which
-the strict reader rejects. Checkpoints remain legacy.
+the strict reader rejects. P7.2-e/D-098 atomically replaces each legacy
+checkpoint JSON file without changing its contents or resume semantics. The
+two checkpoint files are not yet a transaction.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -422,6 +424,7 @@ The next work is:
 
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
    P7.2-b disk schema v1, P7.2-c strict resumed summaries, and P7.2-d
+   result individual-file atomic replacement, and P7.2-e checkpoint
    individual-file atomic replacement are implemented. Next implement
    cross-file result/checkpoint publication and validated resume provenance.
    Do not silently accept unversioned files.
