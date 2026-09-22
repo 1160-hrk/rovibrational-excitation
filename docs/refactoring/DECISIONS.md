@@ -3331,6 +3331,32 @@ documentation, and real-CUDA execution evidence.
 
 Implementation commit: this checkpoint.
 
+### D-095: Version normal simulation disk results without changing arrays
+
+Status: Implemented on 2026-09-22 as P7.2-b.
+
+A saved normal-simulation result now has a separate
+`result_manifest.json` with disk schema version 1. This version is
+independent of both package and in-memory result versions. The manifest
+names the representation, exact NPZ array shapes and dtypes, canonical
+units, selected caller-declared model/execution settings, and SHA-256
+hashes of the saved NPZ and JSON payloads. Missing declarations remain
+explicit nulls; no model, backend, or scaling mode is inferred.
+
+`io.result_schema.load_simulation_result` accepts only a known manifest and
+matching payloads, uses `allow_pickle=False`, and raises `ResultFormatError`
+for missing/unversioned, unknown, malformed, or inconsistent files. There
+is no implicit legacy migration. The writer preserves every numerical array
+and its units. It removes only the duplicate pickle-only `regime_info`
+object from NPZ; the established JSON sidecar retains that data.
+
+The new reader is not yet wired into the existing summary and visualization
+readers. Direct writes and checkpoint files are still non-atomic/unversioned;
+full input provenance is not claimed. Those changes need separate tests and
+commits. No propagation, M-average, or optimizer calculation changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

@@ -2,13 +2,13 @@
 
 Verified: 2026-09-21
 Scope: P7.2-a, after the `0.3.0.dev1` development checkpoint
-Disposition: **Characterization only; disk schemas remain unversioned.**
+Disposition: **Historical pre-P7.2-b baseline; see `PHASE7_RESULT_DISK_SCHEMA_V1.md` for the current result format.**
 
 This inventory is the starting point for P7.2. It records what the current
 writers and readers actually do. It is not approval to change a physical
 formula, numerical array, time grid, unit conversion, or optimizer index.
 
-## Current disk artifacts and owners
+## Pre-P7.2-b disk artifacts and owners
 
 | Artifact | Writer | Reader | Current contract |
 |---|---|---|---|
@@ -75,6 +75,8 @@ state, population, scalar-field arrays, and optional regime sidecar content.
    missing/corrupt/partial files and all-complete resume, then run full
    physics, CPU, build, and installed-wheel gates.
 
-P7.2-a changes tests and documentation only. The current unversioned files
-remain readable by the existing paths; no schema, policy, or numerical logic
-has been changed yet.
+P7.2-a changed tests and documentation only. P7.2-b then introduced the
+versioned result manifest and strict opt-in loader while leaving checkpoints
+and the legacy summary reader untouched. This document remains the exact
+pre-migration inventory; the current contract is in
+`PHASE7_RESULT_DISK_SCHEMA_V1.md`.

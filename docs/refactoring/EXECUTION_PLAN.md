@@ -1698,6 +1698,17 @@ writer or resume policy changes. A new contract test preserves the exact
 legacy numerical arrays and separate JSON regime data. No disk schema or
 calculation changes in this unit.
 
+P7.2-b/D-095 introduces the result-disk schema v1 manifest and strict
+opt-in loader, documented in `PHASE7_RESULT_DISK_SCHEMA_V1.md`. It
+preserves ordinary and M-average numeric arrays exactly, removes only the
+pickle-only duplicate NPZ regime metadata in favor of its existing JSON
+sidecar, and rejects unversioned/unknown/inconsistent results explicitly.
+The manifest records stored-file digests, dtypes, shapes, canonical units,
+and selected raw model/execution declarations. The old summary reader,
+atomic writes, checkpoint schema, and full provenance remain later units.
+The full suite passes 1267 tests with 10 optional-GPU skips, branch coverage
+is 78%, strict mypy covers 52 modules, and the installed-wheel import passes.
+
 - add schema version;
 - serialize model, field, time, solver, backend, and scaling metadata;
 - atomic result/checkpoint writes;

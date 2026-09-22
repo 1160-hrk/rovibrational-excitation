@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-21
+Last verified: 2026-09-22
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-a persistence characterization
+Verified structural checkpoint: P7.2-b D-095 result disk schema v1
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -402,7 +402,10 @@ modules. Phase 7 and final v0.3.0 remain open.
 P7.1-s/D-094 sets the package version to `0.3.0.dev1` as a development
 checkpoint only; no tag or publication is implied. P7.2-a inventories the
 unversioned persistence boundary in `PHASE7_PERSISTENCE_BASELINE.md` and
-adds exact-array/regime-format characterization. No disk writer changes yet.
+adds exact-array/regime-format characterization. P7.2-b/D-095 writes a
+versioned result manifest and supplies a strict opt-in loader; numeric
+arrays remain unchanged, while duplicate pickle-only regime metadata moves
+to its existing JSON sidecar. Summary/checkpoint readers remain legacy.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -412,15 +415,16 @@ recorded by D-073.
 The next work is:
 
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
-   P7.2-a characterization is complete. Next design and implement an explicit
-   disk schema and loader, preserving numerical arrays and rejecting unknown
-   or unversioned formats without an explicit migration path.
+   P7.2-b disk schema v1 and strict opt-in loader are implemented. Next
+   migrate file-backed summaries to the strict loader with tested error
+   reporting, then implement atomic result/checkpoint publication and
+   validated resume provenance. Do not silently accept unversioned files.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
-   conversion and persistence behavior.
+   conversion and unrelated persistence behavior.
 3. Keep Phase 5 open until a real CUDA job can remove and verify the current
    RK4/split `device -> host -> device` round trip. Do not edit that path using
    skipped tests as evidence.

@@ -1,4 +1,4 @@
-"""Persist one normal-simulation result using the established v0.2 schema."""
+"""Persist one normal-simulation result and its versioned disk manifest."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import numpy as np
 
 from ..fields import CartesianField, ScalarField
 from ..io import json_safe
+from ..io.result_schema import write_result_manifest
 from .m_average import MAveragePropagationResult
 
 
@@ -31,7 +32,7 @@ def persist_m_average_result(
     sampled_field: Any,
     result: MAveragePropagationResult,
 ) -> None:
-    """Write the exact established D-017 M-average result payload."""
+    """Write unchanged D-017 M-average arrays with a versioned manifest."""
     save_data: dict[str, Any] = {
         "t_E": field_times_fs,
         "pop": result.population,
@@ -47,6 +48,12 @@ def persist_m_average_result(
     np.savez_compressed(outdir / "result.npz", **save_data)
     with open(outdir / "parameters.json", "w") as file:
         json.dump(json_safe(params), file, indent=2)
+    write_result_manifest(
+        outdir,
+        representation="m_incoherent_average",
+        arrays=save_data,
+        has_regime_info=False,
+    )
 
 
 def persist_wavefunction_result(
@@ -60,7 +67,7 @@ def persist_wavefunction_result(
     population: np.ndarray,
     regime_info: Any | None,
 ) -> None:
-    """Write the exact established normal pure-state result payload."""
+    """Write unchanged numeric pure-state arrays with a versioned manifest."""
     save_data: dict[str, Any] = {
         "t_E": field_times_fs,
         "psi": state,
@@ -68,14 +75,18 @@ def persist_wavefunction_result(
         "E": _field_samples_for_storage(sampled_field),
         "t_p": times_fs,
     }
-    if regime_info is not None:
-        save_data["regime_info"] = regime_info
     np.savez_compressed(outdir / "result.npz", **save_data)
     with open(outdir / "parameters.json", "w") as file:
         json.dump(json_safe(params), file, indent=2)
     if regime_info is not None:
         with open(outdir / "regime_analysis.json", "w") as file:
             json.dump(json_safe(regime_info), file, indent=2)
+    write_result_manifest(
+        outdir,
+        representation="wavefunction",
+        arrays=save_data,
+        has_regime_info=regime_info is not None,
+    )
 
 
 __all__ = ["persist_m_average_result", "persist_wavefunction_result"]

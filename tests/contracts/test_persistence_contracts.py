@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import ScalarField
@@ -93,7 +92,7 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
     assert json.loads((tmp_path / "failed_cases.json").read_text()) == []
 
 
-def test_legacy_result_keeps_exact_numeric_arrays_and_pickle_only_regime_info(tmp_path):
+def test_versioned_result_keeps_exact_numeric_arrays_and_json_regime_info(tmp_path):
     grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
     field_samples = np.array([0.0, 2.0, -3.0, 2.0, 0.0])
     field = ScalarField(grid, field_samples)
@@ -118,7 +117,7 @@ def test_legacy_result_keeps_exact_numeric_arrays_and_pickle_only_regime_info(tm
     )
 
     with np.load(tmp_path / "result.npz", allow_pickle=False) as saved:
-        assert set(saved.files) == {"t_E", "psi", "pop", "E", "t_p", "regime_info"}
+        assert set(saved.files) == {"t_E", "psi", "pop", "E", "t_p"}
         for key, expected in {
             "t_E": grid.field_times_fs,
             "psi": state,
@@ -127,10 +126,13 @@ def test_legacy_result_keeps_exact_numeric_arrays_and_pickle_only_regime_info(tm
             "t_p": times_fs,
         }.items():
             np.testing.assert_array_equal(saved[key], expected)
-        with pytest.raises(ValueError, match="Object arrays cannot be loaded"):
-            _ = saved["regime_info"]
+        assert all(saved[key].dtype.kind != "O" for key in saved.files)
     assert json.loads((tmp_path / "parameters.json").read_text()) == params
     assert json.loads((tmp_path / "regime_analysis.json").read_text()) == regime_info
+    assert (
+        json.loads((tmp_path / "result_manifest.json").read_text())["schema_version"]
+        == 1
+    )
 
 
 def test_results_root_name_and_summary_files_are_preserved(tmp_path, monkeypatch):
