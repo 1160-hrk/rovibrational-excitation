@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Added
 - Version consistency checks between pyproject.toml and Git tags
-- Automated release workflow via GitHub Actions
+- Release workflow scaffold via GitHub Actions (final release gates pending)
 - Release management script (`scripts/release.py`)
 
 ### 🔧 Changed
 - Improved test coverage documentation
+- Development-branch normal results now publish complete manifest-v1 bundles
+  through an atomic generation pointer; valid direct-layout v1 results remain
+  readable but require explicit migration before overwrite.
+- Checkpoint JSON files are replaced atomically one file at a time; paired
+  checkpoint publication and resume provenance validation remain open.
 
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms

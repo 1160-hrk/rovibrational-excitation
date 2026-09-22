@@ -23,6 +23,7 @@ tests, and the decision log.
 | `VALIDATION_INVENTORY.md` | P1.2-B audit of standalone diagnostics, replacements, and unresolved scale-policy constants | Any legacy validation disposition or recovered scientific intent |
 | `PHASE5_ACCEPTANCE_AUDIT.md` | Row-by-row CPU/CUDA numerical-engine acceptance status and transfer debt | Any solver capability, backend transfer, or Phase 5 status change |
 | `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md` | P7.1 runner ownership and regression evidence; deferred release gates | Any P7.1 status or runner contract change |
+| `PHASE7_RESULT_DISK_SCHEMA_V1.md` | Manifest v1 and atomic result-generation publication | Any result disk layout, loader, or publication change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -217,7 +218,10 @@ incomplete saved results. P7.2-d/D-097 atomically replaces each result
 payload and manifest file without changing numerical arrays. Multi-file
 publication and checkpoint validation remain open. P7.2-e/D-098 also
 atomically replaces each checkpoint JSON file, without changing checkpoint
-contents or resume behavior; the pair is not yet transactional.
+contents or resume behavior; the pair is not yet transactional. P7.2-f/D-099
+publishes complete normal results through an atomic generation pointer. Old
+manifest-v1 direct-layout results remain readable but cannot be implicitly
+overwritten; checkpoint-pair publication remains open.
 
 P6.2-c
 implements D-069:

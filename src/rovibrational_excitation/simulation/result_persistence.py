@@ -11,7 +11,11 @@ import numpy as np
 from ..fields import CartesianField, ScalarField
 from ..io import json_safe
 from ..io.atomic import atomic_write_json, atomic_write_npz
-from ..io.result_schema import write_result_manifest
+from ..io.result_schema import (
+    create_result_generation,
+    publish_result_generation,
+    write_result_manifest,
+)
 from .m_average import MAveragePropagationResult
 
 
@@ -45,14 +49,16 @@ def persist_m_average_result(
     }
     for block, wavefunction in zip(result.blocks, result.block_wavefunctions):
         save_data[f"psi_abs_m_{block.abs_m}"] = wavefunction
-    atomic_write_npz(outdir / "result.npz", save_data)
-    atomic_write_json(outdir / "parameters.json", json_safe(params))
+    result_dir = create_result_generation(outdir)
+    atomic_write_npz(result_dir / "result.npz", save_data)
+    atomic_write_json(result_dir / "parameters.json", json_safe(params))
     write_result_manifest(
-        outdir,
+        result_dir,
         representation="m_incoherent_average",
         arrays=save_data,
         has_regime_info=False,
     )
+    publish_result_generation(outdir, result_dir)
 
 
 def persist_wavefunction_result(
@@ -74,16 +80,18 @@ def persist_wavefunction_result(
         "E": _field_samples_for_storage(sampled_field),
         "t_p": times_fs,
     }
-    atomic_write_npz(outdir / "result.npz", save_data)
-    atomic_write_json(outdir / "parameters.json", json_safe(params))
+    result_dir = create_result_generation(outdir)
+    atomic_write_npz(result_dir / "result.npz", save_data)
+    atomic_write_json(result_dir / "parameters.json", json_safe(params))
     if regime_info is not None:
-        atomic_write_json(outdir / "regime_analysis.json", json_safe(regime_info))
+        atomic_write_json(result_dir / "regime_analysis.json", json_safe(regime_info))
     write_result_manifest(
-        outdir,
+        result_dir,
         representation="wavefunction",
         arrays=save_data,
         has_regime_info=regime_info is not None,
     )
+    publish_result_generation(outdir, result_dir)
 
 
 __all__ = ["persist_m_average_result", "persist_wavefunction_result"]

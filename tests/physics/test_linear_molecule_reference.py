@@ -18,6 +18,7 @@ from rovibrational_excitation.fields import (
     ScalarField,
     gaussian_fwhm,
 )
+from rovibrational_excitation.io.result_schema import resolve_result_directory
 from rovibrational_excitation.models.linear_molecule import (
     FixedMLinMolBasis,
     LinMolBasis,
@@ -555,11 +556,12 @@ def test_saved_m_average_has_exact_schema_and_one_npz_write(tmp_path, monkeypatc
     population = _run_one(params)
 
     assert len(written_paths) == 1
-    assert written_paths[0].parent == tmp_path
+    result_dir = resolve_result_directory(tmp_path)
+    assert written_paths[0].parent == result_dir
     assert written_paths[0].name.startswith(".result.npz.")
     assert written_paths[0].suffix == ".npz"
     assert not written_paths[0].exists()
-    with np.load(tmp_path / "result.npz", allow_pickle=False) as result:
+    with np.load(result_dir / "result.npz", allow_pickle=False) as result:
         assert set(result.files) == {
             "t_E",
             "pop",

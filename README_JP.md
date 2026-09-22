@@ -263,12 +263,18 @@ results/
 └── YYYY-MM-DD_hh-mm-ss_CO2_antisymm_stretch/
     ├── summary.csv              # 全ケースの概要
     ├── case_001/
-    │   ├── result.npz           # 計算結果
-    │   └── parameters.json      # パラメータ
+    │   ├── result_current.json  # 完成済み結果を選択
+    │   └── .result_generations/
+    │       └── <世代ID>/
+    │           ├── result.npz
+    │           ├── parameters.json
+    │           └── result_manifest.json
     ├── case_002/
     │   └── ...
     └── ...
 ```
+
+結果は [保存形式と読み込み方法](docs/RESULT_STORAGE.md) を参照してください。
 
 ---
 

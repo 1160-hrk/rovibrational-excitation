@@ -19,7 +19,11 @@ from rovibrational_excitation.io import (
     json_safe,
     storage,
 )
-from rovibrational_excitation.io.result_schema import ResultFormatError
+from rovibrational_excitation.io.result_schema import (
+    CURRENT_RESULT_NAME,
+    ResultFormatError,
+    resolve_result_directory,
+)
 from rovibrational_excitation.simulation.result_persistence import (
     persist_wavefunction_result,
 )
@@ -142,7 +146,8 @@ def test_versioned_result_keeps_exact_numeric_arrays_and_json_regime_info(tmp_pa
         regime_info=regime_info,
     )
 
-    with np.load(tmp_path / "result.npz", allow_pickle=False) as saved:
+    result_dir = resolve_result_directory(tmp_path)
+    with np.load(result_dir / "result.npz", allow_pickle=False) as saved:
         assert set(saved.files) == {"t_E", "psi", "pop", "E", "t_p"}
         for key, expected in {
             "t_E": grid.field_times_fs,
@@ -153,10 +158,10 @@ def test_versioned_result_keeps_exact_numeric_arrays_and_json_regime_info(tmp_pa
         }.items():
             np.testing.assert_array_equal(saved[key], expected)
         assert all(saved[key].dtype.kind != "O" for key in saved.files)
-    assert json.loads((tmp_path / "parameters.json").read_text()) == params
-    assert json.loads((tmp_path / "regime_analysis.json").read_text()) == regime_info
+    assert json.loads((result_dir / "parameters.json").read_text()) == params
+    assert json.loads((result_dir / "regime_analysis.json").read_text()) == regime_info
     assert (
-        json.loads((tmp_path / "result_manifest.json").read_text())["schema_version"]
+        json.loads((result_dir / "result_manifest.json").read_text())["schema_version"]
         == 1
     )
 
@@ -169,6 +174,30 @@ def test_summary_rejects_unversioned_result_without_overwriting_existing_csv(tmp
     summary.write_text("previous summary\n")
 
     with pytest.raises(ResultFormatError, match="unversioned"):
+        storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
+
+    assert summary.read_text() == "previous summary\n"
+
+
+def test_summary_rejects_corrupt_publication_pointer(tmp_path):
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    persist_wavefunction_result(
+        outdir=case_dir,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(5)),
+        times_fs=np.array([1.0]),
+        state=np.array([1.0 + 0j, 0.0 + 0j]),
+        population=np.array([[1.0, 0.0]]),
+        regime_info=None,
+    )
+    (case_dir / CURRENT_RESULT_NAME).write_text("{invalid json")
+    summary = tmp_path / "summary.csv"
+    summary.write_text("previous summary\n")
+
+    with pytest.raises(ResultFormatError, match="cannot read result_current.json"):
         storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
 
     assert summary.read_text() == "previous summary\n"
@@ -188,7 +217,9 @@ def test_summary_rejects_tampered_versioned_result(tmp_path):
         population=np.array([[1.0, 0.0]]),
         regime_info=None,
     )
-    (case_dir / "result.npz").write_bytes(b"changed after manifest")
+    (resolve_result_directory(case_dir) / "result.npz").write_bytes(
+        b"changed after manifest"
+    )
 
     with pytest.raises(ResultFormatError, match="digest mismatch"):
         storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
@@ -210,7 +241,7 @@ def test_summary_rejects_published_manifest_with_missing_npz(tmp_path):
         population=np.array([[1.0, 0.0]]),
         regime_info=None,
     )
-    (case_dir / "result.npz").unlink()
+    (resolve_result_directory(case_dir) / "result.npz").unlink()
 
     with pytest.raises(ResultFormatError, match="missing result payload"):
         storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])

@@ -816,9 +816,10 @@ simulation results in `io.result_schema` using a v1 manifest and strict
 opt-in loader. P7.2-c/D-096 routes resumed-run file-backed summaries through
 that loader and surfaces invalid-result errors before CSV overwrite.
 P7.2-d/D-097 and P7.2-e/D-098 provide atomic replacement for each result
-and checkpoint file, respectively. Whole-result and checkpoint-pair
-publication, standalone visualization readers, and checkpoint versioning
-remain separate P7.2 work.
+and checkpoint file, respectively. P7.2-f/D-099 publishes a completed
+manifest-v1 result generation through one atomic pointer while preserving
+manifest-v1 direct-layout reads. Checkpoint-pair publication, standalone
+visualization readers, and checkpoint versioning remain separate P7.2 work.
 
 ## 12. Performance constraints
 

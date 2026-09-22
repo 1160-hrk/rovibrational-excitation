@@ -25,6 +25,7 @@
 |-------------|------|--------|
 | **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** | **全パラメータの詳細リファレンス** | 全ユーザー |
 | [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | パラメータスイープ仕様 | 中級ユーザー |
+| [RESULT_STORAGE.md](RESULT_STORAGE.md) | 結果の世代型保存形式と検証付き読み込み | 全ユーザー |
 
 ### 📊 使用例・チュートリアル
 

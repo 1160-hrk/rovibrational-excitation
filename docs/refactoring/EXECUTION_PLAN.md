@@ -1735,8 +1735,17 @@ pair is not transactional; format versioning, validation, and provenance
 remain separate P7.2 units. Full suite: 1277 passed, 10 optional-GPU
 skipped; branch coverage: 78%; strict mypy covers 54 modules.
 
+P7.2-f/D-099 publishes a writer-completed immutable result generation with one
+atomic `result_current.json` pointer replacement. The strict reader resolves
+it once, validates the unchanged manifest v1, and never falls back from an
+invalid pointer. Legacy direct-layout v1 results remain readable but require
+explicit migration before overwrite. Normal/resumed summaries retain their
+respective population sources; only the result file layout changes. The
+full suite passes 1289 tests with 10 optional-GPU skips; branch coverage is
+78%, strict mypy covers 54 modules, and build/Twine checks pass.
+
 - complete scientific input provenance;
-- cross-file result publication and checkpoint atomicity;
+- transactional checkpoint-pair publication;
 - validated checkpoint resume;
 - migration error for unknown checkpoint schema.
 

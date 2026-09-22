@@ -15,6 +15,7 @@ from rovibrational_excitation.io.result_schema import (
     DISK_RESULT_SCHEMA_VERSION,
     ResultFormatError,
     load_simulation_result,
+    resolve_result_directory,
 )
 from rovibrational_excitation.simulation import result_persistence
 from rovibrational_excitation.simulation.m_average import MAveragePropagationResult
@@ -86,7 +87,9 @@ def test_versioned_wavefunction_round_trip_preserves_numeric_arrays(tmp_path):
     }.items():
         np.testing.assert_array_equal(saved.arrays[key], expected)
 
-    with np.load(tmp_path / "result.npz", allow_pickle=False) as raw:
+    with np.load(
+        resolve_result_directory(tmp_path) / "result.npz", allow_pickle=False
+    ) as raw:
         assert set(raw.files) == {"t_E", "t_p", "E", "psi", "pop"}
         for key in raw.files:
             assert raw[key].dtype.kind != "O"
@@ -120,12 +123,14 @@ def test_versioned_m_average_round_trip_preserves_block_arrays(tmp_path):
 
 
 def test_missing_and_unknown_disk_schema_raise_actionable_errors(tmp_path):
-    np.savez_compressed(tmp_path / "result.npz", pop=np.array([[1.0, 0.0]]))
+    legacy_dir = tmp_path / "legacy"
+    legacy_dir.mkdir()
+    np.savez_compressed(legacy_dir / "result.npz", pop=np.array([[1.0, 0.0]]))
     with pytest.raises(ResultFormatError, match="unversioned"):
-        load_simulation_result(tmp_path)
+        load_simulation_result(legacy_dir)
 
     _example(tmp_path)
-    manifest_path = tmp_path / "result_manifest.json"
+    manifest_path = resolve_result_directory(tmp_path) / "result_manifest.json"
     manifest = json.loads(manifest_path.read_text())
     manifest["schema_version"] = 999
     manifest_path.write_text(json.dumps(manifest))
@@ -136,7 +141,7 @@ def test_missing_and_unknown_disk_schema_raise_actionable_errors(tmp_path):
 @pytest.mark.parametrize("invalid", [["wavefunction"], {"kind": "wavefunction"}])
 def test_loader_rejects_malformed_representation_with_format_error(tmp_path, invalid):
     _example(tmp_path)
-    manifest_path = tmp_path / "result_manifest.json"
+    manifest_path = resolve_result_directory(tmp_path) / "result_manifest.json"
     manifest = json.loads(manifest_path.read_text())
     manifest["representation"] = invalid
     manifest_path.write_text(json.dumps(manifest))
@@ -147,8 +152,9 @@ def test_loader_rejects_malformed_representation_with_format_error(tmp_path, inv
 def test_loader_rejects_invalid_npz_even_with_matching_digest(tmp_path):
     _example(tmp_path)
     payload = b"not a zip archive"
-    (tmp_path / "result.npz").write_bytes(payload)
-    manifest_path = tmp_path / "result_manifest.json"
+    result_dir = resolve_result_directory(tmp_path)
+    (result_dir / "result.npz").write_bytes(payload)
+    manifest_path = result_dir / "result_manifest.json"
     manifest = json.loads(manifest_path.read_text())
     manifest["files"]["result.npz"] = hashlib.sha256(payload).hexdigest()
     manifest_path.write_text(json.dumps(manifest))
@@ -156,9 +162,11 @@ def test_loader_rejects_invalid_npz_even_with_matching_digest(tmp_path):
         load_simulation_result(tmp_path)
 
 
-def test_failed_multi_file_overwrite_fails_closed(tmp_path, monkeypatch):
-    params, grid, field, times, state, _ = _example(tmp_path)
-    previous_manifest = (tmp_path / "result_manifest.json").read_bytes()
+def test_failed_multi_file_overwrite_keeps_previous_result(tmp_path, monkeypatch):
+    params, grid, field, times, state, population = _example(tmp_path)
+    previous_manifest = (
+        resolve_result_directory(tmp_path) / "result_manifest.json"
+    ).read_bytes()
     changed_state = state.copy()
     changed_state[-1] = [1.0, 0.0]
 
@@ -178,13 +186,18 @@ def test_failed_multi_file_overwrite_fails_closed(tmp_path, monkeypatch):
             regime_info=None,
         )
 
-    assert (tmp_path / "result_manifest.json").read_bytes() == previous_manifest
-    with pytest.raises(ResultFormatError, match="digest mismatch"):
-        load_simulation_result(tmp_path)
+    assert (
+        resolve_result_directory(tmp_path) / "result_manifest.json"
+    ).read_bytes() == previous_manifest
+    np.testing.assert_array_equal(
+        load_simulation_result(tmp_path).arrays["pop"], population
+    )
 
 
 def test_loader_rejects_corrupted_result_without_guessing_from_keys(tmp_path):
     _example(tmp_path)
-    (tmp_path / "result.npz").write_bytes(b"not the committed result")
+    (resolve_result_directory(tmp_path) / "result.npz").write_bytes(
+        b"not the committed result"
+    )
     with pytest.raises(ResultFormatError, match="digest mismatch"):
         load_simulation_result(tmp_path)

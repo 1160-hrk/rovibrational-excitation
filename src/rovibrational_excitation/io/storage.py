@@ -8,7 +8,12 @@ from typing import Any
 
 import pandas as pd
 
-from .result_schema import MANIFEST_NAME, ResultFormatError, load_simulation_result
+from .result_schema import (
+    CURRENT_RESULT_NAME,
+    MANIFEST_NAME,
+    ResultFormatError,
+    load_simulation_result,
+)
 
 
 def make_results_root(description: str) -> Path:
@@ -28,7 +33,12 @@ def update_summary(results_dir: Path, all_cases: list[dict[str, Any]]) -> None:
         result_dir = Path(case["outdir"])
         result_file = result_dir / "result.npz"
 
-        if result_file.exists() or (result_dir / MANIFEST_NAME).exists():
+        if (
+            result_file.exists()
+            or (result_dir / MANIFEST_NAME).exists()
+            or (result_dir / CURRENT_RESULT_NAME).exists()
+            or (result_dir / CURRENT_RESULT_NAME).is_symlink()
+        ):
             saved = load_simulation_result(result_dir)
             population = saved.arrays["pop"]
             if population.ndim != 2 or population.shape[0] == 0:

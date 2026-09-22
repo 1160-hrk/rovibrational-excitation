@@ -332,8 +332,9 @@ TwoLevel、VibLadder、`m_incoherent_average`は`ScalarField`を使います。
 `scalar_samples_v_per_m`を両方渡す必要があります。厳密なCartesian RK4 /
 split-operatorではこの追加情報は不要です。
 
-保存時の`result.npz["E"]`は、scalarなら`(n_samples,)`、
-Cartesianなら`(n_samples, 2)`です。
+保存された `result.npz["E"]` は、scalarなら `(n_samples,)`、
+Cartesianなら `(n_samples, 2)` です。ファイルの場所は固定名ではなく
+[結果の保存形式](RESULT_STORAGE.md) に従い公開済み世代から解決してください。
 
 ## 使用例
 

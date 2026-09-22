@@ -21,6 +21,7 @@ from rovibrational_excitation.fields import (
     lorentzian_fwhm,
 )
 from rovibrational_excitation.io import CheckpointManager
+from rovibrational_excitation.io.result_schema import resolve_result_directory
 from rovibrational_excitation.simulation.config import load_params_file
 from rovibrational_excitation.simulation.generated import GeneratedFieldParameters
 from rovibrational_excitation.simulation.runner import (
@@ -126,7 +127,7 @@ def test_final_state_only_uses_final_physical_time_and_state_axis(tmp_path):
     population = _run_one(params)
 
     assert population.shape == (1, 2)
-    with np.load(tmp_path / "result.npz") as data:
+    with np.load(resolve_result_directory(tmp_path) / "result.npz") as data:
         np.testing.assert_array_equal(data["t_p"], np.array([params["t_end"]]))
         assert data["t_E"][0] == params["t_start"]
         assert data["t_E"][-1] == params["t_end"]
@@ -146,14 +147,15 @@ def test_normal_result_persistence_schema_and_single_npz_write(tmp_path, monkeyp
     population = _run_one(params)
 
     assert len(written_paths) == 1
-    assert written_paths[0].parent == tmp_path
+    result_dir = resolve_result_directory(tmp_path)
+    assert written_paths[0].parent == result_dir
     assert written_paths[0].name.startswith(".result.npz.")
     assert written_paths[0].suffix == ".npz"
     assert not written_paths[0].exists()
-    with np.load(tmp_path / "result.npz", allow_pickle=False) as data:
+    with np.load(result_dir / "result.npz", allow_pickle=False) as data:
         assert set(data.files) == {"t_E", "psi", "pop", "E", "t_p"}
         np.testing.assert_array_equal(data["pop"], population)
-    assert json.loads((tmp_path / "parameters.json").read_text()) == params
+    assert json.loads((result_dir / "parameters.json").read_text()) == params
 
 
 def test_validation_rejects_missing_physical_parameter_before_building():
@@ -380,7 +382,9 @@ def test_saved_parameters_keep_the_caller_value_and_unit_pairs(tmp_path):
 
     _run_one(params)
 
-    saved = json.loads((tmp_path / "parameters.json").read_text())
+    saved = json.loads(
+        (resolve_result_directory(tmp_path) / "parameters.json").read_text()
+    )
     for key in (
         "t_start",
         "t_start_units",

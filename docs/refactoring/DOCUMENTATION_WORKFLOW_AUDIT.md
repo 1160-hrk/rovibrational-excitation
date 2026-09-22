@@ -11,7 +11,8 @@ unit, sign, model parameter, or time step.
 
 ## Mechanical checks
 
-- Inventoried 40 Markdown and 21 YAML/YML files, including historical
+- Inventoried 40 Markdown and 21 YAML/YML files at this audit checkpoint
+  (before `docs/RESULT_STORAGE.md` was added), including historical
   optimization YAML under `examples/archives/`.
 - Parsed all 21 YAML/YML files without a syntax error. PyYAML's YAML 1.1
   parser reads the GitHub Actions `on` key as boolean `True`; this is a
@@ -29,7 +30,7 @@ unit, sign, model parameter, or time step.
 
 | Files | Current finding | Required disposition |
 |---|---|---|
-| `README.md`, `README_JP.md` | Both still teach removed root/procedural APIs and `use_M`, claim 63% coverage and only linear-molecule support, advertise GPU capability beyond real-CUDA evidence, and link a nonexistent `tests.yml` workflow. Their quick-start parameter sets lack current explicit-unit/typed choices. | Rewrite together during Phase 8 from supported executable examples and D-073 root API. Replace badges with actually produced evidence and state the SymTop/CUDA support matrix precisely. |
+| `README.md`, `README_JP.md` | Both still teach removed root/procedural APIs and `use_M`, claim 63% coverage and only linear-molecule support, advertise GPU capability beyond real-CUDA evidence, and link a nonexistent `tests.yml` workflow. Their quick-start parameter sets lack current explicit-unit/typed choices. P7.2-f corrected only the output-directory layout and linked `docs/RESULT_STORAGE.md`. | Rewrite together during Phase 8 from supported executable examples and D-073 root API. Replace badges with actually produced evidence and state the SymTop/CUDA support matrix precisely. |
 | `docs/README.md` | Quick-start uses the existing `examples/params_template.py`, but that template is outside the three CI-smoked supported examples; several other snippets omit now-required value/unit pairs or recommend unverified CuPy execution. | Smoke-test the template before advertising it, then rebuild the index from supported `examples/README.md` examples and the verified parameter reference. |
 | `docs/PARAMETER_REFERENCE.md`, `SWEEP_SPECIFICATION.md`, `TIME_PROPAGATION.md`, `UNIT_SYSTEM.md`, `DOCKER_SETUP.md` | Mixed old/new examples; especially audit unit labels, solver capability, and executable CLI snippets against the frozen current schema. | Migrate one code fence at a time with smoke or contract tests, without changing physical defaults by inference. |
 | `docs/CODECOV_SETUP.md`, `docs/VERSION_MANAGEMENT.md` | Describe `tests.yml`/Codecov upload or an automated release process not currently enforced by the workflows; version examples predate `0.3.0.dev1`. | Rewrite with the final CI/release design, then check commands in a clean checkout. |

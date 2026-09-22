@@ -258,7 +258,9 @@ python -m rovibrational_excitation.simulation.runner \
 ```
 
 * Creates `results/YYYY-MM-DD_hh-mm-ss_CO2_antisymm_stretch/…`
-* For each case a folder with `result.npz`, `parameters.json`
+* For each case, `result_current.json` selects a complete generation
+  containing `result.npz`, `parameters.json`, and `result_manifest.json`
+  (see [result storage](docs/RESULT_STORAGE.md)).
 * Top-level `summary.csv` (final populations etc.)
 
 > Add `--dry-run` to just list cases without running.

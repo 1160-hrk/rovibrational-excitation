@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 from zipfile import BadZipFile
 
 import numpy as np
@@ -19,6 +21,15 @@ from .atomic import atomic_write_json
 
 DISK_RESULT_SCHEMA_VERSION = 1
 MANIFEST_NAME = "result_manifest.json"
+CURRENT_RESULT_NAME = "result_current.json"
+_GENERATIONS_NAME = ".result_generations"
+_PUBLICATION_SCHEMA_VERSION = 1
+_LEGACY_PAYLOAD_NAMES = (
+    "result.npz",
+    "parameters.json",
+    "regime_analysis.json",
+    MANIFEST_NAME,
+)
 _DECLARED_PARAMETERS = {
     "model": "basis_type",
     "algorithm": "algorithm",
@@ -191,9 +202,87 @@ def _validate_array_keys(representation: str, arrays: dict[str, np.ndarray]) -> 
         raise ResultFormatError("M-average block arrays disagree with abs_m")
 
 
+def resolve_result_directory(outdir: Path) -> Path:
+    """Resolve one published immutable generation, or a direct-layout v1 result."""
+    outdir = Path(outdir)
+    pointer_path = outdir / CURRENT_RESULT_NAME
+    if not pointer_path.exists() and not pointer_path.is_symlink():
+        return outdir
+    if pointer_path.is_symlink():
+        raise ResultFormatError("result publication pointer must not be a symlink")
+    pointer = _read_json(pointer_path, CURRENT_RESULT_NAME)
+    if not isinstance(pointer, dict) or set(pointer) != {
+        "publication_schema_version",
+        "generation",
+    }:
+        raise ResultFormatError("result publication pointer has invalid fields")
+    version = pointer["publication_schema_version"]
+    if type(version) is not int or version != _PUBLICATION_SCHEMA_VERSION:
+        raise ResultFormatError(
+            f"unsupported result publication schema version {version!r}"
+        )
+    generation = pointer["generation"]
+    if (
+        not isinstance(generation, str)
+        or re.fullmatch(r"[0-9a-f]{32}", generation) is None
+    ):
+        raise ResultFormatError("result publication generation is invalid")
+    generations_root = outdir / _GENERATIONS_NAME
+    result_dir = generations_root / generation
+    if (
+        generations_root.is_symlink()
+        or result_dir.is_symlink()
+        or not result_dir.is_dir()
+    ):
+        raise ResultFormatError("result publication generation is missing or unsafe")
+    return result_dir
+
+
+def create_result_generation(outdir: Path) -> Path:
+    """Create an unpublished directory without touching a committed result."""
+    outdir = Path(outdir)
+    pointer_path = outdir / CURRENT_RESULT_NAME
+    if pointer_path.exists() or pointer_path.is_symlink():
+        resolve_result_directory(outdir)
+    elif any(
+        (outdir / name).exists() or (outdir / name).is_symlink()
+        for name in _LEGACY_PAYLOAD_NAMES
+    ):
+        raise ResultFormatError(
+            "direct-layout result exists; explicit migration required before overwrite"
+        )
+    generations_root = outdir / _GENERATIONS_NAME
+    if generations_root.is_symlink():
+        raise ResultFormatError("result generation directory must not be a symlink")
+    generations_root.mkdir(exist_ok=True)
+    result_dir = generations_root / uuid4().hex
+    result_dir.mkdir()
+    return result_dir
+
+
+def publish_result_generation(outdir: Path, result_dir: Path) -> None:
+    """Select a writer-completed generation without reopening large NPZ arrays."""
+    outdir = Path(outdir)
+    result_dir = Path(result_dir)
+    if result_dir.parent != outdir / _GENERATIONS_NAME:
+        raise ValueError("result generation is outside the expected directory")
+    if re.fullmatch(r"[0-9a-f]{32}", result_dir.name) is None:
+        raise ValueError("result generation name is invalid")
+    if not (result_dir / MANIFEST_NAME).is_file():
+        raise ResultFormatError("cannot publish a generation without its manifest")
+    atomic_write_json(
+        outdir / CURRENT_RESULT_NAME,
+        {
+            "publication_schema_version": _PUBLICATION_SCHEMA_VERSION,
+            "generation": result_dir.name,
+        },
+        sort_keys=True,
+    )
+
+
 def load_simulation_result(outdir: Path) -> StoredSimulationResult:
     """Load only a known complete disk schema; never infer legacy layouts."""
-    outdir = Path(outdir)
+    outdir = resolve_result_directory(outdir)
     manifest_path = outdir / MANIFEST_NAME
     if not manifest_path.is_file():
         raise ResultFormatError(
@@ -275,9 +364,13 @@ def load_simulation_result(outdir: Path) -> StoredSimulationResult:
 
 
 __all__ = [
+    "CURRENT_RESULT_NAME",
     "DISK_RESULT_SCHEMA_VERSION",
     "ResultFormatError",
     "StoredSimulationResult",
+    "create_result_generation",
     "load_simulation_result",
+    "publish_result_generation",
+    "resolve_result_directory",
     "write_result_manifest",
 ]

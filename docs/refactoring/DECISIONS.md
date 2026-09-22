@@ -3422,6 +3422,35 @@ No calculation or optimizer behavior changes.
 
 Implementation commit: this checkpoint.
 
+### D-099: Publish complete simulation results through one generation pointer
+
+Status: Implemented on 2026-09-22 as P7.2-f.
+
+Each new normal-simulation result is written under an immutable,
+UUID-named `.result_generations/<id>/` directory. The existing manifest-v1
+payload contract, array keys/dtypes/shapes/values, units, caller parameters, and
+representation are unchanged. After payload and manifest writes complete,
+`result_current.json` atomically selects the generation. The writer avoids
+a second full NPZ decompression; the strict reader verifies on consumption.
+The publication schema version is independently numbered 1. Readers resolve
+a selected generation once, so failure before pointer replacement leaves the
+previously published result readable; successful replacement selects a new
+complete result. Prior and unpublished generations are retained, not silently
+deleted.
+
+The strict loader accepts a valid direct-layout manifest-v1 result only when
+no publication pointer exists. A malformed or unsupported pointer, or one
+that references a missing, unsafe, or path-traversing generation, raises;
+it never falls back to a stale root payload.
+New writes refuse to overwrite a direct-layout result without explicit
+migration. Resumed summaries recognize the new pointer and otherwise keep
+their established result-validation policy. This storage-layout change does
+not alter propagation, field samples, wavefunctions, populations, or M weights.
+Checkpoint-pair publication, scientific provenance, directory fsync,
+concurrent-writer coordination, and orphan-generation GC remain separate work.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
