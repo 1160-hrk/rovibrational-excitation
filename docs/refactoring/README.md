@@ -474,7 +474,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1 accepted; P7.2-P7.4 pending |
-| 8 | Public API, documentation, and release | Pending |
+| 8 | Public API, documentation, and release | Pending — Markdown/YAML/workflow inventory recorded in `DOCUMENTATION_WORKFLOW_AUDIT.md`; fixes gated before final tag |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

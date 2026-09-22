@@ -1760,6 +1760,9 @@ Tasks:
 
 - implement the exact D-073 root exports and remove the old root surface;
 - rewrite README and Japanese README against the actual API;
+- close the Markdown/YAML/workflow findings in
+  `DOCUMENTATION_WORKFLOW_AUDIT.md`, including executable public snippets,
+  truthful badges, Codecov wiring, and release gating before any tag;
 - execute documentation code snippets;
 - update every supported example — completed early under D-044 with three
   typed smoke examples;

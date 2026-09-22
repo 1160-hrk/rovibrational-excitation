@@ -4,6 +4,7 @@ Last verified: 2026-09-22
 Active refactor branch: `refactor/v0.3`
 Verified structural checkpoint: P7.2-c D-096 strict resumed summaries
 Latest infrastructure checkpoint: `7d4368b`
+Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
 ## Purpose
 
@@ -420,6 +421,8 @@ The next work is:
    P7.2-b disk schema v1 and P7.2-c strict resumed summaries are implemented.
    Next implement atomic result/checkpoint publication and validated resume
    provenance. Do not silently accept unversioned files.
+   `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
+   root README and release workflow must be corrected before any release tag.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.
