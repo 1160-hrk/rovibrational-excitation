@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -11,6 +10,7 @@ import numpy as np
 
 from ..fields import CartesianField, ScalarField
 from ..io import json_safe
+from ..io.atomic import atomic_write_json, atomic_write_npz
 from ..io.result_schema import write_result_manifest
 from .m_average import MAveragePropagationResult
 
@@ -45,9 +45,8 @@ def persist_m_average_result(
     }
     for block, wavefunction in zip(result.blocks, result.block_wavefunctions):
         save_data[f"psi_abs_m_{block.abs_m}"] = wavefunction
-    np.savez_compressed(outdir / "result.npz", **save_data)
-    with open(outdir / "parameters.json", "w") as file:
-        json.dump(json_safe(params), file, indent=2)
+    atomic_write_npz(outdir / "result.npz", save_data)
+    atomic_write_json(outdir / "parameters.json", json_safe(params))
     write_result_manifest(
         outdir,
         representation="m_incoherent_average",
@@ -75,12 +74,10 @@ def persist_wavefunction_result(
         "E": _field_samples_for_storage(sampled_field),
         "t_p": times_fs,
     }
-    np.savez_compressed(outdir / "result.npz", **save_data)
-    with open(outdir / "parameters.json", "w") as file:
-        json.dump(json_safe(params), file, indent=2)
+    atomic_write_npz(outdir / "result.npz", save_data)
+    atomic_write_json(outdir / "parameters.json", json_safe(params))
     if regime_info is not None:
-        with open(outdir / "regime_analysis.json", "w") as file:
-            json.dump(json_safe(regime_info), file, indent=2)
+        atomic_write_json(outdir / "regime_analysis.json", json_safe(regime_info))
     write_result_manifest(
         outdir,
         representation="wavefunction",

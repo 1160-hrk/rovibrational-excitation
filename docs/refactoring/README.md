@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-21
+Last verified: 2026-09-22
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -213,7 +213,9 @@ result manifest and strict opt-in loader, documented in
 pickle-only NPZ regime metadata is removed in favor of its JSON sidecar.
 P7.2-c/D-096 routes the resumed-run file-backed summary through the strict
 loader, preserving valid CSV values while raising on legacy, corrupt, or
-incomplete saved results. Atomic writes and checkpoint validation remain open.
+incomplete saved results. P7.2-d/D-097 atomically replaces each result
+payload and manifest file without changing numerical arrays. Multi-file
+publication and checkpoint validation remain open.
 
 P6.2-c
 implements D-069:

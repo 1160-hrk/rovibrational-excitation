@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-22
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-c D-096 strict resumed summaries
+Verified structural checkpoint: P7.2-d D-097 atomic individual result files
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -171,14 +171,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P6.1-d:
+Current local CPU baseline after P7.2-d:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1212 passed, 10 GPU tests skipped (1222 collected)
+1275 passed, 10 GPU tests skipped (1285 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -229,7 +229,7 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 75%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 78%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -408,7 +408,10 @@ versioned result manifest and supplies a strict opt-in loader; numeric
 arrays remain unchanged, while duplicate pickle-only regime metadata moves
 to its existing JSON sidecar. P7.2-c/D-096 routes resumed summaries through
 the strict loader and surfaces invalid saved results before CSV writes;
-normal in-memory summaries are unchanged. Checkpoints remain legacy.
+normal in-memory summaries are unchanged. P7.2-d/D-097 atomically replaces
+individual result NPZ/JSON/manifest files. It does not make the group
+transactional: a failed rerun can leave a manifest/payload mismatch, which
+the strict reader rejects. Checkpoints remain legacy.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -418,9 +421,10 @@ recorded by D-073.
 The next work is:
 
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
-   P7.2-b disk schema v1 and P7.2-c strict resumed summaries are implemented.
-   Next implement atomic result/checkpoint publication and validated resume
-   provenance. Do not silently accept unversioned files.
+   P7.2-b disk schema v1, P7.2-c strict resumed summaries, and P7.2-d
+   individual-file atomic replacement are implemented. Next implement
+   cross-file result/checkpoint publication and validated resume provenance.
+   Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    root README and release workflow must be corrected before any release tag.
    Preserve the distinct normal in-memory and resume file-backed summaries

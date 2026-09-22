@@ -1,7 +1,7 @@
 """Strict versioned disk format for normal simulation results.
 
 The manifest is written after the established numerical NPZ and JSON sidecars.
-Atomic replacement and checkpoint provenance are separate P7.2 units.
+Each file is atomically replaced; cross-file publication remains a separate unit.
 """
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ from typing import Any
 from zipfile import BadZipFile
 
 import numpy as np
+
+from .atomic import atomic_write_json
 
 DISK_RESULT_SCHEMA_VERSION = 1
 MANIFEST_NAME = "result_manifest.json"
@@ -109,8 +111,7 @@ def write_result_manifest(
         "units": _units(representation, set(array_metadata)),
         "declared": _declared(parameters),
     }
-    with (outdir / MANIFEST_NAME).open("w", encoding="utf-8") as file:
-        json.dump(manifest, file, indent=2, sort_keys=True)
+    atomic_write_json(outdir / MANIFEST_NAME, manifest, sort_keys=True)
 
 
 def _read_json(path: Path, label: str) -> Any:

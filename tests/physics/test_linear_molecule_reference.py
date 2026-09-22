@@ -554,7 +554,11 @@ def test_saved_m_average_has_exact_schema_and_one_npz_write(tmp_path, monkeypatc
 
     population = _run_one(params)
 
-    assert written_paths == [tmp_path / "result.npz"]
+    assert len(written_paths) == 1
+    assert written_paths[0].parent == tmp_path
+    assert written_paths[0].name.startswith(".result.npz.")
+    assert written_paths[0].suffix == ".npz"
+    assert not written_paths[0].exists()
     with np.load(tmp_path / "result.npz", allow_pickle=False) as result:
         assert set(result.files) == {
             "t_E",

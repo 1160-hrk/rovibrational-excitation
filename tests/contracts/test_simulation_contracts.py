@@ -145,7 +145,11 @@ def test_normal_result_persistence_schema_and_single_npz_write(tmp_path, monkeyp
 
     population = _run_one(params)
 
-    assert written_paths == [tmp_path / "result.npz"]
+    assert len(written_paths) == 1
+    assert written_paths[0].parent == tmp_path
+    assert written_paths[0].name.startswith(".result.npz.")
+    assert written_paths[0].suffix == ".npz"
+    assert not written_paths[0].exists()
     with np.load(tmp_path / "result.npz", allow_pickle=False) as data:
         assert set(data.files) == {"t_E", "psi", "pop", "E", "t_p"}
         np.testing.assert_array_equal(data["pop"], population)

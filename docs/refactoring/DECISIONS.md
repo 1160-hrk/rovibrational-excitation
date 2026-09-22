@@ -3379,6 +3379,28 @@ propagation, population, or optimizer calculation change.
 
 Implementation commit: this checkpoint.
 
+### D-097: Replace each normal-result file only after a complete write
+
+Status: Implemented on 2026-09-22 as P7.2-d.
+
+Normal-simulation NPZ and JSON payloads, followed by the schema-v1 manifest,
+are each written to a temporary file in the destination directory, synced,
+and then installed with `os.replace`. Failure during serialization, writing,
+or replacement preserves the old bytes of that individual destination and
+removes the temporary file. The NPZ array keys, dtypes, shapes, values, and
+manifest JSON key order are unchanged. No propagation formula or numerical
+result changes.
+
+This decision guarantees only **single-file replacement**, not a transaction
+across `result.npz`, `parameters.json`, optional `regime_analysis.json`, and
+`result_manifest.json`. A failed overwrite of an existing result can leave a
+mixed group; the strict v1 reader rejects its digest mismatch rather than
+serving potentially inconsistent data. Directory fsync/power-loss durability,
+whole-result publication, checkpoint format/atomicity, and validated resume
+provenance remain separate work. No automatic recovery or fallback is added.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

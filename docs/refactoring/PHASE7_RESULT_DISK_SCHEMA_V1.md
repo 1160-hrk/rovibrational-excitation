@@ -58,11 +58,17 @@ Valid saved populations yield the same final-row columns and values. The
 normal in-memory summary and all-complete resume early return are unchanged.
 Standalone visualization remains a separate reader migration.
 
-A versioned manifest alone does **not** make writes atomic: NPZ and JSON
-files are still written directly and the manifest is written last. Atomic
-replacement, cross-file publication, checkpoint schema/provenance, and
-full scientific input provenance remain open. The SHA-256 digests protect
-stored file consistency; they do not hash Hamiltonian or dipole source arrays.
+P7.2-d/D-097 writes each NPZ or JSON payload to a temporary file in its
+own destination directory, flushes it, and uses `os.replace` after a complete
+write. The manifest is still published last and retains sorted-key JSON.
+A failed single-file write leaves that destination's previous bytes intact
+and cleans up its temporary file. This is **not** a cross-file transaction:
+an interrupted update of an existing result can leave a new payload with an
+old manifest. The strict reader detects the mismatch and raises; it cannot
+recover the old group. Directory durability across power loss, checkpoint
+schema/provenance, and full scientific input provenance remain open. The
+SHA-256 digests protect stored file consistency; they do not hash Hamiltonian
+or dipole source arrays.
 
 ## Verification
 
@@ -80,3 +86,7 @@ stored file consistency; they do not hash Hamiltonian or dipole source arrays.
   covers 53 modules. Missing/legacy/tampered result fixtures raise without
   rewriting an existing summary, while valid resume population values and
   case order remain unchanged.
+- P7.2-d single-file write and failure-injection contracts pass, including
+  strict rejection of an interrupted multi-file overwrite. Numeric-array
+  round trips remain exact. Full suite: 1275 passed, 10 optional-GPU skipped;
+  branch coverage: 78%; strict mypy includes the atomic writer as module 54.

@@ -16,6 +16,7 @@ from rovibrational_excitation.io.result_schema import (
     ResultFormatError,
     load_simulation_result,
 )
+from rovibrational_excitation.simulation import result_persistence
 from rovibrational_excitation.simulation.m_average import MAveragePropagationResult
 from rovibrational_excitation.simulation.result_persistence import (
     persist_m_average_result,
@@ -152,6 +153,33 @@ def test_loader_rejects_invalid_npz_even_with_matching_digest(tmp_path):
     manifest["files"]["result.npz"] = hashlib.sha256(payload).hexdigest()
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(ResultFormatError, match="cannot safely read result.npz"):
+        load_simulation_result(tmp_path)
+
+
+def test_failed_multi_file_overwrite_fails_closed(tmp_path, monkeypatch):
+    params, grid, field, times, state, _ = _example(tmp_path)
+    previous_manifest = (tmp_path / "result_manifest.json").read_bytes()
+    changed_state = state.copy()
+    changed_state[-1] = [1.0, 0.0]
+
+    def fail_json(*args, **kwargs):
+        raise OSError("simulated JSON write failure")
+
+    monkeypatch.setattr(result_persistence, "atomic_write_json", fail_json)
+    with pytest.raises(OSError, match="simulated JSON write failure"):
+        persist_wavefunction_result(
+            outdir=tmp_path,
+            params=params,
+            field_times_fs=grid.field_times_fs,
+            sampled_field=field,
+            times_fs=times,
+            state=changed_state,
+            population=np.abs(changed_state) ** 2,
+            regime_info=None,
+        )
+
+    assert (tmp_path / "result_manifest.json").read_bytes() == previous_manifest
+    with pytest.raises(ResultFormatError, match="digest mismatch"):
         load_simulation_result(tmp_path)
 
 

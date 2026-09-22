@@ -1717,11 +1717,20 @@ print-only outer failure catch is removed. Normal returned-result summaries
 and all-complete resume behavior are untouched. Full suite: 1270 passed,
 10 optional-GPU skipped; strict mypy now covers 53 modules.
 
-- add schema version;
-- serialize model, field, time, solver, backend, and scaling metadata;
-- atomic result/checkpoint writes;
-- validated resume;
-- migration error for unknown schema.
+P7.2-d/D-097 replaces individual normal-result NPZ/JSON files atomically.
+A temporary file is written and synced in the destination directory before
+`os.replace`; the v1 manifest remains last. Failed individual writes preserve
+the prior destination and remove the temporary file. Stored arrays, JSON
+semantics, and propagation are unchanged. This does not guarantee a coherent
+multi-file snapshot when replacing a prior result: strict validation reports
+an interrupted or mismatched group. Checkpoint atomicity and provenance
+remain separate P7.2 work. Full suite: 1275 passed, 10 optional-GPU
+skipped; branch coverage: 78%; strict mypy covers 54 modules.
+
+- complete scientific input provenance;
+- cross-file result publication and checkpoint atomicity;
+- validated checkpoint resume;
+- migration error for unknown checkpoint schema.
 
 ### P7.3 Optimization
 

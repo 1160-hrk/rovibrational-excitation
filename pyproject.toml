@@ -134,6 +134,7 @@ files = [
     "src/rovibrational_excitation/core/units/constants.py",
     "src/rovibrational_excitation/core/units/scalar_quantities.py",
     "src/rovibrational_excitation/io/checkpoint.py",
+    "src/rovibrational_excitation/io/atomic.py",
     "src/rovibrational_excitation/io/result_schema.py",
     "src/rovibrational_excitation/io/serialization.py",
     "src/rovibrational_excitation/io/storage.py",
