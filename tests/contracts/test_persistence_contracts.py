@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import ScalarField
@@ -17,6 +18,7 @@ from rovibrational_excitation.io import (
     json_safe,
     storage,
 )
+from rovibrational_excitation.io.result_schema import ResultFormatError
 from rovibrational_excitation.simulation.result_persistence import (
     persist_wavefunction_result,
 )
@@ -135,6 +137,63 @@ def test_versioned_result_keeps_exact_numeric_arrays_and_json_regime_info(tmp_pa
     )
 
 
+def test_summary_rejects_unversioned_result_without_overwriting_existing_csv(tmp_path):
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    np.savez_compressed(case_dir / "result.npz", pop=np.array([[0.2, 0.8]]))
+    summary = tmp_path / "summary.csv"
+    summary.write_text("previous summary\n")
+
+    with pytest.raises(ResultFormatError, match="unversioned"):
+        storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
+
+    assert summary.read_text() == "previous summary\n"
+
+
+def test_summary_rejects_tampered_versioned_result(tmp_path):
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    persist_wavefunction_result(
+        outdir=case_dir,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(5)),
+        times_fs=np.array([1.0]),
+        state=np.array([1.0 + 0j, 0.0 + 0j]),
+        population=np.array([[1.0, 0.0]]),
+        regime_info=None,
+    )
+    (case_dir / "result.npz").write_bytes(b"changed after manifest")
+
+    with pytest.raises(ResultFormatError, match="digest mismatch"):
+        storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
+
+    assert not (tmp_path / "summary.csv").exists()
+
+
+def test_summary_rejects_published_manifest_with_missing_npz(tmp_path):
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    persist_wavefunction_result(
+        outdir=case_dir,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(5)),
+        times_fs=np.array([1.0]),
+        state=np.array([1.0 + 0j, 0.0 + 0j]),
+        population=np.array([[1.0, 0.0]]),
+        regime_info=None,
+    )
+    (case_dir / "result.npz").unlink()
+
+    with pytest.raises(ResultFormatError, match="missing result payload"):
+        storage.update_summary(tmp_path, [{"outdir": case_dir, "save": True}])
+
+    assert not (tmp_path / "summary.csv").exists()
+
+
 def test_results_root_name_and_summary_files_are_preserved(tmp_path, monkeypatch):
     class FixedDatetime:
         @classmethod
@@ -148,25 +207,28 @@ def test_results_root_name_and_summary_files_are_preserved(tmp_path, monkeypatch
     assert results_root.is_dir()
 
     success_dir = tmp_path / "case_success"
-    corrupt_dir = tmp_path / "case_corrupt"
     missing_dir = tmp_path / "case_missing"
     success_dir.mkdir()
-    corrupt_dir.mkdir()
-    np.savez_compressed(
-        success_dir / "result.npz",
-        pop=np.array([[1.0, 0.0], [0.25, 0.75]]),
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    persist_wavefunction_result(
+        outdir=success_dir,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(5)),
+        times_fs=np.array([-1.0, 1.0]),
+        state=np.zeros((2, 2), dtype=np.complex128),
+        population=np.array([[1.0, 0.0], [0.25, 0.75]]),
+        regime_info=None,
     )
-    (corrupt_dir / "result.npz").write_bytes(b"not an npz file")
     cases = [
         {"amplitude": 1.0, "outdir": success_dir, "save": True},
-        {"amplitude": 2.0, "outdir": corrupt_dir, "save": True},
         {"amplitude": 3.0, "outdir": missing_dir, "save": True},
     ]
 
     storage.update_summary(results_root, cases)
 
     summary = pd.read_csv(results_root / "summary.csv")
-    assert summary["status"].tolist() == ["success", "corrupted", "failed"]
+    assert summary["status"].tolist() == ["success", "failed"]
     assert "outdir" not in summary.columns
     assert "save" not in summary.columns
     assert summary.loc[0, "pop_0"] == 0.25

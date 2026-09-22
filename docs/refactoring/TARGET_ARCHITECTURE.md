@@ -813,8 +813,10 @@ Result files require a schema version independent of package version. A loader
 must either parse a known schema or raise an actionable error. It must not guess
 array meaning from key presence. P7.2-b/D-095 implements this for normal
 simulation results in `io.result_schema` using a v1 manifest and strict
-opt-in loader. Legacy summary/visualization readers, atomic publication,
-and checkpoint versioning remain separate P7.2 work.
+opt-in loader. P7.2-c/D-096 routes resumed-run file-backed summaries through
+that loader and surfaces invalid-result errors before CSV overwrite.
+Standalone visualization readers, atomic publication, and checkpoint
+versioning remain separate P7.2 work.
 
 ## 12. Performance constraints
 

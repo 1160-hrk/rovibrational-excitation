@@ -50,14 +50,19 @@ malformed fields, object arrays, and corrupted payloads raise
 result requires an explicit future migration path; it is not silently treated
 as v1.
 
-This strict loader is not yet used by `io.storage.update_summary` or the
-standalone visualization code. Those old readers retain their characterized
-behavior until separately tested P7.2 migration units. A versioned manifest
-alone does **not** make writes atomic: NPZ and JSON files are still written
-directly and the manifest is written last. Atomic replacement, cross-file
-publication, checkpoint schema/provenance, and summary error policy remain
-open. The SHA-256 digests protect stored file consistency, not full scientific
-input provenance; they do not hash Hamiltonian or dipole source arrays.
+P7.2-c/D-096 moves resumed-run `io.storage.update_summary` to this strict
+loader. A case with neither NPZ nor manifest is still `failed`; a case with
+an NPZ or manifest but an unversioned, missing, corrupt, or mismatched
+payload raises `ResultFormatError` before either summary CSV is rewritten.
+Valid saved populations yield the same final-row columns and values. The
+normal in-memory summary and all-complete resume early return are unchanged.
+Standalone visualization remains a separate reader migration.
+
+A versioned manifest alone does **not** make writes atomic: NPZ and JSON
+files are still written directly and the manifest is written last. Atomic
+replacement, cross-file publication, checkpoint schema/provenance, and
+full scientific input provenance remain open. The SHA-256 digests protect
+stored file consistency; they do not hash Hamiltonian or dipole source arrays.
 
 ## Verification
 
@@ -71,3 +76,7 @@ input provenance; they do not hash Hamiltonian or dipole source arrays.
   Repository Ruff and strict mypy for 52 modules pass. Sdist/wheel build,
   Twine validation, and import from an installed wheel outside the workspace
   pass. CUDA execution is not verified.
+- P7.2-c full suite: 1270 passed, 10 optional-GPU skipped; strict mypy
+  covers 53 modules. Missing/legacy/tampered result fixtures raise without
+  rewriting an existing summary, while valid resume population values and
+  case order remain unchanged.

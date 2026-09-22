@@ -10,12 +10,32 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import ScalarField
 from rovibrational_excitation.io import CheckpointManager, json_safe
+from rovibrational_excitation.simulation.result_persistence import (
+    persist_wavefunction_result,
+)
 from rovibrational_excitation.simulation.runner import (
     _run_one_safe,
     resume_run,
     run_all_with_checkpoint,
 )
+
+
+def _save_versioned_population(outdir: Path, population: np.ndarray) -> None:
+    """Create a complete disk fixture for resume-summary tests."""
+    grid = TimeGrid.from_bounds(-1.0, 1.0, 0.5)
+    persist_wavefunction_result(
+        outdir=outdir,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(5)),
+        times_fs=np.array([1.0]),
+        state=np.zeros(population.shape[-1], dtype=np.complex128),
+        population=population,
+        regime_info=None,
+    )
 
 
 def test_safe_case_retries_only_oserror_with_exponential_backoff():
@@ -146,7 +166,7 @@ def test_resume_rebuilds_cases_skips_completed_and_uses_saved_results(tmp_path):
     )
     old_dir = tmp_path / "amplitude_1"
     old_dir.mkdir()
-    np.savez(old_dir / "result.npz", pop=np.array([[0.2, 0.8]]))
+    _save_versioned_population(old_dir, np.array([[0.2, 0.8]]))
     manager = CheckpointManager(tmp_path)
     manager.save_checkpoint(
         [
@@ -166,10 +186,7 @@ def test_resume_rebuilds_cases_skips_completed_and_uses_saved_results(tmp_path):
     def run_case(case):
         executed.append(case)
         if case["amplitude"] == 2.0:
-            np.savez(
-                Path(case["outdir"]) / "result.npz",
-                pop=np.array([[0.3, 0.7]]),
-            )
+            _save_versioned_population(Path(case["outdir"]), np.array([[0.3, 0.7]]))
             return np.array([[0.4, 0.6]]), None
         return None, "new failure"
 

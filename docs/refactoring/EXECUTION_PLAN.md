@@ -1709,6 +1709,14 @@ atomic writes, checkpoint schema, and full provenance remain later units.
 The full suite passes 1267 tests with 10 optional-GPU skips, branch coverage
 is 78%, strict mypy covers 52 modules, and the installed-wheel import passes.
 
+P7.2-c/D-096 migrates resumed-run file-backed summaries to the strict
+v1 loader. Valid result populations and CSV columns remain unchanged.
+Existing but unversioned, corrupt, or incomplete results now raise before
+summary overwrite; genuinely absent results remain `failed`. The prior
+print-only outer failure catch is removed. Normal returned-result summaries
+and all-complete resume behavior are untouched. Full suite: 1270 passed,
+10 optional-GPU skipped; strict mypy now covers 53 modules.
+
 - add schema version;
 - serialize model, field, time, solver, backend, and scaling metadata;
 - atomic result/checkpoint writes;

@@ -3357,6 +3357,28 @@ commits. No propagation, M-average, or optimizer calculation changes.
 
 Implementation commit: this checkpoint.
 
+### D-096: Resumed summaries require validated versioned results
+
+Status: Implemented on 2026-09-22 as P7.2-c.
+
+`io.storage.update_summary` now obtains persisted populations only through
+`io.result_schema.load_simulation_result`; it no longer guesses success from
+NPZ key presence. A case with neither NPZ nor manifest remains `failed`.
+If either file exists, missing/unknown schema, corruption, a missing paired
+payload, or an invalid population shape raises `ResultFormatError` before
+writing summary CSVs. Read and write failures are surfaced, not printed and
+suppressed. The prior `corrupted` row for a malformed existing NPZ is
+replaced by an actionable exception. Valid versioned results retain the
+same final-row population columns and values.
+
+Normal-run summaries still use returned in-memory populations. The
+all-complete resume early return still does not rewrite summaries.
+Checkpoint format/provenance, atomic publication, and standalone plotters
+remain separate work. This is a reporting/error-policy change, not a
+propagation, population, or optimizer calculation change.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

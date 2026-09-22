@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-22
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-b D-095 result disk schema v1
+Verified structural checkpoint: P7.2-c D-096 strict resumed summaries
 Latest infrastructure checkpoint: `7d4368b`
 
 ## Purpose
@@ -405,7 +405,9 @@ unversioned persistence boundary in `PHASE7_PERSISTENCE_BASELINE.md` and
 adds exact-array/regime-format characterization. P7.2-b/D-095 writes a
 versioned result manifest and supplies a strict opt-in loader; numeric
 arrays remain unchanged, while duplicate pickle-only regime metadata moves
-to its existing JSON sidecar. Summary/checkpoint readers remain legacy.
+to its existing JSON sidecar. P7.2-c/D-096 routes resumed summaries through
+the strict loader and surfaces invalid saved results before CSV writes;
+normal in-memory summaries are unchanged. Checkpoints remain legacy.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -415,10 +417,9 @@ recorded by D-073.
 The next work is:
 
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
-   P7.2-b disk schema v1 and strict opt-in loader are implemented. Next
-   migrate file-backed summaries to the strict loader with tested error
-   reporting, then implement atomic result/checkpoint publication and
-   validated resume provenance. Do not silently accept unversioned files.
+   P7.2-b disk schema v1 and P7.2-c strict resumed summaries are implemented.
+   Next implement atomic result/checkpoint publication and validated resume
+   provenance. Do not silently accept unversioned files.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.

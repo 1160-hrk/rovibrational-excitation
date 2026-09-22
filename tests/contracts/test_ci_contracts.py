@@ -101,6 +101,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/io/checkpoint.py",
         "src/rovibrational_excitation/io/result_schema.py",
         "src/rovibrational_excitation/io/serialization.py",
+        "src/rovibrational_excitation/io/storage.py",
         "src/rovibrational_excitation/simulation/case.py",
         "src/rovibrational_excitation/simulation/convergence.py",
         "src/rovibrational_excitation/simulation/generated.py",

@@ -211,7 +211,9 @@ That P7.2-a record is the historical baseline. P7.2-b/D-095 adds a v1
 result manifest and strict opt-in loader, documented in
 `PHASE7_RESULT_DISK_SCHEMA_V1.md`. Numeric arrays are unchanged; duplicate
 pickle-only NPZ regime metadata is removed in favor of its JSON sidecar.
-Summary readers, atomic writes, and checkpoint validation remain open.
+P7.2-c/D-096 routes the resumed-run file-backed summary through the strict
+loader, preserving valid CSV values while raising on legacy, corrupt, or
+incomplete saved results. Atomic writes and checkpoint validation remain open.
 
 P6.2-c
 implements D-069:
