@@ -60,7 +60,15 @@ an NPZ or manifest but an unversioned, missing, corrupt, or mismatched
 payload raises `ResultFormatError` before either summary CSV is rewritten.
 Valid saved populations yield the same final-row columns and values. The
 normal in-memory summary and all-complete resume early return are unchanged.
-Standalone visualization remains a separate reader migration.
+P7.2-i/D-102 routes all three standalone result-directory plotters through
+this loader. Their only disk projection is centralized in
+`visualization.result_data`: field plots consume `t_E/E`, population plots
+consume `t_p/pop`, and leading dimensions must match their respective time
+axes. The ordinary field plot accepts schema-v1 scalar or Cartesian `E`; the
+vector plot requires exactly two Cartesian components. Unversioned legacy NPY
+collections, invalid publication pointers, corrupt payloads, and incompatible
+plot shapes raise `ResultFormatError` before a figure is created. There is no
+print-and-return fallback.
 
 P7.2-d/D-097 writes each NPZ or JSON payload to a temporary file in its
 own destination directory, flushes it, and uses `os.replace` after a complete
@@ -115,3 +123,9 @@ power-loss durability remain open. This changes paths, not numerical values.
   wavefunction/M-average arrays. Full suite: 1289 passed, 10 optional-GPU
   skipped; branch coverage: 78%; strict mypy (54 modules), sdist/wheel build,
   and Twine validation pass. Real CUDA remains unverified.
+- P7.2-i tests read a published Cartesian result through each standalone
+  plotter, preserve plotted field/population values and output ordering, accept
+  scalar `E` only in the ordinary field plot, and reject all three legacy NPY
+  entry paths. Full suite: 1313 passed, 10 optional-GPU skipped (1323
+  collected); branch coverage remains 78%, and strict mypy covers 58 modules.
+  Build, Twine, and installed-wheel strict-reader/legacy-rejection checks pass.

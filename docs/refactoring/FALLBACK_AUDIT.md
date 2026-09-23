@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Date: 2026-09-13
+Last verified: 2026-09-23
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -34,6 +34,7 @@ recorded.
 | Numerical time-step adequacy | Removed `auto_timestep`/`target_accuracy` could otherwise be reintroduced as an implicit grid change | `assess_simulation_convergence` requires two caller-selected grids, a named observable, and explicit tolerance; it reports maximum absolute difference and never refines, retries, resamples, writes, or changes either calculation | `test_simulation_convergence.py` |
 | Molecular symmetry preset | A molecule name could otherwise imply guessed constants, a generic model, or unverified nuclear-spin weights | D-052 resolves only an explicit alias to source-versioned symmetry rules; constants remain empty/required, unknown aliases raise, unsupported vibronic symmetry raises, and CH3F weights raise until signed-K symmetry adaptation | `test_molecular_symmetry_presets.py` |
 | SymTop execution | The broken legacy route could be selected by optimization, while unverified CuPy or split execution could appear available | D-053 routes normal simulation through the independent production builder for NumPy dense/CSR RK4; CuPy, split operator, coherent all-isomer input, unknown presets, and optimization raise before numerical work | `test_symmetric_top_model_contracts.py`; `test_symmetric_top_reference.py` |
+| Standalone result plotting | Three path-based plotters probed unversioned NPY filenames and printed/returned when files were absent | D-102 requires the published/direct manifest-v1 loader, exact `t_E/E` or `t_p/pop` projections, and explicit schema/shape errors with no legacy fallback | visualization and result-schema contract tests |
 | Optimization documents | Unknown options and arbitrary runner kwargs could be ignored; invalid axes fell back to `xy`; YAML output/plot policy was not authoritative; plotting exceptions were printed | D-056 closes every document/algorithm key set, requires axes, restricts GRAPE to `xy`, removes runner kwargs, defines explicit output/plot precedence, and raises top-level requested plotting failures | `test_optimization_config_contracts.py`; optimization time/reference contracts |
 | Optimization option values | Numeric/string values were coerced, duplicate axes were accepted, Local mode typos selected another branch, lookahead/weight/cost errors were suppressed, and spectral updates applied a repair floor | D-057 requires exact types/enums/distinct axes, surfaces requested Local failures, validates finite nonnegative spectral alpha, and divides directly by `1+alpha` | `test_optimization_option_contracts.py`; Local propagation contracts |
 | Local control gain | Missing gain used `1.0`; the unit was implicit; the diagnostic reciprocal used `max(gain, 1e-30)` | D-058 requires a finite positive value/unit pair, converts to `(V/m)^2 fs`, and uses the direct reciprocal only after validation | unit conversion, optimization option, configuration, and Local propagation contracts |

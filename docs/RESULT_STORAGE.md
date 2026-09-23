@@ -35,6 +35,23 @@ field_v_per_m = saved.arrays["E"]
 parameters = saved.parameters
 ```
 
+## standalone可視化
+
+`visualization.plot_electric_field`、`plot_electric_field_vector`、
+`plot_population`のresult-directory入口も同じstrict loaderを使います。
+電場は`result.npz`の`t_E`と`E`、populationは`t_p`と`pop`を使用します。
+通常の電場plotは1成分scalarと2成分Cartesianを受理しますが、vector plotは
+厳密に2成分Cartesianだけを受理します。populationは時間を第0軸に持つ2次元
+配列でなければなりません。各データの第0軸長は対応する時間軸と一致する必要が
+あります。
+
+manifestのない旧`tlist.npy`、`Efield_real.npy`、`Efield_vector.npy`、
+`population.npy`だけのディレクトリは推測して読みません。破損、未知schema、
+不完全な公開世代、shape不整合は`ResultFormatError`になります。plotterは
+エラーをprintしてreturnへ変換しません。図のseries、filename、全stateを描く
+現在のpopulation挙動、`show()`と`savefig()`の順序はこの読込移行では変更して
+いません。
+
 個々の NPZ/JSON ファイルが必要なら
 `resolve_result_directory(Path("case_dir"))` で現在の世代を一度だけ
 解決し、その戻り値の下のファイルを扱います。読み込み中にポインタが

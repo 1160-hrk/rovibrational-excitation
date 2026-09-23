@@ -1,49 +1,39 @@
-# plot_electric_field.py
 import argparse
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
+
+from .result_data import ResultPath, load_field_plot_data
 
 
-def plot_electric_field(result_dir):
-    ereal_path = os.path.join(result_dir, "Efield_real.npy")
-    tlist_path = os.path.join(result_dir, "tlist.npy")
-
-    if not os.path.exists(ereal_path) or not os.path.exists(tlist_path):
-        print(f"Missing electric field data in: {result_dir}")
-        return
-
-    E_real = np.load(ereal_path)  # shape = [2, T]
+def plot_electric_field(result_dir: ResultPath) -> None:
+    """Plot the validated scalar or Cartesian electric field of one result."""
+    result_path = Path(result_dir)
+    tlist, E_real = load_field_plot_data(result_path)
     print(f"E_real shape: {E_real.shape}")
-    tlist = np.load(tlist_path)
 
     plt.figure(figsize=(8, 4))
     plt.plot(tlist, E_real)
     # plt.plot(tlist, E_real[1], label='Y polarization')
     plt.xlabel("Time (fs)")
     plt.ylabel("Electric Field Amplitude")
-    plt.title(f"Electric Field in {os.path.basename(result_dir)}")
+    plt.title(f"Electric Field in {result_path.name}")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.show()
     # 保存
-    filename = os.path.join(result_dir, "electric_field_plot.png")
+    filename = result_path / "electric_field_plot.png"
     plt.savefig(filename, dpi=300)
     print(f"✅ Saved electric field vector plot to {filename}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Plot electric field from simulation result folder"
+        description="Plot electric field from a versioned simulation result"
     )
     parser.add_argument(
-        "result_dir", help="Path to result directory (contains Efield_real.npy)"
+        "result_dir", help="Path to result directory (contains result_current.json)"
     )
     args = parser.parse_args()
     plot_electric_field(args.result_dir)
-
-    # Test with a sample result directory
-    # test_result_dir = "../results/2025-04-10_02-51-24_CO2_antisymm_stretch/gauss_width_50.0/pol_[1, 0]/delay_100.0"
-    # plot_electric_field(test_result_dir)

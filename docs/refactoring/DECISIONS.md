@@ -3539,6 +3539,48 @@ installed-wheel checkpoint v1 save/load plus changed-run rejection pass.
 
 Implementation commit: this checkpoint.
 
+### D-102: Standalone result plots require the strict published schema
+
+Status: Implemented on 2026-09-23 as P7.2-i.
+
+The three result-directory plotting entry points no longer probe the
+unversioned `tlist.npy`, `Efield_real.npy`, `Efield_vector.npy`, or
+`population.npy` files. A private `visualization.result_data` projection
+calls `io.result_schema.load_simulation_result`, so publication-pointer,
+manifest, payload-hash, array-key/dtype/shape, and unit validation all occur
+before any figure is created. Existing invalid data raises
+`ResultFormatError`; there is no missing-file print-and-return fallback.
+
+The explicit mapping is `t_E/E` for electric-field plots and `t_p/pop` for
+population plots. The ordinary field plot accepts a one-dimensional scalar
+field or a two-dimensional field with the time axis first. The vector plot
+requires exactly two Cartesian components. Population must be two-dimensional
+with its first dimension equal to `t_p`. These checks do not reshape,
+squeeze, resample, clip, or repair data.
+
+The plot functions, output filenames, plotted population series,
+currently-unused `state_index`, legacy labels, empty-legend warning, and
+`show()`-before-`savefig()` order remain unchanged. Those characterized
+visualization debts still require a separate behavior commit. No Hamiltonian,
+field generation, propagation, stored array, population, optimization, or
+spectroscopy calculation changes.
+
+The architecture permits exactly one new application-layer dependency edge:
+`visualization.result_data -> io.result_schema`. Direct dependencies from
+individual plotters to I/O, simulation, storage writers, models, optimization,
+spectroscopy, CLI, or the package root remain forbidden. Root import continues
+to keep optional Matplotlib lazy.
+
+Four new reader cases cover all three legacy entry points and the
+scalar-versus-Cartesian boundary. Published Cartesian field/population values,
+filenames, labels, and show/save order remain characterized. The complete CPU
+suite passes 1313 tests with 10 optional-GPU skips (1323 collected), branch
+coverage remains 78%, and strict mypy covers 58 modules. The sdist/wheel build,
+Twine validation, and an installed-wheel strict-reader round trip plus legacy
+NPY rejection pass.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

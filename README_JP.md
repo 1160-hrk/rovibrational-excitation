@@ -325,10 +325,11 @@ rovibrational_excitation/
 │   │   └── vib/             # 振動双極子
 │   │       ├── harmonic.py  # 調和振動子
 │   │       └── morse.py     # モース振動子
-│   ├── plots/               # 可視化ツール
+│   ├── visualization/       # 可視化ツール
 │   │   ├── plot_electric_field.py      # 電場プロット
 │   │   ├── plot_electric_field_vector.py # 電場ベクトル
-│   │   └── plot_population.py          # 個体数プロット
+│   │   ├── plot_population.py          # 個体数プロット
+│   │   └── result_data.py              # schema v1結果の厳格読込
 │   └── simulation/          # シミュレーション管理
 │       ├── runner.py        # バッチ実行エンジン
 │       ├── manager.py       # 実行管理

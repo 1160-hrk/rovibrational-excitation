@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from rovibrational_excitation.core.time import TimeGrid
+from rovibrational_excitation.fields import CartesianField, ScalarField
+from rovibrational_excitation.io.result_schema import ResultFormatError
+from rovibrational_excitation.simulation.result_persistence import (
+    persist_wavefunction_result,
+)
 from rovibrational_excitation.visualization.spectrogram import spectrogram_fast
 
 plot_all_module = import_module("rovibrational_excitation.visualization.plot_all")
@@ -139,14 +145,22 @@ def test_plot_all_preserves_explicit_times_labels_and_save_calls(tmp_path, monke
 def test_result_directory_plotters_preserve_files_labels_and_show_save_order(
     tmp_path, monkeypatch
 ):
+    grid = TimeGrid.from_bounds(0.0, 1.0, 0.25)
+    field = np.column_stack(
+        (np.arange(grid.field_times_fs.size), -np.arange(grid.field_times_fs.size))
+    ).astype(float)
     time_axis = np.array([0.0, 0.5, 1.0])
-    field = np.array([[1.0, -1.0], [2.0, -2.0], [3.0, -3.0]])
-    vector = field.astype(complex) + 1j * 9.0
     population = np.array([[1.0, 0.0], [0.6, 0.4], [0.2, 0.8]])
-    np.save(tmp_path / "tlist.npy", time_axis)
-    np.save(tmp_path / "Efield_real.npy", field)
-    np.save(tmp_path / "Efield_vector.npy", vector)
-    np.save(tmp_path / "population.npy", population)
+    persist_wavefunction_result(
+        outdir=tmp_path,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=CartesianField(grid, field[:, 0], field[:, 1]),
+        times_fs=time_axis,
+        state=np.sqrt(population).astype(complex),
+        population=population,
+        regime_info=None,
+    )
     events: list[tuple[str, Path | None]] = []
     monkeypatch.setattr(plt, "show", lambda: events.append(("show", None)))
     monkeypatch.setattr(
@@ -159,10 +173,12 @@ def test_result_directory_plotters_preserve_files_labels_and_show_save_order(
     field_axis = plt.gca()
     assert field_axis.get_xlabel() == "Time (fs)"
     assert field_axis.get_ylabel() == "Electric Field Amplitude"
+    np.testing.assert_array_equal(field_axis.lines[0].get_xdata(), grid.field_times_fs)
     plt.close("all")
 
     vector_module.plot_electric_vector(tmp_path)
     vector_axis = plt.gca()
+    np.testing.assert_array_equal(vector_axis.lines[0].get_xdata(), grid.field_times_fs)
     np.testing.assert_array_equal(vector_axis.lines[0].get_ydata(), field[:, 0])
     np.testing.assert_array_equal(vector_axis.lines[1].get_ydata(), field[:, 1])
     plt.close("all")
@@ -185,3 +201,55 @@ def test_result_directory_plotters_preserve_files_labels_and_show_save_order(
         ("show", None),
         ("save", tmp_path / "population_plot.png"),
     ]
+
+
+@pytest.mark.parametrize(
+    "plotter",
+    [
+        field_module.plot_electric_field,
+        vector_module.plot_electric_vector,
+        population_module.plot_population,
+    ],
+)
+def test_result_directory_plotters_reject_unversioned_legacy_arrays(tmp_path, plotter):
+    np.save(tmp_path / "tlist.npy", np.array([0.0]))
+    np.save(tmp_path / "Efield_real.npy", np.array([0.0]))
+    np.save(tmp_path / "Efield_vector.npy", np.array([[0.0, 0.0]]))
+    np.save(tmp_path / "population.npy", np.array([[1.0]]))
+
+    with pytest.raises(ResultFormatError, match="result_manifest.json"):
+        plotter(tmp_path)
+
+    assert plt.get_fignums() == []
+
+
+def test_scalar_field_plot_is_valid_but_vector_plot_requires_cartesian(
+    tmp_path, monkeypatch
+):
+    grid = TimeGrid.from_bounds(0.0, 1.0, 0.25)
+    population_times = np.array([0.0, 0.5, 1.0])
+    population = np.array([[1.0, 0.0], [0.75, 0.25], [0.5, 0.5]])
+    persist_wavefunction_result(
+        outdir=tmp_path,
+        params={"basis_type": "twolevel"},
+        field_times_fs=grid.field_times_fs,
+        sampled_field=ScalarField(grid, np.zeros(grid.field_times_fs.size)),
+        times_fs=population_times,
+        state=np.sqrt(population).astype(complex),
+        population=population,
+        regime_info=None,
+    )
+
+    monkeypatch.setattr(plt, "show", lambda: None)
+    monkeypatch.setattr(plt, "savefig", lambda *_args, **_kwargs: None)
+    field_module.plot_electric_field(tmp_path)
+    field_axis = plt.gca()
+    assert len(field_axis.lines) == 1
+    np.testing.assert_array_equal(field_axis.lines[0].get_xdata(), grid.field_times_fs)
+    np.testing.assert_array_equal(field_axis.lines[0].get_ydata(), np.zeros(5))
+    plt.close("all")
+
+    with pytest.raises(ResultFormatError, match="two Cartesian components"):
+        vector_module.plot_electric_vector(tmp_path)
+
+    assert plt.get_fignums() == []

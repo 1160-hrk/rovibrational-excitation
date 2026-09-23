@@ -1769,6 +1769,20 @@ deduplication, cadence, valid-run filtering, and all calculations. Full suite:
 strict mypy covers 54 modules. Build, Twine, and installed-wheel checkpoint v1
 round-trip/provenance rejection pass.
 
+P7.2-i/D-102 migrates the three standalone result-directory plotters from
+unversioned `tlist.npy`, `Efield_real.npy`, `Efield_vector.npy`, and
+`population.npy` probes to one typed `visualization.result_data` projection
+over `io.result_schema.load_simulation_result`. Field plots use `t_E/E`;
+population uses `t_p/pop`. Leading dimensions must match their time axes, and
+the vector plot requires exactly two Cartesian components. Invalid schema,
+publication, payload, legacy-only input, and plot shapes raise before figure
+creation. Plot series, filenames, all-state population behavior, show/save
+order, and calculations remain unchanged. The only application-layer
+dependency allowed from visualization is this strict schema reader. Full suite:
+1313 passed, 10 optional-GPU skipped (1323 collected); branch coverage remains
+78%, and strict mypy covers 58 modules. Build, Twine, and installed-wheel strict
+reader round-trip/legacy-rejection validation pass.
+
 - complete source, environment, indirect-external-file, and generated-array
   provenance beyond the declared expanded-run digest.
 

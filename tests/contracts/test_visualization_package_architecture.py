@@ -11,6 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src" / "rovibrational_excitation"
 VISUALIZATION = PACKAGE / "visualization"
+STRICT_RESULT_READER = (
+    "src/rovibrational_excitation/visualization/result_data.py",
+    "rovibrational_excitation.io.result_schema",
+)
 LEGACY_PLOTS = PACKAGE / "plots"
 
 
@@ -27,6 +31,7 @@ def test_plotting_helpers_are_owned_by_visualization():
     from rovibrational_excitation.visualization.spectrogram import spectrogram_fast
 
     assert (VISUALIZATION / "__init__.py").is_file()
+    assert (VISUALIZATION / "result_data.py").is_file()
     assert (VISUALIZATION / "plot_all.py").is_file()
     assert (VISUALIZATION / "plot_electric_field.py").is_file()
     assert (VISUALIZATION / "plot_electric_field_vector.py").is_file()
@@ -77,6 +82,9 @@ def test_visualization_does_not_depend_on_application_workflows():
                     violations.append(f"{path.relative_to(ROOT)} imports package root")
                 elif parts[0] == "rovibrational_excitation" and len(parts) > 1:
                     if parts[1] in forbidden:
+                        dependency = (str(path.relative_to(ROOT)), module)
+                        if dependency == STRICT_RESULT_READER:
+                            continue
                         violations.append(f"{path.relative_to(ROOT)} imports {module}")
                 elif level > 1 and parts[0] in forbidden:
                     violations.append(f"{path.relative_to(ROOT)} imports {module}")

@@ -226,8 +226,13 @@ requires the complete ordered expanded-run SHA-256 to match before resume
 filtering or execution. Invalid, unversioned, unknown, sidecar-mismatched, or
 different-run checkpoints raise explicitly and are never upgraded or repaired
 implicitly. The exact contract is in `PHASE7_CHECKPOINT_SCHEMA_V1.md`.
-The full suite has 1309 passes, 10 optional-GPU skips, 78% branch coverage,
-and 54 strict-mypy modules.
+P7.2-i/D-102 then moves all three standalone result-directory plotters to the
+strict published-result loader. They use `t_E/E` and `t_p/pop`, reject legacy
+NPY collections and incompatible scalar/Cartesian shapes explicitly, and do
+not change any calculation or established plot order. The one new allowed
+dependency edge is `visualization.result_data -> io.result_schema`.
+The full suite has 1313 passes, 10 optional-GPU skips, 78% branch coverage,
+and 58 strict-mypy modules.
 
 P6.2-c
 implements D-069:

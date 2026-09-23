@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Corrupt, unversioned, unknown, or different-run checkpoints now raise before
   case execution instead of falling back, printing-and-returning `None`, or
   upgrading implicitly.
+- Standalone result-directory plots now load `t_E/E` and `t_p/pop` only through
+  the strict published-result schema-v1 reader. Legacy NPY collections,
+  malformed publications, and scalar input to the Cartesian-vector plot raise
+  explicitly instead of falling back or printing and returning.
 
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms

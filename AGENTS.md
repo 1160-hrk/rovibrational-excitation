@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-23
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-h D-101 strict checkpoint schema and resume provenance
+Verified structural checkpoint: P7.2-i D-102 strict visualization result readers
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -135,6 +135,10 @@ The authoritative details and formulas are in
   membership before filtering or execution. Invalid, unknown, unversioned, or
   different-run checkpoints raise; no implicit fallback, repair, or upgrade is
   allowed.
+- Standalone result-directory plotters consume only validated disk-schema-v1
+  results through `io.result_schema`. They map `t_E/E` to field plots and
+  `t_p/pop` to population plots; unversioned legacy NPY collections never
+  trigger a fallback.
 
 Changing any item above requires explicit user approval and a regression test.
 
@@ -176,14 +180,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.2-h:
+Current local CPU baseline after P7.2-i:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1309 passed, 10 GPU tests skipped (1319 collected)
+1313 passed, 10 GPU tests skipped (1323 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -430,6 +434,11 @@ declaration with SHA-256. Invalid, unknown, unversioned, sidecar-mismatched,
 or different-run checkpoints raise before filtering or execution; no implicit
 upgrade or repair remains. The historical MD5 identity, cadence, and all
 calculations are unchanged.
+P7.2-i/D-102 routes all three standalone result-directory plotters through one
+strict schema-v1 projection. They no longer inspect legacy NPY filenames or
+print-and-return on missing data. The single new dependency edge is
+`visualization.result_data -> io.result_schema`; plotting remains outside all
+calculation paths.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -442,11 +451,12 @@ The next work is:
    P7.2-b disk schema v1, P7.2-c strict resumed summaries, and P7.2-d
    result individual-file atomic replacement, P7.2-e checkpoint
    individual-file atomic replacement, P7.2-f whole-result publication,
-   P7.2-g checkpoint-pair publication, and P7.2-h strict checkpoint schema
-   plus validated declared-run resume provenance are implemented. Next audit
-   and migrate standalone visualization result readers to the strict published
-   result loader. Complete source/environment/generated-array provenance remains
-   separate and must not be overstated. Do not silently accept unversioned files.
+   P7.2-g checkpoint-pair publication, P7.2-h strict checkpoint schema plus
+   validated declared-run resume provenance, and P7.2-i strict standalone
+   visualization readers are implemented. Next perform the P7.2 acceptance
+   audit before beginning P7.3. Complete source/environment/generated-array
+   provenance remains separate and must not be overstated. Do not silently
+   accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    root README and release workflow must be corrected before any release tag.
    Preserve the distinct normal in-memory and resume file-backed summaries

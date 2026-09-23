@@ -212,6 +212,9 @@ Rules:
 6. `cli` only parses arguments, calls application services, and converts
    exceptions to exit codes.
 7. `visualization` consumes results and does not participate in calculation.
+   The file-backed plotting boundary has one allowed edge from
+   `visualization.result_data` to the schema authority `io.result_schema`;
+   plotters do not import runners, writers, or storage orchestration.
 8. No lower layer imports package-root convenience exports; use direct module
    imports to avoid cycles.
 9. Optional dependencies are imported lazily at the capability boundary.
@@ -824,9 +827,13 @@ strict checkpoint payload schema v1 and binds resume to the complete ordered
 expanded case declaration through a named SHA-256 scope before case filtering.
 Unversioned/unknown checkpoints and declared-run mismatches raise rather than
 falling back or upgrading implicitly. The historical MD5 case identity and
-checkpoint cadence are unchanged. Standalone visualization readers and
-source/environment/generated-array provenance beyond the declared run remain
-separate P7.2 work.
+checkpoint cadence are unchanged. P7.2-i/D-102 routes all standalone
+result-directory plotters through a single strict `io.result_schema`
+projection. They consume only `t_E/E` or `t_p/pop`, reject legacy NPY
+collections and incompatible shapes, and never fall back from invalid
+publication state. The plot layer remains outside calculation. Full
+source/environment/generated-array provenance beyond the declared run remains
+separate work.
 
 ## 12. Performance constraints
 

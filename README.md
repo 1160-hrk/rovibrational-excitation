@@ -317,7 +317,8 @@ rovibrational_excitation/
 │   ├── visualization/       # optional visualization helpers
 │   │   ├── plot_electric_field.py
 │   │   ├── plot_electric_field_vector.py
-│   │   └── plot_population.py
+│   │   ├── plot_population.py
+│   │   └── result_data.py     # strict schema-v1 plotting projection
 │   └── simulation/          # batch runner & CLI
 │       ├── runner.py        # main execution engine
 │       ├── manager.py       # execution management

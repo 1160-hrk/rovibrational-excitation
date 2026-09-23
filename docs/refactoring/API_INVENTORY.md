@@ -294,12 +294,20 @@ status, and overwrite behavior remain unchanged and unversioned.
 
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
-| `visualization` | no package-level function exports; functions remain explicit under `visualization.plot_all`, `visualization.plot_electric_field`, `visualization.plot_electric_field_vector`, `visualization.plot_population`, and `visualization.spectrogram` | target visualization owner reached in P3.1-h | target public subpackage; root exposes only the package and keeps Matplotlib lazy |
+| `visualization` | no package-level function exports; functions remain explicit under `visualization.plot_all`, `visualization.plot_electric_field`, `visualization.plot_electric_field_vector`, `visualization.plot_population`, and `visualization.spectrogram`; `visualization.result_data` is the private strict disk projection | target visualization owner reached in P3.1-h; disk-reader boundary completed by P7.2-i | target public subpackage; root exposes only the package and keeps Matplotlib lazy; result-directory plotters require schema-v1 data |
 
 The former `plots` namespace was removed without a shim. The five implementation
 files are exact renames. Package-level function aliases are deliberately omitted
 because names such as `plot_all` collide with Python submodule attributes;
 callers import functions from their owning modules.
+
+
+P7.2-i/D-102 preserves those function owners but changes their path argument
+contract: the directory must contain a valid published or direct-layout
+manifest-v1 normal result. Legacy standalone NPY files are no longer accepted.
+The plotters consume validated `t_E/E` or `t_p/pop`; vector plotting requires
+two Cartesian field components. `state_index` remains unused pending its
+separately characterized behavior decision.
 
 ### 3.7 Optimization and spectroscopy
 
