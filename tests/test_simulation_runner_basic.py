@@ -26,6 +26,7 @@ from rovibrational_excitation.io import (
 from rovibrational_excitation.io import (
     json_safe as _json_safe,
 )
+from rovibrational_excitation.io.checkpoint import resolve_checkpoint_directory
 from rovibrational_excitation.simulation.runner import (
     CheckpointManager,
     _expand_cases,
@@ -79,7 +80,9 @@ class TestCheckpointManager:
             )
 
             # ファイル存在確認
-            assert manager.checkpoint_file.exists()
+            assert (
+                resolve_checkpoint_directory(manager.root_dir) / "checkpoint.json"
+            ).exists()
 
             # 読み込み
             checkpoint = manager.load_checkpoint()

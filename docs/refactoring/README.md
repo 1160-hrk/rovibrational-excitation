@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-22
+Last verified: 2026-09-23
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -221,7 +221,9 @@ atomically replaces each checkpoint JSON file, without changing checkpoint
 contents or resume behavior; the pair is not yet transactional. P7.2-f/D-099
 publishes complete normal results through an atomic generation pointer. Old
 manifest-v1 direct-layout results remain readable but cannot be implicitly
-overwritten; checkpoint-pair publication remains open.
+overwritten. P7.2-g/D-100 atomically publishes each complete checkpoint and
+failure-list pair; legacy direct checkpoints upgrade on their next successful
+save. Strict checkpoint schema/provenance validation remains open.
 
 P6.2-c
 implements D-069:

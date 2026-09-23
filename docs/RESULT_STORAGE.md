@@ -1,7 +1,7 @@
-# 計算結果の保存形式（開発版 v0.3）
+# 結果・checkpointの保存形式（開発版 v0.3）
 
-この文書は現在の `refactor/v0.3` ブランチの通常シミュレーション結果を
-説明します。旧 README のコード例全体はまだ移行中です。
+この文書は現在の `refactor/v0.3` ブランチの通常シミュレーション結果と
+batch checkpointを説明します。旧 README のコード例全体はまだ移行中です。
 
 ## 新しい結果ディレクトリ
 
@@ -55,7 +55,29 @@ parameters = saved.parameters
 完全な科学的 provenance を保証するものではありません。電源断後の
 ディレクトリエントリの永続性もまだ保証していません。
 
-`checkpoint.json` と `failed_cases.json` は各ファイル単位では原子的に
-置き換わりますが、両者を一組として切り替える仕組みと resume provenance
-の検証は未完了です。数値計算・出力配列の値はこの保存形式変更では
-変えていません。
+## checkpointの一括公開
+
+```text
+run_dir/
+├── checkpoint_current.json
+└── .checkpoint_generations/
+    └── <32文字の世代ID>/
+        ├── checkpoint.json
+        └── failed_cases.json
+```
+
+checkpointと失敗ケース一覧は同じ世代へ書き終えてから、
+`checkpoint_current.json`を原子的に切り替えます。途中でいずれかのJSON
+またはポインタの保存に失敗した場合、以前の完全な組が選択されたままです。
+旧形式の直置き`checkpoint.json`は読み込み可能で、次の正常な保存時に
+世代形式へ移行します。ポインタがあるのに壊れている場合は旧ファイルへ
+戻らず、保存による暗黙修復も行いません。
+
+checkpoint payload自体はまだ厳格にversion管理・構造検証していません。
+`load_checkpoint`の従来のエラー表示と`None`返却、MD5ケース識別子、
+保存間隔、重複排除、再開対象判定は維持しています。MD5値はケースの重複を
+判定する識別子であり、現在の入力や結果が同じことを証明するprovenanceでは
+ありません。旧世代と未公開世代の自動GC、電源断時のdirectory fsync、
+並行writerの調停も未実装です。
+
+数値計算・出力配列の値は、これらの保存形式変更では変えていません。

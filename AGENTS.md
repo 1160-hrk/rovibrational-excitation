@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-22
+Last verified: 2026-09-23
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-f D-099 atomic result-generation publication
+Verified structural checkpoint: P7.2-g D-100 atomic checkpoint-pair publication
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -171,14 +171,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.2-f:
+Current local CPU baseline after P7.2-g:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1289 passed, 10 GPU tests skipped (1299 collected)
+1298 passed, 10 GPU tests skipped (1308 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -417,7 +417,11 @@ two checkpoint files are not yet a transaction. P7.2-f/D-099 writes new
 normal results as immutable generations selected by one atomic
 `result_current.json` pointer. Valid direct-layout manifest-v1 results are
 readable but require explicit migration before overwrite. Calculation arrays
-are unchanged; checkpoint-pair publication remains open.
+are unchanged. P7.2-g/D-100 publishes `checkpoint.json` and
+`failed_cases.json` as one immutable generation through an atomic
+`checkpoint_current.json` pointer. Legacy direct checkpoints remain readable
+and upgrade on their next successful save. Strict checkpoint schema and
+resume provenance validation remain open.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -429,9 +433,9 @@ The next work is:
 1. P7.1 is accepted and the `0.3.0.dev1` development checkpoint is recorded.
    P7.2-b disk schema v1, P7.2-c strict resumed summaries, and P7.2-d
    result individual-file atomic replacement, P7.2-e checkpoint
-   individual-file atomic replacement, and P7.2-f whole-result publication
-   are implemented. Next implement transactional checkpoint-pair publication
-   and validated resume provenance.
+   individual-file atomic replacement, P7.2-f whole-result publication, and
+   P7.2-g checkpoint-pair publication are implemented. Next implement strict
+   checkpoint schema and validated resume provenance.
    Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    root README and release workflow must be corrected before any release tag.

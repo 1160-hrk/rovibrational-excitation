@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-21
+Last updated: 2026-09-23
 
 ## How to use this log
 
@@ -3448,6 +3448,42 @@ their established result-validation policy. This storage-layout change does
 not alter propagation, field samples, wavefunctions, populations, or M weights.
 Checkpoint-pair publication, scientific provenance, directory fsync,
 concurrent-writer coordination, and orphan-generation GC remain separate work.
+
+Implementation commit: this checkpoint.
+
+### D-100: Publish checkpoint and failure list as one generation
+
+Status: Implemented on 2026-09-23 as P7.2-g.
+
+Every new checkpoint write creates a UUID-named
+`.checkpoint_generations/<id>/` containing both `checkpoint.json` and
+`failed_cases.json`. Only after both JSON writes complete does an atomic
+`checkpoint_current.json` replacement select the pair. The publication
+schema version is independently numbered 1. A failed payload write or pointer
+replacement leaves the previous complete pair selected and readable. Previous
+and failed unpublished generations are retained; no implicit deletion or GC
+is performed.
+
+The checkpoint key set, timestamp, MD5 case-identity calculation, exclusion
+of `outdir`/`save`/`error`, completed-over-failed deduplication, batch save
+cadence, and resume filtering are unchanged. A direct-layout legacy
+`checkpoint.json` remains readable; its next successful save publishes the
+current in-memory progress in the generation layout. Once a pointer exists,
+missing, malformed, unsupported, unsafe, or path-traversing selections never
+fall back to the direct-layout file, and a new save refuses to silently repair
+an invalid pointer.
+
+This is pair publication, not checkpoint schema validation or scientific
+provenance. `load_checkpoint` retains its broad catch/print/`None` behavior,
+and the stored case hashes remain deduplication identifiers rather than proof
+that current parameters or result payloads match. Directory fsync,
+concurrent-writer coordination, strict checkpoint validation, provenance, and
+orphan-generation GC remain separate work. No simulation or optimization
+calculation changes. Failure-injection, legacy-upgrade, batch-cadence, and
+resume contracts pass with the full CPU suite: 1298 passed and 10
+optional-GPU skipped; branch coverage remains 78% and strict mypy covers
+54 modules. Sdist/wheel build, Twine validation, and an installed-wheel
+checkpoint round trip pass.
 
 Implementation commit: this checkpoint.
 

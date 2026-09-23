@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -19,6 +18,7 @@ from rovibrational_excitation.io import (
     json_safe,
     storage,
 )
+from rovibrational_excitation.io.checkpoint import resolve_checkpoint_directory
 from rovibrational_excitation.io.result_schema import (
     CURRENT_RESULT_NAME,
     ResultFormatError,
@@ -67,8 +67,9 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
 
     manager.save_checkpoint([completed, duplicate], [failed], 3, 12.5)
 
-    checkpoint = json.loads((tmp_path / "checkpoint.json").read_text())
-    failed_cases = json.loads((tmp_path / "failed_cases.json").read_text())
+    first_generation = resolve_checkpoint_directory(tmp_path)
+    checkpoint = json.loads((first_generation / "checkpoint.json").read_text())
+    failed_cases = json.loads((first_generation / "failed_cases.json").read_text())
     assert set(checkpoint) == {
         "timestamp",
         "start_time",
@@ -96,30 +97,9 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
     assert overwritten["completed_cases"] == 1
     assert overwritten["failed_cases"] == 0
     assert overwritten["failed_case_data"] == []
-    assert json.loads((tmp_path / "failed_cases.json").read_text()) == []
-
-
-@pytest.mark.parametrize("target_name", ["checkpoint.json", "failed_cases.json"])
-def test_checkpoint_replace_failure_preserves_target_file(
-    tmp_path, monkeypatch, target_name
-):
-    manager = CheckpointManager(tmp_path)
-    manager.save_checkpoint([{"amplitude": 1.0}], [], 1, 12.5)
-    target = tmp_path / target_name
-    previous = target.read_bytes()
-    original_replace = os.replace
-
-    def fail_target_replace(source, destination):
-        if Path(destination) == target:
-            raise OSError("simulated checkpoint replace failure")
-        return original_replace(source, destination)
-
-    monkeypatch.setattr(os, "replace", fail_target_replace)
-    with pytest.raises(OSError, match="simulated checkpoint replace failure"):
-        manager.save_checkpoint([{"amplitude": 2.0}], [], 1, 20.0)
-
-    assert target.read_bytes() == previous
-    assert not list(tmp_path.glob(f".{target_name}.*.tmp"))
+    current_generation = resolve_checkpoint_directory(tmp_path)
+    assert current_generation != first_generation
+    assert json.loads((current_generation / "failed_cases.json").read_text()) == []
 
 
 def test_versioned_result_keeps_exact_numeric_arrays_and_json_regime_info(tmp_path):

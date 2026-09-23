@@ -21,6 +21,7 @@ from rovibrational_excitation.fields import (
     lorentzian_fwhm,
 )
 from rovibrational_excitation.io import CheckpointManager
+from rovibrational_excitation.io.checkpoint import resolve_checkpoint_directory
 from rovibrational_excitation.io.result_schema import resolve_result_directory
 from rovibrational_excitation.simulation.config import load_params_file
 from rovibrational_excitation.simulation.generated import GeneratedFieldParameters
@@ -562,7 +563,7 @@ def test_checkpoint_deduplicates_cases_and_ignores_runtime_error(tmp_path):
     assert checkpoint is not None
     assert checkpoint["completed_cases"] == 1
     assert checkpoint["failed_cases"] == 0
-    assert manager.failed_cases_file.exists()
+    assert (resolve_checkpoint_directory(tmp_path) / "failed_cases.json").exists()
 
 
 def test_summary_keeps_each_result_with_its_original_case(tmp_path):

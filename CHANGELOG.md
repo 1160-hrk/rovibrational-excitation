@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development-branch normal results now publish complete manifest-v1 bundles
   through an atomic generation pointer; valid direct-layout v1 results remain
   readable but require explicit migration before overwrite.
-- Checkpoint JSON files are replaced atomically one file at a time; paired
-  checkpoint publication and resume provenance validation remain open.
+- Checkpoint and failure-list JSON are published as one immutable generation
+  through an atomic pointer; legacy direct checkpoints upgrade on their next
+  successful save. Strict checkpoint/provenance validation remains open.
 
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms

@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-21
+Last updated: 2026-09-23
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -1744,8 +1744,18 @@ respective population sources; only the result file layout changes. The
 full suite passes 1289 tests with 10 optional-GPU skips; branch coverage is
 78%, strict mypy covers 54 modules, and build/Twine checks pass.
 
+P7.2-g/D-100 publishes `checkpoint.json` and `failed_cases.json` together
+inside an immutable generation, selected by one atomic
+`checkpoint_current.json` replacement. Payload or pointer failure keeps the
+previous pair selected. Legacy direct-layout checkpoints remain readable and
+upgrade on the next successful save. Case hashes, deduplication, cadence, and
+resume filtering are unchanged. Invalid pointers never fall back or get
+silently repaired. Strict schema/provenance validation remains separate.
+Full suite: 1298 passed, 10 optional-GPU skipped; branch coverage: 78%;
+strict mypy covers 54 modules. Build/Twine checks and an installed-wheel
+checkpoint round trip pass.
+
 - complete scientific input provenance;
-- transactional checkpoint-pair publication;
 - validated checkpoint resume;
 - migration error for unknown checkpoint schema.
 
