@@ -25,6 +25,7 @@ tests, and the decision log.
 | `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md` | P7.1 runner ownership and regression evidence; deferred release gates | Any P7.1 status or runner contract change |
 | `PHASE7_RESULT_DISK_SCHEMA_V1.md` | Manifest v1 and atomic result-generation publication | Any result disk layout, loader, or publication change |
 | `PHASE7_CHECKPOINT_SCHEMA_V1.md` | Checkpoint payload v1, generation publication, and resume provenance | Any checkpoint schema, loader, or resume validation change |
+| `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md` | P7.2 result/checkpoint acceptance evidence and guarantee limits | Any P7.2 completion or broader provenance/durability claim |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -231,8 +232,15 @@ strict published-result loader. They use `t_E/E` and `t_p/pop`, reject legacy
 NPY collections and incompatible scalar/Cartesian shapes explicitly, and do
 not change any calculation or established plot order. The one new allowed
 dependency edge is `visualization.result_data -> io.result_schema`.
-The full suite has 1313 passes, 10 optional-GPU skips, 78% branch coverage,
-and 58 strict-mypy modules.
+At P7.2-i, the full suite had 1313 passes, 10 optional-GPU skips, 78% branch
+coverage, and 58 strict-mypy modules.
+P7.2-j/D-103 accepts that persistence boundary after the single-authority
+wiring check, full CPU/coverage/quality/example gates, tracked Markdown/YAML
+review, build/Twine validation, and installed-wheel schema smoke. The exact
+guarantees and exclusions are recorded in
+`PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`. The accepted full-suite baseline is
+1314 passes, 10 optional-GPU skips (1324 collected), 78% branch coverage, and
+58 strict-mypy modules.
 
 P6.2-c
 implements D-069:
@@ -492,7 +500,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1 accepted; P7.2-P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1 and P7.2 accepted; P7.3-P7.4 pending |
 | 8 | Public API, documentation, and release | Pending — Markdown/YAML/workflow inventory recorded in `DOCUMENTATION_WORKFLOW_AUDIT.md`; fixes gated before final tag |
 
 Status must be updated only when the acceptance criteria in

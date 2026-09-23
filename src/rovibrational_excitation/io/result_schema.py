@@ -1,7 +1,7 @@
 """Strict versioned disk format for normal simulation results.
 
-The manifest is written after the established numerical NPZ and JSON sidecars.
-Each file is atomically replaced; cross-file publication remains a separate unit.
+Each immutable generation contains its manifest and payload sidecars. One
+atomically replaced pointer publishes the complete writer-finished generation.
 """
 
 from __future__ import annotations

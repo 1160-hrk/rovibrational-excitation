@@ -172,3 +172,6 @@ The MD5 case formula and its `outdir`/`save`/`error` exclusions,
 completed-over-failed deduplication, every-second-or-final batch checkpoint
 cadence, result values, resume filtering for a valid unchanged run, and atomic
 generation publication remain unchanged.
+
+P7.2-j acceptance evidence and the guarantees deliberately left open are
+recorded in `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`.

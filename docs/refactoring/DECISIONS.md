@@ -3581,6 +3581,40 @@ NPY rejection pass.
 
 Implementation commit: this checkpoint.
 
+### D-103: Accept P7.2 at the declared persistence guarantee boundary
+
+Status: Accepted and implemented on 2026-09-23 as P7.2-j.
+
+P7.2 is accepted with independently versioned normal-result and checkpoint
+schemas, immutable-generation publication through atomic pointers, strict
+normal-result consumers, validated checkpoint payloads, and complete ordered
+declared-run resume binding. The preserved numerical arrays, checkpoint MD5,
+run cadence, valid-run filtering, and all calculations remain unchanged.
+
+The acceptance wiring test fixes one owner for each persistence role:
+`io.result_schema` owns result manifests, publication, and strict reads;
+`simulation.result_persistence` is the normal-result application writer;
+`io.storage` and `visualization.result_data` share that strict reader; and
+`io.checkpoint.CheckpointManager` is used by runner, batch, and resume. There
+is no legacy result/plot-array fallback from an invalid publication.
+
+Acceptance does **not** claim complete source, dependency, environment,
+external-file, Hamiltonian, dipole, generated-field, or numerical-input
+content provenance. It also does not provide directory fsync/power-loss
+durability, concurrent-writer coordination, generation garbage collection, or
+an automatic historical-data migration. These are separately versioned future
+work and must not be inferred from payload hashes or declared-run SHA-256.
+
+The full CPU suite passes 1314 tests with 10 optional-GPU skips (1324
+collected), branch coverage remains 78%, and strict mypy covers 58 modules.
+All 269 active Python files pass Ruff formatting and lint, the three supported
+examples pass, and all 43 tracked Markdown links plus 19 tracked YAML files
+pass their mechanical checks. Build, Twine, and installed-wheel schema smoke
+pass. Exact evidence and deferred release risks are in
+`PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

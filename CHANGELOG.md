@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the strict published-result schema-v1 reader. Legacy NPY collections,
   malformed publications, and scalar input to the Cartesian-vector plot raise
   explicitly instead of falling back or printing and returning.
+- P7.2 persistence acceptance now fixes the result/checkpoint schema authorities
+  and records the exact durability, provenance, migration, and release limits
+  that remain outside this checkpoint.
 
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms

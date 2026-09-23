@@ -1,6 +1,6 @@
 # P7.2 result disk schema v1 and publication
 
-Verified: 2026-09-22
+Verified: 2026-09-23
 Status: **Manifest v1 and generation publication implemented.**
 Scope: normal wavefunction and fixed-M incoherent-average simulation results.
 
@@ -129,3 +129,6 @@ power-loss durability remain open. This changes paths, not numerical values.
   entry paths. Full suite: 1313 passed, 10 optional-GPU skipped (1323
   collected); branch coverage remains 78%, and strict mypy covers 58 modules.
   Build, Twine, and installed-wheel strict-reader/legacy-rejection checks pass.
+- P7.2-j acceptance evidence and the deliberately excluded provenance,
+  durability, migration, concurrency, and cleanup guarantees are recorded in
+  `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`.

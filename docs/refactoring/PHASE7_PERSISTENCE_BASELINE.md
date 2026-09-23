@@ -79,4 +79,5 @@ P7.2-a changed tests and documentation only. P7.2-b then introduced the
 versioned result manifest and strict opt-in loader while leaving checkpoints
 and the legacy summary reader untouched. This document remains the exact
 pre-migration inventory; the current contract is in
-`PHASE7_RESULT_DISK_SCHEMA_V1.md`.
+`PHASE7_RESULT_DISK_SCHEMA_V1.md`, and the completed-phase evidence is in
+`PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`.

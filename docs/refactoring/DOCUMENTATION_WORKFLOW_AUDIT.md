@@ -1,6 +1,6 @@
 # Documentation, YAML, and GitHub workflow audit
 
-Verified: 2026-09-22
+Verified: 2026-09-23
 Scope: all repository Markdown, YAML/YML, and `.github/workflows` files.
 Disposition: **Inventory complete; public-doc and release-workflow migration remains open.**
 
@@ -25,6 +25,11 @@ unit, sign, model parameter, or time step.
   through `validate_optimization_config` without starting an optimization.
   The archived v0.2 YAML documents were syntax-checked only and remain
   unsupported historical evidence.
+
+P7.2-j rechecked all 43 Markdown files that will be tracked by the acceptance
+commit and all 19 tracked YAML/YML files: relative link targets and YAML syntax
+pass. The original 40/21 inventory above includes its stated historical scope;
+the count difference does not promote generated or archived artifacts.
 
 ## User-facing Markdown
 
@@ -59,8 +64,8 @@ remain the agent-facing source of truth and must be updated per milestone.
 
 ## Completion sequence
 
-1. Continue P7.2 persistence work; do not mix README rewriting or workflow
-   policy with numerical or storage commits.
+1. P7.2 persistence is accepted. Continue P7.3/P7.4 without mixing the deferred
+   public README or release-workflow rewrite into scientific decomposition.
 2. Before creating any release tag, harden `release.yml` against development
    tags and require the final accepted CI/GPU gates. This safety gate has
    priority even if broader docs are deferred.

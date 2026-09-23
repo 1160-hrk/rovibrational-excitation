@@ -835,6 +835,13 @@ publication state. The plot layer remains outside calculation. Full
 source/environment/generated-array provenance beyond the declared run remains
 separate work.
 
+P7.2-j/D-103 accepts this persistence architecture: the result writer, resumed
+summary, standalone plotters, runner, batch, and resume are wired to one result
+schema authority and one checkpoint authority. This acceptance does not widen
+the persisted provenance or durability contract. Concurrent writers,
+directory fsync, generation cleanup, migration, and full source/environment/
+numeric-input content provenance remain separate versioned work.
+
 ## 12. Performance constraints
 
 Architecture abstractions stop before hot loops.

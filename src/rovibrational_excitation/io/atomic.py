@@ -1,7 +1,7 @@
 """Atomic replacement of one NPZ or JSON file in its destination directory.
 
-This protects each filename from partial writes. It does not make a group of
-result files transactional; the manifest is still published last.
+These primitives protect one filename at a time. Result and checkpoint owners
+provide cross-file publication separately through immutable generation pointers.
 """
 
 from __future__ import annotations

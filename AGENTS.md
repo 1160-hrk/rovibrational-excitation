@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-23
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-i D-102 strict visualization result readers
+Verified structural checkpoint: P7.2-j D-103 persistence acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -180,14 +180,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.2-i:
+Current local CPU baseline after P7.2-j:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1313 passed, 10 GPU tests skipped (1323 collected)
+1314 passed, 10 GPU tests skipped (1324 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -439,6 +439,12 @@ strict schema-v1 projection. They no longer inspect legacy NPY filenames or
 print-and-return on missing data. The single new dependency edge is
 `visualization.result_data -> io.result_schema`; plotting remains outside all
 calculation paths.
+P7.2-j/D-103 accepts the persistence phase after auditing the single schema
+authorities, strict failure policy, preserved arrays/cadence, repository
+documentation and workflows, complete CPU/coverage/quality/example gates, and
+installed distributions. Full source/environment/content provenance,
+directory durability, concurrent writers, migration, and garbage collection
+remain explicit future work rather than implied guarantees.
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -453,10 +459,12 @@ The next work is:
    individual-file atomic replacement, P7.2-f whole-result publication,
    P7.2-g checkpoint-pair publication, P7.2-h strict checkpoint schema plus
    validated declared-run resume provenance, and P7.2-i strict standalone
-   visualization readers are implemented. Next perform the P7.2 acceptance
-   audit before beginning P7.3. Complete source/environment/generated-array
-   provenance remains separate and must not be overstated. Do not silently
-   accept unversioned files.
+   visualization readers are implemented. P7.2-j accepts this persistence
+   boundary. Next begin P7.3 only from independent transparent optimization
+   references under D-072; do not decompose or alter an objective/update rule
+   before its oracle passes or the user resolves a discrepancy. Complete
+   source/environment/generated-array provenance remains separate and must not
+   be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    root README and release workflow must be corrected before any release tag.
    Preserve the distinct normal in-memory and resume file-backed summaries

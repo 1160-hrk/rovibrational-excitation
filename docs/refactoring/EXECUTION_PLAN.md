@@ -1783,8 +1783,17 @@ dependency allowed from visualization is this strict schema reader. Full suite:
 78%, and strict mypy covers 58 modules. Build, Twine, and installed-wheel strict
 reader round-trip/legacy-rejection validation pass.
 
-- complete source, environment, indirect-external-file, and generated-array
-  provenance beyond the declared expanded-run digest.
+P7.2-j/D-103 accepts P7.2 after the single-authority wiring audit, exact
+persisted-array and valid-resume characterization, strict invalid-data policy,
+complete CPU/coverage/quality/example gates, tracked Markdown/YAML checks, and
+installed-distribution validation. The result/checkpoint disk contracts and
+their exact non-guarantees are fixed by
+`PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`. P7.2 is complete; P7.3 is next.
+
+Complete source, environment, indirect-external-file, Hamiltonian, dipole,
+generated-field, and numerical-input content provenance beyond the declared
+expanded-run digest remains future separately versioned work, not a P7.2
+guarantee.
 
 ### P7.3 Optimization
 
