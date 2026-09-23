@@ -60,10 +60,12 @@ def test_deserialize_polarization_preserves_scalar_and_vector_forms():
 
 
 def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
-    manager = CheckpointManager(tmp_path)
     completed = {"amplitude": 1.0, "outdir": "first", "save": True}
     duplicate = {**completed, "outdir": "second"}
     failed = {"amplitude": 2.0, "error": "failure"}
+    replacement = {"amplitude": 3.0}
+    all_cases = [completed, {"amplitude": 2.0}, replacement]
+    manager = CheckpointManager(tmp_path, all_cases=all_cases)
 
     manager.save_checkpoint([completed, duplicate], [failed], 3, 12.5)
 
@@ -71,6 +73,7 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
     checkpoint = json.loads((first_generation / "checkpoint.json").read_text())
     failed_cases = json.loads((first_generation / "failed_cases.json").read_text())
     assert set(checkpoint) == {
+        "checkpoint_schema_version",
         "timestamp",
         "start_time",
         "total_cases",
@@ -78,6 +81,7 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
         "failed_cases",
         "completed_case_hashes",
         "failed_case_data",
+        "run_provenance",
     }
     assert datetime.fromisoformat(checkpoint["timestamp"])
     assert checkpoint["start_time"] == 12.5
@@ -87,13 +91,12 @@ def test_checkpoint_schema_filenames_deduplication_and_overwrite(tmp_path):
     assert checkpoint["failed_case_data"] == [failed]
     assert failed_cases == [failed]
 
-    replacement = {"amplitude": 3.0}
-    manager.save_checkpoint([replacement], [], 1, 20.0)
+    manager.save_checkpoint([replacement], [], 3, 20.0)
 
     overwritten = manager.load_checkpoint()
     assert overwritten is not None
     assert overwritten["start_time"] == 20.0
-    assert overwritten["total_cases"] == 1
+    assert overwritten["total_cases"] == 3
     assert overwritten["completed_cases"] == 1
     assert overwritten["failed_cases"] == 0
     assert overwritten["failed_case_data"] == []

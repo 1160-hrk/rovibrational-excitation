@@ -1755,9 +1755,22 @@ Full suite: 1298 passed, 10 optional-GPU skipped; branch coverage: 78%;
 strict mypy covers 54 modules. Build/Twine checks and an installed-wheel
 checkpoint round trip pass.
 
-- complete scientific input provenance;
-- validated checkpoint resume;
-- migration error for unknown checkpoint schema.
+P7.2-h/D-101 adds checkpoint payload schema v1 and validates every known field,
+count, MD5 identifier, and the exact failure sidecar. Each save binds the
+checkpoint to the complete ordered expanded case declaration with a named
+SHA-256 scope. Resume reconstructs that declaration from `params.py` and
+requires the digest, case count, and completed/failed membership to match
+before filtering or execution. Existing invalid data raises
+`CheckpointFormatError`; only an absent pair returns `None`. Unversioned
+and unknown payloads require an explicit migration or new run and cannot be
+silently upgraded. D-100 publication remains unchanged, as do MD5
+deduplication, cadence, valid-run filtering, and all calculations. Full suite:
+1309 passed, 10 optional-GPU skipped (1319 collected); branch coverage: 78%;
+strict mypy covers 54 modules. Build, Twine, and installed-wheel checkpoint v1
+round-trip/provenance rejection pass.
+
+- complete source, environment, indirect-external-file, and generated-array
+  provenance beyond the declared expanded-run digest.
 
 ### P7.3 Optimization
 

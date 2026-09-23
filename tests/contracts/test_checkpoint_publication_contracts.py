@@ -10,6 +10,7 @@ import pytest
 
 from rovibrational_excitation.io.checkpoint import (
     CHECKPOINT_CURRENT_NAME,
+    CheckpointFormatError,
     CheckpointManager,
     resolve_checkpoint_directory,
 )
@@ -18,11 +19,13 @@ from rovibrational_excitation.io.checkpoint import (
 def _save(
     manager: CheckpointManager, amplitude: float, *, failed: bool = False
 ) -> None:
+    declared = [{"amplitude": 1.0}, {"amplitude": 2.0}]
+    manager.bind_cases(declared)
     case = {"amplitude": amplitude}
     manager.save_checkpoint(
         [] if failed else [case],
         [{**case, "error": "failure"}] if failed else [],
-        1,
+        len(declared),
         amplitude,
     )
 
@@ -134,9 +137,10 @@ def test_invalid_pointer_never_falls_back_to_legacy_checkpoint(
     manager = CheckpointManager(tmp_path)
 
     assert manager.is_resumable()
-    assert manager.load_checkpoint() is None
-    assert "チェックポイント読み込み失敗" in capsys.readouterr().out
-    with pytest.raises((ValueError, json.JSONDecodeError), match="checkpoint"):
+    with pytest.raises(CheckpointFormatError, match="checkpoint"):
+        manager.load_checkpoint()
+    assert capsys.readouterr().out == ""
+    with pytest.raises(CheckpointFormatError, match="checkpoint"):
         _save(manager, 2.0)
     assert pointer_path.read_bytes() == previous_pointer
 
@@ -147,14 +151,15 @@ def test_malformed_pointer_is_not_silently_repaired(tmp_path, capsys):
     previous_pointer = pointer_path.read_bytes()
     manager = CheckpointManager(tmp_path)
 
-    assert manager.load_checkpoint() is None
-    assert "チェックポイント読み込み失敗" in capsys.readouterr().out
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(CheckpointFormatError, match="cannot read"):
+        manager.load_checkpoint()
+    assert capsys.readouterr().out == ""
+    with pytest.raises(CheckpointFormatError, match="cannot read"):
         _save(manager, 2.0)
     assert pointer_path.read_bytes() == previous_pointer
 
 
-def test_legacy_direct_checkpoint_is_readable_and_next_save_upgrades(tmp_path):
+def test_legacy_direct_checkpoint_requires_explicit_migration(tmp_path):
     legacy = {
         "timestamp": "2026-09-23T00:00:00",
         "start_time": 1.0,
@@ -167,9 +172,12 @@ def test_legacy_direct_checkpoint_is_readable_and_next_save_upgrades(tmp_path):
     (tmp_path / "checkpoint.json").write_text(json.dumps(legacy))
     (tmp_path / "failed_cases.json").write_text("[]")
     manager = CheckpointManager(tmp_path)
+    previous = (tmp_path / "checkpoint.json").read_bytes()
 
-    assert manager.load_checkpoint() == legacy
-    _save(manager, 2.0)
+    with pytest.raises(CheckpointFormatError, match="unversioned checkpoint"):
+        manager.load_checkpoint()
+    with pytest.raises(CheckpointFormatError, match="unversioned checkpoint"):
+        _save(manager, 2.0)
 
-    assert resolve_checkpoint_directory(tmp_path) != tmp_path
-    assert manager.load_checkpoint()["start_time"] == 2.0
+    assert not (tmp_path / CHECKPOINT_CURRENT_NAME).exists()
+    assert (tmp_path / "checkpoint.json").read_bytes() == previous

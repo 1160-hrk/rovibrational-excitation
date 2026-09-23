@@ -67,10 +67,10 @@ class TestCheckpointManager:
     def test_checkpoint_save_load(self):
         """チェックポイント保存・読み込みテスト"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            manager = CheckpointManager(Path(temp_dir))
-
             completed_cases = [{"V_max": 5, "amplitude": 0.1}]
             failed_cases = []
+            all_cases = [*completed_cases, {"case": 1}, {"case": 2}]
+            manager = CheckpointManager(Path(temp_dir), all_cases=all_cases)
             total_cases = 3
             start_time = 1234567890.0
 
@@ -93,7 +93,7 @@ class TestCheckpointManager:
     def test_is_resumable(self):
         """再開可能性チェックテスト"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            manager = CheckpointManager(Path(temp_dir))
+            manager = CheckpointManager(Path(temp_dir), all_cases=[])
 
             # チェックポイントファイルなし
             assert not manager.is_resumable()

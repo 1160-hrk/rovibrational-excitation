@@ -164,7 +164,9 @@ def run_all_with_checkpoint(
         return []
 
     # ---------- チェックポイント管理 -------------------------------
-    checkpoint_manager = CheckpointManager(root) if save and root else None
+    checkpoint_manager = (
+        CheckpointManager(root, all_cases=cases) if save and root else None
+    )
 
     # ---------- 実行 -----------------------------------------------
     start_time = time.perf_counter()

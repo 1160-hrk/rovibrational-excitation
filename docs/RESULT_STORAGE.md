@@ -69,15 +69,30 @@ run_dir/
 checkpointと失敗ケース一覧は同じ世代へ書き終えてから、
 `checkpoint_current.json`を原子的に切り替えます。途中でいずれかのJSON
 またはポインタの保存に失敗した場合、以前の完全な組が選択されたままです。
-旧形式の直置き`checkpoint.json`は読み込み可能で、次の正常な保存時に
-世代形式へ移行します。ポインタがあるのに壊れている場合は旧ファイルへ
-戻らず、保存による暗黙修復も行いません。
+ポインタがあるのに壊れている場合は旧ファイルへ戻らず、保存による暗黙修復も
+行いません。
 
-checkpoint payload自体はまだ厳格にversion管理・構造検証していません。
-`load_checkpoint`の従来のエラー表示と`None`返却、MD5ケース識別子、
-保存間隔、重複排除、再開対象判定は維持しています。MD5値はケースの重複を
-判定する識別子であり、現在の入力や結果が同じことを証明するprovenanceでは
+`checkpoint.json`は独立した`checkpoint_schema_version=1`を持ちます。
+既知のfield、型、件数、case hash、`failed_cases.json`との完全一致を
+読み込み時に検証します。破損・未知version・不完全な組は
+`CheckpointFormatError`になり、警告表示と`None`への変換はしません。
+
+保存時には、sweep展開後の全caseを実行順のまま正規化し、SHA-256を
+`run_provenance`へ保存します。`outdir`、`save`、`error`だけは
+runtime fieldとして除外します。resumeでは保存済み`params.py`から同じ
+全caseを再構成し、SHA-256と各完了・失敗caseの所属を確認した後にだけ
+実行済みcaseを除外します。入力値、単位、model、field、algorithm、backend、
+storage、sweep構成や順序が変わっていれば、case実行前に停止します。
+
+従来のMD5はcase単位の重複判定用として計算式を変えずに残します。
+unversioned checkpointは不足している全run provenanceを推測できないため、
+暗黙に読み込み・upgradeせず、明示的なmigrationまたは新しいrunを要求します。
+詳しいfieldと保証範囲は
+[checkpoint schema v1](refactoring/PHASE7_CHECKPOINT_SCHEMA_V1.md)を
+参照してください。
+
+このSHA-256は宣言された全caseの一致を保証するもので、package source、
+依存関係、生成後のHamiltonian・双極子・電場・結果配列までhashするものでは
 ありません。旧世代と未公開世代の自動GC、電源断時のdirectory fsync、
-並行writerの調停も未実装です。
-
-数値計算・出力配列の値は、これらの保存形式変更では変えていません。
+並行writerの調停も未実装です。数値計算・出力配列、checkpoint cadence、
+有効な同一runのresume結果は、この保存境界変更では変えていません。

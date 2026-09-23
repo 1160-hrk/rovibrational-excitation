@@ -3487,6 +3487,58 @@ checkpoint round trip pass.
 
 Implementation commit: this checkpoint.
 
+### D-101: Checkpoint v1 binds resume to one declared run
+
+Status: Implemented on 2026-09-23 as P7.2-h.
+
+Checkpoint payloads now require the independent integer
+`checkpoint_schema_version=1`. The strict reader requires the exact v1 field
+set; finite and consistent timestamps/counts; unique lowercase MD5 case
+identifiers; nonoverlapping completed and failed cases; and exact equality
+between `failed_case_data` and `failed_cases.json`. Malformed JSON,
+incomplete or unsafe pairs, missing or unknown fields, and unsupported
+versions raise `CheckpointFormatError`. The former broad catch,
+warning print, and `None` return are removed for existing invalid data;
+`None` means only that no checkpoint pair exists.
+
+Every save requires the complete ordered expanded case list. After removing
+only `outdir`, `save`, and `error` from each case, the existing JSON-safe
+projection is encoded as canonical sorted compact UTF-8 JSON with nonfinite
+numbers forbidden, and SHA-256 is stored under the named scope
+`ordered_declared_cases_excluding_outdir_save_error`. Resume reconstructs
+the complete list from the saved parameter source, requires exact digest and
+case-count equality, and verifies that every stored completed/failed case hash
+belongs to that run before filtering or execution. Changed parameters,
+physical units, model/field/execution declarations, sweep membership, or sweep
+order therefore stop before any case executor or summary writer runs.
+
+The existing MD5 case-identity expression and runtime-key exclusions remain
+unchanged; MD5 still controls only case deduplication/filtering. Batch cadence,
+completed-over-failed precedence, process behavior, valid-run resume results,
+and every physical/numerical calculation remain unchanged.
+
+Unversioned direct checkpoints and unversioned generations are no longer
+silently read or upgraded. Their missing complete-run provenance cannot be
+reconstructed safely from the payload alone, so they raise an actionable
+migration/new-run error. This intentionally supersedes only D-100's temporary
+legacy-read/upgrade policy; D-100 generation publication and failure atomicity
+remain in force. Unknown future payload versions also raise.
+
+This digest proves equality of the caller-declared expanded run, not package
+source, dependencies, indirectly referenced external files, or generated
+Hamiltonian/dipole/field/result arrays. Full source/environment/content
+provenance, concurrent-writer coordination, directory fsync, and orphan
+generation GC remain separate work. The detailed disk contract is
+`PHASE7_CHECKPOINT_SCHEMA_V1.md`.
+
+Ten direct schema/provenance cases and one end-to-end changed-parameter
+resume case pass. The complete CPU suite passes 1309 tests with 10
+optional-GPU skips (1319 collected), branch coverage remains 78%, and strict
+mypy covers 54 modules. Sdist/wheel build, Twine validation, and an
+installed-wheel checkpoint v1 save/load plus changed-run rejection pass.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

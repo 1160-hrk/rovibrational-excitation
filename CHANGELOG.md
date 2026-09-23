@@ -18,8 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through an atomic generation pointer; valid direct-layout v1 results remain
   readable but require explicit migration before overwrite.
 - Checkpoint and failure-list JSON are published as one immutable generation
-  through an atomic pointer; legacy direct checkpoints upgrade on their next
-  successful save. Strict checkpoint/provenance validation remains open.
+  through an atomic pointer.
+- Checkpoint payload schema v1 strictly validates the selected pair and binds
+  resume to the complete ordered expanded-run declaration with SHA-256.
+  Corrupt, unversioned, unknown, or different-run checkpoints now raise before
+  case execution instead of falling back, printing-and-returning `None`, or
+  upgrading implicitly.
 
 ### 🐛 Fixed
 - Minor bug fixes in propagation algorithms

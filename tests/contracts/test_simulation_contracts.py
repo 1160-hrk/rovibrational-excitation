@@ -552,10 +552,10 @@ def test_validation_rejects_removed_pulse_duration_alias():
 
 
 def test_checkpoint_deduplicates_cases_and_ignores_runtime_error(tmp_path):
-    manager = CheckpointManager(tmp_path)
     case = {"amplitude": 1.0, "save": True, "outdir": "first"}
     duplicate = {**case, "outdir": "second"}
     failed = {**case, "error": "old failure"}
+    manager = CheckpointManager(tmp_path, all_cases=[case])
 
     manager.save_checkpoint([case, duplicate], [failed], 1, 0.0)
     checkpoint = manager.load_checkpoint()

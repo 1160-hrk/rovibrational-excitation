@@ -24,6 +24,7 @@ tests, and the decision log.
 | `PHASE5_ACCEPTANCE_AUDIT.md` | Row-by-row CPU/CUDA numerical-engine acceptance status and transfer debt | Any solver capability, backend transfer, or Phase 5 status change |
 | `PHASE7_RUNNER_ACCEPTANCE_AUDIT.md` | P7.1 runner ownership and regression evidence; deferred release gates | Any P7.1 status or runner contract change |
 | `PHASE7_RESULT_DISK_SCHEMA_V1.md` | Manifest v1 and atomic result-generation publication | Any result disk layout, loader, or publication change |
+| `PHASE7_CHECKPOINT_SCHEMA_V1.md` | Checkpoint payload v1, generation publication, and resume provenance | Any checkpoint schema, loader, or resume validation change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -215,15 +216,18 @@ pickle-only NPZ regime metadata is removed in favor of its JSON sidecar.
 P7.2-c/D-096 routes the resumed-run file-backed summary through the strict
 loader, preserving valid CSV values while raising on legacy, corrupt, or
 incomplete saved results. P7.2-d/D-097 atomically replaces each result
-payload and manifest file without changing numerical arrays. Multi-file
-publication and checkpoint validation remain open. P7.2-e/D-098 also
-atomically replaces each checkpoint JSON file, without changing checkpoint
-contents or resume behavior; the pair is not yet transactional. P7.2-f/D-099
-publishes complete normal results through an atomic generation pointer. Old
+payload and manifest file without changing numerical arrays. P7.2-e/D-098
+does the same for individual checkpoint JSON files. P7.2-f/D-099 publishes
+complete normal results through an atomic generation pointer. Old
 manifest-v1 direct-layout results remain readable but cannot be implicitly
 overwritten. P7.2-g/D-100 atomically publishes each complete checkpoint and
-failure-list pair; legacy direct checkpoints upgrade on their next successful
-save. Strict checkpoint schema/provenance validation remains open.
+failure-list pair. P7.2-h/D-101 adds strict checkpoint payload schema v1 and
+requires the complete ordered expanded-run SHA-256 to match before resume
+filtering or execution. Invalid, unversioned, unknown, sidecar-mismatched, or
+different-run checkpoints raise explicitly and are never upgraded or repaired
+implicitly. The exact contract is in `PHASE7_CHECKPOINT_SCHEMA_V1.md`.
+The full suite has 1309 passes, 10 optional-GPU skips, 78% branch coverage,
+and 54 strict-mypy modules.
 
 P6.2-c
 implements D-069:

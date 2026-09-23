@@ -13,6 +13,7 @@ import pytest
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.fields import ScalarField
 from rovibrational_excitation.io import CheckpointManager, json_safe
+from rovibrational_excitation.io.checkpoint import CheckpointFormatError
 from rovibrational_excitation.simulation.result_persistence import (
     persist_wavefunction_result,
 )
@@ -167,20 +168,17 @@ def test_resume_rebuilds_cases_skips_completed_and_uses_saved_results(tmp_path):
     old_dir = tmp_path / "amplitude_1"
     old_dir.mkdir()
     _save_versioned_population(old_dir, np.array([[0.2, 0.8]]))
-    manager = CheckpointManager(tmp_path)
-    manager.save_checkpoint(
-        [
-            {
-                "description": "resume_summary",
-                "amplitude": 1.0,
-                "save": True,
-                "outdir": str(old_dir),
-            }
-        ],
-        [],
-        3,
-        0.0,
-    )
+    all_cases = [
+        {
+            "description": "resume_summary",
+            "amplitude": amplitude,
+            "save": True,
+            "outdir": str(tmp_path / f"amplitude_{amplitude:g}"),
+        }
+        for amplitude in (1.0, 2.0, 3.0)
+    ]
+    manager = CheckpointManager(tmp_path, all_cases=all_cases)
+    manager.save_checkpoint([all_cases[0]], [], 3, 0.0)
     executed = []
 
     def run_case(case):
@@ -427,15 +425,37 @@ def test_normal_report_limits_failure_previews_and_omits_empty_success_csv(tmp_p
 
 def test_resume_rejects_unreadable_checkpoint_before_loading_params(tmp_path, capsys):
     (tmp_path / "checkpoint.json").write_text("{not json")
-    with pytest.raises(ValueError, match="チェックポイントの読み込みに失敗"):
+    with pytest.raises(ValueError, match="checkpoint payload pair"):
         resume_run(tmp_path)
 
-    assert "チェックポイント読み込み失敗" in capsys.readouterr().out
+    assert capsys.readouterr().out == ""
+    assert not (tmp_path / "summary.csv").exists()
+
+
+def test_resume_rejects_changed_parameters_before_case_execution(tmp_path):
+    params_file = tmp_path / "params.py"
+    params_file.write_text("amplitude = [1.0]\n")
+    case_dir = tmp_path / "amplitude_1"
+    original_cases = [{"amplitude": 1.0, "save": True, "outdir": str(case_dir)}]
+    CheckpointManager(tmp_path, all_cases=original_cases).save_checkpoint(
+        [], [], 1, 0.0
+    )
+    params_file.write_text("amplitude = [2.0]\n")
+
+    with (
+        patch("rovibrational_excitation.simulation.runner._run_one_safe") as execute,
+        pytest.raises(CheckpointFormatError, match="run provenance mismatch"),
+    ):
+        resume_run(tmp_path)
+
+    execute.assert_not_called()
     assert not (tmp_path / "summary.csv").exists()
 
 
 def test_resume_requires_saved_params_after_reading_checkpoint(tmp_path, capsys):
-    CheckpointManager(tmp_path).save_checkpoint([], [], 1, 0.0)
+    CheckpointManager(tmp_path, all_cases=[{"amplitude": 1.0}]).save_checkpoint(
+        [], [], 1, 0.0
+    )
     with pytest.raises(FileNotFoundError, match="パラメータファイルが見つかりません"):
         resume_run(tmp_path)
 
@@ -448,11 +468,9 @@ def test_resume_requires_saved_params_after_reading_checkpoint(tmp_path, capsys)
 def test_resume_all_completed_returns_without_summary_rewrite(tmp_path):
     (tmp_path / "params.py").write_text("amplitude = [1.0]\n")
     case_dir = tmp_path / "amplitude_1"
-    CheckpointManager(tmp_path).save_checkpoint(
-        [{"amplitude": 1.0, "save": True, "outdir": str(case_dir)}],
-        [],
-        1,
-        0.0,
+    all_cases = [{"amplitude": 1.0, "save": True, "outdir": str(case_dir)}]
+    CheckpointManager(tmp_path, all_cases=all_cases).save_checkpoint(
+        all_cases, [], 1, 0.0
     )
     with (
         patch("rovibrational_excitation.simulation.runner._run_one_safe") as execute,
@@ -470,7 +488,9 @@ def test_resume_all_completed_returns_without_summary_rewrite(tmp_path):
 
 def test_resume_reports_new_completions_then_updates_file_summary(tmp_path):
     (tmp_path / "params.py").write_text("amplitude = [1.0]\n")
-    CheckpointManager(tmp_path).save_checkpoint([], [], 1, 0.0)
+    case_dir = tmp_path / "amplitude_1"
+    all_cases = [{"amplitude": 1.0, "save": True, "outdir": str(case_dir)}]
+    CheckpointManager(tmp_path, all_cases=all_cases).save_checkpoint([], [], 1, 0.0)
     returned = np.array([[0.25, 0.75]])
     with (
         patch(
