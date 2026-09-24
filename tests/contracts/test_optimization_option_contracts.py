@@ -144,6 +144,14 @@ def test_propagator_override_must_be_callable_or_none(algorithm: str) -> None:
         validate_algorithm_options(algorithm, params)
 
 
+def test_grape_rejects_callable_propagator_without_a_discrete_gradient() -> None:
+    with pytest.raises(ValueError, match="exact discrete gradient.*built-in"):
+        validate_algorithm_options(
+            "grape",
+            {"control_axes": "xy", "propagator_func": lambda *_: None},
+        )
+
+
 @pytest.mark.parametrize(
     ("key", "value"),
     [

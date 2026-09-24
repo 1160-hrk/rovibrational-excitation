@@ -9,10 +9,12 @@ import pytest
 
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.core.units import converter
+from rovibrational_excitation.optimization.grape import run_grape_optimization
 from rovibrational_excitation.optimization.krotov import run_krotov_optimization
 from rovibrational_excitation.optimization.krotov_initial_field import (
     KrotovGeneratedInitialField,
     KrotovSampledInitialField,
+    parse_grape_initial_field,
     parse_krotov_initial_field,
 )
 
@@ -44,6 +46,23 @@ def test_krotov_requires_explicit_initial_field_kind_before_model_work():
             time_cfg={},
             params={},
         )
+
+
+def test_grape_requires_explicit_initial_field_kind_before_model_work() -> None:
+    with pytest.raises(ValueError, match="missing required GRAPE.*initial_field_kind"):
+        run_grape_optimization(
+            basis=None,
+            hamiltonian=None,
+            dipole=None,
+            states={},
+            time_cfg={},
+            params={},
+        )
+
+
+def test_grape_uses_the_shared_strict_initial_field_contract() -> None:
+    with pytest.raises(ValueError, match="legacy GRAPE.*duration_initial"):
+        parse_grape_initial_field({"duration_initial": 200.0})
 
 
 def test_krotov_rejects_legacy_initial_field_keys_with_migration_hint() -> None:

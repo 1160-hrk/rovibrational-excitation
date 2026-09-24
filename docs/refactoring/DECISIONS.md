@@ -3615,6 +3615,61 @@ pass. Exact evidence and deferred release risks are in
 
 Implementation commit: this checkpoint.
 
+### D-104: GRAPE uses the exact discrete normalized-RK4 gradient and an explicit seed
+
+Status: Accepted by the user on 2026-09-24; implemented as P7.3-a.
+
+The D-072 independent audit found that the former GRAPE update was a local
+heuristic rather than the gradient of terminal target-state fidelity. It used
+only each forward state and the target vector. It omitted a terminal costate,
+the RK4 stage graph and propagation interval, shared endpoint accumulation,
+and the derivative of per-step normalization. On the fixed TwoLevel diagnostic,
+its inferred update had approximately `1.79e4` relative error against a stable
+central finite difference and a direction cosine of approximately `0.894`, so
+the difference was neither roundoff nor one missing constant factor.
+
+GRAPE now minimizes
+
+~~~text
+J(E) = 1 - |<target | psi_N(E)>|^2
+       + (lambda_a / 2) sum[q,a] E[q,a]^2
+~~~
+
+and reverse-differentiates the actual dense NumPy RK4 calculation. The reverse
+pass includes left/midpoint/right stage weights, both uses of the midpoint,
+field endpoints shared by neighboring propagation steps, `H=H0-mu E`, and
+the normalization after every step. It is an exact gradient of the implemented
+discrete map, not a continuous-time or matrix-exponential approximation.
+The former `lambda_a * E` derivative is retained as an unweighted discrete L2
+term; this decision assigns no physical fluence interpretation or unit to the
+Class-D `lambda_a` or `learning_rate` values.
+
+Because terminal population has zero first derivative at zero field for the
+usual diagonal-`H0`, orthogonal-state transfer problem, GRAPE requires an
+explicit generated or sampled initial field. It reuses Krotov's strict
+value/unit and exact-grid contract: no implicit zero field, resampling,
+normalization, repair, or source fallback is permitted. A custom
+`propagator_func` is rejected because no exact discrete derivative is defined
+for it. The built-in normalized dense NumPy RK4 route is the sole current
+GRAPE gradient contract.
+
+The independent test-only oracle directly evaluates RK4 and central
+differences every field component. Relative error decreases across perturbation
+sizes `1e8`, `1e7`, and `1e6 V/m` to an observed `5.8e-9` plateau; the fixed
+regression bound is `1e-7`. A runner-level case proves that one update equals
+`E-learning_rate*gradient` and increases TwoLevel fidelity.
+
+The historical no-op `convergence_tol` branch is documented but unchanged:
+making it stop would separately change iteration count and final fields.
+Krotov, Local, and spectral-constraint formulae are also unchanged and still
+require their P7.3 independent references. Full derivation and evidence are in
+`PHASE7_OPTIMIZATION_REFERENCES.md`.
+
+The full CPU suite passes 1321 tests with 10 optional-GPU skips (1331
+collected), branch coverage is 79%, and strict mypy covers 59 modules.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

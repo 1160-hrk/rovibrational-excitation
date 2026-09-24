@@ -10,6 +10,7 @@ import numpy as np
 
 from .krotov_initial_field import (
     KrotovSampledInitialField,
+    parse_grape_initial_field,
     parse_krotov_initial_field,
 )
 from .options import (
@@ -152,14 +153,21 @@ def validate_optimization_config(
             validate_algorithm_options(algorithm, params)
             if algorithm == "krotov":
                 parse_krotov_initial_field(params)
+            elif algorithm == "grape":
+                parse_grape_initial_field(params)
         except (TypeError, ValueError) as exc:
             raise OptimizationConfigurationError(str(exc)) from exc
 
     time = _mapping(config["time"], label="time")
     _validate_time(selected, time)
-    if selected == "krotov":
-        selected_initial_field = parse_krotov_initial_field(
-            _mapping(algorithms[selected], label="algorithms.krotov")
+    if selected in {"grape", "krotov"}:
+        initial_field_parser = (
+            parse_grape_initial_field
+            if selected == "grape"
+            else parse_krotov_initial_field
+        )
+        selected_initial_field = initial_field_parser(
+            _mapping(algorithms[selected], label=f"algorithms.{selected}")
         )
         if isinstance(selected_initial_field, KrotovSampledInitialField):
             expected_length = build_optimization_time_settings(

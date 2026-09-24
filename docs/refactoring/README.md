@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-23
+Last verified: 2026-09-24
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -26,6 +26,7 @@ tests, and the decision log.
 | `PHASE7_RESULT_DISK_SCHEMA_V1.md` | Manifest v1 and atomic result-generation publication | Any result disk layout, loader, or publication change |
 | `PHASE7_CHECKPOINT_SCHEMA_V1.md` | Checkpoint payload v1, generation publication, and resume provenance | Any checkpoint schema, loader, or resume validation change |
 | `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md` | P7.2 result/checkpoint acceptance evidence and guarantee limits | Any P7.2 completion or broader provenance/durability claim |
+| `PHASE7_OPTIMIZATION_REFERENCES.md` | Independent P7.3 optimizer oracles, discrepancies, formulas, and tolerances | Every P7.3 reference or optimizer formula decision |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -49,8 +50,8 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1235 passed, 10 skipped (1245 collected) |
-| Measured branch coverage | 77% |
+| Pytest | 1321 passed, 10 skipped (1331 collected) |
+| Measured branch coverage | 79% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
@@ -241,6 +242,20 @@ guarantees and exclusions are recorded in
 `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md`. The accepted full-suite baseline is
 1314 passes, 10 optional-GPU skips (1324 collected), 78% branch coverage, and
 58 strict-mypy modules.
+
+P7.3-a/D-104 finds that the former GRAPE time-local heuristic is not the
+gradient of terminal fidelity and differs from the independent finite
+difference by approximately `1.79e4` relative error on the fixed diagnostic.
+After explicit user approval, GRAPE now reverse-differentiates the exact
+normalized dense NumPy RK4 map for the declared terminal-population plus
+discrete-L2 objective. The independent direct-RK4 oracle converges to an
+observed `5.8e-9` relative-error plateau under a fixed `1e-7` regression bound.
+GRAPE now requires an explicit generated or sampled seed and rejects custom
+propagators without a discrete derivative; Krotov, Local, spectral constraints,
+Class-D scales, and the historical no-op convergence predicate are unchanged.
+The full suite has 1321 passes and 10 optional-GPU skips (1331 collected), 79%
+branch coverage, and 59 strict-mypy modules. P7.3-b, the direct Krotov oracle,
+is next.
 
 P6.2-c
 implements D-069:
@@ -500,7 +515,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1 and P7.2 accepted; P7.3-P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a complete, P7.3-b through P7.4 pending |
 | 8 | Public API, documentation, and release | Pending — Markdown/YAML/workflow inventory recorded in `DOCUMENTATION_WORKFLOW_AUDIT.md`; fixes gated before final tag |
 
 Status must be updated only when the acceptance criteria in

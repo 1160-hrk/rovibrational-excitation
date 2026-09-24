@@ -950,6 +950,45 @@ only to the returned trajectory. The initial state and exact endpoint remain in
 the returned trajectory even when the stride does not divide the propagation
 step count.
 
+Under D-104, GRAPE minimizes the discrete objective
+
+~~~text
+J(E) = 1 - |<target | psi_N(E)>|^2
+       + (lambda_a / 2) sum[q,a] E[q,a]^2.
+~~~
+
+Its gradient is the exact reverse derivative of the implemented normalized
+dense NumPy RK4 graph. It includes the left/midpoint/right stages, both uses of
+the midpoint field, the propagation interval `2 * field_dt_fs`, contributions
+to endpoint samples shared between neighboring steps, `H=H0-mu E`, and the
+normalization after every propagation step. It is not the former time-local
+target-overlap heuristic, a continuous-time approximation, or an
+exact-exponential GRAPE formula. A custom `propagator_func` is unsupported and
+raises because it has no matching discrete derivative.
+
+The penalty derivative remains exactly `lambda_a * E`, so the penalty is an
+unweighted discrete L2 sum and is not silently reinterpreted as physical
+fluence. The dimensions and useful numerical scales of the Class-D `lambda_a`
+and `learning_rate` remain unresolved. The update stays
+`E <- E - learning_rate * gradient`, and `target_fidelity` remains a terminal
+fidelity check rather than a penalized-objective check.
+
+GRAPE requires an explicit generated or sampled seed. For a diagonal `H0`,
+orthogonal initial/target states, and zero field, terminal population has zero
+first derivative; an exact gradient therefore cannot reproduce the former
+heuristic's implicit departure from zero. The solver never supplies a hidden
+zero seed. The existing `convergence_tol` predicate remains observational only
+and does not stop iteration; changing that no-op changes final fields and needs
+a separate decision.
+
+The independent direct-RK4 central-difference reference converges across
+perturbations `1e8`, `1e7`, and `1e6 V/m` to `5.8e-9` relative error; the
+fixed bound is `1e-7`. It also verifies every normalized trajectory state, the
+declared objective, exact one-step runner wiring, and fidelity increase. The
+authoritative derivation and evidence are in
+`PHASE7_OPTIMIZATION_REFERENCES.md` and
+`tests/physics/test_grape_gradient_reference.py`.
+
 Krotov costates use explicit `PropagationDirection.BACKWARD`. For dimensional
 NumPy RK4 this reverses both field component arrays and applies the negative
 propagation interval used by the historical implementation, while the public
@@ -1184,16 +1223,18 @@ generated and externally injected TwoLevel, M-resolved LinMol, and M-averaged
 LinMol cases. This boundary conversion changes neither field samples nor the
 Hamiltonian evaluated at them.
 
-Krotov initial fields have a separate explicit source discriminator. A
+GRAPE and Krotov initial fields have an explicit source discriminator. A
 `generated` seed is the existing Gaussian-FWHM pulse and requires duration,
 center, carrier frequency, and direct amplitude value/unit pairs plus a finite
 nonzero two-component polarization. Optional GDD/TOD pairs are exact zero when
 both members are omitted. A `sampled` seed requires a real finite two-column
 array and a direct amplitude unit. It is converted once to V/m and must match
-the canonical odd Krotov `TimeGrid` exactly. The boundary never chooses between
-the two sources implicitly and never resamples, normalizes, repairs, or derives
-a signed field from intensity. Krotov update indices and objective logic consume
-the same field samples as before D-050.
+the canonical odd optimization `TimeGrid` exactly. The boundary never chooses
+between the two sources implicitly and never resamples, normalizes, repairs,
+falls back to a zero field, or derives a signed field from intensity. Krotov
+update indices and objective logic consume the same field samples as before
+D-050; D-104 separately defines the GRAPE objective and exact discrete
+gradient.
 
 Optimization model construction uses the same frozen physical parameter
 schemas and model-owned basis/Hamiltonian/dipole builders as normal simulation.
@@ -1210,7 +1251,9 @@ a VibLadder `zx` choice. This is a workflow adapter, not a change to the normal
 scalar VibLadder coupling contract. No optimizer objective, gradient, time
 grid, factor-of-two field index, or endpoint rule is changed by sharing model
 construction. SymTop optimization remains unsupported pending an independent
-objective/control reference.
+objective/control reference. D-104 is the later, separately approved GRAPE
+objective/gradient correction and does not alter that model-construction
+statement.
 
 Decision D-056 requires configured optimization to use an explicit ordered
 two-axis adapter for every algorithm. D-057 requires those labels to be

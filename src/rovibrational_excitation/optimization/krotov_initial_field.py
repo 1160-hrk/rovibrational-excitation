@@ -1,4 +1,4 @@
-"""Strict Krotov initial-field inputs in canonical internal units."""
+"""Strict GRAPE/Krotov initial-field inputs in canonical internal units."""
 
 from __future__ import annotations
 
@@ -58,6 +58,7 @@ _SUPPORTED_INITIAL_KEYS = {
     *_SAMPLED_KEYS,
 }
 KROTOV_INITIAL_FIELD_OPTION_KEYS = frozenset(_SUPPORTED_INITIAL_KEYS)
+GRAPE_INITIAL_FIELD_OPTION_KEYS = KROTOV_INITIAL_FIELD_OPTION_KEYS
 
 
 def _quantity_error(label: str, exc: TypeError | ValueError) -> ValueError:
@@ -115,7 +116,7 @@ def _polarization(value: Any) -> tuple[complex, complex]:
 
 @dataclass(frozen=True, slots=True)
 class KrotovGeneratedInitialField:
-    """A generated Gaussian seed converted once to canonical units."""
+    """A generated GRAPE/Krotov Gaussian seed in canonical units."""
 
     duration_fs: float
     center_fs: float
@@ -130,7 +131,7 @@ class KrotovGeneratedInitialField:
         missing = sorted(_GENERATED_REQUIRED - params.keys())
         if missing:
             raise ValueError(
-                "missing required generated Krotov initial-field parameters: "
+                "missing required generated optimization initial-field parameters: "
                 + ", ".join(missing)
             )
         inapplicable = sorted(_SAMPLED_KEYS & params.keys())
@@ -181,7 +182,7 @@ class KrotovGeneratedInitialField:
         )
 
     def samples_on(self, time_grid: TimeGrid) -> NDArray[np.float64]:
-        """Generate the accepted historical Krotov seed on ``time_grid``."""
+        """Generate the accepted optimization seed on ``time_grid``."""
         field = ElectricField.from_time_grid(time_grid)
         field.add_dispersed_Efield(
             envelope_func=gaussian_fwhm,
@@ -206,7 +207,7 @@ class KrotovGeneratedInitialField:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class KrotovSampledInitialField:
-    """User-supplied real Cartesian seed stored canonically in V/m."""
+    """User-supplied real Cartesian GRAPE/Krotov seed in V/m."""
 
     samples_v_per_m: NDArray[np.float64]
 
@@ -215,7 +216,7 @@ class KrotovSampledInitialField:
         missing = sorted(_SAMPLED_KEYS - params.keys())
         if missing:
             raise ValueError(
-                "missing required sampled Krotov initial-field parameters: "
+                "missing required sampled optimization initial-field parameters: "
                 + ", ".join(missing)
             )
         inapplicable = sorted(
@@ -268,12 +269,14 @@ class KrotovSampledInitialField:
 KrotovInitialField: TypeAlias = KrotovGeneratedInitialField | KrotovSampledInitialField
 
 
-def parse_krotov_initial_field(params: Mapping[str, Any]) -> KrotovInitialField:
-    """Resolve an explicit generated or sampled Krotov initial field."""
+def _parse_initial_field(
+    params: Mapping[str, Any], *, algorithm: Literal["GRAPE", "Krotov"]
+) -> KrotovInitialField:
+    """Resolve an explicit generated or sampled optimization initial field."""
     legacy = sorted(_LEGACY_KEYS & params.keys())
     if legacy:
         raise ValueError(
-            "legacy Krotov initial-field parameters are not supported: "
+            f"legacy {algorithm} initial-field parameters are not supported: "
             + ", ".join(legacy)
             + "; use initial_field_kind and initial_* value/unit pairs"
         )
@@ -284,10 +287,10 @@ def parse_krotov_initial_field(params: Mapping[str, Any]) -> KrotovInitialField:
     )
     if unknown:
         raise ValueError(
-            "unsupported Krotov initial-field parameters: " + ", ".join(unknown)
+            f"unsupported {algorithm} initial-field parameters: " + ", ".join(unknown)
         )
     if "initial_field_kind" not in params:
-        raise ValueError("missing required Krotov parameter: initial_field_kind")
+        raise ValueError(f"missing required {algorithm} parameter: initial_field_kind")
     kind = params["initial_field_kind"]
     if kind == "generated":
         return KrotovGeneratedInitialField.from_mapping(params)
@@ -296,10 +299,22 @@ def parse_krotov_initial_field(params: Mapping[str, Any]) -> KrotovInitialField:
     raise ValueError("initial_field_kind must be one of: generated, sampled")
 
 
+def parse_krotov_initial_field(params: Mapping[str, Any]) -> KrotovInitialField:
+    """Resolve an explicit generated or sampled Krotov initial field."""
+    return _parse_initial_field(params, algorithm="Krotov")
+
+
+def parse_grape_initial_field(params: Mapping[str, Any]) -> KrotovInitialField:
+    """Resolve an explicit generated or sampled GRAPE initial field."""
+    return _parse_initial_field(params, algorithm="GRAPE")
+
+
 __all__ = [
     "KrotovGeneratedInitialField",
     "KrotovInitialField",
     "KrotovSampledInitialField",
+    "GRAPE_INITIAL_FIELD_OPTION_KEYS",
     "KROTOV_INITIAL_FIELD_OPTION_KEYS",
+    "parse_grape_initial_field",
     "parse_krotov_initial_field",
 ]

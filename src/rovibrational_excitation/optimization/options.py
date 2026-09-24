@@ -11,7 +11,10 @@ import numpy as np
 
 from rovibrational_excitation.core.units import LocalControlGain, converter
 
-from .krotov_initial_field import KROTOV_INITIAL_FIELD_OPTION_KEYS
+from .krotov_initial_field import (
+    GRAPE_INITIAL_FIELD_OPTION_KEYS,
+    KROTOV_INITIAL_FIELD_OPTION_KEYS,
+)
 from .local_initialization import parse_local_initialization
 
 OptimizationAlgorithm = Literal["local", "krotov", "grape"]
@@ -25,7 +28,9 @@ _COMMON_ITERATIVE_KEYS = {
     "propagator_func",
 }
 
-GRAPE_OPTION_KEYS = frozenset(_COMMON_ITERATIVE_KEYS | {"learning_rate"})
+GRAPE_OPTION_KEYS = frozenset(
+    _COMMON_ITERATIVE_KEYS | {"learning_rate"} | set(GRAPE_INITIAL_FIELD_OPTION_KEYS)
+)
 KROTOV_OPTION_KEYS = frozenset(
     _COMMON_ITERATIVE_KEYS
     | set(KROTOV_INITIAL_FIELD_OPTION_KEYS)
@@ -382,6 +387,11 @@ def validate_algorithm_options(
     axes = _validate_control_axes(algorithm, params["control_axes"])
     if algorithm in {"grape", "krotov"}:
         _validate_common_options(params)
+    if algorithm == "grape" and params.get("propagator_func") is not None:
+        raise ValueError(
+            "GRAPE does not support propagator_func because its exact discrete "
+            "gradient is defined for the built-in normalized dense NumPy RK4 map"
+        )
     if algorithm == "grape" and "learning_rate" in params:
         _finite_real(params["learning_rate"], label="learning_rate")
     if algorithm == "local":

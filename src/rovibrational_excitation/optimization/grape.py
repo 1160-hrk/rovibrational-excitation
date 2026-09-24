@@ -12,6 +12,8 @@ from rovibrational_excitation.optimization.timegrid import (
     sample_optimization_output,
 )
 
+from .grape_rk4 import evaluate_discrete_rk4
+from .krotov_initial_field import parse_grape_initial_field
 from .options import validate_algorithm_options
 
 DEFAULT_PARAMS = {
@@ -20,7 +22,6 @@ DEFAULT_PARAMS = {
     "learning_rate": 5e18,
     "lambda_a": 1e-19,
     "target_fidelity": 1.0,
-    "propagator_func": None,
 }
 
 
@@ -37,7 +38,19 @@ class RunResult(TypedDict, total=False):
 def run_grape_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
-    initial_state = tuple(states["initial"])  # (v,J,...) expected
+    """Optimize terminal target population with an exact discrete RK4 gradient.
+
+    The minimized objective is ``1 - fidelity + lambda_a / 2 * sum(E**2)``.
+    Its gradient differentiates the normalized dense NumPy RK4 computation,
+    including shared left/midpoint/right field samples.  A generated or sampled
+    non-zero-capable seed is explicit because target-population fidelity has a
+    zero first derivative at the zero field for the usual diagonal-H0 transfer
+    problem.
+    """
+    initial_field = parse_grape_initial_field(params)
+    control_axes = validate_algorithm_options("grape", params)
+
+    initial_state = tuple(states["initial"])
     target_state = tuple(states["target"]) if states.get("target") is not None else None
 
     initial_idx = basis.get_index(initial_state)
@@ -48,7 +61,6 @@ def run_grape_optimization(
     time_settings = build_optimization_time_settings(time_cfg)
     time_grid = time_settings.grid
     output_stride = time_settings.output_stride
-    control_axes = validate_algorithm_options("grape", params)
 
     max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
     convergence_tol = float(
@@ -59,90 +71,73 @@ def run_grape_optimization(
     target_fidelity = float(
         params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"])
     )
-    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
     tlist = time_grid.field_times_fs
-    n_field_steps = len(tlist)
+
+    psi_initial = np.zeros(basis.size(), dtype=np.complex128)
+    psi_initial[initial_idx] = 1.0
+    psi_target = np.zeros(basis.size(), dtype=np.complex128)
+    psi_target[target_idx] = 1.0
+
+    mu_si: dict[str, np.ndarray] = {}
+    for axis in control_axes:
+        component = getattr(dipole, f"get_mu_{axis}_SI")()
+        if hasattr(component, "toarray"):
+            component = component.toarray()
+        mu_si[axis] = np.asarray(component)
+    dipoles_prime = (
+        np.asarray(cm_to_rad_phz(mu_si[control_axes[0]]), dtype=np.complex128),
+        np.asarray(cm_to_rad_phz(mu_si[control_axes[1]]), dtype=np.complex128),
+    )
+
+    field_data = initial_field.samples_on(time_grid)
+    h0_rad_per_fs = None
+    if max_iter > 0:
+        h0_rad_per_fs = np.asarray(
+            hamiltonian.get_matrix("rad/fs"), dtype=np.complex128
+        )
+
+    prev_fid = -1.0
+    for _ in range(max_iter):
+        assert h0_rad_per_fs is not None
+        evaluation = evaluate_discrete_rk4(
+            h0_rad_per_fs=h0_rad_per_fs,
+            dipoles_rad_per_fs_per_v_per_m=dipoles_prime,
+            field_v_per_m=field_data,
+            initial_state=psi_initial,
+            target_state=psi_target,
+            propagation_dt_fs=time_grid.propagation_dt_fs,
+            lambda_a=lambda_a,
+        )
+        fid = evaluation.fidelity
+        if fid >= target_fidelity:
+            break
+        if prev_fid >= 0 and abs(fid - prev_fid) < convergence_tol:
+            # The historical solver observed this condition but did not stop.
+            pass
+        prev_fid = fid
+        field_data = field_data - learning_rate * evaluation.gradient
 
     propagator = SchrodingerPropagator(
         backend="numpy", validate_units=True, renorm=True
     )
-
-    psi_initial = np.zeros(basis.size(), dtype=complex)
-    psi_initial[initial_idx] = 1.0
-    psi_target = np.zeros(basis.size(), dtype=complex)
-    psi_target[target_idx] = 1.0
-
-    mu_x_si = dipole.get_mu_x_SI()
-    mu_y_si = dipole.get_mu_y_SI()
-    if hasattr(mu_x_si, "toarray"):
-        mu_x_si = mu_x_si.toarray()
-    if hasattr(mu_y_si, "toarray"):
-        mu_y_si = mu_y_si.toarray()
-    mu_x_prime = cm_to_rad_phz(mu_x_si)
-    mu_y_prime = cm_to_rad_phz(mu_y_si)
-
-    field_data = np.zeros((n_field_steps, 2), dtype=float)
-
-    def forward(
-        ef_data: np.ndarray, initial_state_vec: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
-        ef = ElectricField.from_time_grid(time_grid)
-        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
-        result = propagator._propagate_array(
-            hamiltonian=hamiltonian,
-            efield=ef,
-            dipole_matrix=dipole,
-            initial_state=initial_state_vec,
-            axes=control_axes,
-            return_traj=True,
-            return_time_psi=True,
-            sample_stride=1,
-            algorithm="rk4",
-            sparse=False,
-            propagator_func=propagator_func,
-        )
-        return result[0], result[1]
-
-    def fidelity_of(psi: np.ndarray) -> float:
-        return float(np.abs(psi[target_idx]) ** 2)
-
-    prev_fid = -1.0
-    for it in range(max_iter):
-        # Forward
-        time_f, psi_traj = forward(field_data, psi_initial)
-        fid = fidelity_of(psi_traj[-1])
-        if fid >= target_fidelity:
-            break
-        if prev_fid >= 0 and abs(fid - prev_fid) < convergence_tol:
-            pass
-        prev_fid = fid
-
-        # Simple local gradient (time-local) akin to GRAPE step
-        n_traj = len(psi_traj)
-        grad = np.zeros_like(field_data)
-        for i in range(n_traj):
-            jf = i * 2
-            if jf >= n_field_steps:
-                break
-            psi_i = psi_traj[i]
-            # Heuristic gradient to increase population at target via dipole coupling
-            grad_x = float(np.imag(np.vdot(psi_target, (-mu_x_prime @ psi_i))))
-            grad_y = float(np.imag(np.vdot(psi_target, (-mu_y_prime @ psi_i))))
-            grad[jf, 0] -= 2.0 * grad_x
-            grad[jf, 1] -= 2.0 * grad_y
-            if jf + 1 < n_field_steps:
-                grad[jf + 1, 0] -= 2.0 * grad_x
-                grad[jf + 1, 1] -= 2.0 * grad_y
-        # Running cost gradient
-        grad += lambda_a * field_data
-
-        # Gradient descent step
-        field_data = field_data - float(learning_rate) * grad
-
     ef_total = ElectricField.from_time_grid(time_grid)
     ef_total.add_arbitrary_Efield(field_data, field_units="V/m")
-    internal_time, internal_trajectory = forward(field_data, psi_initial)
-    fidelity = fidelity_of(internal_trajectory[-1])
+    internal_time, internal_trajectory = propagator._propagate_array(
+        hamiltonian=hamiltonian,
+        efield=ef_total,
+        dipole_matrix=dipole,
+        initial_state=psi_initial,
+        axes=control_axes,
+        return_traj=True,
+        return_time_psi=True,
+        sample_stride=1,
+        algorithm="rk4",
+        sparse=False,
+    )
+    fidelity = float(np.abs(internal_trajectory[-1, target_idx]) ** 2)
+    objective = float(
+        1.0 - fidelity + 0.5 * lambda_a * float(np.sum(field_data * field_data))
+    )
     time_full, psi_traj_full = sample_optimization_output(
         internal_time,
         internal_trajectory,
@@ -153,7 +148,7 @@ def run_grape_optimization(
         efield=ef_total,
         time=time_full,
         psi_traj=psi_traj_full,
-        metrics={"fidelity": fidelity},
+        metrics={"fidelity": fidelity, "objective": objective},
         tlist=tlist,
         field_data=field_data,
         target_idx=target_idx,

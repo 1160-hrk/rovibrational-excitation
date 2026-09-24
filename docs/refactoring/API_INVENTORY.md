@@ -402,6 +402,14 @@ two-component grid match. The typed `krotov_initial_field` boundary is internal;
 `run_krotov_optimization` remains the optimization entry point. Legacy seed
 keys and implicit external-array override are removed.
 
+D-104 reuses that internal generated/sampled boundary for GRAPE. An explicit
+seed and exact sampled-grid length are required; no zero-field fallback exists.
+`run_grape_optimization` now differentiates its built-in normalized dense NumPy
+RK4 map exactly for the declared terminal-population plus discrete-L2
+objective. It rejects custom `propagator_func` values because no corresponding
+gradient is registered. `optimization.grape_rk4` is an internal numerical
+owner; the independent finite-difference oracle remains test-only.
+
 D-051 keeps `field_max_v_per_m` as the direct V/m component limit. D-059
 replaces the top-level seed inputs with required `initialization`: `seed_field`
 owns an explicit direct-amplitude value/unit pair and positive segment count,

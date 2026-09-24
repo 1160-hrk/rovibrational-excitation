@@ -95,21 +95,28 @@ when the configured condition is a zero-control fixed point. It never silently
 falls back to a seed. Results report the selected method and seeded segment
 count.
 
+GRAPE minimizes
+`1 - fidelity + (lambda_a / 2) * sum(field_samples**2)` and differentiates the
+actual normalized dense NumPy RK4 steps. Its generated or sampled initial
+field is required; the solver does not invent a zero seed. GRAPE supports only
+`control_axes: xy` and rejects `propagator_func` because a custom propagator
+has no matching discrete derivative.
+
 Spectral bands must be nonempty finite center/positive-width pairs with a
 supported frequency unit. Mode is `pass` or `stop`, combination is `max` or
 `sum`, and weights apply only to `sum`. The spectral alpha scale and optional
 sum weights are nonnegative; invalid values raise rather than being clipped or
 repaired.
 
-## Python-supplied Krotov fields
+## Python-supplied GRAPE and Krotov fields
 
 YAML is not mandatory when field samples are constructed in Python.
 `run_from_config(config_dict, ...)` accepts a NumPy array through this explicit
-branch:
+branch; select either `grape` or `krotov` as the algorithm key:
 
 ~~~python
-config["algorithms"]["krotov"] = {
-    "control_axes": "zx",
+config["algorithms"]["grape"] = {
+    "control_axes": "xy",
     "initial_field_kind": "sampled",
     "initial_field_samples": samples,
     "initial_field_units": "V/m",
@@ -117,6 +124,6 @@ config["algorithms"]["krotov"] = {
 ~~~
 
 `samples` must be a finite real array of shape `(n_field_points, 2)` whose
-length exactly matches the canonical Krotov time grid. Values are copied and
-converted once to internal V/m. The boundary never resamples, trims, pads,
+length exactly matches the canonical optimization time grid. Values are copied
+and converted once to internal V/m. The boundary never resamples, trims, pads,
 normalizes, or derives a signed field from intensity.

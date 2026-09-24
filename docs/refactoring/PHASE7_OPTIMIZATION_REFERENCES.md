@@ -1,0 +1,182 @@
+# Phase 7 optimization references
+
+Last verified: 2026-09-24
+Current checkpoint: P7.3-a, independent GRAPE gradient reference
+
+## Purpose
+
+This document records the slow, transparent scientific references required by
+D-072 before optimization code is decomposed. Reference calculations live only
+in tests and are never called by production code. A production formula may be
+changed only after a disagreement is shown to the user and explicitly resolved.
+
+## P7.3-a — GRAPE terminal-population gradient
+
+### Discrepancy found
+
+The former `optimization.grape` update was described in source as a
+time-local heuristic. At propagated state `psi_i`, it used only
+
+~~~text
+imag(<target | -mu_a | psi_i>)
+~~~
+
+and copied that value to two neighboring field samples. It did not propagate a
+terminal costate and did not differentiate the RK4 stages, the propagation
+step, shared RK4 endpoints, or per-step normalization. It was therefore not
+the gradient of the reported terminal target population.
+
+On the fixed TwoLevel diagnostic used during P7.3-a, the second-iteration
+update inferred from the old solver was compared with a central finite
+difference of the actual objective:
+
+| Quantity | Observed value |
+|---|---:|
+| Old update-vector norm | approximately `1.14e-9` |
+| Central-difference gradient norm | approximately `6.34e-14` |
+| Relative error | approximately `1.79e4` |
+| Direction cosine | approximately `0.894` |
+
+The finite-difference norm was stable for perturbations from `10` through
+`1e5 V/m`; this was not a finite-difference step artifact. The user approved
+replacement of the heuristic on 2026-09-24.
+
+### Objective
+
+Production GRAPE now minimizes the explicitly declared discrete objective
+
+~~~text
+J(E) = 1 - |<target | psi_N(E)>|^2
+       + (lambda_a / 2) sum[q,a] E[q,a]^2.
+~~~
+
+The constant one has no effect on the gradient. The `lambda_a` term preserves
+the former code's unweighted discrete L2 derivative `lambda_a * E`; it is not
+reinterpreted as a time-integrated physical fluence. The dimensions and useful
+scale of `lambda_a` and `learning_rate` remain Class-D questions and are not
+inferred by this checkpoint.
+
+### Forward discrete map
+
+For one propagation step with left, midpoint, and right field samples, define
+
+~~~text
+A_q(E_q) = -i (H0 - E[q,0] mu_0 - E[q,1] mu_1)
+
+k1 = A_left psi
+k2 = A_mid   (psi + dt k1 / 2)
+k3 = A_mid   (psi + dt k2 / 2)
+k4 = A_right (psi + dt k3)
+
+z       = psi + dt (k1 + 2 k2 + 2 k3 + k4) / 6
+psi_new = z / ||z||.
+~~~
+
+This is the actual dense NumPy RK4 graph used by the optimizer: `dt` is
+`2 * field_dt_fs`, midpoint samples are used by both `k2` and `k3`, and the
+right sample of one step is the left sample of the next. The normalization is
+performed after every propagation step, matching `renorm=True`.
+
+### Exact discrete reverse pass
+
+Production `optimization.grape_rk4.evaluate_discrete_rk4` stores the forward
+stage state vectors and applies reverse-mode differentiation to that exact
+graph. It reconstructs stage operators in the reverse pass instead of storing
+three `dimension x dimension` matrices per time step, so the persistent tape
+uses `O(n_steps * dimension)` rather than `O(n_steps * dimension^2)` memory.
+For real objectives and complex state vectors, adjoints are defined by
+
+~~~text
+dJ = 2 Re(<bar_psi | dpsi>).
+~~~
+
+At the terminal state, with `c = <target | psi_N>`, the population part starts
+from
+
+~~~text
+bar_psi_N = -c |target>.
+~~~
+
+For `psi_new = z / r`, `r = ||z||`, normalization is reversed as
+
+~~~text
+bar_z = bar_psi_new / r
+        - z Re(<bar_psi_new | z>) / r^3.
+~~~
+
+Each matrix-vector stage is then reversed in the opposite order. Because
+
+~~~text
+dA_q / dE[q,a] = i mu_a,
+~~~
+
+one stage contributes
+
+~~~text
+dJ/dE[q,a] += 2 Re(<bar_k | i mu_a | stage_state>).
+~~~
+
+Both midpoint-stage contributions and contributions from adjacent steps are
+accumulated into the same field sample. Finally, `lambda_a * E` is added.
+
+This is a discrete adjoint of the implemented RK4 calculation, not a
+continuous-time approximation and not an exact-matrix-exponential GRAPE
+formula. Custom `propagator_func` values are rejected because no corresponding
+discrete derivative exists at this boundary.
+
+### Independent reference and tolerance
+
+`tests/physics/test_grape_gradient_reference.py` contains an independent,
+deliberately slow Python RK4 objective. It does not call the production
+gradient or production propagator. Every field component is perturbed in both
+directions and differentiated by central finite differences.
+
+For perturbations `1e8`, `1e7`, and `1e6 V/m`, the relative error decreases
+toward an observed `5.8e-9` plateau. The regression bound is `1e-7`: safely
+above the observed plateau and substantially below D-072's provisional
+`1e-5` target. The same test compares every normalized trajectory state and
+the objective, while a second test verifies that the runner applies exactly
+one computed gradient step and increases fidelity on the fixed TwoLevel case.
+
+### Initial-field contract
+
+For a diagonal `H0`, orthogonal initial and target basis states, and zero
+field, terminal population is quadratic at the origin. Its first derivative is
+therefore zero. The old heuristic moved away from zero only because it was not
+the objective gradient.
+
+GRAPE consequently requires an explicit initial field. It shares Krotov's
+strict discriminator and value/unit boundary:
+
+- `initial_field_kind: generated` requires duration, center, carrier,
+  direct-amplitude value/unit pairs, and a finite nonzero two-component
+  polarization; optional GDD/TOD remain complete pairs;
+- `initial_field_kind: sampled` requires a real finite two-column array, a
+  direct electric-field amplitude unit, and exact canonical field-grid length;
+- neither route resamples, normalizes, repairs, or silently falls back to a
+  zero field.
+
+The shared implementation retains its historical internal class/module names;
+renaming those symbols is structural follow-up work, not part of this physics
+change.
+
+### Deliberately unchanged behavior and remaining work
+
+- GRAPE still supports only the ordered `xy` control adapter.
+- Gradient descent still uses `E <- E - learning_rate * gradient`.
+- `target_fidelity` is still checked against terminal fidelity, not the
+  penalized objective.
+- The existing `convergence_tol` branch observes a small fidelity change but
+  does not stop (`pass`). Fixing that changes iteration count and final fields,
+  so P7.3-a records but does not alter it without a separate decision.
+- Krotov, Local, and spectral-constraint formulae are unchanged. Their D-072
+  independent references remain P7.3-b through P7.3-d work.
+
+## Reference status
+
+| Reference | Status |
+|---|---|
+| GRAPE central finite-difference gradient with step convergence | Complete — P7.3-a |
+| Direct one-iteration Krotov construction | Pending — P7.3-b |
+| Direct Local update on frozen legacy grid | Pending — P7.3-c |
+| Direct DFT/convolution spectral constraints | Pending — P7.3-d |

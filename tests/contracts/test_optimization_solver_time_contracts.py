@@ -99,7 +99,13 @@ def test_grape_uses_full_internal_trajectory_and_thins_only_output(
         dipole=_ZeroDipole(),
         states={"initial": (0,), "target": (1,)},
         time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 3},
-        params={"max_iter": 0, "control_axes": "xy"},
+        params={
+            "max_iter": 0,
+            "control_axes": "xy",
+            "initial_field_kind": "sampled",
+            "initial_field_samples": np.zeros((9, 2)),
+            "initial_field_units": "V/m",
+        },
     )
 
     assert [call["sample_stride"] for call in spy.calls] == [1]

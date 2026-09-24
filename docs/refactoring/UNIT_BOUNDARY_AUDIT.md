@@ -138,7 +138,7 @@ optimizer's odd-length field, endpoint handling, segment slices, midpoint
 indices, and factor-of-two RK4 sampling are frozen contracts and must not
 change during unit work.
 
-### Krotov initial pulse
+### GRAPE and Krotov initial pulse
 
 Completed by D-050. `initial_field_kind` explicitly selects `generated` or
 `sampled`; no constructed field is silently replaced. Generated seeds are
@@ -147,7 +147,9 @@ Primary pulse values and polarization are required; dispersion is an optional
 complete pair or exact zero. Sampled seeds are Class A, use a direct field unit,
 and must be real, finite, two-component, and exactly grid-matched. Legacy and
 inapplicable keys raise. Frozen samples and the Krotov V=0 to V=3 reference are
-unchanged.
+unchanged. D-104 reuses the same boundary for GRAPE because an exact
+terminal-population gradient cannot leave the ordinary zero-field transfer
+fixed point; no implicit zero seed is permitted.
 
 ### Local optimizer
 
@@ -191,7 +193,11 @@ does not infer their units, permitted sign, physical range, or scaling.
 `learning_rate`, `lambda_a`, and the convergence tolerances may depend on
 the exact objective and gradient normalization. They are Class D. Unit work
 must wait for an independent objective/gradient reference and a user statement
-of their intended dimensions. D-057 likewise adds finite-real validation only.
+of their intended dimensions. D-104 now fixes the GRAPE normalization as
+`1-fidelity+(lambda_a/2)*sum(E**2)` and verifies its discrete gradient, but it
+does not define the physical dimensions or recommended scale of `lambda_a` or
+`learning_rate`; Krotov's independent reference is also still pending. D-057
+likewise adds finite-real validation only.
 
 ### Optimization model construction
 

@@ -1804,6 +1804,23 @@ constraints. Introduce common Objective, Evaluator, OptimizationResult, and
 constraint interfaces only after these independent references pass or any
 discrepancy is explicitly resolved by the user.
 
+P7.3-a/D-104 completes the GRAPE reference and its user-approved correction.
+The former time-local heuristic differs from the terminal-fidelity central
+finite difference by approximately `1.79e4` relative error on the fixed
+diagnostic. Production now reverse-differentiates the exact normalized dense
+NumPy RK4 graph for
+`1-fidelity+(lambda_a/2)*sum(E**2)`. The independent direct-RK4 oracle reaches
+an observed `5.8e-9` relative-error plateau and fixes a `1e-7` bound. GRAPE
+requires an explicit generated or sampled seed and rejects custom propagators
+without a matching derivative. The unweighted discrete L2 penalty, update
+direction, `target_fidelity` check, time grid, output sampling, and Class-D
+scales are otherwise retained. The existing no-op `convergence_tol` branch is
+recorded but unchanged. Full details are in
+`PHASE7_OPTIMIZATION_REFERENCES.md`.
+
+P7.3-b is next: construct the independent one-iteration Krotov oracle before
+any Krotov decomposition or formula change.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

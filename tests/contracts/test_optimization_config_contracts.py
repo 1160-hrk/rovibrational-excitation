@@ -150,6 +150,45 @@ def test_grape_rejects_axes_that_its_numerical_path_does_not_implement() -> None
         validate_optimization_config(config, algorithm_override=None)
 
 
+def test_grape_document_requires_an_explicit_initial_field() -> None:
+    config = _load()
+    params = deepcopy(config["algorithms"]["krotov"])
+    params["control_axes"] = "xy"
+    del params["initial_field_kind"]
+    config["algorithm"]["selected"] = "grape"
+    config["algorithms"] = {"grape": params}
+
+    with pytest.raises(
+        OptimizationConfigurationError,
+        match="missing required GRAPE parameter: initial_field_kind",
+    ):
+        validate_optimization_config(config, algorithm_override=None)
+
+
+def test_grape_document_requires_exact_sampled_seed_length() -> None:
+    config = _load()
+    config["algorithm"]["selected"] = "grape"
+    config["time"] = {
+        "total_fs": 0.4,
+        "field_dt_fs": 0.1,
+        "output_stride": 1,
+    }
+    config["algorithms"] = {
+        "grape": {
+            "control_axes": "xy",
+            "initial_field_kind": "sampled",
+            "initial_field_samples": np.zeros((4, 2)),
+            "initial_field_units": "V/m",
+        }
+    }
+
+    with pytest.raises(
+        OptimizationConfigurationError,
+        match=r"length must exactly match time_grid \(4 != 5\)",
+    ):
+        validate_optimization_config(config, algorithm_override=None)
+
+
 def test_unknown_algorithm_and_spectrum_options_are_rejected() -> None:
     config = _load()
     config["algorithms"]["krotov"]["max_iterations"] = 10

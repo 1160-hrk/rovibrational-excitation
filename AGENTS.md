@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-23
+Last verified: 2026-09-24
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.2-j D-103 persistence acceptance
+Verified structural checkpoint: P7.3-a D-104 exact discrete GRAPE gradient
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -68,10 +68,13 @@ The authoritative details and formulas are in
   stores field samples only in V/m; it has no constructor field-unit selector.
 - Low-level generated pulses require explicit duration, center, carrier, and
   direct-amplitude units; GDD/TOD are complete optional pairs or exact zero.
-- Krotov initial fields explicitly select generated or sampled input. Generated
-  seeds require physical value/unit pairs; sampled two-component fields require
-  a direct amplitude unit and exact canonical-grid length. Neither route
-  resamples or silently overrides the other.
+- GRAPE and Krotov initial fields explicitly select generated or sampled input.
+  Generated seeds require physical value/unit pairs; sampled two-component
+  fields require a direct amplitude unit and exact canonical-grid length.
+  Neither route resamples or silently overrides the other. GRAPE minimizes
+  `1-fidelity+(lambda_a/2)*sum(E**2)` with the exact discrete adjoint of the
+  normalized dense NumPy RK4 graph and rejects custom propagators without a
+  matching derivative.
 - Local optimization requires explicit `initialization`: `seed_field` requires
   a positive direct-amplitude value/unit pair and positive segment count;
   `none` injects no field and raises before propagation when the existing
@@ -180,14 +183,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.2-j:
+Current local CPU baseline after P7.3-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1314 passed, 10 GPU tests skipped (1324 collected)
+1321 passed, 10 GPU tests skipped (1331 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -238,7 +241,7 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 78%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 79%; the initial mandatory CI floor is 47%.
 - Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
@@ -252,7 +255,7 @@ recorded baseline for a phase.
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
 propagation boundary. Phase 3 is complete under D-040. Target package owners exist, superseded paths
-are removed, all 128 discovered modules import, internal modules avoid root
+are removed, all 129 discovered modules import, internal modules avoid root
 convenience imports, and the top-level import graph has no mutual dependency.
 P3.2-b moved model selection and required-input validation to
 `models/validation.py`; simulation retains time, field, execution, and M-average
@@ -445,6 +448,15 @@ documentation and workflows, complete CPU/coverage/quality/example gates, and
 installed distributions. Full source/environment/content provenance,
 directory durability, concurrent writers, migration, and garbage collection
 remain explicit future work rather than implied guarantees.
+P7.3-a/D-104 replaces the user-approved incorrect GRAPE time-local heuristic
+with the exact discrete adjoint of the normalized dense NumPy RK4 objective.
+An independent direct-RK4 central difference converges to `5.8e-9` relative
+error under a fixed `1e-7` bound. GRAPE requires an explicit generated or
+sampled seed and rejects custom propagators. Krotov, Local, spectral
+constraints, Class-D scales, and the no-op convergence predicate are unchanged.
+The suite has 1321 passes, 10 optional-GPU skips, 79% branch coverage, and 59
+strict-mypy modules. P7.3-b is next.
+
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -460,9 +472,11 @@ The next work is:
    P7.2-g checkpoint-pair publication, P7.2-h strict checkpoint schema plus
    validated declared-run resume provenance, and P7.2-i strict standalone
    visualization readers are implemented. P7.2-j accepts this persistence
-   boundary. Next begin P7.3 only from independent transparent optimization
-   references under D-072; do not decompose or alter an objective/update rule
-   before its oracle passes or the user resolves a discrepancy. Complete
+   boundary. P7.3-a/D-104 completes the independent GRAPE reference and the
+   explicitly approved formula correction. Next construct the direct
+   one-iteration Krotov oracle for P7.3-b. Do not decompose or alter any
+   remaining objective/update rule before its oracle passes or the user
+   resolves a discrepancy. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
@@ -490,8 +504,9 @@ The next work is:
 9. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
 10. Preserve private optimization adapters, especially
-   `LocalOptimizerLegacyGridV1`, and obtain independent objective/gradient and
-   spectroscopy references before Phase 7 decomposition.
+   `LocalOptimizerLegacyGridV1`. Obtain the remaining direct Krotov, Local,
+   spectral-constraint, and spectroscopy references before their Phase 7
+   decomposition.
 11. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.
