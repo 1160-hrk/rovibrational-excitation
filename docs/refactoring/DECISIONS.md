@@ -3670,6 +3670,57 @@ collected), branch coverage is 79%, and strict mypy covers 59 modules.
 
 Implementation commit: this checkpoint.
 
+### D-105: Repository tooling is safe-by-default and release requires real-GPU evidence
+
+Status: Accepted by the user on 2026-09-25; implemented as an early Phase 8
+safety checkpoint without changing calculation logic.
+
+The supported-example boundary remains the three top-level typed example
+modules from D-044. Their catalog builder now scans only top-level
+example_*.py files and has a check-only mode; it cannot rediscover or advertise
+archives. The public params_template.py retains every numerical value but no
+longer presents those values, approximate hand conversions, field amplitude,
+time step, or basis cutoff as universal recommendations. The CI smoke runner
+executes the template end to end with --no-save in addition to the three
+supported examples.
+
+scripts/start_jupyter.sh now resolves the repository from its own path and binds
+to 127.0.0.1 by default. It neither writes global user configuration nor
+disables token authentication, passwords, XSRF protection, or origin checks.
+A non-local bind requires an explicit environment value and emits a warning;
+Jupyter still owns authentication. Additional command-line arguments are not
+echoed because they may contain credentials.
+
+scripts/release.py is a reversible local preparation tool. It accepts only a
+final X.Y.Z target, understands the current X.Y.Z.devN checkpoint, and requires
+an explicit dry-run or apply mode. Apply requires a clean worktree, modifies
+only pyproject.toml, runs the local quality/test/example/build/Twine gates, and
+restores that file if a gate fails. It never commits, tags, pushes, uploads, or
+prompts.
+
+The tag-triggered release workflow rejects development/prerelease tags, repeats
+the full CPU quality gates, and requires a self-hosted runner with labels
+self-hosted, linux, x64, gpu. That runner must report a real CUDA device and
+pass both the trusted TwoLevel NumPy/CuPy reference and all GPU-marked tests.
+A missing GPU runner is a blocking condition, never a successful skip. Only
+then are distributions built and clean-installed. PyPI publication precedes
+GitHub Release creation so a public GitHub release never claims a PyPI upload
+that did not complete.
+
+The PyPI API token contract is preserved. The workflow cannot be fully executed
+locally and remains release-blocking until the named real-GPU runner and PyPI
+environment are configured. Root README/API migration, Codecov wiring, and the
+rest of Phase 8 remain open. No Hamiltonian, field, time grid, model,
+propagator, optimizer, or spectroscopy behavior changes in this decision.
+
+Verification passes 1327 CPU tests with 10 optional-GPU skips (1337 collected),
+79% branch coverage, repository-wide active-scope Ruff/format checks, strict
+mypy for 59 modules, all four smoke executions, the generated-index check,
+sdist/wheel build, Twine validation, and isolated wheel import plus pip check.
+The skipped tests are not CUDA evidence.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

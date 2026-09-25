@@ -1,80 +1,77 @@
 # Documentation, YAML, and GitHub workflow audit
 
-Verified: 2026-09-23
-Scope: all repository Markdown, YAML/YML, and `.github/workflows` files.
-Disposition: **Inventory complete; public-doc and release-workflow migration remains open.**
+Verified: 2026-09-25
+Scope: all repository Markdown, YAML/YML, and .github/workflows files.
+Disposition: **Inventory complete; release safety corrected, broader public-doc migration remains open.**
 
 This is a content and wiring audit, not a new physics specification. The
-authoritative calculation contracts remain `PHYSICS_CONTRACTS.md` and
-`DECISIONS.md`. Do not make an old README example executable by guessing a
-unit, sign, model parameter, or time step.
+authoritative calculation contracts remain PHYSICS_CONTRACTS.md and
+DECISIONS.md. Do not make an old README example executable by guessing a unit,
+sign, model parameter, or time step.
 
 ## Mechanical checks
 
-- Inventoried 40 Markdown and 21 YAML/YML files at this audit checkpoint
-  (before `docs/RESULT_STORAGE.md` was added), including historical
-  optimization YAML under `examples/archives/`.
-- Parsed all 21 YAML/YML files without a syntax error. PyYAML's YAML 1.1
-  parser reads the GitHub Actions `on` key as boolean `True`; this is a
-  parser quirk, **not** validation of GitHub Actions semantics. Neither
-  `actionlint` nor `yamllint` is installed here.
-- Checked local targets of conventional Markdown links in all 40 Markdown
-  files: zero missing relative link targets. This does not execute code
-  fences, inspect badges, or prove that linked APIs still exist.
-- Loaded the three supported `configs/*.yaml` documents and passed each
-  through `validate_optimization_config` without starting an optimization.
-  The archived v0.2 YAML documents were syntax-checked only and remain
-  unsupported historical evidence.
+- Inventoried 40 Markdown and 21 YAML/YML files at the original audit
+  checkpoint, including historical optimization YAML under examples/archives.
+- Parsed all YAML/YML files without a syntax error. PyYAML's YAML 1.1 parser
+  reads the GitHub Actions on key as boolean True; this is a parser quirk, not
+  validation of GitHub Actions semantics. Neither actionlint nor yamllint is
+  installed here.
+- Checked local targets of conventional Markdown links: no missing relative
+  targets at the recorded acceptance checkpoints. This does not execute every
+  code fence, inspect badges, or prove that linked APIs still exist.
+- Loaded the three supported configs/*.yaml documents and passed each through
+  validate_optimization_config without starting an optimization. Archived v0.2
+  YAML documents remain unsupported historical evidence.
+- D-105 adds executable contracts for release wiring, safe Jupyter defaults,
+  release dry-run behavior, generated example-index consistency, and inclusion
+  of params_template.py in the no-save smoke suite.
 
-P7.2-j rechecked all 43 Markdown files that will be tracked by the acceptance
-commit and all 19 tracked YAML/YML files: relative link targets and YAML syntax
-pass. The original 40/21 inventory above includes its stated historical scope;
-the count difference does not promote generated or archived artifacts.
+P7.2-j rechecked 43 tracked Markdown files and 19 tracked YAML/YML files.
+Subsequent decision/reference documents legitimately increase those counts;
+the count difference never promotes generated or archived artifacts.
 
 ## User-facing Markdown
 
 | Files | Current finding | Required disposition |
 |---|---|---|
-| `README.md`, `README_JP.md` | Both still teach removed root/procedural APIs and `use_M`, claim 63% coverage and only linear-molecule support, advertise GPU capability beyond real-CUDA evidence, and link a nonexistent `tests.yml` workflow. Their quick-start parameter sets lack current explicit-unit/typed choices. P7.2-f corrected the output-directory layout and linked `docs/RESULT_STORAGE.md`; P7.2-i synchronized only the visualization tree and strict reader module. | Rewrite together during Phase 8 from supported executable examples and D-073 root API. Replace badges with actually produced evidence and state the SymTop/CUDA support matrix precisely. |
-| `docs/README.md` | Quick-start uses the existing `examples/params_template.py`, but that template is outside the three CI-smoked supported examples; several other snippets omit now-required value/unit pairs or recommend unverified CuPy execution. | Smoke-test the template before advertising it, then rebuild the index from supported `examples/README.md` examples and the verified parameter reference. |
-| `docs/PARAMETER_REFERENCE.md`, `SWEEP_SPECIFICATION.md`, `TIME_PROPAGATION.md`, `UNIT_SYSTEM.md`, `DOCKER_SETUP.md` | Mixed old/new examples; especially audit unit labels, solver capability, and executable CLI snippets against the frozen current schema. | Migrate one code fence at a time with smoke or contract tests, without changing physical defaults by inference. |
-| `docs/CODECOV_SETUP.md`, `docs/VERSION_MANAGEMENT.md` | Describe `tests.yml`/Codecov upload or an automated release process not currently enforced by the workflows; version examples predate `0.3.0.dev1`. | Rewrite with the final CI/release design, then check commands in a clean checkout. |
-| `docs/CARTESIAN_SPLIT_OPERATOR.md` | Records the scientific split contract and explicitly states real-GPU parity is unverified. | Preserve equations; recheck source paths and any runnable example after backend acceptance. |
+| README.md, README_JP.md | Both still teach removed root/procedural APIs and use_M, claim obsolete coverage/support, advertise CUDA beyond executed evidence, and link a nonexistent tests.yml workflow. | Rewrite together during Phase 8 from supported executable examples and the D-073 root API. Replace badges with produced evidence and state the SymTop/CUDA matrix precisely. |
+| docs/README.md | params_template.py is now schema-tested and executed end to end without saving. Other snippets still omit required value/unit pairs or recommend unverified CuPy routes. | Rebuild the broader index and migrate remaining snippets one at a time. |
+| docs/PARAMETER_REFERENCE.md, SWEEP_SPECIFICATION.md, TIME_PROPAGATION.md, UNIT_SYSTEM.md | Mixed old/new examples remain. | Audit units, solver capability, and CLI snippets against frozen contracts without inferring defaults. |
+| docs/DOCKER_SETUP.md | D-105 corrects Jupyter authentication, active example, quality, coverage, build, and publication commands. The rest of the container guide still needs final Phase 8 verification. | Recheck the complete Dev Container/Makefile flow in a clean checkout. |
+| docs/VERSION_MANAGEMENT.md | Rewritten for the final-only, CPU-plus-real-GPU, no-automatic-push release contract. | Recheck once on the final clean release commit before creating a tag. |
+| docs/CODECOV_SETUP.md | Still describes upload behavior that the current workflow does not perform. | Decide whether to restore Codecov upload or remove the badge/documentation claims. |
+| docs/CARTESIAN_SPLIT_OPERATOR.md | Records the scientific split contract and explicitly states real-GPU parity is unverified. | Preserve equations; recheck source paths after backend acceptance. |
 
-`CHANGELOG.md` contains the development checkpoint, not a final 0.3.0
-release. `examples/README.md` correctly separates three CI-smoked current
-examples from archives. `configs/README.md` correctly marks only three
-top-level YAML documents as supported. `benchmarks/README.md` labels v0.2.10
-data as a historical baseline. `tests/*.md` and
-`examples/archives/v0_2_optimization_configs/README.md` contain historical
-test/migration reports; retain their dates and do not present the old counts
-as current. The three `src/**/README.md` and `validation/README.md` need
-path/API checks when their owning module is next changed. Refactoring docs
-remain the agent-facing source of truth and must be updated per milestone.
+CHANGELOG.md contains a development checkpoint, not a final 0.3.0 release.
+examples/README.md is generated only from the three top-level supported
+examples; archives are never scanned. params_template.py keeps its numerical
+values but labels them as examples rather than universal recommendations and
+uses the library unit boundary instead of approximate hand-conversion advice.
+configs/README.md correctly marks only three top-level YAML documents as
+supported. benchmarks/README.md labels v0.2.10 data as a historical baseline.
+Historical test/archive reports retain their dates and are not current
+capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 ## Workflow and YAML wiring
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| `.github/workflows/ci.yml` | Runs Ruff, mypy, active example smoke, Python 3.10-3.13 tests, physics contracts, 47% branch-coverage floor, and wheel import. `required` rejects failed/skipped jobs. | GPU tests may skip; there is no real-GPU acceptance job. Markdown links/code fences, YAML schema, and workflow semantics are not checked. Coverage XML is uploaded only as an artifact, not to Codecov. |
-| `.github/workflows/release.yml` | Triggers on any `v*` tag, checks tag against package version, then builds, creates a GitHub Release, and publishes to PyPI. It does not depend on the CI quality/test/physics/coverage jobs or real-CUDA gate. | **Before any release tag**, reject development/non-final versions and require release-facing gates; test the release workflow without publishing. A matching `v0.3.0.dev1` tag currently reaches the publish path. Do not create one. Review GitHub Release-before-PyPI order and token/permission scope. |
-| `codecov.yml` | Configures informational Codecov statuses. | No workflow currently uploads coverage to Codecov; the root README badge/docs must not imply current Codecov evidence until upload is restored and verified. |
-| `configs/*.yaml` | All three current optimization configs parse and pass the strict validator. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
-| `examples/archives/**/*.yaml` | Parse as YAML but are explicitly v0.2 archive. | Do not promote without migration and an executable reference run. |
+| .github/workflows/ci.yml | Runs Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, 47% branch coverage, and wheel import. required rejects failed/skipped jobs. | GPU tests may skip; normal CI is not real-GPU evidence. Markdown links/code fences and workflow semantics are not actionlint-gated yet. |
+| .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; builds and clean-installs distributions; publishes PyPI before creating the GitHub Release. | The workflow is intentionally blocked until a [self-hosted, linux, x64, gpu] runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
+| codecov.yml | Configures informational Codecov statuses. | No workflow uploads coverage to Codecov; badges/docs must not imply current Codecov evidence. |
+| configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
+| examples/archives/**/*.yaml | Parse as YAML but are explicitly v0.2 archive. | Do not promote without migration and an executable reference run. |
 
 ## Completion sequence
 
-1. P7.2 persistence is accepted. Continue P7.3/P7.4 without mixing the deferred
-   public README or release-workflow rewrite into scientific decomposition.
-2. Before creating any release tag, harden `release.yml` against development
-   tags and require the final accepted CI/GPU gates. This safety gate has
-   priority even if broader docs are deferred.
+1. Continue P7.3/P7.4 scientific decomposition from independent references.
+2. D-105 completes the pre-tag tooling safety gate. Do not weaken the real-GPU
+   job or substitute skipped CPU tests for its evidence.
 3. In Phase 8, finalize D-073 root exports, then rewrite the English/Japanese
-   READMEs and `docs/README.md` using executed examples; correct support,
-   installation, result-schema, and migration sections.
-4. Migrate the remaining public guides and code fences, then add automated
-   local-link and supported-snippet checks to CI. Resolve Codecov upload versus
-   badge/docs deliberately.
-5. Validate YAML, workflow semantics (with `actionlint` in CI), package
-   build/clean install, all active examples, and a release dry run before
-   the final `0.3.0` tag. Archived guides/configs remain explicitly historical.
+   READMEs and docs/README.md using executed examples.
+4. Migrate remaining public guides and snippets, and add automated local-link,
+   supported-snippet, YAML, and actionlint checks.
+5. On the final clean commit, repeat build/clean install, all active examples,
+   release dry-run, real-GPU workflow, and external publication configuration
+   checks before the final 0.3.0 tag.

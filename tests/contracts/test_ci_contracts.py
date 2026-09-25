@@ -54,6 +54,7 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert f"ruff check --no-fix {active_scope}" in quality
     assert f"ruff format --check {active_scope}" in quality
     assert "python scripts/smoke_examples.py" in quality
+    assert "python examples/tools/build_index.py --check" in quality
     assert "mypy" in quality
 
     coverage = _commands(jobs["coverage"])
@@ -67,9 +68,9 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert "import rovibrational_excitation" in build
 
 
-def test_refactor_checkpoint_has_development_not_release_version():
+def test_v03_checkpoint_version_is_development_or_final():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    assert pyproject["project"]["version"] == "0.3.0.dev1"
+    assert pyproject["project"]["version"] in {"0.3.0.dev1", "0.3.0"}
 
 
 def test_mypy_is_mandatory_only_for_named_typed_modules():

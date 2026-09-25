@@ -3,229 +3,154 @@ name: Release to PyPI
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   verify-version:
-    name: Version Consistency Check
+    name: Verify final tag and package version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Verify version consistency
-      id: version
-      run: |
-        TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
-        echo "Tag version: $TAG_VERSION"
-        
-        if [ ! -f pyproject.toml ]; then
-          echo "❌ pyproject.toml が見つかりません"
-          exit 1
-        fi
-        
-        PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])" 2>/dev/null || echo "ERROR")
-        
-        if [ "$PYPROJECT_VERSION" = "ERROR" ]; then
-          echo "❌ pyproject.toml からバージョンを読み取れません"
-          exit 1
-        fi
-        
-        echo "pyproject.toml version: $PYPROJECT_VERSION"
-        
-        if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
-          echo "❌ バージョン不一致: Tag=$TAG_VERSION, pyproject.toml=$PYPROJECT_VERSION"
-          echo "🔧 修正方法:"
-          echo "  1. pyproject.toml のバージョンを $TAG_VERSION に更新"
-          echo "  2. または、正しいバージョンでタグを作り直し"
-          exit 1
-        fi
-        echo "✅ バージョン一致確認完了: $TAG_VERSION"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify final X.Y.Z version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          if [[ ! "${TAG_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release tag must be a final X.Y.Z version"
+            exit 1
+          fi
+          PROJECT_VERSION="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")"
+          if [[ "${TAG_VERSION}" != "${PROJECT_VERSION}" ]]; then
+            echo "tag/package version mismatch: ${TAG_VERSION} != ${PROJECT_VERSION}"
+            exit 1
+          fi
+          echo "version=${TAG_VERSION}" >> "${GITHUB_OUTPUT}"
 
-  build-and-test:
-    name: Build Package
+  cpu-release-gates:
+    name: CPU release gates
     runs-on: ubuntu-latest
     needs: verify-version
-    outputs:
-      dist-exists: ${{ steps.check-dist.outputs.exists }}
-      
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install package and release dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,io,plot]"
+      - name: Run quality and typing gates
+        run: |
+          ruff check --no-fix src tests examples benchmarks scripts
+          ruff format --check src tests examples benchmarks scripts
+          mypy
+      - name: Run complete CPU suite
+        run: pytest -q
+      - name: Run supported examples and parameter template
+        run: python scripts/smoke_examples.py
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+  gpu-validation:
+    name: Real CUDA validation
+    runs-on: [self-hosted, linux, x64, gpu]
+    needs: verify-version
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install package with CUDA dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,io,plot,gpu]"
+      - name: Require a real CUDA device
+        run: |
+          python -c "import cupy as cp; count = cp.cuda.runtime.getDeviceCount(); assert count > 0, 'no CUDA device'; print(cp.cuda.runtime.getDeviceProperties(0)['name'])"
+      - name: Run trusted NumPy/CuPy parity reference
+        run: pytest -q tests/physics/test_two_level_reference.py::test_numpy_and_cupy_final_state_agree
+      - name: Run all GPU-marked tests
+        run: pytest -q -m gpu
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-release-${{ hashFiles('**/pyproject.toml') }}
-
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-
-    - name: Build package
-      run: |
-        echo "📦 パッケージビルド開始..."
-        python -m build
-        echo "✅ ビルド完了"
-
-    - name: Verify package
-      run: |
-        echo "🔍 パッケージ検証中..."
-        twine check dist/*
-        echo "✅ パッケージ検証完了"
-
-    - name: Check dist files
-      id: check-dist
-      run: |
-        if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-          echo "📋 ビルドファイル一覧:"
-          ls -la dist/
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-          echo "❌ ビルドファイルが見つかりません"
-          exit 1
-        fi
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
-        retention-days: 30
-
-  create-release:
-    name: Create GitHub Release
+  build-and-test:
+    name: Build and clean-wheel verification
     runs-on: ubuntu-latest
-    needs: [verify-version, build-and-test]
-    if: needs.build-and-test.outputs.dist-exists == 'true'
-    
+    needs: [verify-version, cpu-release-gates, gpu-validation]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
-
-    - name: Generate release notes
-      id: release-notes
-      run: |
-        VERSION="${{ needs.verify-version.outputs.version }}"
-        
-        if [ -f CHANGELOG.md ]; then
-          CHANGELOG_CONTENT=$(awk "/## \[$VERSION\]/,/## \[/{if(/## \[/ && !/## \[$VERSION\]/)exit}1" CHANGELOG.md | head -n -1)
-          if [ -n "$CHANGELOG_CONTENT" ]; then
-            echo "changelog_found=true" >> $GITHUB_OUTPUT
-          else
-            echo "changelog_found=false" >> $GITHUB_OUTPUT
-          fi
-        else
-          echo "changelog_found=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: "Release ${{ github.ref_name }}"
-        body: |
-          ## 🚀 リリース ${{ github.ref_name }}
-          
-          ### 📦 インストール
-          ```bash
-          pip install rovibrational-excitation==${{ needs.verify-version.outputs.version }}
-          ```
-          
-          ### 📋 主な変更点
-          ${{ steps.release-notes.outputs.changelog_found == 'true' && '詳細は [CHANGELOG.md](CHANGELOG.md) を参照してください。' || '変更点の詳細については、コミット履歴をご確認ください。' }}
-          
-          ### 🔗 リンク
-          - 📚 [ドキュメント](README.md)
-          - 🐛 [Issues](https://github.com/${{ github.repository }}/issues)
-          - 💬 [Discussions](https://github.com/${{ github.repository }}/discussions)
-          
-          ### ⚡ クイックスタート
-          ```python
-          import rovibrational_excitation as rve
-          ```
-        draft: false
-        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+      - name: Build and inspect distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+      - name: Install and import the wheel in a clean environment
+        run: |
+          python -m venv /tmp/rve-release-wheel
+          /tmp/rve-release-wheel/bin/python -m pip install --upgrade pip
+          /tmp/rve-release-wheel/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/rve-release-wheel/bin/python -c "import rovibrational_excitation; print(rovibrational_excitation.__version__)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
 
   publish-pypi:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [verify-version, build-and-test, create-release]
-    if: needs.build-and-test.outputs.dist-exists == 'true'
+    needs: [verify-version, build-and-test]
     environment:
       name: pypi
       url: https://pypi.org/project/rovibrational-excitation/
-    
     steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        verbose: true
-
-    - name: Verify PyPI upload
-      run: |
-        VERSION="${{ needs.verify-version.outputs.version }}"
-        echo "🎉 PyPI公開完了!"
-        echo "📦 パッケージ: https://pypi.org/project/rovibrational-excitation/$VERSION/"
-        echo "📋 インストール確認:"
-        echo "  pip install rovibrational-excitation==$VERSION"
-
-  post-release:
-    name: Post-Release Tasks
+  create-release:
+    name: Create GitHub release after PyPI publication
     runs-on: ubuntu-latest
-    needs: [verify-version, publish-pypi]
-    if: always() && needs.publish-pypi.result == 'success'
-    
+    needs: [verify-version, build-and-test, publish-pypi]
+    permissions:
+      contents: write
     steps:
-    - name: Release summary
-      run: |
-        VERSION="${{ needs.verify-version.outputs.version }}"
-        echo "## 🎉 リリース完了: $VERSION" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ✅ 完了タスク" >> $GITHUB_STEP_SUMMARY
-        echo "- [x] バージョン整合性チェック" >> $GITHUB_STEP_SUMMARY
-        echo "- [x] パッケージビルド" >> $GITHUB_STEP_SUMMARY
-        echo "- [x] GitHub Release作成" >> $GITHUB_STEP_SUMMARY
-        echo "- [x] PyPI公開" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔗 リンク" >> $GITHUB_STEP_SUMMARY
-        echo "- 📦 [PyPI](https://pypi.org/project/rovibrational-excitation/$VERSION/)" >> $GITHUB_STEP_SUMMARY
-        echo "- 🏷️ [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)" >> $GITHUB_STEP_SUMMARY 
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Create release with verified artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --verify-tag \
+            --generate-notes \
+            --title "Release ${GITHUB_REF_NAME}"

@@ -35,27 +35,32 @@ code .
 
 ## 📊 Jupyter Lab の使用
 
-### コンテナ内でJupyter起動
+### ローカル専用で起動
 
 ```bash
 # スクリプトを使用（推奨）
 ./scripts/start_jupyter.sh
 ```
 
-### ブラウザでアクセス
-- URL: `http://localhost:8888`
-- トークン: 不要（開発環境用設定）
+既定では `127.0.0.1:8888` にだけbindし、Jupyter標準のtoken認証とXSRF
+保護を維持します。端末に表示されたtoken付きURLを使用してください。
+
+### 明示的に外部へbindする場合
+
+外部bindが必要な隔離済み開発環境でのみ指定します。
+
+```bash
+RVE_JUPYTER_HOST=0.0.0.0 ./scripts/start_jupyter.sh
+```
+
+この場合も認証やXSRFを無効化しません。ポート公開範囲とJupyter tokenを
+別途管理してください。
 
 ### 対話的開発の例
 
-```python
-# Jupyter Cellで実行
-import numpy as np
-import matplotlib.pyplot as plt
-from rovibrational_excitation.core import propagator
-
-# 振動回転励起シミュレーションの例
-# examples/example_twolevel_excitation.py を参照
+```bash
+python examples/launcher.py --list
+python examples/launcher.py --run quickstart --quick
 ```
 
 ## 🛠 開発ワークフロー
@@ -63,38 +68,29 @@ from rovibrational_excitation.core import propagator
 ### コード品質チェック
 
 ```bash
-# コード静的解析
-ruff check src/ tests/ examples/
-mypy src/
-
-# フォーマット
-black src/ tests/ examples/
-ruff check --fix src/ tests/ examples/
+ruff check --no-fix src tests examples benchmarks scripts
+ruff format --check src tests examples benchmarks scripts
+mypy
+python scripts/smoke_examples.py
 ```
 
 ### テスト実行
 
 ```bash
-# 全テスト実行
-python -m pytest tests/ -v
-
-# カバレッジ付きテスト
-coverage run -m pytest tests/
-coverage html
+pytest -q
+coverage run --data-file=/tmp/rve-coverage --source=src/rovibrational_excitation --branch -m pytest -q
+coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
 ```
 
 ### パッケージビルド
 
 ```bash
-# ビルド
 python -m build
-
-# 公開（テスト環境）
-twine upload --repository testpypi dist/*
-
-# 公開（本番環境）
-twine upload dist/*
+python -m twine check dist/*
 ```
+
+公開は手動のTwine uploadでは行いません。実GPUを含むrelease gateは
+[バージョン管理とリリース](VERSION_MANAGEMENT.md)を参照してください。
 
 ## 📁 ディレクトリ構造
 

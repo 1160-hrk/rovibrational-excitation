@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-24
+Last verified: 2026-09-25
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -256,6 +256,16 @@ Class-D scales, and the historical no-op convergence predicate are unchanged.
 The full suite has 1321 passes and 10 optional-GPU skips (1331 collected), 79%
 branch coverage, and 59 strict-mypy modules. P7.3-b, the direct Krotov oracle,
 is next.
+
+P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
+Local release preparation is read-only by default and never commits, tags,
+pushes, or publishes. The tag workflow accepts final versions only and blocks
+build/publication until the complete CPU gates and a real self-hosted CUDA
+reference pass. Jupyter retains standard authentication and binds only to
+localhost by default. The supported examples, parameter template, and generated
+index are executable CI contracts; archived examples are not scanned. The full
+suite has 1327 passes and 10 optional-GPU skips (1337 collected). Calculation
+behavior is unchanged; external GPU and PyPI execution remain unverified.
 
 P6.2-c
 implements D-069:
@@ -516,7 +526,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a complete, P7.3-b through P7.4 pending |
-| 8 | Public API, documentation, and release | Pending — Markdown/YAML/workflow inventory recorded in `DOCUMENTATION_WORKFLOW_AUDIT.md`; fixes gated before final tag |
+| 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

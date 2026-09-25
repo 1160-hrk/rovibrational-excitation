@@ -1,0 +1,138 @@
+"""Contracts for repository examples and release/development tooling."""
+
+from __future__ import annotations
+
+import importlib.util
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parents[2]
+RELEASE_SCRIPT = ROOT / "scripts" / "release.py"
+RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
+JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
+INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
+
+
+def _load_release_module():
+    spec = importlib.util.spec_from_file_location("repository_release", RELEASE_SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _workflow() -> dict:
+    return yaml.load(RELEASE_WORKFLOW.read_text(), Loader=yaml.BaseLoader)
+
+
+def _commands(job: dict) -> str:
+    return "\n".join(step.get("run", "") for step in job["steps"])
+
+
+def test_release_version_transition_accepts_dev_to_matching_final() -> None:
+    release = _load_release_module()
+
+    assert release.validate_release_transition("0.3.0.dev1", "0.3.0") == (
+        (0, 3, 0),
+        (0, 3, 0),
+    )
+    assert release.validate_release_transition("0.3.0", "0.3.1") == (
+        (0, 3, 0),
+        (0, 3, 1),
+    )
+    with pytest.raises(ValueError, match="final X.Y.Z"):
+        release.validate_release_transition("0.3.0.dev1", "0.3.0rc1")
+    with pytest.raises(ValueError, match="newer"):
+        release.validate_release_transition("0.3.0", "0.3.0")
+
+
+def test_release_dry_run_is_read_only_and_supports_current_version() -> None:
+    release = _load_release_module()
+    current = release.read_current_version()
+    target = {"0.3.0.dev1": "0.3.0", "0.3.0": "0.3.1"}[current]
+    before = (ROOT / "pyproject.toml").read_bytes()
+    completed = subprocess.run(
+        [sys.executable, str(RELEASE_SCRIPT), target, "--dry-run"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert f"{current} -> {target}" in completed.stdout
+    assert (ROOT / "pyproject.toml").read_bytes() == before
+
+
+def test_local_release_tool_never_commits_tags_or_pushes() -> None:
+    source = RELEASE_SCRIPT.read_text()
+
+    for forbidden in ("git commit", "git tag", "git push", "input("):
+        assert forbidden not in source
+    assert "--apply" in source
+    assert "pytest" in source
+    assert "twine" in source
+
+
+def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> None:
+    workflow = _workflow()
+    jobs = workflow["jobs"]
+    verify = _commands(jobs["verify-version"])
+    cpu = _commands(jobs["cpu-release-gates"])
+    gpu = _commands(jobs["gpu-validation"])
+
+    assert "final X.Y.Z" in verify
+    assert "pytest -q" in cpu
+    assert "ruff check --no-fix" in cpu
+    assert "python scripts/smoke_examples.py" in cpu
+    assert "mypy" in cpu
+    assert jobs["gpu-validation"]["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    assert "getDeviceCount" in gpu
+    assert "test_numpy_and_cupy_final_state_agree" in gpu
+    assert set(jobs["build-and-test"]["needs"]) == {
+        "verify-version",
+        "cpu-release-gates",
+        "gpu-validation",
+    }
+    assert jobs["publish-pypi"]["needs"] == ["verify-version", "build-and-test"]
+    assert jobs["create-release"]["needs"] == [
+        "verify-version",
+        "build-and-test",
+        "publish-pypi",
+    ]
+
+
+def test_jupyter_launcher_has_safe_local_authenticated_defaults() -> None:
+    source = JUPYTER_SCRIPT.read_text()
+
+    assert "127.0.0.1" in source
+    for forbidden in (
+        "$HOME/.jupyter",
+        "disable_check_xsrf=True",
+        "allow_origin='*'",
+        "token=''",
+        "password=''",
+        "root_dir = '/workspace'",
+    ):
+        assert forbidden not in source
+
+
+def test_example_index_and_template_are_checked_by_ci_smoke() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(INDEX_SCRIPT), "--check"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+    index_source = INDEX_SCRIPT.read_text()
+    smoke_source = (ROOT / "scripts" / "smoke_examples.py").read_text()
+    assert "rglob" not in index_source
+    assert 'glob("example_*.py")' in index_source
+    assert "params_template.py" in smoke_source

@@ -8,11 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### 🚀 Added
-- Version consistency checks between pyproject.toml and Git tags
-- Release workflow scaffold via GitHub Actions (final release gates pending)
-- Release management script (`scripts/release.py`)
+- Final-version consistency checks between pyproject.toml and Git tags
+- Release workflow with complete CPU gates and mandatory real-CUDA evidence
+- Explicit dry-run/apply release preparation script (`scripts/release.py`)
+- CI smoke coverage for the supported parameter template and example index
 
 ### 🔧 Changed
+- Release preparation never commits, tags, pushes, publishes, or prompts
+  implicitly; publication remains an explicit GitHub release workflow action.
+- Jupyter binds to localhost with standard authentication by default and no
+  longer writes global user configuration.
+- The generated example index scans only supported top-level examples and
+  cannot include the historical archive.
 - Improved test coverage documentation
 - Development-branch normal results now publish complete manifest-v1 bundles
   through an atomic generation pointer; valid direct-layout v1 results remain
@@ -125,10 +132,13 @@ real-GPU run remain required before `0.3.0`.
 
 ### Release Process
 
-1. Update version in `pyproject.toml`
-2. Update this CHANGELOG.md
-3. Run release script: `python scripts/release.py X.Y.Z "Release message"`
-4. GitHub Actions automatically builds and publishes to PyPI
+1. Complete the Phase 8 acceptance gates and update this CHANGELOG.md.
+2. Validate the transition with `python scripts/release.py X.Y.Z --dry-run`.
+3. From a clean worktree, run `python scripts/release.py X.Y.Z --apply`.
+4. Review and commit the version change explicitly.
+5. Confirm the real-GPU runner and protected PyPI environment are available.
+6. Create and push the annotated `vX.Y.Z` tag explicitly; GitHub Actions
+   publishes only after every CPU, CUDA, build, and clean-wheel gate passes.
 
 ### Breaking Changes
 

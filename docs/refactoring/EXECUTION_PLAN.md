@@ -1865,6 +1865,16 @@ Tasks:
 - run all quality, physics, and benchmark gates;
 - tag only after the refactor branch is clean.
 
+P8.0-a/D-105 completes the pre-tag tooling safety subset early. The local release
+tool accepts the current development-to-final transition but never commits,
+tags, pushes, or publishes. The tag workflow rejects non-final versions and
+requires full CPU gates plus a self-hosted real-CUDA reference before build and
+publication. Jupyter is authenticated and localhost-only by default. The three
+supported examples and the parameter template execute in CI smoke, and the
+generated example index cannot scan archives. Root API/README migration,
+CodeCov disposition, actionlint, final release evidence, and version bump
+remain Phase 8 work. No calculation behavior changed.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

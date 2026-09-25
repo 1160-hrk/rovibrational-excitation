@@ -35,6 +35,8 @@ jobs:
         run: ruff format --check src tests examples benchmarks scripts
       - name: Run typed example smoke tests
         run: python scripts/smoke_examples.py
+      - name: Verify supported-example index
+        run: python examples/tools/build_index.py --check
       - name: Type-check named typed modules
         run: mypy
 

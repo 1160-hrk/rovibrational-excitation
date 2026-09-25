@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-24
+Last verified: 2026-09-25
 Active refactor branch: `refactor/v0.3`
-Verified structural checkpoint: P7.3-a D-104 exact discrete GRAPE gradient
+Verified checkpoints: P7.3-a/D-104 exact GRAPE gradient; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -183,14 +183,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P7.3-a:
+Current local CPU baseline after P8.0-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1321 passed, 10 GPU tests skipped (1331 collected)
+1327 passed, 10 GPU tests skipped (1337 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -457,6 +457,14 @@ constraints, Class-D scales, and the no-op convergence predicate are unchanged.
 The suite has 1321 passes, 10 optional-GPU skips, 79% branch coverage, and 59
 strict-mypy modules. P7.3-b is next.
 
+P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
+changing calculation behavior. Local release preparation is explicit and
+read-only by default; it never commits, tags, pushes, or publishes. The release
+workflow accepts final versions only and blocks build/publication until full
+CPU gates and a real self-hosted CUDA reference pass. Jupyter is authenticated
+and localhost-only by default. Supported examples and their generated index
+are now CI contracts. External GPU and PyPI execution remain unverified.
+
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -480,7 +488,9 @@ The next work is:
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
-   root README and release workflow must be corrected before any release tag.
+   D-105 corrects the release workflow and repository tooling before any tag.
+   Root README migration, Codecov disposition, actionlint, actual real-GPU and
+   PyPI evidence, and the final version bump remain open Phase 8 gates.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.
