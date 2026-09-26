@@ -10,12 +10,14 @@ import pytest
 from rovibrational_excitation.core.time import TimeGrid
 from rovibrational_excitation.core.units import converter
 from rovibrational_excitation.optimization.grape import run_grape_optimization
-from rovibrational_excitation.optimization.krotov import run_krotov_optimization
 from rovibrational_excitation.optimization.krotov_initial_field import (
     KrotovGeneratedInitialField,
     KrotovSampledInitialField,
     parse_grape_initial_field,
     parse_krotov_initial_field,
+)
+from rovibrational_excitation.optimization.legacy_batch_overlap import (
+    run_legacy_batch_overlap_optimization,
 )
 
 
@@ -38,7 +40,7 @@ def _generated_params(**overrides: Any) -> dict[str, Any]:
 
 def test_krotov_requires_explicit_initial_field_kind_before_model_work():
     with pytest.raises(ValueError, match="initial_field_kind"):
-        run_krotov_optimization(
+        run_legacy_batch_overlap_optimization(
             basis=None,
             hamiltonian=None,
             dipole=None,

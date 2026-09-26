@@ -262,11 +262,14 @@ pre-solver exception: local optimization retains
 That layout is never rebuilt or endpoint-repaired by `TimeGrid`; it exposes the
 odd prefix historically consumed by RK4 when constructing the solver input.
 The returned optimization field and cost still use the complete legacy storage
-array. GRAPE and Krotov have no such exception: D-029 requires canonical
-`TimeGrid`, explicit `field_dt_fs`, complete internal trajectories, and
-output-only `output_stride`.
+array. GRAPE and `legacy_batch_overlap` use the D-029 canonical `TimeGrid`, explicit
+`field_dt_fs`, complete internal trajectories, and output-only
+`output_stride`. Standard Krotov is deliberately separate under D-106: it owns
+state endpoints and one piecewise-constant control per interval through
+`KrotovIntervalGrid` and `control_dt_fs`; it never converts the old odd field
+grid implicitly.
 
-D-050 gives Krotov one frozen initial-field ownership boundary. It selects
+D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical
 fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the
 same `TimeGrid`. `krotov.py` consumes only the canonical writable field copy;
@@ -807,9 +810,11 @@ choice rather than a boolean.
 Under D-056, configured optimization enters through a closed YAML/dict document
 validated by `optimization.config` and algorithm-specific key ownership in
 `optimization.options`. Model construction then reuses the frozen production
-schemas. Every algorithm requires its ordered two-axis adapter, Krotov requires
-an explicit generated or sampled field branch, and sampled data must match the
-canonical field grid exactly. Required output and plot sections have explicit
+schemas. Every algorithm requires its ordered two-axis adapter. GRAPE and
+`legacy_batch_overlap` require an explicit generated or sampled field branch on
+the canonical field grid. Standard Krotov requires an explicit generated or
+sampled interval-control branch whose sampled data exactly matches the interval
+count. Required output and plot sections have explicit
 API/CLI override precedence. This is the strict migration boundary; persistence
 schema versioning and final public result types remain Phase 7 work.
 

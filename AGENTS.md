@@ -68,10 +68,11 @@ The authoritative details and formulas are in
   stores field samples only in V/m; it has no constructor field-unit selector.
 - Low-level generated pulses require explicit duration, center, carrier, and
   direct-amplitude units; GDD/TOD are complete optional pairs or exact zero.
-- GRAPE and Krotov initial fields explicitly select generated or sampled input.
-  Generated seeds require physical value/unit pairs; sampled two-component
-  fields require a direct amplitude unit and exact canonical-grid length.
-  Neither route resamples or silently overrides the other. GRAPE minimizes
+- GRAPE and `legacy_batch_overlap` fields explicitly select generated or sampled
+  input on the canonical odd field grid. Standard Krotov separately selects
+  generated or sampled piecewise-constant interval controls, requires
+  `control_dt_fs` and a `lambda_a` unit, and never converts the old field schema.
+  None of these routes resamples or silently overrides caller data. GRAPE minimizes
   `1-fidelity+(lambda_a/2)*sum(E**2)` with the exact discrete adjoint of the
   normalized dense NumPy RK4 graph and rejects custom propagators without a
   matching derivative.
@@ -452,10 +453,12 @@ P7.3-a/D-104 replaces the user-approved incorrect GRAPE time-local heuristic
 with the exact discrete adjoint of the normalized dense NumPy RK4 objective.
 An independent direct-RK4 central difference converges to `5.8e-9` relative
 error under a fixed `1e-7` bound. GRAPE requires an explicit generated or
-sampled seed and rejects custom propagators. Krotov, Local, spectral
-constraints, Class-D scales, and the no-op convergence predicate are unchanged.
-The suite has 1321 passes, 10 optional-GPU skips, 79% branch coverage, and 59
-strict-mypy modules. P7.3-b is next.
+sampled seed and rejects custom propagators. That P7.3-a checkpoint left Krotov, Local, spectral constraints, Class-D
+scales, and the no-op convergence predicate unchanged. P7.3-b/D-106 then split
+the former Krotov calculation into `legacy_batch_overlap` and implemented the
+independently referenced sequential interval-control standard route. The suite
+has 1355 passes and 10 optional-GPU skips (1365 collected); strict mypy covers
+62 modules. P7.3-c is next.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
@@ -480,10 +483,11 @@ The next work is:
    P7.2-g checkpoint-pair publication, P7.2-h strict checkpoint schema plus
    validated declared-run resume provenance, and P7.2-i strict standalone
    visualization readers are implemented. P7.2-j accepts this persistence
-   boundary. P7.3-a/D-104 completes the independent GRAPE reference and the
-   explicitly approved formula correction. Next construct the direct
-   one-iteration Krotov oracle for P7.3-b. Do not decompose or alter any
-   remaining objective/update rule before its oracle passes or the user
+   boundary. P7.3-a/D-104 completes the independent GRAPE reference and formula
+   correction; P7.3-b/D-106 completes the standard Krotov oracle/correction and
+   preserves the old route explicitly. Next construct the direct Local-control
+   oracle for P7.3-c. Do not decompose or alter any remaining objective/update
+   rule before its oracle passes or the user
    resolves a discrepancy. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.

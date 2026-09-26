@@ -42,11 +42,11 @@ def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
     return np.sin(np.pi * t / T) ** 2
 
 
-def run_krotov_optimization(
+def run_legacy_batch_overlap_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
 ) -> RunResult:
     initial_field = parse_krotov_initial_field(params)
-    control_axes = validate_algorithm_options("krotov", params)
+    control_axes = validate_algorithm_options("legacy_batch_overlap", params)
 
     initial_state = tuple(states["initial"])  # (v,J,...) expected
     target_state = tuple(states["target"]) if states.get("target") is not None else None
@@ -54,7 +54,7 @@ def run_krotov_optimization(
     initial_idx = basis.get_index(initial_state)
     target_idx = basis.get_index(target_state) if target_state is not None else None
     if target_idx is None:
-        raise ValueError("Krotov requires a target state.")
+        raise ValueError("legacy_batch_overlap requires a target state.")
 
     time_settings = build_optimization_time_settings(time_cfg)
     time_grid = time_settings.grid

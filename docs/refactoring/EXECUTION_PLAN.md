@@ -582,9 +582,10 @@ Implementation status:
   legacy adapter, validation, and `ElectricField.from_time_grid` are tested;
   every remote required gate passed in Actions run #53.
 - P2.1-b is complete for time-array construction. Local optimization keeps
-  the D-027 legacy layout. GRAPE and Krotov use canonical `TimeGrid`, explicit
-  field spacing, full internal trajectories, output-only thinning, and the
-  D-028 backward direction under D-029. Independent objective and gradient
+  the D-027 legacy layout. GRAPE and the former Krotov route (now explicitly
+  `legacy_batch_overlap` under D-106) use canonical `TimeGrid`, explicit field
+  spacing, full internal trajectories, output-only thinning, and the D-028
+  backward direction under D-029. Independent objective and gradient
   references remain open under O-006.
 
 ### P2.1 Introduce TimeGrid
@@ -598,8 +599,9 @@ Implementation status:
 Do not remove old calls until each workflow either uses `TimeGrid` directly or
 has an accepted, characterized adapter. Under D-027 the local optimizer keeps
 its versioned storage layout and exposes only its legacy-consumed odd prefix to
-the solver boundary. Under D-029, GRAPE and Krotov construct the canonical grid
-from `field_dt_fs`; their optimization calculations always use the full
+the solver boundary. Under D-029, GRAPE and the route now named `legacy_batch_overlap` construct
+the canonical grid from `field_dt_fs`; standard Krotov instead uses the D-106
+interval grid and `control_dt_fs`; their optimization calculations always use the full
 trajectory and apply `output_stride` only to returned output.
 
 ### P2.2 Introduce explicit state kinds
@@ -1818,8 +1820,17 @@ scales are otherwise retained. The existing no-op `convergence_tol` branch is
 recorded but unchanged. Full details are in
 `PHASE7_OPTIMIZATION_REFERENCES.md`.
 
-P7.3-b is next: construct the independent one-iteration Krotov oracle before
-any Krotov decomposition or formula change.
+P7.3-b/D-106 completes the independent Krotov reference and the
+user-approved correction. The former normalized-costate, batch-overlap,
+factor-two calculation is frozen behind `legacy_batch_overlap`, including its
+stored result and spectral example. Standard `krotov` now uses midpoint
+piecewise-constant controls, overlap-scaled unnormalized costates,
+`dH/dE=-mu`, no extra factor two, and sequential updated-state propagation.
+Its required penalty unit is `1 / ((V/m)^2 fs)`; old field-grid and seed keys,
+custom propagators, spectral constraints, and plotting raise. The independent
+direct-RK4 one-iteration oracle agrees to `2e-15`; TwoLevel and five-level
+VibLadder transfer plus half-step repropagation references pass. P7.3-c, the
+direct Local update on its frozen legacy grid, is next.
 
 ### P7.4 Spectroscopy
 

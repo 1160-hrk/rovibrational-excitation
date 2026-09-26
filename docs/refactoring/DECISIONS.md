@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-23
+Last updated: 2026-09-26
 
 ## How to use this log
 
@@ -3720,6 +3720,74 @@ sdist/wheel build, Twine validation, and isolated wheel import plus pip check.
 The skipped tests are not CUDA evidence.
 
 Implementation commit: this checkpoint.
+
+### D-106: Standard Krotov uses sequential interval controls; the former solver is explicit legacy
+
+Status: Accepted by the user on 2026-09-25; implemented as P7.3-b.
+
+Scope: Krotov objective/update construction, time and seed schemas, penalty
+units, reference workloads, and supported constraints.
+
+The D-072 direct one-iteration audit found three material differences between
+the former implementation and first-order Krotov construction. The former
+solver normalized every backward costate without restoring the terminal
+overlap norm, updated all field samples from the old forward trajectory in one
+batch, and used ``-2 Im(<chi|mu|psi>)``. The apparent rapid convergence of the
+diagnostic was dominated by the accidental costate rescaling.
+
+The former calculation is preserved byte-for-byte in the explicitly selected
+``legacy_batch_overlap`` route. The stored four-level reference and the
+spectral example select that route, and their historical field-grid, backward
+RK4, update indices, factor two, normalization, defaults, and spectral kernel
+remain regression behavior. No existing document is silently reinterpreted as
+standard Krotov.
+
+The ``krotov`` route now implements a separate first-order sequential update:
+
+~~~text
+H(E_n) = H0 - sum_a mu_a E[n,a]
+dH/dE_a = -mu_a
+chi_N = <target|psi_N> target
+E_new[n,a] = E_old[n,a]
+             + S(t_(n+1/2))/lambda_a
+               Im(<chi_old[n]|-mu_a|psi_new[n]>)
+~~~
+
+Controls are real and piecewise constant on ``[t_n,t_(n+1))`` and are stored
+at interval midpoints. The state trajectory is stored at the ``N+1`` interval
+endpoints. ``control_dt_fs`` is the propagation interval; the standard route
+rejects ``field_dt_fs`` and never maps an old ``2*N+1`` sampled field onto an
+interval control. Costates retain their terminal overlap scale and are not
+normalized. The update contains no extra factor two and is applied before
+propagating the new state across each interval. The dense NumPy constant-H RK4
+step is used without state renormalization; time-step adequacy is checked by
+explicit coarse/fine repropagation, never by a hidden grid change.
+
+``lambda_a`` is required together with ``lambda_a_units``. Its canonical unit
+is ``1 / ((V/m)^2 fs)``; equivalent MV/m, GV/m, and TV/m labels convert once
+at the boundary. Generated controls require ``initial_control_kind=generated``
+and are evaluated at interval midpoints. Sampled controls require a finite real
+``(N,2)`` array through ``initial_control_samples`` and a direct amplitude unit.
+The standard route rejects old ``initial_field_*`` keys, custom propagators,
+spectral constraints, and plotting until independently referenced interval
+implementations exist.
+
+The independent test-only oracle directly expands every RK4 stage, old forward
+trajectory, overlap-scaled costate, backward trajectory, sequential control
+update, and new trajectory. Production agrees to ``2e-15`` absolute tolerance
+on the fixed one-iteration diagnostic. End-to-end references reach above
+``0.999`` target population for TwoLevel and above ``0.985`` in ``V=3`` for a
+five-level ``V=0..4`` VibLadder. Repropagating the latter final control at half
+the interval fixes the target-population difference below ``1.5e-3`` and norm
+error below ``4e-5``.
+
+The full suite passes 1355 tests with 10 optional-GPU skips (1365 collected),
+and strict mypy covers 62 modules.
+
+Implementation anchors are ``optimization/krotov_rk4.py``,
+``tests/physics/test_krotov_iteration_reference.py``, and
+``tests/integration/test_standard_krotov_transfer.py``. P7.3-c, the independent
+Local-control update reference, is next.
 
 ## Open decisions
 

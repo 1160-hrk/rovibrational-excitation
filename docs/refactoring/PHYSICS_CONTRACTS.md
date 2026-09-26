@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-15
+Last verified against source and tests: 2026-09-26
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -881,7 +881,7 @@ remain characterization anchors while D-026 is applied at the typed boundary.
 
 ### Optimization time and backward-propagation contract
 
-GRAPE and Krotov use canonical `TimeGrid` instances beginning at zero. Their
+GRAPE and `legacy_batch_overlap` use canonical `TimeGrid` instances beginning at zero. Their
 configuration specifies the electric-field sampling interval directly as
 `field_dt_fs`; one state-propagation step is exactly
 `2 * field_dt_fs`. The requested total span must be exactly divisible by that
@@ -889,7 +889,7 @@ propagation step. A solver or configuration layer must never round the number
 of steps, extend the endpoint, or reinterpret `field_dt_fs` as a propagation
 interval.
 
-The repository Krotov configurations use `field_dt_fs = 0.05` fs. This is the
+The repository legacy Krotov configurations use `field_dt_fs = 0.05` fs. This is the
 explicit form of the historical `dt_fs = 0.1` fs propagation step and produces
 the same field arrays. Local optimization is a deliberate exception under
 D-027: it retains its versioned `np.arange` storage, segment endpoints, and
@@ -944,7 +944,7 @@ selected initialization method and the number of segments that actually used
 the seed. These diagnostics never alter a field value, segment, index,
 endpoint, or propagation call.
 
-GRAPE and Krotov optimization always consume every propagated state internally.
+GRAPE, standard Krotov, and `legacy_batch_overlap` always consume every propagated state internally.
 `output_stride` applies only after the final objective has been evaluated and
 only to the returned trajectory. The initial state and exact endpoint remain in
 the returned trajectory even when the stride does not divide the propagation
@@ -989,24 +989,52 @@ authoritative derivation and evidence are in
 `PHASE7_OPTIMIZATION_REFERENCES.md` and
 `tests/physics/test_grape_gradient_reference.py`.
 
-Krotov costates use explicit `PropagationDirection.BACKWARD`. For dimensional
-NumPy RK4 this reverses both field component arrays and applies the negative
-propagation interval used by the historical implementation, while the public
-`ElectricField` time grid remains strictly increasing. Backward CuPy,
-split-operator, and nondimensional propagation are unsupported and must raise;
-they never fall back to forward propagation.
+The historical solver is available only as `legacy_batch_overlap`. Its costates
+use explicit `PropagationDirection.BACKWARD`: dimensional NumPy RK4 reverses
+both field component arrays and applies the historical negative propagation
+interval while the public `ElectricField` grid remains increasing. Its
+normalization, batch update, factor two, `i*2` field indices, spectral kernel,
+and defaults are frozen reproduction behavior, not standard Krotov. Backward
+CuPy, split-operator, and nondimensional propagation remain unsupported.
+
+Under D-106, standard `krotov` uses real piecewise-constant controls. For total
+time `T=N*control_dt_fs`, state times are `t_n=n*control_dt_fs` and each control
+is stored at `t_(n+1/2)=(n+1/2)*control_dt_fs`. `field_dt_fs` and the legacy
+odd sampled-field array are rejected. The first-order update is
+
+~~~text
+chi_N = <target|psi_N> target
+E_new[n,a] = E_old[n,a]
+             + S(t_(n+1/2))/lambda_a
+               Im(<chi_old[n]|-mu_a|psi_new[n]>),
+S(t) = sin^2(pi*t/T).
+~~~
+
+This follows `H=H0-sum_a mu_a E_a`, hence `dH/dE_a=-mu_a`. Costates retain
+the terminal-overlap scale, no factor two is inserted, and each updated control
+propagates the new state before the next interval update. Constant-H dense
+NumPy RK4 is used without normalization. `lambda_a` is finite and positive and
+requires `lambda_a_units`; its canonical representation is
+`1 / ((V/m)^2 fs)`. Generated controls are evaluated at interval midpoints;
+sampled controls are finite real `(N,2)` arrays converted once from an explicit
+direct amplitude unit. Custom propagators, spectral constraints, and standard
+Krotov plotting raise until interval-control versions have independent
+references.
 
 Reference anchors are
-`tests/physics/test_optimization_time_reference.py`,
-`tests/contracts/test_optimization_time_grid_contracts.py`, and
-`tests/contracts/test_optimization_solver_time_contracts.py`.
+`tests/physics/test_krotov_iteration_reference.py`,
+`tests/integration/test_standard_krotov_transfer.py`,
+`tests/physics/test_optimization_time_reference.py`, and
+`tests/contracts/test_optimization_solver_time_contracts.py`. The direct
+one-iteration oracle agrees through all observable arrays to `2e-15`. The
+TwoLevel transfer exceeds `0.999`; the five-level `V=0..4` test concentrates
+more than `0.985` in `V=3` and verifies the final control again at half the
+interval.
 
-The stored four-level Krotov regression workload is defined by
-`configs/reference_krotov_viblad_v3.yaml` and
-`benchmarks/krotov-v0-v3-v0.3.{json,npz}`. It records the current numerical
-ability to transfer V=0 population to V=3 and verifies the optimized field with
-a separate final forward propagation. It is a characterization reference, not
-an independent derivation or validation of the Krotov update equation.
+The stored four-level artifacts and their configuration are explicitly legacy:
+`configs/reference_legacy_batch_overlap_viblad_v3.yaml` selects `legacy_batch_overlap`, and
+`benchmarks/krotov-v0-v3-v0.3.{json,npz}` characterize only that former
+calculation. They are not evidence for the standard update.
 
 ## 10. Spectroscopy evaluation contract
 
@@ -1223,18 +1251,15 @@ generated and externally injected TwoLevel, M-resolved LinMol, and M-averaged
 LinMol cases. This boundary conversion changes neither field samples nor the
 Hamiltonian evaluated at them.
 
-GRAPE and Krotov initial fields have an explicit source discriminator. A
-`generated` seed is the existing Gaussian-FWHM pulse and requires duration,
-center, carrier frequency, and direct amplitude value/unit pairs plus a finite
-nonzero two-component polarization. Optional GDD/TOD pairs are exact zero when
-both members are omitted. A `sampled` seed requires a real finite two-column
-array and a direct amplitude unit. It is converted once to V/m and must match
-the canonical odd optimization `TimeGrid` exactly. The boundary never chooses
-between the two sources implicitly and never resamples, normalizes, repairs,
-falls back to a zero field, or derives a signed field from intensity. Krotov
-update indices and objective logic consume the same field samples as before
-D-050; D-104 separately defines the GRAPE objective and exact discrete
-gradient.
+GRAPE and `legacy_batch_overlap` initial fields retain D-050. Their explicit
+`initial_field_kind` selects a generated Gaussian-FWHM seed or a real finite
+two-column sampled field on the canonical odd `TimeGrid`; every physical value
+has its required unit and neither route resamples or repairs data. Standard
+Krotov instead requires `initial_control_kind`. Its generated branch evaluates
+the same physical pulse at interval midpoints, while its sampled branch requires
+exactly one real two-component value per interval through
+`initial_control_samples` and `initial_control_units`. Field and control schemas
+are mutually inapplicable and never converted into each other implicitly.
 
 Optimization model construction uses the same frozen physical parameter
 schemas and model-owned basis/Hamiltonian/dipole builders as normal simulation.
@@ -1273,7 +1298,7 @@ finite real eigenvalue for every basis state and never silently disables itself.
 These validation rules do not change the accepted Local update expression or
 its frozen time/index layout.
 
-For the monotonic Krotov spectral route, `alpha` is finite and nonnegative.
+For the legacy `legacy_batch_overlap` spectral route, `alpha` is finite and nonnegative.
 Each frequency component therefore uses the exact denominator `1 + alpha`,
 which is at least one. No clipping or denominator floor is applied. Invalid
 bands, units, modes, weights, scale, shape, or alpha values raise before they

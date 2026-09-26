@@ -12,6 +12,7 @@ from .scalar_quantities import (
     DipoleMoment,
     ElectricFieldAmplitude,
     GroupDelayDispersion,
+    KrotovPenalty,
     LocalControlGain,
     ThirdOrderDispersion,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "DipoleMoment",
     "ElectricFieldAmplitude",
     "LocalControlGain",
+    "KrotovPenalty",
     "GroupDelayDispersion",
     "ThirdOrderDispersion",
     "UnitValidator",

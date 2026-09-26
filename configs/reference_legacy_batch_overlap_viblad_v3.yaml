@@ -17,9 +17,9 @@ time:
   field_dt_fs: 0.05
   output_stride: 1
 algorithm:
-  selected: krotov
+  selected: legacy_batch_overlap
 algorithms:
-  krotov:
+  legacy_batch_overlap:
     max_iter: 1000
     convergence_tol: 1.0e-18
     lambda_a: 1.0e-20

@@ -188,22 +188,25 @@ These timings were collected on CPython 3.12.12, Linux aarch64, NumPy 2.3.5,
 SciPy 1.17.0, and Numba 0.63.1. CUDA was not available, so GPU parity remains
 unverified.
 
-## Four-level Krotov V=0 to V=3 reference
+## Four-level legacy batch-overlap V=0 to V=3 reference
 
 The deterministic end-to-end optimization reference is generated with:
 
 ~~~bash
-python benchmarks/run_krotov_v3_reference.py
+python benchmarks/run_legacy_batch_overlap_v3_reference.py
 ~~~
 
-It uses `configs/reference_krotov_viblad_v3.yaml`: four harmonic vibrational
+It uses `configs/reference_legacy_batch_overlap_viblad_v3.yaml`: four harmonic vibrational
 levels, a 0.3 D transition dipole, a 500 fs interval, a 0.05 fs field spacing,
-and 1000 Krotov iterations. The JSON artifact records scalar checks and source
+and 1000 `legacy_batch_overlap` iterations. The JSON artifact records scalar checks and source
 provenance. The compressed NPZ stores the optimized field and a separately
 propagated complete trajectory.
 
 The reference reaches a final V=3 population of approximately
 `0.9999999931`; the independent propagation is exactly equal to the optimizer’s
-final forward trajectory in the recorded environment. This is a regression
-anchor for the current end-to-end calculation. It is not an independent proof
-of the Krotov objective or update equation, which remains open under O-006.
+final forward trajectory in the recorded environment. This is a regression anchor for the former end-to-end calculation preserved
+under D-106. It is not evidence for standard Krotov. The standard sequential
+interval-control reference lives in
+`tests/physics/test_krotov_iteration_reference.py`, with TwoLevel and five-level
+VibLadder transfer/half-step checks in
+`tests/integration/test_standard_krotov_transfer.py`.

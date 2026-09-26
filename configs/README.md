@@ -6,9 +6,10 @@ optimization documents. Historical v0.2 documents live under
 
 ## Included runs
 
-- `reference_krotov_viblad_v3.yaml`: stored V=0 to V=3 Krotov reference.
-- `example_krotov_spectral_viblad_v3.yaml`: the same four-level physical model
-  with an explicit monotonic spectral constraint.
+- `reference_legacy_batch_overlap_viblad_v3.yaml`: stored V=0 to V=3
+  `legacy_batch_overlap` reference.
+- `example_legacy_batch_overlap_spectral_viblad_v3.yaml`: the same four-level physical model
+  with an explicit legacy monotonic spectral constraint.
 - `example_local_viblad_v3.yaml`: the frozen legacy local optimizer on the same
   explicit physical model.
 
@@ -19,7 +20,7 @@ configuration.
 ## Execution
 
 ~~~bash
-rve-optimize --config configs/example_krotov_spectral_viblad_v3.yaml
+rve-optimize --config configs/example_legacy_batch_overlap_spectral_viblad_v3.yaml
 ~~~
 
 `output.dir` is required and is interpreted relative to the current working
@@ -32,8 +33,8 @@ CLI overrides use a complete dotted path, for example:
 
 ~~~bash
 rve-optimize \
-  --config configs/example_krotov_spectral_viblad_v3.yaml \
-  --override algorithms.krotov.max_iter=1 \
+  --config configs/example_legacy_batch_overlap_spectral_viblad_v3.yaml \
+  --override algorithms.legacy_batch_overlap.max_iter=1 \
   --out /tmp/rve-optimization-smoke \
   --no-plot
 ~~~
@@ -43,22 +44,23 @@ Unknown root, section, algorithm, and spectral-constraint keys are errors.
 ## Control axes and time samples
 
 `control_axes` is required and ordered. For example, `zx` means that field
-column 0 couples through `mu_z` and column 1 through `mu_x`; a generated
-Krotov `initial_polarization: [1.0, 0.0]` therefore drives only the z column.
-The local and Krotov optimizers accept two distinct lowercase labels from `x`,
-`y`, and `z`; duplicate pairs such as `xx` are errors. GRAPE currently accepts
+column 0 couples through `mu_z` and column 1 through `mu_x`; a generated legacy batch `initial_polarization: [1.0, 0.0]` therefore
+drives only the z column. The local, standard Krotov, and legacy batch
+optimizers accept two distinct lowercase labels from `x`, `y`, and `z`; duplicate pairs such as `xx` are errors. GRAPE currently accepts
 only `xy` because no other route is implemented.
 
 VibLadder and TwoLevel are physically scalar models. Their two columns and
 axis labels are the preserved optimizer adapter, not a physical polarization
 dependence. For the shown VibLadder `zx` setup, the x coupling is zero.
 
-For Krotov and GRAPE, `field_dt_fs` is the field sampling interval and one RK4
-propagation step is `2 * field_dt_fs`. The exact field length is therefore
-`2 * n_propagation_steps + 1`; `output_stride` thins only the returned
-trajectory and never the internal optimizer states. The local optimizer uses
-its separately frozen odd-grid, segment, shared-boundary, and endpoint rules;
-do not translate its `sample_stride` to `output_stride`.
+For GRAPE and `legacy_batch_overlap`, `field_dt_fs` is the field sampling
+interval and one RK4 propagation step is `2 * field_dt_fs`. The exact field
+length is `2 * n_propagation_steps + 1`. Standard `krotov` instead requires
+`control_dt_fs`: it stores `N+1` state endpoints and exactly `N`
+piecewise-constant controls at interval midpoints. These schemas are not
+interchangeable. `output_stride` thins only returned states. The local optimizer
+uses its separately frozen odd-grid, segment, shared-boundary, and endpoint
+rules; do not translate its `sample_stride` to `output_stride`.
 
 Local `eval_mode` is exactly `target` or `weights`. In weights mode,
 `weight_mode` is exactly `by_v`, `by_v_power`, or `custom`; reversal is supplied
@@ -108,11 +110,13 @@ supported frequency unit. Mode is `pass` or `stop`, combination is `max` or
 sum weights are nonnegative; invalid values raise rather than being clipped or
 repaired.
 
-## Python-supplied GRAPE and Krotov fields
+## Python-supplied fields and interval controls
 
-YAML is not mandatory when field samples are constructed in Python.
-`run_from_config(config_dict, ...)` accepts a NumPy array through this explicit
-branch; select either `grape` or `krotov` as the algorithm key:
+YAML is not mandatory when samples are constructed in Python. GRAPE and
+`legacy_batch_overlap` accept old-grid field samples through
+`initial_field_kind: sampled`; standard Krotov accepts interval samples through
+`initial_control_kind: sampled`. The two shapes and key sets are deliberately
+distinct.
 
 ~~~python
 config["algorithms"]["grape"] = {
@@ -123,7 +127,22 @@ config["algorithms"]["grape"] = {
 }
 ~~~
 
-`samples` must be a finite real array of shape `(n_field_points, 2)` whose
-length exactly matches the canonical optimization time grid. Values are copied
-and converted once to internal V/m. The boundary never resamples, trims, pads,
-normalizes, or derives a signed field from intensity.
+~~~python
+config["algorithms"]["krotov"] = {
+    "control_axes": "zx",
+    "lambda_a": penalty_value,
+    "lambda_a_units": "1 / ((GV/m)^2 fs)",
+    "initial_control_kind": "sampled",
+    "initial_control_samples": interval_controls,
+    "initial_control_units": "V/m",
+}
+~~~
+
+For GRAPE/legacy, `samples` must be a finite real `(2*N+1, 2)` array matching
+the canonical field grid. For standard Krotov, use
+`initial_control_samples`, `initial_control_units`, and a finite real `(N,2)`
+array matching the interval count. Values are copied and converted once to V/m;
+the boundary never resamples, trims, pads, normalizes, or derives a signed field
+from intensity. Standard Krotov also requires a positive `lambda_a` with
+`lambda_a_units`, preferably the readable `1 / ((GV/m)^2 fs)` representation.
+Its current route rejects spectral constraints and plotting explicitly.

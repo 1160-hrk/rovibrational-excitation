@@ -11,7 +11,7 @@ import yaml
 from rovibrational_excitation.simulation.optimize_runner import run_from_config
 
 ROOT = Path(__file__).resolve().parents[2]
-CONFIG = ROOT / "configs" / "reference_krotov_viblad_v3.yaml"
+CONFIG = ROOT / "configs" / "reference_legacy_batch_overlap_viblad_v3.yaml"
 
 
 @pytest.mark.slow
@@ -20,9 +20,9 @@ def test_krotov_v0_to_v3_improves_the_unoptimized_pulse(tmp_path: Path) -> None:
         base = yaml.safe_load(stream)
 
     unoptimized = deepcopy(base)
-    unoptimized["algorithms"]["krotov"]["max_iter"] = 0
+    unoptimized["algorithms"]["legacy_batch_overlap"]["max_iter"] = 0
     optimized = deepcopy(base)
-    optimized["algorithms"]["krotov"]["max_iter"] = 10
+    optimized["algorithms"]["legacy_batch_overlap"]["max_iter"] = 10
 
     initial_result = run_from_config(
         config=unoptimized, out_dir=tmp_path, do_plot=False

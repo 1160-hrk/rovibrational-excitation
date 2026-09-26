@@ -1,7 +1,7 @@
 # Phase 7 optimization references
 
-Last verified: 2026-09-24
-Current checkpoint: P7.3-a, independent GRAPE gradient reference
+Last verified: 2026-09-26
+Current checkpoint: P7.3-b, independent standard Krotov reference
 
 ## Purpose
 
@@ -172,11 +172,91 @@ change.
 - Krotov, Local, and spectral-constraint formulae are unchanged. Their D-072
   independent references remain P7.3-b through P7.3-d work.
 
+## P7.3-b — standard Krotov one-iteration construction
+
+### Discrepancy and resolution
+
+The independent direct construction found that the former solver was not the
+standard sequential first-order Krotov update. It normalized the backward
+costate without restoring `|<target|psi_T>|`, evaluated every update from the
+old forward trajectory, and multiplied the dipole matrix element by two. On
+the fixed diagnostic, preserving the costate scale reduced the update norm by
+roughly the terminal overlap factor; the former rapid improvement was therefore
+not evidence for the formula. The user approved the D-106 split.
+
+The former calculation moved unchanged to `legacy_batch_overlap`. Its stored
+reference and spectral configuration also select that name. Standard `krotov`
+uses a separate interval-control engine; no configuration silently changes
+meaning.
+
+### Standard construction
+
+For interval `n`, `E[n]` is constant on `[t_n,t_(n+1))` and is represented at
+the midpoint. An old forward trajectory and an overlap-scaled backward costate
+are constructed under the old control. The new trajectory is then built
+sequentially:
+
+~~~text
+chi_N = <target|psi_N> target
+Delta E[n,a] = S(t_(n+1/2))/lambda_a
+               Im(<chi_old[n]|-mu_a|psi_new[n]>)
+E_new[n,a] = E_old[n,a] + Delta E[n,a]
+psi_new[n+1] = U(E_new[n], control_dt) psi_new[n].
+~~~
+
+The minus sign is `dH/dE_a=-mu_a` for the repository-wide
+`H=H0-sum_a mu_a E_a` convention. There is no extra factor two. Costates are
+not normalized. Production uses one constant-H dense NumPy RK4 step for `U`
+and does not renormalize the state; accuracy remains an explicit grid
+convergence question.
+
+### Independent oracle and tolerance
+
+`tests/physics/test_krotov_iteration_reference.py` directly expands the RK4
+stages and independently constructs the old trajectory, terminal costate,
+negative-time backward trajectory, every sequential update, and the updated
+trajectory. It does not call the production propagator. All four arrays agree
+with production to absolute tolerance `2e-15`; terminal and final fidelity
+checks use ulp-scale scalar tolerances. The costate terminal norm is explicitly
+fixed to the overlap magnitude and explicitly differs from one.
+
+### Units, input, and unsupported combinations
+
+`lambda_a` has the required paired unit `lambda_a_units` and canonical value in
+`1 / ((V/m)^2 fs)`. Equivalent MV/m, GV/m, and TV/m squared labels convert
+once. Standard time uses `control_dt_fs`; state endpoints have length `N+1` and
+midpoint controls have length `N`. Generated and sampled sources are selected
+by `initial_control_kind`; sampled controls require exact shape `(N,2)`. The
+old `field_dt_fs`, `initial_field_*`, custom propagator, spectral constraint,
+and plotting schemas raise rather than being reinterpreted.
+
+### End-to-end transfer and accuracy evidence
+
+`tests/integration/test_standard_krotov_transfer.py` fixes two deterministic
+problems:
+
+- TwoLevel, 100 fs and 0.2 fs controls: the generated seed begins below 0.05
+  target population and reaches above 0.999 with a monotone observed fidelity
+  history.
+- Harmonic VibLadder with `V_max=4`, initial `V=0`, target `V=3`, 500 fs and
+  0.1 fs controls: `V=3` exceeds 0.985, every other level remains below 0.01,
+  and the coarse trajectory norm error stays below `1.1e-3`. Repropagating the
+  final control with each interval split in half puts the norm error below
+  `4e-5` and changes the target population by less than `1.5e-3`.
+
+On the current CPython 3.12.12 aarch64 environment, pytest reports 0.22 s for
+the TwoLevel case and 5.79 s for the VibLadder case including its half-step
+repropagation. These wall times are observational and are not enforced as
+performance thresholds.
+
+These are deterministic regression and grid-convergence checks, not universal
+recommended pulse or penalty values.
+
 ## Reference status
 
 | Reference | Status |
 |---|---|
 | GRAPE central finite-difference gradient with step convergence | Complete — P7.3-a |
-| Direct one-iteration Krotov construction | Pending — P7.3-b |
+| Direct one-iteration Krotov construction | Complete — P7.3-b/D-106 |
 | Direct Local update on frozen legacy grid | Pending — P7.3-c |
 | Direct DFT/convolution spectral constraints | Pending — P7.3-d |

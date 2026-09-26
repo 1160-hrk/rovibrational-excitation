@@ -8,11 +8,16 @@ from typing import Any, cast
 
 import numpy as np
 
+from .krotov_controls import (
+    KrotovSampledControl,
+    parse_krotov_initial_control,
+)
 from .krotov_initial_field import (
     KrotovSampledInitialField,
     parse_grape_initial_field,
     parse_krotov_initial_field,
 )
+from .krotov_timegrid import KrotovIntervalGrid
 from .options import (
     OptimizationAlgorithm,
     validate_algorithm_options,
@@ -38,7 +43,7 @@ class OptimizationRunConfiguration:
     output_dir: str
 
 
-_ALGORITHMS = {"local", "krotov", "grape"}
+_ALGORITHMS = {"local", "krotov", "legacy_batch_overlap", "grape"}
 _ROOT_KEYS = {"system", "states", "time", "algorithm", "algorithms", "plot", "output"}
 
 
@@ -81,7 +86,7 @@ def _exact_keys(
 def _algorithm_name(value: Any, *, label: str) -> OptimizationAlgorithm:
     if not isinstance(value, str) or value not in _ALGORITHMS:
         raise OptimizationConfigurationError(
-            f"{label} must be one of: grape, krotov, local"
+            f"{label} must be one of: grape, krotov, legacy_batch_overlap, local"
         )
     return cast(OptimizationAlgorithm, value)
 
@@ -106,6 +111,9 @@ def _validate_time(algorithm: OptimizationAlgorithm, value: Mapping[str, Any]) -
             ):
                 raise ValueError("sample_stride must be a positive integer")
             return
+        if algorithm == "krotov":
+            KrotovIntervalGrid.from_config(value)
+            return
         build_optimization_time_settings(value)
     except (TypeError, ValueError) as exc:
         raise OptimizationConfigurationError(str(exc)) from exc
@@ -127,7 +135,7 @@ def validate_optimization_config(
         selected_value = algorithm_section["selected"]
     elif not isinstance(algorithm_override, str):
         raise OptimizationConfigurationError(
-            "algorithm override must be one of: grape, krotov, local"
+            "algorithm override must be one of: grape, krotov, legacy_batch_overlap, local"
         )
     else:
         selected_value = algorithm_override
@@ -152,6 +160,8 @@ def validate_optimization_config(
         try:
             validate_algorithm_options(algorithm, params)
             if algorithm == "krotov":
+                parse_krotov_initial_control(params)
+            elif algorithm == "legacy_batch_overlap":
                 parse_krotov_initial_field(params)
             elif algorithm == "grape":
                 parse_grape_initial_field(params)
@@ -160,7 +170,7 @@ def validate_optimization_config(
 
     time = _mapping(config["time"], label="time")
     _validate_time(selected, time)
-    if selected in {"grape", "krotov"}:
+    if selected in {"grape", "legacy_batch_overlap"}:
         initial_field_parser = (
             parse_grape_initial_field
             if selected == "grape"
@@ -179,6 +189,18 @@ def validate_optimization_config(
                     "initial_field_samples length must exactly match time_grid "
                     f"({actual_length} != {expected_length})"
                 )
+    elif selected == "krotov":
+        selected_control = parse_krotov_initial_control(
+            _mapping(algorithms[selected], label="algorithms.krotov")
+        )
+        if isinstance(selected_control, KrotovSampledControl):
+            expected_length = KrotovIntervalGrid.from_config(time).interval_count
+            actual_length = selected_control.samples_v_per_m.shape[0]
+            if actual_length != expected_length:
+                raise OptimizationConfigurationError(
+                    "initial_control_samples length must exactly match the standard "
+                    f"Krotov interval count ({actual_length} != {expected_length})"
+                )
 
     plot = _mapping(config["plot"], label="plot")
     _exact_keys(
@@ -189,6 +211,12 @@ def validate_optimization_config(
     for key in ("enabled", "spectrum", "spectrogram"):
         if not isinstance(plot[key], bool):
             raise OptimizationConfigurationError(f"plot.{key} must be a bool")
+
+    if selected == "krotov" and plot["enabled"]:
+        raise OptimizationConfigurationError(
+            "standard Krotov plotting is unavailable for interval controls; "
+            "set plot.enabled=false"
+        )
 
     output = _mapping(config["output"], label="output")
     _exact_keys(output, label="output", required={"dir"})

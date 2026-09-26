@@ -383,11 +383,12 @@ unknown/inapplicable keys, and implicit M tuple repair raise. Optimization
 states remain exact quantum-number tuples rather than normal-runner basis
 indices. LinMol optimization currently accepts only `m_resolved`.
 
-D-029 migrates the characterized GRAPE/Krotov time behavior to canonical
-`TimeGrid`. Configuration now states the historical half-spaced field interval
+D-029 migrates the characterized GRAPE/former-Krotov time behavior to
+canonical `TimeGrid`. Under D-106 that former route is named
+`legacy_batch_overlap`. Configuration now states the historical half-spaced field interval
 directly as `field_dt_fs`; `output_stride` cannot alter optimizer-internal
 trajectories. D-028 provides the explicit dimensional NumPy RK4 backward route
-used by the Krotov costate. The local optimizer instead retains the versioned
+used by the legacy batch costate. The local optimizer instead retains the versioned
 `LocalOptimizerLegacyGridV1` contract accepted in D-027: its existing
 `np.arange` storage array, shared-boundary ownership, segment slices, and
 floor-based RK4 consumption are not reconstructed through canonical `TimeGrid`.
@@ -395,12 +396,17 @@ Only the final RK4 view is restricted to the odd prefix that the legacy kernel
 already consumed. Normal and optimization workflows may still share typed
 propagation and result boundaries without sharing time-array construction.
 
-D-050 makes the Krotov seed source explicit. `initial_field_kind=generated`
-uses required value/unit pairs and the frozen Gaussian-FWHM projection;
-`initial_field_kind=sampled` uses a required direct field unit and exact
-two-component grid match. The typed `krotov_initial_field` boundary is internal;
-`run_krotov_optimization` remains the optimization entry point. Legacy seed
-keys and implicit external-array override are removed.
+D-050 makes the GRAPE/legacy batch seed source explicit.
+`initial_field_kind=generated` uses required value/unit pairs and the frozen
+Gaussian-FWHM projection; `initial_field_kind=sampled` uses a required direct
+field unit and exact two-component field-grid match.
+
+D-106 gives `run_krotov_optimization` a separate standard interval-control
+boundary. `KrotovIntervalGrid` owns endpoints and midpoint controls;
+`initial_control_kind` selects generated or exact `(N,2)` sampled controls; and
+`KrotovPenalty` converts the required inverse-field-squared-time unit. The
+former entry point is `run_legacy_batch_overlap_optimization`. Neither route
+adapts the other route schema implicitly.
 
 D-104 reuses that internal generated/sampled boundary for GRAPE. An explicit
 seed and exact sampled-grid length are required; no zero-field fallback exists.

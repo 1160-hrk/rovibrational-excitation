@@ -98,6 +98,14 @@ class UnitConverter:
             "(TV/m)^2 fs": 1e24,
         }
 
+        # Krotov update penalty conversions (target: 1 / ((V/m)^2 fs))
+        self._krotov_penalty_to_inverse_Vm2_fs = {
+            "1 / ((V/m)^2 fs)": 1.0,
+            "1 / ((MV/m)^2 fs)": 1e-12,
+            "1 / ((GV/m)^2 fs)": 1e-18,
+            "1 / ((TV/m)^2 fs)": 1e-24,
+        }
+
         # Time conversions (target: fs)
         self._time_to_fs = {
             "fs": 1.0,
@@ -287,6 +295,21 @@ class UnitConverter:
         value_Vm2_fs = value * self._local_control_gain_to_Vm2_fs[from_unit]
         return value_Vm2_fs / self._local_control_gain_to_Vm2_fs[to_unit]
 
+    def convert_krotov_penalty(
+        self,
+        value: Union[float, np.ndarray],
+        from_unit: str,
+        to_unit: str = "1 / ((V/m)^2 fs)",
+    ) -> Union[float, np.ndarray]:
+        """Convert the inverse field-squared-time Krotov update penalty."""
+        table = self._krotov_penalty_to_inverse_Vm2_fs
+        if from_unit not in table:
+            raise ValueError(f"Unknown Krotov penalty unit: {from_unit}")
+        if to_unit not in table:
+            raise ValueError(f"Unknown target Krotov penalty unit: {to_unit}")
+        canonical = value * table[from_unit]
+        return canonical / table[to_unit]
+
     def frequency_to_energy(
         self,
         freq: Union[float, np.ndarray],
@@ -335,6 +358,7 @@ class UnitConverter:
             "gdd": list(self._gdd_to_fs2.keys()),
             "tod": list(self._tod_to_fs3.keys()),
             "local_control_gain": list(self._local_control_gain_to_Vm2_fs.keys()),
+            "krotov_penalty": list(self._krotov_penalty_to_inverse_Vm2_fs.keys()),
         }
 
         if quantity not in mapping:

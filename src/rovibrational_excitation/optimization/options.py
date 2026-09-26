@@ -9,15 +9,20 @@ from typing import Any, Literal
 
 import numpy as np
 
-from rovibrational_excitation.core.units import LocalControlGain, converter
+from rovibrational_excitation.core.units import (
+    KrotovPenalty,
+    LocalControlGain,
+    converter,
+)
 
+from .krotov_controls import KROTOV_CONTROL_OPTION_KEYS
 from .krotov_initial_field import (
     GRAPE_INITIAL_FIELD_OPTION_KEYS,
     KROTOV_INITIAL_FIELD_OPTION_KEYS,
 )
 from .local_initialization import parse_local_initialization
 
-OptimizationAlgorithm = Literal["local", "krotov", "grape"]
+OptimizationAlgorithm = Literal["local", "krotov", "legacy_batch_overlap", "grape"]
 
 _COMMON_ITERATIVE_KEYS = {
     "max_iter",
@@ -32,6 +37,10 @@ GRAPE_OPTION_KEYS = frozenset(
     _COMMON_ITERATIVE_KEYS | {"learning_rate"} | set(GRAPE_INITIAL_FIELD_OPTION_KEYS)
 )
 KROTOV_OPTION_KEYS = frozenset(
+    {"max_iter", "lambda_a", "lambda_a_units", "target_fidelity", "control_axes"}
+    | set(KROTOV_CONTROL_OPTION_KEYS)
+)
+LEGACY_BATCH_OVERLAP_OPTION_KEYS = frozenset(
     _COMMON_ITERATIVE_KEYS
     | set(KROTOV_INITIAL_FIELD_OPTION_KEYS)
     | {"spectrum_constraints"}
@@ -67,6 +76,7 @@ LOCAL_OPTION_KEYS = frozenset(
 _OPTION_KEYS = {
     "grape": GRAPE_OPTION_KEYS,
     "krotov": KROTOV_OPTION_KEYS,
+    "legacy_batch_overlap": LEGACY_BATCH_OVERLAP_OPTION_KEYS,
     "local": LOCAL_OPTION_KEYS,
 }
 _REMOVED_LOCAL_KEYS = {
@@ -385,8 +395,27 @@ def validate_algorithm_options(
             f"missing required {algorithm} optimization option: control_axes"
         )
     axes = _validate_control_axes(algorithm, params["control_axes"])
-    if algorithm in {"grape", "krotov"}:
+    if algorithm in {"grape", "legacy_batch_overlap"}:
         _validate_common_options(params)
+    if algorithm == "krotov":
+        if "max_iter" in params:
+            _integer(params["max_iter"], label="max_iter", minimum=0)
+        if "target_fidelity" in params:
+            fidelity = _finite_real(params["target_fidelity"], label="target_fidelity")
+            if not 0.0 <= fidelity <= 1.0:
+                raise ValueError(
+                    "target_fidelity must be a finite real number between 0 and 1"
+                )
+        missing_penalty = {"lambda_a", "lambda_a_units"} - set(params)
+        if missing_penalty:
+            raise ValueError(
+                "missing required standard Krotov optimization options: "
+                + _names(missing_penalty)
+            )
+        try:
+            KrotovPenalty(params["lambda_a"], params["lambda_a_units"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(str(exc)) from exc
     if algorithm == "grape" and params.get("propagator_func") is not None:
         raise ValueError(
             "GRAPE does not support propagator_func because its exact discrete "
@@ -396,7 +425,7 @@ def validate_algorithm_options(
         _finite_real(params["learning_rate"], label="learning_rate")
     if algorithm == "local":
         _validate_local_options(params)
-    if algorithm == "krotov" and "spectrum_constraints" in params:
+    if algorithm == "legacy_batch_overlap" and "spectrum_constraints" in params:
         _validate_spectrum_constraints(params["spectrum_constraints"])
     return axes
 
@@ -421,6 +450,7 @@ def validate_local_time_options(time_cfg: Mapping[str, Any]) -> None:
 __all__ = [
     "GRAPE_OPTION_KEYS",
     "KROTOV_OPTION_KEYS",
+    "LEGACY_BATCH_OVERLAP_OPTION_KEYS",
     "LOCAL_OPTION_KEYS",
     "OptimizationAlgorithm",
     "validate_algorithm_options",

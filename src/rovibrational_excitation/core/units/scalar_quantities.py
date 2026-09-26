@@ -112,6 +112,34 @@ class LocalControlGain:
 
 
 @dataclass(frozen=True, slots=True)
+class KrotovPenalty:
+    """Krotov update penalty in canonical inverse field-squared-time units."""
+
+    value: float
+    unit: str
+    inverse_volts_per_meter_squared_femtoseconds: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, (bool, np.bool_)) or not isinstance(self.value, Real):
+            raise TypeError("Krotov penalty value must be a finite scalar")
+        value, canonical = _canonical_value(
+            self.value,
+            self.unit,
+            quantity="Krotov penalty",
+            canonical_unit="1 / ((V/m)^2 fs)",
+            convert=converter.convert_krotov_penalty,
+        )
+        if canonical <= 0.0:
+            raise ValueError("Krotov penalty must be positive")
+        object.__setattr__(self, "value", value)
+        object.__setattr__(
+            self,
+            "inverse_volts_per_meter_squared_femtoseconds",
+            canonical,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class GroupDelayDispersion:
     """GDD input with canonical internal value in fs^2."""
 
@@ -155,6 +183,7 @@ __all__ = [
     "DipoleMoment",
     "ElectricFieldAmplitude",
     "LocalControlGain",
+    "KrotovPenalty",
     "GroupDelayDispersion",
     "ThirdOrderDispersion",
 ]

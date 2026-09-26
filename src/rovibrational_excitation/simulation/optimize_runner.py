@@ -116,7 +116,7 @@ def run_from_config(
     Returns a dict containing results and metadata:
       {
         "basis": ..., "H0": ..., "dipole": ...,
-        "result": {efield, time, psi_traj, tlist, field_data, target_idx, metrics},
+        "result": algorithm-specific arrays plus time, psi_traj, target_idx, metrics,
         "out_dir": "/abs/path/to/results",
       }
     """
@@ -135,6 +135,12 @@ def run_from_config(
         cfg,
         algorithm_override=algorithm,
     )
+    plot_enabled = validated.plot_enabled if do_plot is None else do_plot
+    if validated.algorithm == "krotov" and plot_enabled:
+        raise ValueError(
+            "standard Krotov plotting is unavailable for interval controls; "
+            "disable plotting or use an explicitly supported plot adapter"
+        )
 
     # 2) Build the same basis and operators as the production model layer.
     model = build_optimization_model(cfg["system"])
@@ -179,7 +185,6 @@ def run_from_config(
     print(f"{selected} elapsed: {elapsed:.2f} s")
 
     # 7) Optional plotting. An explicitly requested plot must either succeed or raise.
-    plot_enabled = validated.plot_enabled if do_plot is None else do_plot
     if plot_enabled:
         from rovibrational_excitation.visualization.plot_all import (
             plot_all,  # lazy import

@@ -1,6 +1,6 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-15
+Last verified: 2026-09-26
 Current checkpoint: Phase 4 closed; P6.4-e moves concrete dipole mixin under D-080
 
 ## Purpose
@@ -132,24 +132,30 @@ partial-pair rejection. P4.3-g is complete.
 
 ### Time grids
 
-`total_fs`, `field_dt_fs`, `segment_size_fs`, and returned
-`times_fs` are Class B. Their units are explicit in the names. The local
+`total_fs`, legacy `field_dt_fs`, standard Krotov `control_dt_fs`,
+`segment_size_fs`, and returned `times_fs` are Class B. Their units are explicit in the names. The local
 optimizer's odd-length field, endpoint handling, segment slices, midpoint
 indices, and factor-of-two RK4 sampling are frozen contracts and must not
 change during unit work.
 
-### GRAPE and Krotov initial pulse
+### GRAPE/legacy fields and standard Krotov controls
 
-Completed by D-050. `initial_field_kind` explicitly selects `generated` or
+D-050 governs GRAPE and `legacy_batch_overlap`. `initial_field_kind` explicitly selects `generated` or
 `sampled`; no constructed field is silently replaced. Generated seeds are
 Class A for duration, center, carrier frequency, amplitude, GDD, and TOD.
 Primary pulse values and polarization are required; dispersion is an optional
 complete pair or exact zero. Sampled seeds are Class A, use a direct field unit,
 and must be real, finite, two-component, and exactly grid-matched. Legacy and
 inapplicable keys raise. Frozen samples and the Krotov V=0 to V=3 reference are
-unchanged. D-104 reuses the same boundary for GRAPE because an exact
+unchanged. D-104 reuses that boundary for GRAPE because an exact
 terminal-population gradient cannot leave the ordinary zero-field transfer
 fixed point; no implicit zero seed is permitted.
+
+D-106 gives standard Krotov a separate Class-A control boundary.
+`initial_control_kind` explicitly chooses a generated pulse evaluated at interval
+midpoints or a sampled `(N,2)` interval-control array with a required direct
+amplitude unit. Exact interval count is required. The standard and legacy key
+sets are mutually inapplicable and no resampling or schema conversion occurs.
 
 ### Local optimizer
 
@@ -188,16 +194,21 @@ D-057 requires only that the remaining values have a finite real
 representation. It
 does not infer their units, permitted sign, physical range, or scaling.
 
-### GRAPE and Krotov penalties
+### GRAPE, standard Krotov, and legacy penalties
 
-`learning_rate`, `lambda_a`, and the convergence tolerances may depend on
-the exact objective and gradient normalization. They are Class D. Unit work
-must wait for an independent objective/gradient reference and a user statement
-of their intended dimensions. D-104 now fixes the GRAPE normalization as
-`1-fidelity+(lambda_a/2)*sum(E**2)` and verifies its discrete gradient, but it
-does not define the physical dimensions or recommended scale of `lambda_a` or
-`learning_rate`; Krotov's independent reference is also still pending. D-057
-likewise adds finite-real validation only.
+GRAPE `lambda_a` and `learning_rate`, GRAPE/legacy convergence tolerances,
+and the `legacy_batch_overlap` `lambda_a` remain Class D because their discrete
+normalizations are not physical fluence definitions. D-104 fixes the GRAPE
+objective and derivative but assigns no physical units to those values. D-057
+therefore continues finite-real validation only for those routes.
+
+D-106 resolves standard Krotov separately. Its update divides
+`<chi|dH/dE|psi>`, with dipole coupling in `rad/fs/(V/m)`, by `lambda_a` to
+produce V/m. With radians dimensionless, standard Krotov `lambda_a` is Class A:
+the required `lambda_a/lambda_a_units` pair converts once to canonical
+`1 / ((V/m)^2 fs)`. Supported labels use V/m, MV/m, GV/m, or TV/m inside the
+squared field factor. This unit and its numerical value are not applied to the
+legacy batch formula.
 
 ### Optimization model construction
 
@@ -259,8 +270,9 @@ value changes. Those helper bodies now live in private
 
 ## Recommended implementation order
 
-1. Class-D optimizer quantities only after user clarification and independent
-   references.
+1. Continue Class-D GRAPE, legacy-batch, Local-threshold, and convergence
+   quantities only after user clarification and independent references.
+2. Preserve the resolved Class-A standard Krotov penalty boundary under D-106.
 
 Every unit updates this audit, D-045 or a successor decision, the physics
 contract, examples, and API inventory in the same commit.

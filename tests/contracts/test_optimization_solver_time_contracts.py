@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import rovibrational_excitation.optimization.grape as grape_module
-import rovibrational_excitation.optimization.krotov as krotov_module
+import rovibrational_excitation.optimization.legacy_batch_overlap as legacy_module
 from rovibrational_excitation.dynamics import PropagationDirection
 
 
@@ -120,9 +120,9 @@ def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     spy = _DirectionSpy()
-    monkeypatch.setattr(krotov_module, "SchrodingerPropagator", lambda **_: spy)
+    monkeypatch.setattr(legacy_module, "SchrodingerPropagator", lambda **_: spy)
 
-    result = krotov_module.run_krotov_optimization(
+    result = legacy_module.run_legacy_batch_overlap_optimization(
         basis=_TwoStateBasis(),
         hamiltonian=_Hamiltonian(),
         dipole=_ZeroDipole(),
@@ -150,9 +150,9 @@ def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     spy = _DirectionSpy()
-    monkeypatch.setattr(krotov_module, "SchrodingerPropagator", lambda **_: spy)
+    monkeypatch.setattr(legacy_module, "SchrodingerPropagator", lambda **_: spy)
 
-    result = krotov_module.run_krotov_optimization(
+    result = legacy_module.run_legacy_batch_overlap_optimization(
         basis=_TwoStateBasis(),
         hamiltonian=_Hamiltonian(),
         dipole=_ZeroDipole(),
@@ -182,10 +182,10 @@ def test_krotov_sampled_initial_field_is_consumed_without_resampling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     spy = _DirectionSpy()
-    monkeypatch.setattr(krotov_module, "SchrodingerPropagator", lambda **_: spy)
+    monkeypatch.setattr(legacy_module, "SchrodingerPropagator", lambda **_: spy)
     external = np.arange(18, dtype=float).reshape(9, 2)
 
-    result = krotov_module.run_krotov_optimization(
+    result = legacy_module.run_legacy_batch_overlap_optimization(
         basis=_TwoStateBasis(),
         hamiltonian=_Hamiltonian(),
         dipole=_ZeroDipole(),

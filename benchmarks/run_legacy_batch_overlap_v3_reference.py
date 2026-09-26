@@ -1,9 +1,9 @@
-"""Record the deterministic four-level Krotov V=0 -> V=3 reference.
+"""Record the deterministic four-level legacy batch-overlap V=0 -> V=3 reference.
 
 The saved NPZ contains the optimized field and an independently propagated
 trajectory. The adjacent JSON contains scalar checks and source provenance.
 This is a reproducible end-to-end regression reference, not an independent
-proof that the Krotov objective or update equation is physically complete.
+proof of the standard Krotov objective or update equation.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ if str(SOURCE_ROOT) not in sys.path:
 from rovibrational_excitation.dynamics import SchrodingerPropagator
 from rovibrational_excitation.simulation.optimize_runner import run_from_config
 
-DEFAULT_CONFIG = ROOT / "configs" / "reference_krotov_viblad_v3.yaml"
+DEFAULT_CONFIG = ROOT / "configs" / "reference_legacy_batch_overlap_viblad_v3.yaml"
 DEFAULT_NPZ = ROOT / "benchmarks" / "krotov-v0-v3-v0.3.npz"
 DEFAULT_JSON = ROOT / "benchmarks" / "krotov-v0-v3-v0.3.json"
 
@@ -70,7 +70,7 @@ def record_reference(
         efield=result["efield"],
         dipole_matrix=run["dipole"],
         initial_state=initial,
-        axes=config["algorithms"]["krotov"]["control_axes"],
+        axes=config["algorithms"]["legacy_batch_overlap"]["control_axes"],
         return_traj=True,
         return_time_psi=True,
         sample_stride=1,
@@ -104,6 +104,7 @@ def record_reference(
             "platform": platform.platform(),
             "numpy": np.__version__,
         },
+        "algorithm": "legacy_batch_overlap",
         "configuration": _display_path(config_path),
         "dimension": basis.size(),
         "target_index": target_index,
@@ -124,8 +125,9 @@ def record_reference(
         "field_shape": list(field.shape),
         "npz": _display_path(npz_path),
         "interpretation": (
-            "Deterministic end-to-end regression reference; not an independent "
-            "validation of the optimization objective or update equation."
+            "Deterministic legacy_batch_overlap end-to-end regression reference; "
+            "not an independent validation of the standard Krotov objective "
+            "or update equation."
         ),
     }
     json_path.write_text(

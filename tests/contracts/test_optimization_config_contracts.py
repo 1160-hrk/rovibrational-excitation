@@ -22,13 +22,15 @@ from rovibrational_excitation.simulation import optimize_runner
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = ROOT / "configs"
 ACTIVE_CONFIG_NAMES = {
-    "example_krotov_spectral_viblad_v3.yaml",
+    "example_legacy_batch_overlap_spectral_viblad_v3.yaml",
     "example_local_viblad_v3.yaml",
-    "reference_krotov_viblad_v3.yaml",
+    "reference_legacy_batch_overlap_viblad_v3.yaml",
 }
 
 
-def _load(name: str = "reference_krotov_viblad_v3.yaml") -> dict[str, Any]:
+def _load(
+    name: str = "reference_legacy_batch_overlap_viblad_v3.yaml",
+) -> dict[str, Any]:
     with (CONFIG_DIR / name).open(encoding="utf-8") as stream:
         loaded = yaml.safe_load(stream)
     assert isinstance(loaded, dict)
@@ -72,13 +74,17 @@ def test_active_optimization_configs_validate_through_model_and_states(
     }
 
 
-@pytest.mark.parametrize("algorithm", ["grape", "krotov", "local"])
+@pytest.mark.parametrize(
+    "algorithm", ["grape", "krotov", "legacy_batch_overlap", "local"]
+)
 def test_control_axes_are_required_for_every_algorithm(algorithm: str) -> None:
     config = _load()
     config["algorithm"]["selected"] = algorithm
     config["algorithms"] = {algorithm: {}}
-    if algorithm == "krotov":
-        config["algorithms"][algorithm] = deepcopy(_load()["algorithms"]["krotov"])
+    if algorithm == "legacy_batch_overlap":
+        config["algorithms"][algorithm] = deepcopy(
+            _load()["algorithms"]["legacy_batch_overlap"]
+        )
         del config["algorithms"][algorithm]["control_axes"]
     if algorithm == "local":
         config["time"] = {
@@ -135,7 +141,7 @@ def test_local_example_requires_explicit_seed_field_initialization() -> None:
 @pytest.mark.parametrize("axes", ["x", "xyz", "Xy", "x1"])
 def test_control_axes_require_exactly_two_lowercase_cartesian_axes(axes: str) -> None:
     config = _load()
-    config["algorithms"]["krotov"]["control_axes"] = axes
+    config["algorithms"]["legacy_batch_overlap"]["control_axes"] = axes
 
     with pytest.raises(OptimizationConfigurationError, match="exactly two lowercase"):
         validate_optimization_config(config, algorithm_override=None)
@@ -152,7 +158,7 @@ def test_grape_rejects_axes_that_its_numerical_path_does_not_implement() -> None
 
 def test_grape_document_requires_an_explicit_initial_field() -> None:
     config = _load()
-    params = deepcopy(config["algorithms"]["krotov"])
+    params = deepcopy(config["algorithms"]["legacy_batch_overlap"])
     params["control_axes"] = "xy"
     del params["initial_field_kind"]
     config["algorithm"]["selected"] = "grape"
@@ -191,19 +197,21 @@ def test_grape_document_requires_exact_sampled_seed_length() -> None:
 
 def test_unknown_algorithm_and_spectrum_options_are_rejected() -> None:
     config = _load()
-    config["algorithms"]["krotov"]["max_iterations"] = 10
+    config["algorithms"]["legacy_batch_overlap"]["max_iterations"] = 10
     with pytest.raises(OptimizationConfigurationError, match="max_iterations"):
         validate_optimization_config(config, algorithm_override=None)
 
-    spectral = _load("example_krotov_spectral_viblad_v3.yaml")
-    spectral["algorithms"]["krotov"]["spectrum_constraints"]["alpha_sacle"] = 1.0
+    spectral = _load("example_legacy_batch_overlap_spectral_viblad_v3.yaml")
+    spectral["algorithms"]["legacy_batch_overlap"]["spectrum_constraints"][
+        "alpha_sacle"
+    ] = 1.0
     with pytest.raises(OptimizationConfigurationError, match="alpha_sacle"):
         validate_optimization_config(spectral, algorithm_override=None)
 
 
 def test_krotov_document_requires_initial_field_units_and_exact_sample_count() -> None:
     config = _load()
-    del config["algorithms"]["krotov"]["initial_amplitude_units"]
+    del config["algorithms"]["legacy_batch_overlap"]["initial_amplitude_units"]
     with pytest.raises(OptimizationConfigurationError, match="initial_amplitude_units"):
         validate_optimization_config(config, algorithm_override=None)
 
@@ -213,7 +221,7 @@ def test_krotov_document_requires_initial_field_units_and_exact_sample_count() -
         "field_dt_fs": 0.1,
         "output_stride": 1,
     }
-    config["algorithms"]["krotov"] = {
+    config["algorithms"]["legacy_batch_overlap"] = {
         "control_axes": "xy",
         "initial_field_kind": "sampled",
         "initial_field_samples": np.zeros((4, 2)),
@@ -256,7 +264,9 @@ def test_output_directory_config_is_used_and_api_argument_takes_precedence(
 ) -> None:
     config = _load()
     config["output"]["dir"] = str(tmp_path / "configured")
-    monkeypatch.setitem(optimize_runner.ALGO_REGISTRY, "krotov", _fake_result)
+    monkeypatch.setitem(
+        optimize_runner.ALGO_REGISTRY, "legacy_batch_overlap", _fake_result
+    )
 
     configured = optimize_runner.run_from_config(config, do_plot=False)
     explicit = optimize_runner.run_from_config(
@@ -275,7 +285,9 @@ def test_plot_config_is_used_and_explicit_false_takes_precedence(
 ) -> None:
     config = _load()
     config["plot"]["enabled"] = True
-    monkeypatch.setitem(optimize_runner.ALGO_REGISTRY, "krotov", _fake_result)
+    monkeypatch.setitem(
+        optimize_runner.ALGO_REGISTRY, "legacy_batch_overlap", _fake_result
+    )
 
     with pytest.raises(ValueError, match="missing data required for plotting"):
         optimize_runner.run_from_config(config, out_dir=tmp_path, do_plot=None)
@@ -308,11 +320,13 @@ def test_runner_does_not_mutate_caller_config_when_applying_overrides(
 ) -> None:
     config = _load()
     original = deepcopy(config)
-    monkeypatch.setitem(optimize_runner.ALGO_REGISTRY, "krotov", _fake_result)
+    monkeypatch.setitem(
+        optimize_runner.ALGO_REGISTRY, "legacy_batch_overlap", _fake_result
+    )
 
     optimize_runner.run_from_config(
         config,
-        overrides=["algorithms.krotov.max_iter=0"],
+        overrides=["algorithms.legacy_batch_overlap.max_iter=0"],
         out_dir=tmp_path,
         do_plot=False,
     )

@@ -18,7 +18,9 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
-from rovibrational_excitation.optimization.krotov import run_krotov_optimization
+from rovibrational_excitation.optimization.legacy_batch_overlap import (
+    run_legacy_batch_overlap_optimization,
+)
 from rovibrational_excitation.optimization.timegrid import (
     build_optimization_time_settings,
 )
@@ -220,7 +222,7 @@ def test_krotov_completes_one_real_forward_backward_iteration() -> None:
         units_input="C*m",
     )
 
-    result = run_krotov_optimization(
+    result = run_legacy_batch_overlap_optimization(
         basis=basis,
         hamiltonian=hamiltonian,
         dipole=dipole,

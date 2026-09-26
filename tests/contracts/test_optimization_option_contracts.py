@@ -32,7 +32,9 @@ def _local_options(**overrides: Any) -> dict[str, Any]:
     return result
 
 
-@pytest.mark.parametrize("algorithm", ["local", "krotov", "grape"])
+@pytest.mark.parametrize(
+    "algorithm", ["local", "krotov", "legacy_batch_overlap", "grape"]
+)
 @pytest.mark.parametrize("axes", ["xx", "yy", "zz"])
 def test_control_axes_must_be_distinct(algorithm: str, axes: str) -> None:
     params = (
@@ -133,7 +135,7 @@ def test_target_fidelity_is_a_finite_probability(value: Any) -> None:
         )
 
 
-@pytest.mark.parametrize("algorithm", ["local", "krotov", "grape"])
+@pytest.mark.parametrize("algorithm", ["local", "legacy_batch_overlap", "grape"])
 def test_propagator_override_must_be_callable_or_none(algorithm: str) -> None:
     params = (
         _local_options(propagator_func="rk4")
@@ -291,7 +293,7 @@ def test_spectrum_constraint_values_are_strict(
 ) -> None:
     with pytest.raises(ValueError, match=match):
         validate_algorithm_options(
-            "krotov",
+            "legacy_batch_overlap",
             {
                 "control_axes": "xy",
                 "spectrum_constraints": _spectrum(**overrides),
@@ -308,7 +310,7 @@ def test_spectrum_sum_weights_match_bands_and_are_finite_nonnegative(
 ) -> None:
     with pytest.raises(ValueError, match="weights"):
         validate_algorithm_options(
-            "krotov",
+            "legacy_batch_overlap",
             {
                 "control_axes": "xy",
                 "spectrum_constraints": _spectrum(

@@ -13,6 +13,7 @@ from rovibrational_excitation.core.units import (
     ElectricFieldAmplitude,
     Frequency,
     GroupDelayDispersion,
+    KrotovPenalty,
     LocalControlGain,
     ThirdOrderDispersion,
     TimeQuantity,
@@ -334,12 +335,16 @@ def test_scalar_quantity_types_convert_once_to_canonical_units():
     gdd = GroupDelayDispersion(2.0, "ps^2")
     tod = ThirdOrderDispersion(3.0, "ps^3")
     gain = LocalControlGain(1000.0, "(GV/m)^2 fs")
+    penalty = KrotovPenalty(0.01, "1 / ((GV/m)^2 fs)")
 
     assert dipole.coulomb_meters == pytest.approx(0.3 * _debye)
     assert amplitude.volts_per_meter == pytest.approx(1.0e8)
     assert gdd.femtoseconds_squared == pytest.approx(2.0e6)
     assert tod.femtoseconds_cubed == pytest.approx(3.0e9)
     assert gain.volts_per_meter_squared_femtoseconds == pytest.approx(1.0e21)
+    assert penalty.inverse_volts_per_meter_squared_femtoseconds == pytest.approx(
+        1.0e-20
+    )
 
 
 @pytest.mark.parametrize(
@@ -363,6 +368,29 @@ def test_local_control_gain_must_be_positive(value):
         LocalControlGain(value, "(GV/m)^2 fs")
 
 
+@pytest.mark.parametrize(
+    ("value", "unit", "expected"),
+    [
+        (1.0e-20, "1 / ((V/m)^2 fs)", 1.0e-20),
+        (1.0e-8, "1 / ((MV/m)^2 fs)", 1.0e-20),
+        (1.0e-2, "1 / ((GV/m)^2 fs)", 1.0e-20),
+        (1.0e4, "1 / ((TV/m)^2 fs)", 1.0e-20),
+    ],
+)
+def test_krotov_penalty_units_have_one_canonical_value(value, unit, expected):
+    penalty = KrotovPenalty(value, unit)
+
+    assert penalty.inverse_volts_per_meter_squared_femtoseconds == pytest.approx(
+        expected
+    )
+
+
+@pytest.mark.parametrize("value", [0.0, -1.0])
+def test_krotov_penalty_must_be_positive(value):
+    with pytest.raises(ValueError, match="Krotov penalty must be positive"):
+        KrotovPenalty(value, "1 / ((GV/m)^2 fs)")
+
+
 def test_intensity_quantity_uses_cycle_average_to_peak_field_contract():
     quantity = ElectricFieldAmplitude(1.0e12, "W/cm^2")
     expected = np.sqrt(2.0 * 1.0e16 * CONSTANTS.MU0 * CONSTANTS.C)
@@ -378,6 +406,7 @@ def test_intensity_quantity_uses_cycle_average_to_peak_field_contract():
         (GroupDelayDispersion, "not-a-gdd-unit"),
         (ThirdOrderDispersion, "not-a-tod-unit"),
         (LocalControlGain, "not-a-gain-unit"),
+        (KrotovPenalty, "not-a-penalty-unit"),
     ],
 )
 def test_scalar_quantity_types_reject_unknown_units(factory, unit):
@@ -393,11 +422,17 @@ def test_scalar_quantity_types_reject_unknown_units(factory, unit):
         GroupDelayDispersion,
         ThirdOrderDispersion,
         LocalControlGain,
+        KrotovPenalty,
     ],
 )
 def test_scalar_quantity_types_reject_nonfinite_values(factory):
     with pytest.raises(ValueError, match="finite"):
-        unit = "(V/m)^2 fs" if factory is LocalControlGain else "C*m"
+        if factory is LocalControlGain:
+            unit = "(V/m)^2 fs"
+        elif factory is KrotovPenalty:
+            unit = "1 / ((V/m)^2 fs)"
+        else:
+            unit = "C*m"
         factory(np.nan, unit)
 
 

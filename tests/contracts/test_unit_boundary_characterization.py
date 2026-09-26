@@ -79,6 +79,12 @@ _SUPPORTED_UNITS = {
     "time": {"fs", "ps", "ns", "μs", "us", "ms", "s", "atomic"},
     "gdd": {"fs^2", "ps^2", "ns^2", "μs^2", "us^2", "ms^2", "s^2"},
     "tod": {"fs^3", "ps^3", "ns^3", "μs^3", "us^3", "ms^3", "s^3"},
+    "krotov_penalty": {
+        "1 / ((V/m)^2 fs)",
+        "1 / ((MV/m)^2 fs)",
+        "1 / ((GV/m)^2 fs)",
+        "1 / ((TV/m)^2 fs)",
+    },
     "local_control_gain": {
         "(V/m)^2 fs",
         "(MV/m)^2 fs",
@@ -100,6 +106,11 @@ _ROUND_TRIP_CASES: tuple[tuple[str, str, Callable[[Any, str, str], Any]], ...] =
     ("time", "fs", converter.convert_time),
     ("gdd", "fs^2", converter.convert_gdd),
     ("tod", "fs^3", converter.convert_tod),
+    (
+        "krotov_penalty",
+        "1 / ((V/m)^2 fs)",
+        converter.convert_krotov_penalty,
+    ),
     (
         "local_control_gain",
         "(V/m)^2 fs",

@@ -1,7 +1,9 @@
 {
+  "algorithm": "legacy_batch_overlap",
   "artifact": "krotov-v0-v3-v0.3",
   "configuration": "configs/reference_krotov_viblad_v3.yaml",
   "created_utc": "2026-08-12T03:53:08.995422+00:00",
+  "current_configuration": "configs/reference_legacy_batch_overlap_viblad_v3.yaml",
   "dimension": 4,
   "environment": {
     "numpy": "2.3.5",
@@ -28,7 +30,7 @@
     0.9999999931434966
   ],
   "independent_trajectory_max_abs_difference": 0.0,
-  "interpretation": "Deterministic end-to-end regression reference; not an independent validation of the optimization objective or update equation.",
+  "interpretation": "Deterministic legacy_batch_overlap end-to-end regression reference; not an independent validation of the standard Krotov objective or update equation.",
   "maximum_non_target_population": 4.225079711750588e-09,
   "norm_max": 1.0000000000000009,
   "norm_min": 0.9999999999999993,
