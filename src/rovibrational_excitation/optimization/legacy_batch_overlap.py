@@ -1,0 +1,254 @@
+from __future__ import annotations
+
+from typing import Any, TypedDict
+
+import numpy as np
+
+from rovibrational_excitation.dynamics import (
+    PropagationDirection,
+    SchrodingerPropagator,
+)
+from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
+from rovibrational_excitation.fields import ElectricField
+from rovibrational_excitation.optimization.timegrid import (
+    build_optimization_time_settings,
+    sample_optimization_output,
+)
+
+from .krotov_initial_field import parse_krotov_initial_field
+from .options import validate_algorithm_options
+from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
+
+DEFAULT_PARAMS = {
+    "max_iter": 1000,
+    "convergence_tol": 1.0e-18,
+    "lambda_a": 1.0e-20,
+    "target_fidelity": 1.0,
+    "propagator_func": None,
+}
+
+
+class RunResult(TypedDict, total=False):
+    efield: ElectricField
+    time: np.ndarray
+    psi_traj: np.ndarray
+    metrics: dict
+    tlist: np.ndarray
+    field_data: np.ndarray
+    target_idx: int
+
+
+def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
+    return np.sin(np.pi * t / T) ** 2
+
+
+def run_krotov_optimization(
+    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+) -> RunResult:
+    initial_field = parse_krotov_initial_field(params)
+    control_axes = validate_algorithm_options("krotov", params)
+
+    initial_state = tuple(states["initial"])  # (v,J,...) expected
+    target_state = tuple(states["target"]) if states.get("target") is not None else None
+
+    initial_idx = basis.get_index(initial_state)
+    target_idx = basis.get_index(target_state) if target_state is not None else None
+    if target_idx is None:
+        raise ValueError("Krotov requires a target state.")
+
+    time_settings = build_optimization_time_settings(time_cfg)
+    time_grid = time_settings.grid
+    output_stride = time_settings.output_stride
+
+    max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
+    convergence_tol = float(
+        params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"])
+    )
+    lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
+    target_fidelity = float(
+        params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"])
+    )
+    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
+
+    # Build the canonical RK4 field grid from its explicit field spacing.
+    tlist = time_grid.field_times_fs
+    n_field_steps = len(tlist)
+
+    # Propagator
+    propagator = SchrodingerPropagator(
+        backend="numpy", validate_units=True, renorm=True
+    )
+
+    # States
+    psi_initial = np.zeros(basis.size(), dtype=complex)
+    psi_initial[initial_idx] = 1.0
+    psi_target = np.zeros(basis.size(), dtype=complex)
+    psi_target[target_idx] = 1.0
+
+    # Dipole in propagation units
+    mu_x_si = dipole.get_mu_x_SI()
+    mu_y_si = dipole.get_mu_y_SI()
+    mu_z_si = dipole.get_mu_z_SI()
+    if hasattr(mu_x_si, "toarray"):
+        mu_x_si = mu_x_si.toarray()
+    if hasattr(mu_y_si, "toarray"):
+        mu_y_si = mu_y_si.toarray()
+    if hasattr(mu_z_si, "toarray"):
+        mu_z_si = mu_z_si.toarray()
+    mu_x_prime = cm_to_rad_phz(mu_x_si)
+    mu_y_prime = cm_to_rad_phz(mu_y_si)
+    mu_z_prime = cm_to_rad_phz(mu_z_si)
+    mu_map = {
+        "x": mu_x_prime,
+        "y": mu_y_prime,
+        "z": mu_z_prime,
+    }
+    mu_a_prime = mu_map[control_axes[0]]
+    mu_b_prime = mu_map[control_axes[1]]
+
+    field_data = initial_field.samples_on(time_grid)
+
+    # Precompute helpers
+    S_t = _shape_function(tlist, tlist[-1])
+    dt_fs = float(tlist[1] - tlist[0])
+    # Frequency grid for potential spectral constraints (PHz = cycles/fs)
+    freq_phz = np.fft.rfftfreq(n_field_steps, d=dt_fs)
+
+    # Spectrum constraints (monotonic kernel per paper)
+    sc_cfg = params.get("spectrum_constraints", None)
+    use_sc = False
+    alpha_mask = None
+    if isinstance(sc_cfg, dict):
+        method = str(sc_cfg.get("method", "")).strip().lower()
+        if method == "monotonic_kernel":
+            bands = sc_cfg.get("bands", [])
+            units = sc_cfg.get("units", "cm^-1")
+            mode = sc_cfg.get("mode", "pass")
+            combine = sc_cfg.get("combine", "max")
+            fwhm = bool(sc_cfg.get("fwhm", True))
+            weights = sc_cfg.get("weights", None)
+            alpha_scale = float(sc_cfg.get("alpha_scale", 1.0))
+            alpha_mask = build_alpha_mask(
+                freq_phz,
+                bands,
+                units=units,
+                mode=mode,
+                combine=combine,
+                fwhm=fwhm,
+                weights=weights,
+                alpha_scale=alpha_scale,
+            )
+            use_sc = True
+
+    def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        ef = ElectricField.from_time_grid(time_grid)
+        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
+        result = propagator._propagate_array(
+            hamiltonian=hamiltonian,
+            efield=ef,
+            dipole_matrix=dipole,
+            initial_state=psi_initial,
+            axes=control_axes,
+            return_traj=True,
+            return_time_psi=True,
+            sample_stride=1,
+            algorithm="rk4",
+            sparse=False,
+            propagator_func=propagator_func,
+        )
+        return result[0], result[1]
+
+    def backward(
+        ef_data: np.ndarray, psi_traj: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        psi_final = psi_traj[-1]
+        overlap = np.vdot(psi_target, psi_final)
+        chi_T = overlap * psi_target
+        ef = ElectricField.from_time_grid(time_grid)
+        ef.add_arbitrary_Efield(ef_data, field_units="V/m")
+        result = propagator._propagate_array(
+            hamiltonian=hamiltonian,
+            efield=ef,
+            dipole_matrix=dipole,
+            initial_state=chi_T,
+            axes=control_axes,
+            return_traj=True,
+            return_time_psi=True,
+            sample_stride=1,
+            algorithm="rk4",
+            sparse=False,
+            propagator_func=propagator_func,
+            direction=PropagationDirection.BACKWARD,
+        )
+        time_b = -result[0][::-1]
+        chi_traj = result[1][::-1]
+        return time_b, chi_traj
+
+    def fidelity_of(psi: np.ndarray) -> float:
+        return float(np.abs(psi[target_idx]) ** 2)
+
+    prev_fid = -1.0
+    for it in range(max_iter):
+        # Forward
+        time_f, psi_traj = forward(field_data)
+        fid = fidelity_of(psi_traj[-1])
+
+        # Convergence checks
+        if fid >= target_fidelity:
+            break
+        if prev_fid >= 0 and abs(fid - prev_fid) < convergence_tol:
+            # small change
+            pass
+        prev_fid = fid
+
+        # Backward
+        _, chi_traj = backward(field_data, psi_traj)
+
+        # Update (paper-compliant via spectral constraints if enabled)
+        n_traj = len(psi_traj)
+        delta_field = np.zeros_like(field_data)
+        for i in range(n_traj):
+            jf = i * 2
+            if jf >= n_field_steps:
+                break
+            psi_i = psi_traj[i]
+            chi_i = chi_traj[i]
+            grad_x = -2.0 * float(np.imag(np.vdot(chi_i, (mu_a_prime @ psi_i))))
+            grad_y = -2.0 * float(np.imag(np.vdot(chi_i, (mu_b_prime @ psi_i))))
+            S = float(S_t[jf])
+            dEx = (S / lambda_a) * grad_x
+            dEy = (S / lambda_a) * grad_y
+            delta_field[jf, 0] += dEx
+            delta_field[jf, 1] += dEy
+            if jf + 1 < n_field_steps:
+                delta_field[jf + 1, 0] += dEx
+                delta_field[jf + 1, 1] += dEy
+
+        if use_sc and alpha_mask is not None:
+            # Solve u = argmin with spectral penalty (monotonic kernel)
+            u_field = solve_update_in_frequency(delta_field, alpha_mask)
+            field_data = field_data + u_field
+        else:
+            # Fallback: plain time-local update
+            field_data = field_data + delta_field
+
+    # Final forward for outputs
+    ef_total = ElectricField.from_time_grid(time_grid)
+    ef_total.add_arbitrary_Efield(field_data, field_units="V/m")
+    internal_time, internal_trajectory = forward(field_data)
+    fidelity = fidelity_of(internal_trajectory[-1])
+    time_full, psi_traj_full = sample_optimization_output(
+        internal_time,
+        internal_trajectory,
+        output_stride=output_stride,
+    )
+
+    return RunResult(
+        efield=ef_total,
+        time=time_full,
+        psi_traj=psi_traj_full,
+        metrics={"fidelity": fidelity},
+        tlist=tlist,
+        field_data=field_data,
+        target_idx=target_idx,
+    )
