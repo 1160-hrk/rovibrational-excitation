@@ -1829,8 +1829,16 @@ piecewise-constant controls, overlap-scaled unnormalized costates,
 Its required penalty unit is `1 / ((V/m)^2 fs)`; old field-grid and seed keys,
 custom propagators, spectral constraints, and plotting raise. The independent
 direct-RK4 one-iteration oracle agrees to `2e-15`; TwoLevel and five-level
-VibLadder transfer plus half-step repropagation references pass. P7.3-c, the
-direct Local update on its frozen legacy grid, is next.
+VibLadder transfer plus half-step repropagation references pass.
+
+P7.3-c completes the independent direct Local-control reference without a
+production change. A slow test-only normalized RK4 calculation reproduces the
+frozen two-segment D-027 layout and directly evaluates both `weights` and
+`target` updates, including shaped seed, lookahead, shared endpoint,
+componentwise clipping order, and final odd prefix. Field relative array-norm
+errors are at most `1.22e-16` and trajectory differences are at most
+`2.23e-16`. No formula discrepancy is found. P7.3-d, the independent direct
+DFT/convolution reference for spectral constraints, is next.
 
 ### P7.4 Spectroscopy
 

@@ -1,7 +1,7 @@
 # Phase 7 optimization references
 
-Last verified: 2026-09-26
-Current checkpoint: P7.3-b, independent standard Krotov reference
+Last verified: 2026-09-27
+Current checkpoint: P7.3-c, independent Local-control reference
 
 ## Purpose
 
@@ -252,11 +252,77 @@ performance thresholds.
 These are deterministic regression and grid-convergence checks, not universal
 recommended pulse or penalty values.
 
+## P7.3-c — direct Local update on the frozen legacy grid
+
+### Scope and unchanged calculation
+
+The reference covers both supported evaluation modes without changing
+production code. For a segment beginning from `psi`, the optional lookahead
+state is constructed exactly as
+
+~~~text
+psi_ref[j] = psi[j] exp(-i epsilon[j] tau),
+tau = lookahead_fraction * (tlist[end - 1] - tlist[start]).
+~~~
+
+In `weights` mode, with diagonal evaluation operator `A`, the two direct
+responses and fields are
+
+~~~text
+r_a = Im(<psi_ref | A (-mu_a) | psi_ref>)
+E_a = gain S r_a.
+~~~
+
+In `target` mode they are
+
+~~~text
+c   = <target | psi_ref>
+d_a = <target | (-mu_a) | psi_ref>
+r_a = Im(conj(c) d_a)
+E_a = gain S r_a.
+~~~
+
+These signs follow `H=H0-sum_a mu_a E_a`. No extra factor is introduced; the
+existing production expressions above are retained. This checkpoint does not
+assign dimensions or recommended values to `c_abs_min`, `drive_abs_min`, or
+`shape_floor`.
+
+The test independently reproduces the D-027 grid rather than calling the
+production grid builder: `tlist=np.arange(0,1.0,0.1)`, segments `(0,4)` and
+`(4,8)`, writes to `start+1:end+1`, propagates `start:end+1`, and performs
+the final propagation only on the odd prefix `0:9`. Its direct Python RK4
+expands all four stages under `H0-mu_x E_x-mu_y E_y` and normalizes after each
+0.2 fs propagation step. It calls neither the production propagator nor a
+production Local helper.
+
+### Fixed diagnostic and observed agreement
+
+The deterministic TwoLevel diagnostic uses a 0.47 rad/fs gap, `2.1e-29 C·m`
+Cartesian dipole, one shaped 2e8 V/m seed segment, 20 `(GV/m)^2 fs` gain,
+sine-squared shape, and a 0.5 lookahead fraction. The seed makes the first
+segment nonzero; the second segment is therefore a genuine response-derived
+update rather than another seed. No component clips.
+
+Both `weights` and `target` production fields agree with the direct
+reference. The largest absolute field differences are respectively
+`3.73e-9 V/m` and `1.12e-8 V/m` on approximately `8.26e7 V/m` fields;
+relative array-norm errors are `3.12e-17` and `1.22e-16`. The largest
+trajectory difference is `2.23e-16` and the relative trajectory-norm errors
+remain below `1.5e-16`. Regression comparisons use `rtol=2e-15` with
+ulp-scale absolute trajectory tolerance.
+
+The independent reference therefore finds no discrepancy requiring a physics
+change. Seed trigger/sign, sine-squared sampling and floor, lookahead index,
+componentwise clipping order, shared endpoint ownership, per-segment
+propagation, final odd prefix, and stored tail remain exactly as previously
+characterized. The authoritative test is
+`tests/physics/test_local_update_reference.py`.
+
 ## Reference status
 
 | Reference | Status |
 |---|---|
 | GRAPE central finite-difference gradient with step convergence | Complete — P7.3-a |
 | Direct one-iteration Krotov construction | Complete — P7.3-b/D-106 |
-| Direct Local update on frozen legacy grid | Pending — P7.3-c |
+| Direct Local update on frozen legacy grid | Complete — P7.3-c |
 | Direct DFT/convolution spectral constraints | Pending — P7.3-d |

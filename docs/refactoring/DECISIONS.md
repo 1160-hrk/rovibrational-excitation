@@ -3826,15 +3826,13 @@ found by the independent references remain decision points, not inferred fixes.
 
 D-027 resolves the local optimizer time-array, segment-index, shared-boundary,
 and legacy RK4-consumption contracts with exact and bitwise-equivalence tests.
-D-028 and D-029 resolve GRAPE and Krotov direction, grid-spacing, and
-trajectory-sampling semantics. They do not establish an independent scientific
-objective reference. A deterministic four-level V=0 to V=3 Krotov workload is
-stored in `benchmarks/krotov-v0-v3-v0.3.{json,npz}` with an independent final
-forward propagation and a short integration guard. This protects the current
-end-to-end behavior but is not independent evidence for the update equation.
-Before algorithmic refactoring, the user must still identify one trusted
-reference problem per supported optimizer and acceptable objective and gradient
-tolerances, including the spectral-constraint update.
+D-028 and D-029 resolve optimizer direction, grid-spacing, and
+trajectory-sampling semantics. P7.3-a and P7.3-b supply the independent GRAPE
+and standard Krotov references and record the user-approved corrections under
+D-104 and D-106. P7.3-c independently expands both Local update modes and
+normalized RK4 on the frozen D-027 layout; production agrees at floating-point
+roundoff, so no Local formula changes. P7.3-d must still establish the direct
+DFT/convolution spectral-constraint reference before that code is decomposed.
 
 ### O-007: Spectroscopy reference behavior
 

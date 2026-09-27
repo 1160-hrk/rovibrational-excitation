@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-25
+Last verified: 2026-09-27
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -50,7 +50,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1321 passed, 10 skipped (1331 collected) |
+| Pytest | 1357 passed, 10 skipped (1367 collected) |
 | Measured branch coverage | 79% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -262,8 +262,15 @@ reference and spectral example. Standard `krotov` now uses sequential
 piecewise-constant interval controls, `dH/dE=-mu`, overlap-scaled costates, and
 a required inverse-field-squared-time penalty unit. A direct one-iteration
 oracle agrees to `2e-15`; TwoLevel and `V=0..4` to `V=3` transfer and half-step
-accuracy tests pass. The full suite has 1354 passes and 10 optional-GPU skips
-(1364 collected), and strict mypy covers 62 modules. P7.3-c, the direct Local update reference, is next.
+accuracy tests pass.
+
+P7.3-c independently expands normalized RK4 and both Local update expressions
+on the exact D-027 two-segment layout. `weights` and `target` fields agree with
+production to relative array-norm error at most `1.22e-16`; trajectory error is
+at most `2.23e-16`. No production formula or Local grid/index behavior changes.
+The full suite has 1357 passes and 10 optional-GPU skips (1367 collected), 79%
+branch coverage, and strict mypy covers 62 modules. P7.3-d, the direct
+DFT/convolution spectral-constraint reference, is next.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
@@ -533,7 +540,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a/P7.3-b complete, P7.3-c through P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-c complete, P7.3-d through P7.4 pending |
 | 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in
