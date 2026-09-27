@@ -994,8 +994,15 @@ use explicit `PropagationDirection.BACKWARD`: dimensional NumPy RK4 reverses
 both field component arrays and applies the historical negative propagation
 interval while the public `ElectricField` grid remains increasing. Its
 normalization, batch update, factor two, `i*2` field indices, spectral kernel,
-and defaults are frozen reproduction behavior, not standard Krotov. Backward
-CuPy, split-operator, and nondimensional propagation remain unsupported.
+and defaults are frozen reproduction behavior, not standard Krotov. The legacy
+spectral kernel builds a dimensionless nonnegative Gaussian `alpha` on the
+ordinary-frequency rFFT grid and applies exactly
+`U[k]=S[k]/(1+alpha[k])`. This is equivalently the periodic-convolution solve
+`(I+K)u=s`; odd/even direct DFT and dense convolution references agree at
+floating-point roundoff. `pass` penalizes the complement of the combined band;
+`stop` penalizes the combined band. Standard `krotov` does not inherit this
+legacy kernel. Backward CuPy, split-operator, and nondimensional propagation
+remain unsupported.
 
 Under D-106, standard `krotov` uses real piecewise-constant controls. For total
 time `T=N*control_dt_fs`, state times are `t_n=n*control_dt_fs` and each control

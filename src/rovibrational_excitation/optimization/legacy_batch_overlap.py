@@ -114,7 +114,7 @@ def run_legacy_batch_overlap_optimization(
     # Frequency grid for potential spectral constraints (PHz = cycles/fs)
     freq_phz = np.fft.rfftfreq(n_field_steps, d=dt_fs)
 
-    # Spectrum constraints (monotonic kernel per paper)
+    # Historical spectral kernel retained for this explicit legacy route.
     sc_cfg = params.get("spectrum_constraints", None)
     use_sc = False
     alpha_mask = None
@@ -204,7 +204,7 @@ def run_legacy_batch_overlap_optimization(
         # Backward
         _, chi_traj = backward(field_data, psi_traj)
 
-        # Update (paper-compliant via spectral constraints if enabled)
+        # Apply the historical batch update, optionally through its spectral filter.
         n_traj = len(psi_traj)
         delta_field = np.zeros_like(field_data)
         for i in range(n_traj):
@@ -225,7 +225,7 @@ def run_legacy_batch_overlap_optimization(
                 delta_field[jf + 1, 1] += dEy
 
         if use_sc and alpha_mask is not None:
-            # Solve u = argmin with spectral penalty (monotonic kernel)
+            # Solve the configured frequency-domain filtered update.
             u_field = solve_update_in_frequency(delta_field, alpha_mask)
             field_data = field_data + u_field
         else:

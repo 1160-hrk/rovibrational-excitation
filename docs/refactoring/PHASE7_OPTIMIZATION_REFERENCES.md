@@ -1,7 +1,7 @@
 # Phase 7 optimization references
 
 Last verified: 2026-09-27
-Current checkpoint: P7.3-c, independent Local-control reference
+Current checkpoint: P7.3-d, independent spectral-kernel reference
 
 ## Purpose
 
@@ -318,6 +318,71 @@ propagation, final odd prefix, and stored tail remain exactly as previously
 characterized. The authoritative test is
 `tests/physics/test_local_update_reference.py`.
 
+## P7.3-d — direct DFT and convolution spectral-kernel reference
+
+### Penalty mask
+
+This reference applies only to the historical `legacy_batch_overlap` route.
+For ordinary frequency `f` in cycles/fs (PHz), each configured band is
+
+~~~text
+G_b(f) = exp[-(f-c_b)^2/(2 sigma_b^2)],
+sigma_b = FWHM_b/(2 sqrt(2 ln 2)).
+~~~
+
+When `fwhm=false`, the configured width is `sigma_b`. `max` uses the pointwise
+maximum of the band profiles. `sum` uses the configured nonnegative weighted
+sum and clips it to `[0,1]`. The dimensionless penalty is
+
+~~~text
+pass: alpha(f) = alpha_scale [1-G(f)]
+stop: alpha(f) = alpha_scale G(f).
+~~~
+
+A direct test covers all four pass/stop and max/sum combinations, both FWHM
+interpretations, weighted overlap clipping, and non-unit scale. The largest
+observed mask difference is `4.45e-16`; the other three combinations are
+bitwise equal. The active `2300 cm^-1`, `100 cm^-1` pass-band convention is
+also reconstructed directly from the exact light speed using
+`f_PHz = c * nu_cm^-1 * 1e-13`, without calling the production unit converter.
+
+### DFT and periodic-convolution equivalence
+
+For `N` real time samples, the test independently mirrors the `N//2+1` rFFT
+penalty onto the complete two-sided spectrum and constructs the dense DFT
+matrix explicitly:
+
+~~~text
+S_k = sum_n s_n exp(-2 pi i k n/N)
+U_k = S_k/(1+alpha_k)
+u_n = (1/N) sum_k U_k exp(+2 pi i k n/N).
+~~~
+
+It separately constructs the periodic convolution kernel
+
+~~~text
+K_r = (1/N) sum_k alpha_k exp(+2 pi i k r/N)
+~~~
+
+and solves the dense real linear system `(I + K) u = s`. Thus the comparison
+does not call a production FFT, inverse FFT, mask builder, or spectral solver.
+Both odd `N=7` and even `N=8` are covered so the Nyquist endpoint and
+negative-frequency mirroring cannot be conflated. The explicit DFT and
+convolution solutions differ by at most `1.98e-15`; production differs from
+the explicit DFT by at most `8.89e-16`. A separate single-bin cosine case
+confirms the analytic attenuation `1/(1+alpha_k)` and preservation of the
+one-dimensional input shape.
+
+### Scope of the result
+
+No numerical discrepancy is found, so the spectral calculation is unchanged.
+This proves the configured Gaussian mask and periodic DFT filter algebra only.
+It does not prove monotonic convergence of standard Krotov: standard `krotov`
+still rejects spectral constraints under D-106, while this kernel remains
+explicit legacy reproduction behavior. Source comments now state that boundary
+without changing any executable expression. The authoritative reference is
+`tests/physics/test_spectral_constraint_reference.py`.
+
 ## Reference status
 
 | Reference | Status |
@@ -325,4 +390,4 @@ characterized. The authoritative test is
 | GRAPE central finite-difference gradient with step convergence | Complete — P7.3-a |
 | Direct one-iteration Krotov construction | Complete — P7.3-b/D-106 |
 | Direct Local update on frozen legacy grid | Complete — P7.3-c |
-| Direct DFT/convolution spectral constraints | Pending — P7.3-d |
+| Direct DFT/convolution spectral constraints | Complete — P7.3-d |

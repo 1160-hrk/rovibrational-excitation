@@ -2728,7 +2728,8 @@ Phase 5 remains open.
 
 ### D-072: Scientific decomposition uses independent transparent references
 
-Status: Accepted by the user on 2026-09-16; implementation pending.
+Status: Accepted by the user on 2026-09-16; optimization references complete
+through P7.3-d, spectroscopy references pending P7.4.
 
 Characterization protects current behavior but is not proof that the original
 formula is correct. Before algorithmic optimization or spectroscopy
@@ -3831,8 +3832,11 @@ trajectory-sampling semantics. P7.3-a and P7.3-b supply the independent GRAPE
 and standard Krotov references and record the user-approved corrections under
 D-104 and D-106. P7.3-c independently expands both Local update modes and
 normalized RK4 on the frozen D-027 layout; production agrees at floating-point
-roundoff, so no Local formula changes. P7.3-d must still establish the direct
-DFT/convolution spectral-constraint reference before that code is decomposed.
+roundoff, so no Local formula changes. P7.3-d independently constructs the
+Gaussian masks, complete DFT, and equivalent periodic-convolution solve for odd
+and even lengths. Production agrees at floating-point roundoff. All required
+optimization references now pass; structural decomposition may proceed without
+altering the fixed calculations.
 
 ### O-007: Spectroscopy reference behavior
 

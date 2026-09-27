@@ -1837,8 +1837,17 @@ frozen two-segment D-027 layout and directly evaluates both `weights` and
 `target` updates, including shaped seed, lookahead, shared endpoint,
 componentwise clipping order, and final odd prefix. Field relative array-norm
 errors are at most `1.22e-16` and trajectory differences are at most
-`2.23e-16`. No formula discrepancy is found. P7.3-d, the independent direct
-DFT/convolution reference for spectral constraints, is next.
+`2.23e-16`. No formula discrepancy is found.
+
+P7.3-d completes the independent spectral-kernel reference without changing a
+numerical expression. Direct Gaussian construction covers pass/stop, max/sum,
+FWHM/sigma, weights, clipping, scale, and the active wavenumber conversion.
+Explicit dense DFT and periodic-convolution solves cover odd and even lengths;
+production differs from the direct DFT by at most `8.89e-16`. This establishes
+only the historical `legacy_batch_overlap` filter algebra, not standard
+Krotov monotonicity. All D-072 optimization references now pass. P7.3-e may
+introduce common optimization contracts and decompose orchestration while
+retaining the independently fixed calculations.
 
 ### P7.4 Spectroscopy
 

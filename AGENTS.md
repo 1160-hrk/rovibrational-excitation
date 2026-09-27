@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-27
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-c independent Local reference; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-d independent spectral reference; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -457,9 +457,10 @@ sampled seed and rejects custom propagators. That P7.3-a checkpoint left Krotov,
 scales, and the no-op convergence predicate unchanged. P7.3-b/D-106 then split
 the former Krotov calculation into `legacy_batch_overlap` and implemented the
 independently referenced sequential interval-control standard route. The suite
-has 1357 passes and 10 optional-GPU skips (1367 collected); strict mypy covers
-62 modules. P7.3-c independently reproduces both Local update modes on the
-frozen legacy grid without a production change; P7.3-d is next.
+has 1365 passes and 10 optional-GPU skips (1375 collected); strict mypy covers
+62 modules. P7.3-c independently reproduces both Local update modes, and
+P7.3-d independently verifies the legacy spectral mask, DFT, and periodic
+convolution without numerical changes. P7.3-e structural decomposition is next.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
@@ -487,10 +488,10 @@ The next work is:
    boundary. P7.3-a/D-104 completes the independent GRAPE reference and formula
    correction; P7.3-b/D-106 completes the standard Krotov oracle/correction and
    preserves the old route explicitly. P7.3-c completes the direct Local-control
-   oracle with no formula discrepancy. Next construct the direct DFT/convolution
-   spectral-constraint oracle for P7.3-d. Do not decompose or alter any
-   remaining objective/update rule before its oracle passes or the user resolves
-   a discrepancy. Complete
+   oracle, and P7.3-d completes the direct DFT/convolution spectral reference,
+   both with no formula discrepancy. All required optimization oracles now pass.
+   Next introduce common optimization contracts and decompose orchestration
+   without changing any independently fixed calculation. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
@@ -520,8 +521,8 @@ The next work is:
 9. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
 10. Preserve private optimization adapters, especially
-   `LocalOptimizerLegacyGridV1`. Obtain the remaining spectral-constraint and
-   spectroscopy references before their Phase 7 decomposition.
+   `LocalOptimizerLegacyGridV1`. All optimization references now pass; obtain
+   the remaining spectroscopy references before its Phase 7 decomposition.
 11. Preserve the D-044 support boundary: active examples, benchmarks, and
    scripts remain executable and linted; archives remain historical until
    individually migrated and smoke-tested.

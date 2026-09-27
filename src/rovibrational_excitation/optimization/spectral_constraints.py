@@ -1,15 +1,9 @@
-"""
-スペクトル制約（Krotov 単調収束対応）
-====================================
+"""Historical frequency-domain filter for ``legacy_batch_overlap``.
 
-論文に準拠したスペクトル制約を、周波数領域の正則化として実装する補助関数群。
-
-- α(ω) ≥ 0 を周波数グリッド上で構築（ガウシアン帯域の合成）
-- 源項 s(t) の FFT を取り、U(ω) = S(ω) / (1+α(ω)) で更新量を解く
-
-注意:
-- 周波数グリッドは rFFT 用の半分スペクトル (N//2+1) を想定
-- 周波数単位は PHz（= cycles/fs）に統一する
+The helper constructs a nonnegative dimensionless penalty ``alpha`` on an
+rFFT grid and solves ``U[k] = S[k] / (1 + alpha[k])``.  This algebra is
+independently referenced, but it does not by itself establish monotonic
+convergence for standard Krotov control.
 """
 
 from __future__ import annotations
