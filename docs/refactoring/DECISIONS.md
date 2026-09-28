@@ -2729,7 +2729,7 @@ Phase 5 remains open.
 ### D-072: Scientific decomposition uses independent transparent references
 
 Status: Accepted by the user on 2026-09-16; optimization references complete
-through P7.3-d, spectroscopy references pending P7.4.
+through P7.3-d, spectroscopy references started by P7.4-a1/D-112.
 
 Characterization protects current behavior but is not proof that the original
 formula is correct. Before algorithmic optimization or spectroscopy
@@ -4007,6 +4007,34 @@ normalization, tolerance, or physical formula changes.
 
 Implementation commit: this checkpoint.
 
+### D-112: P7.4 starts from caller-owned thermal input and analytic transforms
+
+Status: Accepted under the user’s calculation-preserving refactor direction on
+2026-09-28; implemented as P7.4-a1.
+
+Scope: independent spectroscopy references only. No production formula,
+branch, threshold, grid, or public behavior changes.
+
+The spectroscopy calculator consumes a caller-supplied density matrix and does
+not currently construct a thermal state. P7.4 therefore uses a direct
+Boltzmann partition sum to prepare a two-level test density without adding or
+implying a production thermal-state fallback. A closed-form two-level response
+retains both resonant and counter-rotating poles. A separate single-coherence
+transform fixes the radiation/PFID denominator orientation, Fourier sign,
+coherence phase, and emission sign.
+
+Production agrees with those independent calculations at relative discrepancy
+below `2.2e-16` for absorption and `1.6e-16` for radiation. These references
+authorize only later structure-preserving moves of the covered calculations.
+Doppler and device broadening, normalization/area rules, and remaining
+observables require their own P7.4 references first. A thermal-state constructor
+would be a new physical capability and is not authorized by this decision.
+The full suite passes 1398 tests with 10 optional-GPU skips (1408 collected),
+and branch coverage remains 80%.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -4060,15 +4088,17 @@ altering the fixed calculations.
 Status: Resolved procedurally by D-072 on 2026-09-16. Numerical discrepancies
 found by the analytic references remain decision points, not inferred fixes.
 
-`spectroscopy/absorbance_calculator.py` has 11% measured coverage and several
-APIs. Before decomposition, define trusted spectra or sum rules for absorption,
+At the Phase 0 baseline, `spectroscopy/absorbance_calculator.py` had 11%
+measured coverage and several APIs. Before each responsibility moves, define
+trusted spectra or sum rules for absorption,
 PFID, emission, thermal state handling, broadening, and FFT conventions.
 
 D-023 resolves the numerical-policy ambiguities found by the P1.5 audit:
 ignored options, fixed response cutoffs, automatic memory heuristics, fixed
 Doppler cutoffs, and duplicated constants are no longer accepted behavior.
-O-007 remains open only for independent scientific references and acceptable
-tolerances beyond the exact-route equivalence tests.
+P7.4-a1/D-112 supplies independent analytic absorption and radiation/PFID
+transform references. O-007 remains open for broadening, device, area/sum, and
+remaining observable references beyond exact-route equivalence tests.
 
 ### O-008: Public v0.3 namespace
 

@@ -28,6 +28,7 @@ tests, and the decision log.
 | `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md` | P7.2 result/checkpoint acceptance evidence and guarantee limits | Any P7.2 completion or broader provenance/durability claim |
 | `PHASE7_OPTIMIZATION_REFERENCES.md` | Independent P7.3 optimizer oracles, discrepancies, formulas, and tolerances | Every P7.3 reference or optimizer formula decision |
 | `PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md` | P7.3 ownership, reference, fallback, typing, coverage, and explicit-exclusion evidence | Any P7.3 completion or optimizer capability claim |
+| `PHASE7_SPECTROSCOPY_REFERENCES.md` | Independent P7.4 response, transform, broadening, and observable oracles | Every P7.4 spectroscopy formula or decomposition decision |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -51,7 +52,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1396 passed, 10 skipped (1406 collected) |
+| Pytest | 1398 passed, 10 skipped (1408 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -319,6 +320,17 @@ optional-GPU skips (1406 collected), branch coverage remains 80%, optimization
 modules are 72-100% covered, and strict mypy covers all optimizer modules and
 the high-level runner within its 72-module scope. P7.4 spectroscopy is next;
 Class-D optimizer quantities and CUDA remain explicit open work.
+
+P7.4-a1/D-112 begins spectroscopy decomposition with independent references,
+not production movement. Direct Boltzmann populations feed the unchanged
+caller-owned density input; a closed-form two-level resonant plus
+counter-rotating response and a single-coherence radiation/PFID transform fix
+the frequency, damping, phase, and sign conventions. Production agrees at
+relative discrepancies below `2.2e-16` and `1.6e-16`, respectively. The
+production package still has no thermal-state constructor, and none is
+inferred. Broadening, device, area/sum, and remaining observable references are
+next; no spectroscopy implementation has moved yet. The full suite has 1398
+passes and 10 optional-GPU skips (1408 collected); branch coverage remains 80%.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

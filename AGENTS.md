@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-f/D-111 optimization acceptance; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.4-a1/D-112 analytic spectroscopy references; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -494,6 +494,15 @@ calculation changes. The suite has 1396 passes and 10 optional-GPU skips (1406
 collected), branch coverage is 80%, optimization modules are 72-100% covered,
 and strict mypy covers 72 modules. P7.4 spectroscopy is next.
 
+P7.4-a1/D-112 independently fixes the existing two-level absorption and
+single-coherence radiation/PFID transform conventions before production code
+moves. The test constructs Boltzmann populations directly but supplies them
+through the existing caller-owned density boundary; production still has no
+thermal-state constructor. Closed-form response discrepancies are below
+`2.2e-16` and `1.6e-16`. Broadening, device, and normalization/area references
+remain next. No production calculation changes. The suite has 1398 passes and
+10 optional-GPU skips (1408 collected); branch coverage remains 80%.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -527,7 +536,8 @@ The next work is:
    P7.3-e3/D-109 separates the two exact Local response evaluators, and
    P7.3-e4/D-110 types the legacy-only spectral constraint and compiled filter,
    all without changing any fixed calculation. P7.3-f/D-111 completes the
-   bounded optimization ownership/acceptance audit. P7.4 spectroscopy is next. Complete
+   bounded optimization ownership/acceptance audit. P7.4-a1/D-112 now fixes the
+   analytic response and transform conventions; broadening references are next. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

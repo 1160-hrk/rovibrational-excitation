@@ -1908,7 +1908,7 @@ P7.3 is complete; P7.4 is next.
 
 ### P7.4 Spectroscopy
 
-Before splitting the 898-line module, characterize:
+Before splitting the current 1,049-line module, characterize:
 
 - thermal state;
 - response function;
@@ -1918,6 +1918,17 @@ Before splitting the 898-line module, characterize:
 - normalization or sum rules.
 
 Use D-072 analytic/direct references, then split by scientific responsibility.
+
+P7.4-a1/D-112 adds the first independent references before moving production
+code. A direct partition sum supplies a caller-owned two-level thermal density;
+the resulting resonant plus counter-rotating Lorentzian response agrees with
+the public loop result below `2.2e-16` relative discrepancy. A separately
+derived single-coherence transform fixes the radiation/PFID frequency, phase,
+and sign conventions below `1.6e-16`. Production has no thermal-state
+constructor, so this checkpoint does not invent one. Doppler/device
+broadening, normalization/area, and remaining observable references are next.
+No production calculation changes. The full suite has 1398 passes and 10
+optional-GPU skips (1408 collected); branch coverage remains 80%.
 
 ### Phase 7 acceptance
 

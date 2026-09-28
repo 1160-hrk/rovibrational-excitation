@@ -1205,8 +1205,15 @@ discarded commutator fraction, explicit phase-matching mode, discarded
 pre-probe density fraction, and device-function application. Exact-route
 agreement, pathway selection, and contract failures are anchored by
 `tests/physics/test_spectroscopy_reference.py`. Independent experimental
-spectra or sum rules remain required before decomposing the full spectroscopy
-module.
+references are required before each scientific responsibility moves.
+
+D-112 supplies the first such references without changing this contract. The
+caller still owns the input density matrix; the test-only direct Boltzmann
+partition sum is not a production thermal-state fallback. Closed-form
+two-level absorption and single-coherence radiation/PFID expressions fix the
+resonant/counter-rotating poles, damping, Fourier sign, transition orientation,
+and emission phase. Broadening, device, and normalization/area responsibilities
+remain unmoved until their independent references pass.
 
 ## 11. Input validation principles
 
