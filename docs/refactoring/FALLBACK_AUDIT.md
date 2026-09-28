@@ -1,6 +1,6 @@
 # Explicit fallback audit
 
-Last verified: 2026-09-26
+Last verified: 2026-09-28
 Scope: src/rovibrational_excitation
 Policy: D-021 in DECISIONS.md
 
@@ -42,6 +42,7 @@ recorded.
 | Local control gain | Missing gain used `1.0`; the unit was implicit; the diagnostic reciprocal used `max(gain, 1e-30)` | D-058 requires a finite positive value/unit pair, converts to `(V/m)^2 fs`, and uses the direct reciprocal only after validation | unit conversion, optimization option, configuration, and Local propagation contracts |
 | Local control initialization | Missing seed settings silently used `1000 V/m` for five trigger segments; disabling the seed could leave a known zero-control fixed point | D-059 requires explicit `seed_field` or `none`; the former has a required direct-amplitude pair/count, while the latter raises at an active initial trigger and never falls back | initialization parser, configuration, fixed-point preflight, and frozen Local propagation contracts |
 | Split Numba dependency | Import failure selected an unreported dummy decorator and pure-Python loop even though Numba is a required package dependency | D-062 imports required Numba directly; a broken installation raises instead of changing execution mode | `test_phase5_acceptance_contracts.py` |
+| Optimization acceptance | Registry, contract ownership, kernel dependencies, and exception policy could drift after decomposition | D-111 fixes exactly four algorithms, single typed owners, no upper-layer optimization imports, no broad catches, and the stored legacy artifact | `test_phase7_optimization_acceptance.py`; all independent P7.3 references |
 
 ## P1: fix before API stabilization
 

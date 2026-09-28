@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-17
+Last verified: 2026-09-28
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-083 completed model ownership consolidation
+Latest API checkpoint: D-111 accepted the P7.3 optimization boundary
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -423,9 +423,13 @@ while `none` owns no field and must pass the existing initial-response trigger
 before propagation. The active seed values and every local time/index contract
 are unchanged. Old top-level seed keys raise with nested migration guidance.
 
-The runner catches every plotting exception and returns a nominally successful
-optimization. Phase 7 must distinguish an optimization result from optional
-visualization failure.
+The runner returns one typed in-memory `OptimizationResult`. A requested
+top-level plotting failure propagates; the runner no longer catches it and
+reports a nominal success. Optional failures inside spectrum/spectrogram
+branches remain the separately documented visualization debt. There is no
+optimization-specific disk-result schema, and this inventory makes no
+persistence claim for `output.dir` beyond the run directory and optional
+figures.
 
 ## 5. Factories and registries
 

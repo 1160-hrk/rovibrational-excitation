@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -21,7 +22,7 @@ from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
 from .spectral_constraints import parse_legacy_spectral_constraint
 
-DEFAULT_PARAMS = {
+DEFAULT_PARAMS: dict[str, Any] = {
     "max_iter": 1000,
     "convergence_tol": 1.0e-18,
     "lambda_a": 1.0e-20,
@@ -35,7 +36,13 @@ def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
 
 
 def run_legacy_batch_overlap_optimization(
-    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+    *,
+    basis: Any,
+    hamiltonian: Any,
+    dipole: Any,
+    states: Mapping[str, Any],
+    time_cfg: Mapping[str, Any],
+    params: Mapping[str, Any],
 ) -> OptimizationResult:
     initial_field = parse_krotov_initial_field(params)
     control_axes = validate_algorithm_options("legacy_batch_overlap", params)

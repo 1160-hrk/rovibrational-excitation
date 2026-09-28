@@ -27,6 +27,7 @@ tests, and the decision log.
 | `PHASE7_CHECKPOINT_SCHEMA_V1.md` | Checkpoint payload v1, generation publication, and resume provenance | Any checkpoint schema, loader, or resume validation change |
 | `PHASE7_PERSISTENCE_ACCEPTANCE_AUDIT.md` | P7.2 result/checkpoint acceptance evidence and guarantee limits | Any P7.2 completion or broader provenance/durability claim |
 | `PHASE7_OPTIMIZATION_REFERENCES.md` | Independent P7.3 optimizer oracles, discrepancies, formulas, and tolerances | Every P7.3 reference or optimizer formula decision |
+| `PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md` | P7.3 ownership, reference, fallback, typing, coverage, and explicit-exclusion evidence | Any P7.3 completion or optimizer capability claim |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -50,18 +51,19 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1365 passed, 10 skipped (1375 collected) |
-| Measured branch coverage | 79% |
+| Pytest | 1396 passed, 10 skipped (1406 collected) |
+| Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
-| Optimization module coverage | 8-90% |
+| Optimization module coverage | 72-100% |
+| Strict mypy scope | 72 named modules |
 | Spectroscopy coverage | 90% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-16. On 2026-09-16, D-071
+These rows were last verified locally on 2026-09-28. On 2026-09-16, D-071
 through D-073 make device-native CUDA plus a real-GPU run mandatory for v0.3,
 define independent optimization/spectroscopy reference construction, and fix
 the exact minimal typed root API. P6.3-c implements D-075: `LinMolParameters`
@@ -307,6 +309,16 @@ unchanged, while standard Krotov continues to reject the option. The full suite
 has 1390 passes and 10 optional-GPU skips (1400 collected), coverage remains
 80%, strict mypy remains at 64 modules, and the spectral-constraint module is
 86% covered.
+
+P7.3-f/D-111 accepts the optimization boundary after auditing its exact
+four-algorithm registry, single result/objective/configuration owners,
+dependency direction, strict failures, independent optimizer references, and
+stored four-level transfer artifact. No numerical branch, formula, grid,
+threshold, or update order changes. The full suite has 1396 passes and 10
+optional-GPU skips (1406 collected), branch coverage remains 80%, optimization
+modules are 72-100% covered, and strict mypy covers all optimizer modules and
+the high-level runner within its 72-module scope. P7.4 spectroscopy is next;
+Class-D optimizer quantities and CUDA remain explicit open work.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
@@ -576,7 +588,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1 through P7.3-e4 typed result/objective/Local-response/legacy-constraint boundaries complete; P7.3 acceptance and P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2/P7.3 accepted; P7.4 spectroscopy pending |
 | 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in

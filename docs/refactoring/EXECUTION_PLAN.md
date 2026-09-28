@@ -1893,6 +1893,19 @@ optional-GPU skips (1399 collected), 80% branch coverage, and strict mypy for
 acceptance/audit unit should next verify all optimizer interface owners and
 close the phase before P7.4.
 
+
+P7.3-f/D-111 accepts the optimization boundary. Exact registry and owner
+identity, dependency direction, broad-catch absence, stored legacy artifact
+consistency, every independent scientific oracle, all four typed results, and
+all strict schemas are executable contracts. Every optimization module and the
+high-level runner now passes mandatory strict mypy. Full verification passes
+1396 CPU tests with 10 optional-GPU skips (1406 collected), 80% branch
+coverage, and strict mypy for 72 modules; optimization coverage is 72-100%.
+The no-op GRAPE/legacy convergence condition, Class-D values, Local legacy
+layout/defaults, standard-Krotov limitations, SymTop rejection, and absence of
+an optimizer disk schema are explicit exclusions. No calculation changes.
+P7.3 is complete; P7.4 is next.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

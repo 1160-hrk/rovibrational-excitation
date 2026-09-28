@@ -16,11 +16,12 @@ from __future__ import annotations
 
 import os
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from rovibrational_excitation.optimization import ALGO_REGISTRY
 from rovibrational_excitation.optimization.config import validate_optimization_config
@@ -31,7 +32,7 @@ from rovibrational_excitation.optimization.model import (
 )
 
 
-def _load_yaml(path: str) -> dict:
+def _load_yaml(path: str) -> dict[str, Any]:
     with open(path) as f:
         loaded = yaml.safe_load(f)
     if not isinstance(loaded, dict):
@@ -39,7 +40,7 @@ def _load_yaml(path: str) -> dict:
     return loaded
 
 
-def _build_states(basis, states_cfg: object) -> dict[str, tuple[int, ...]]:
+def _build_states(basis: Any, states_cfg: object) -> dict[str, tuple[int, ...]]:
     if not isinstance(states_cfg, dict):
         raise OptimizationModelConfigurationError("states must be a mapping")
     unknown = sorted(set(states_cfg) - {"initial", "target"})
@@ -66,7 +67,7 @@ def _build_states(basis, states_cfg: object) -> dict[str, tuple[int, ...]]:
     }
 
 
-def _format_system_label(system_cfg: dict) -> str:
+def _format_system_label(system_cfg: Mapping[str, Any]) -> str:
     t = str(system_cfg.get("type", "")).lower()
     p = dict(system_cfg.get("params", {}))
     if t == "linmol":
@@ -88,7 +89,9 @@ def _format_system_label(system_cfg: dict) -> str:
     return t or "system"
 
 
-def _apply_overrides(cfg: dict, overrides: Iterable[str] | None) -> dict:
+def _apply_overrides(
+    cfg: dict[str, Any], overrides: Iterable[str] | None
+) -> dict[str, Any]:
     if not overrides:
         return cfg
     new_cfg = cfg
@@ -103,20 +106,20 @@ def _apply_overrides(cfg: dict, overrides: Iterable[str] | None) -> dict:
 
 
 def run_from_config(
-    config: str | Path | dict,
+    config: str | Path | dict[str, Any],
     algorithm: str | None = None,
     overrides: Iterable[str] | None = None,
     *,
     out_dir: str | Path | None = None,
     do_plot: bool | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     Execute optimization from a YAML (or dict) config.
 
-    Returns a dict containing results and metadata:
+    Returns a dict containing the typed in-memory result and metadata:
       {
         "basis": ..., "H0": ..., "dipole": ...,
-        "result": algorithm-specific arrays plus time, psi_traj, target_idx, metrics,
+        "result": OptimizationResult(...),
         "out_dir": "/abs/path/to/results",
       }
     """

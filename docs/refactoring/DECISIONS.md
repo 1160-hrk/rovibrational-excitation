@@ -3970,6 +3970,43 @@ No objective, update, field, time-grid, index, or physical formula changes.
 
 Implementation commit: this checkpoint.
 
+
+### D-111: P7.3 optimization boundary is accepted with explicit exclusions
+
+Status: Accepted by the user on 2026-09-28; implemented as the P7.3 acceptance
+checkpoint.
+
+Scope: optimization ownership, dependency direction, strict typing, failure
+policy, independent references, and completion status. No calculation change is
+authorized.
+
+The exact algorithm registry, shared typed result/objective owners, isolated
+numerical kernels, closed configuration, and absence of broad exception
+suppression are executable acceptance contracts. Every optimization module and
+the high-level optimization runner is a mandatory strict-mypy target. The
+stored 1000-iteration legacy artifact is also checked for internal trajectory,
+population, field, and reported-fidelity consistency.
+
+P7.3 is complete because each supported optimizer calculation has an
+independent reference, all public/configuration failures are explicit, critical
+optimization coverage is no longer zero or near-zero, and no upper workflow
+layer is imported by the optimization package. Detailed evidence is in
+``PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md``.
+
+This acceptance deliberately retains the GRAPE and legacy no-op
+``convergence_tol`` condition, Class-D scalar meanings, frozen Local defaults
+and grid, standard-Krotov limitations, and SymTop rejection. Optimizer results
+remain typed in memory; no optimization-specific disk schema is claimed.
+Changing any of those behaviors requires a separate decision and, where it
+affects a calculation, explicit user approval plus an independent reference.
+
+Verification passes 1396 CPU tests with 10 optional-GPU skips (1406 collected),
+80% branch coverage, strict mypy for 72 named modules, and the complete P7.3
+reference suite. No objective, gradient, update, field, grid, index,
+normalization, tolerance, or physical formula changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

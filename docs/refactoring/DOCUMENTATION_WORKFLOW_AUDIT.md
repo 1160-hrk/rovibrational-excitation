@@ -65,7 +65,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 ## Completion sequence
 
-1. Continue P7.3/P7.4 scientific decomposition from independent references.
+1. P7.3 optimization is accepted under D-111. Continue P7.4 spectroscopy
+   decomposition from independent references.
 2. D-105 completes the pre-tag tooling safety gate. Do not weaken the real-GPU
    job or substitute skipped CPU tests for its evidence.
 3. In Phase 8, finalize D-073 root exports, then rewrite the English/Japanese

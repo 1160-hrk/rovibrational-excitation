@@ -1,7 +1,7 @@
 # Phase 7 optimization references
 
-Last verified: 2026-09-27
-Current checkpoint: P7.3-d, independent spectral-kernel reference
+Last verified: 2026-09-28
+Current checkpoint: P7.3-f/D-111 acceptance
 
 ## Purpose
 
@@ -391,3 +391,10 @@ without changing any executable expression. The authoritative reference is
 | Direct one-iteration Krotov construction | Complete — P7.3-b/D-106 |
 | Direct Local update on frozen legacy grid | Complete — P7.3-c |
 | Direct DFT/convolution spectral constraints | Complete — P7.3-d |
+
+
+All four references now guard their production owners and shared typed
+boundaries. The ownership, fallback, repository, strict-typing, coverage, and
+explicit-exclusion review is recorded in
+`PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md`. P7.3 is complete; formula or
+stopping-condition changes remain separately approval-gated.

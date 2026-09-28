@@ -1,5 +1,7 @@
 """Optimization algorithm registry and helpers."""
 
+from collections.abc import Callable
+
 from .grape import run_grape_optimization
 from .krotov import run_krotov_optimization
 from .legacy_batch_overlap import run_legacy_batch_overlap_optimization
@@ -19,7 +21,7 @@ from .objective import (
 from .result import ControlLayout, OptimizationResult
 from .spectral_constraints import LegacySpectralConstraint, LegacySpectralFilter
 
-ALGO_REGISTRY = {
+ALGO_REGISTRY: dict[str, Callable[..., OptimizationResult]] = {
     "local": run_local_optimization,
     "krotov": run_krotov_optimization,
     "legacy_batch_overlap": run_legacy_batch_overlap_optimization,

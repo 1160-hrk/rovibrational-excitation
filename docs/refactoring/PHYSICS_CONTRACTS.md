@@ -1084,6 +1084,13 @@ constraint retains the explicit unfiltered legacy update. Standard Krotov
 continues to reject spectral constraints because this historical filter is not
 an independent reference for interval-control Krotov monotonicity.
 
+D-111 accepts this optimization boundary without altering a physical or
+numerical contract. The four algorithm identities, their distinct time/control
+layouts, typed results, objective/evaluator ownership, strict unsupported-option
+failures, and independent reference artifacts are guarded together. Historical
+no-op convergence inputs and all unresolved Class-D scales remain documented
+debt rather than inferred or repaired behavior.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature

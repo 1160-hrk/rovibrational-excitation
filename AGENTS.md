@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-e4/D-110 typed legacy spectral constraints; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-f/D-111 optimization acceptance; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -242,8 +242,8 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 79%; the initial mandatory CI floor is 47%.
-- Optimization modules: 8-90% measured coverage; spectral constraints remain lowest.
+- Current branch coverage: 80%; the initial mandatory CI floor is 47%.
+- Optimization modules: 72-100% measured coverage.
 - Spectroscopy monolith: 90% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
 - README claims 63% coverage and contains removed APIs; it is not authoritative.
@@ -486,6 +486,14 @@ and hidden defaults while preserving the exact Gaussian mask, rFFT grid,
 has 1390 passes and 10 optional-GPU skips (1400 collected), 80% branch
 coverage, and strict mypy covers 64 modules. P7.3 acceptance/audit is next.
 
+P7.3-f/D-111 accepts the optimization boundary after checking the exact
+four-algorithm registry, single typed result and objective owners, strict
+failure policy, dependency direction, independent references, stored
+four-level transfer artifact, and all optimizer-facing type boundaries. No
+calculation changes. The suite has 1396 passes and 10 optional-GPU skips (1406
+collected), branch coverage is 80%, optimization modules are 72-100% covered,
+and strict mypy covers 72 modules. P7.4 spectroscopy is next.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -518,8 +526,8 @@ The next work is:
    typed target evaluators plus the GRAPE discrete-L2 objective, and
    P7.3-e3/D-109 separates the two exact Local response evaluators, and
    P7.3-e4/D-110 types the legacy-only spectral constraint and compiled filter,
-   all without changing any fixed calculation. Next run a bounded P7.3
-   ownership/acceptance audit before P7.4. Complete
+   all without changing any fixed calculation. P7.3-f/D-111 completes the
+   bounded optimization ownership/acceptance audit. P7.4 spectroscopy is next. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

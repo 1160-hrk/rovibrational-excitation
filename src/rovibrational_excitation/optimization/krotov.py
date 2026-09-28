@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -26,7 +27,13 @@ def _shape_function(control_times_fs: np.ndarray, total_fs: float) -> np.ndarray
 
 
 def run_krotov_optimization(
-    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+    *,
+    basis: Any,
+    hamiltonian: Any,
+    dipole: Any,
+    states: Mapping[str, Any],
+    time_cfg: Mapping[str, Any],
+    params: Mapping[str, Any],
 ) -> OptimizationResult:
     """Optimize terminal population using sequential interval updates.
 

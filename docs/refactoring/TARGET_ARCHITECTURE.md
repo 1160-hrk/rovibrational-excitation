@@ -293,6 +293,15 @@ to this owner; `legacy_batch_overlap.py` only selects absence versus the typed
 filter and adds the resulting unchanged update. This boundary is deliberately
 not shared with standard Krotov, which continues to reject the option.
 
+
+D-111 accepts this optimization ownership graph. All optimization modules and
+the high-level runner are mandatory strict-mypy targets; executable guards fix
+the exact registry, shared owners, lower-layer dependency direction, absence of
+broad exception suppression, and stored legacy artifact consistency. The
+accepted exclusions are behavioral debts rather than hidden architecture:
+no-op GRAPE/legacy convergence checks, Class-D scalars, frozen Local behavior,
+standard-Krotov limitations, SymTop rejection, and no optimizer disk schema.
+
 D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical
 fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -18,7 +19,7 @@ from .objective import DiscreteL2TargetObjective, IndexedTargetPopulation
 from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
 
-DEFAULT_PARAMS = {
+DEFAULT_PARAMS: dict[str, Any] = {
     "max_iter": 200,
     "convergence_tol": 1e-18,
     "learning_rate": 5e18,
@@ -28,7 +29,13 @@ DEFAULT_PARAMS = {
 
 
 def run_grape_optimization(
-    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+    *,
+    basis: Any,
+    hamiltonian: Any,
+    dipole: Any,
+    states: Mapping[str, Any],
+    time_cfg: Mapping[str, Any],
+    params: Mapping[str, Any],
 ) -> OptimizationResult:
     """Optimize terminal target population with an exact discrete RK4 gradient.
 

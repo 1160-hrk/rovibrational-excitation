@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -25,7 +26,7 @@ from .objective import (
 from .options import validate_algorithm_options, validate_local_time_options
 from .result import ControlLayout, OptimizationResult
 
-DEFAULT_PARAMS = {
+DEFAULT_PARAMS: dict[str, Any] = {
     "field_max_v_per_m": 1e12,
     "use_sin2_shape": False,
     "segment_size_steps": None,
@@ -50,7 +51,7 @@ DEFAULT_PARAMS = {
 
 def _build_segments_and_tlist(
     time_total: float, dt: float, seg_steps: int | None, seg_fs: float | None
-):
+) -> tuple[list[tuple[int, int]], np.ndarray]:
     if seg_steps is not None and seg_steps > 0:
         steps = int((seg_steps // 2) * 2)
     elif seg_fs is not None and seg_fs > 0:
@@ -65,12 +66,12 @@ def _build_segments_and_tlist(
 
 
 def _build_weights_for_basis(
-    basis,
+    basis: Any,
     *,
     mode: str,
     normalize: bool,
     custom: np.ndarray | None,
-    custom_dict: dict | None,
+    custom_dict: Mapping[Any, Any] | None,
     v_power: float,
     one_hot_target_idx: int | None,
     reverse: bool,
@@ -113,7 +114,13 @@ def _build_weights_for_basis(
 
 
 def run_local_optimization(
-    *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
+    *,
+    basis: Any,
+    hamiltonian: Any,
+    dipole: Any,
+    states: Mapping[str, Any],
+    time_cfg: Mapping[str, Any],
+    params: Mapping[str, Any],
 ) -> OptimizationResult:
     """Run the versioned legacy local optimizer.
 
@@ -323,12 +330,12 @@ def run_local_optimization(
 
         if eval_mode == "weights" and A_diag is not None:
             assert weights_evaluator is not None
-            evaluation = weights_evaluator.evaluate(
+            weights_evaluation = weights_evaluator.evaluate(
                 psi_ref,
                 (mu_eff_x, mu_eff_y),
             )
-            im_x = evaluation.response.first
-            im_y = evaluation.response.second
+            im_x = weights_evaluation.response.first
+            im_y = weights_evaluation.response.second
             ex = float(gain * S * im_x)
             ey = float(gain * S * im_y)
             seed_triggered = abs(im_x) < drive_abs_min and abs(im_y) < drive_abs_min
@@ -350,6 +357,9 @@ def run_local_optimization(
                 ey = seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
         else:
+            c: complex
+            d_x: complex
+            d_y: complex
             if target_control_evaluator is None:
                 c = 0.0
                 d_x = 0.0
@@ -357,15 +367,15 @@ def run_local_optimization(
                 val_x = 0.0
                 val_y = 0.0
             else:
-                evaluation = target_control_evaluator.evaluate(
+                target_evaluation = target_control_evaluator.evaluate(
                     psi_ref,
                     (mu_eff_x, mu_eff_y),
                 )
-                c = evaluation.overlap
-                d_x = evaluation.first_derivative
-                d_y = evaluation.second_derivative
-                val_x = evaluation.response.first
-                val_y = evaluation.response.second
+                c = target_evaluation.overlap
+                d_x = target_evaluation.first_derivative
+                d_y = target_evaluation.second_derivative
+                val_x = target_evaluation.response.first
+                val_y = target_evaluation.response.second
             ex = float(gain * S * val_x)
             ey = float(gain * S * val_y)
             seed_triggered = abs(c) < c_abs_min

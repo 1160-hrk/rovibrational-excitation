@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-26
-Current checkpoint: Phase 4 closed; P6.4-e moves concrete dipole mixin under D-080
+Last verified: 2026-09-28
+Current checkpoint: Phase 4 closed; P7.3/D-111 preserves all decided optimizer units
 
 ## Purpose
 
@@ -273,6 +273,13 @@ value changes. Those helper bodies now live in private
 1. Continue Class-D GRAPE, legacy-batch, Local-threshold, and convergence
    quantities only after user clarification and independent references.
 2. Preserve the resolved Class-A standard Krotov penalty boundary under D-106.
+
+
+P7.3 acceptance under D-111 changes no value or conversion. All optimizer
+modules and the high-level runner are now strict-mypy targets, but the Class-D
+quantities above remain deliberately undefined rather than receiving inferred
+units. Their resolution is not required to claim that the already decided
+Class-A/Class-B boundaries are preserved.
 
 Every unit updates this audit, D-045 or a successor decision, the physics
 contract, examples, and API inventory in the same commit.

@@ -66,6 +66,7 @@ def spectrogram_fast(
     if T_index > N:
         raise ValueError("Window size T is larger than input signal.")
 
+    window: np.ndarray
     if window_type == "rectangle":
         window = np.ones(T_index)
     elif window_type == "triangle":
