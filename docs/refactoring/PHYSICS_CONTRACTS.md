@@ -1215,6 +1215,13 @@ resonant/counter-rotating poles, damping, Fourier sign, transition orientation,
 and emission phase. Broadening, device, and normalization/area responsibilities
 remain unmoved until their independent references pass.
 
+D-113 completes those references without revising a formula. Direct normalized
+convolution fixes Doppler/Voigt and Gaussian/sinc device behavior; all exact
+routes are tied to the D-112 analytic response, and the nonlinear absorbance
+conversion is tied to its weak-susceptibility and zero-response limits. The
+resonant chunked route retains its characterized `1.51e-12` accumulation
+difference under a `2e-12` bound. Covered code may move structurally only.
+
 ## 11. Input validation principles
 
 Parameters that define the physical problem must be required rather than

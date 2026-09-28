@@ -2729,7 +2729,7 @@ Phase 5 remains open.
 ### D-072: Scientific decomposition uses independent transparent references
 
 Status: Accepted by the user on 2026-09-16; optimization references complete
-through P7.3-d, spectroscopy references started by P7.4-a1/D-112.
+through P7.3-d, spectroscopy references completed by P7.4-a2/D-113.
 
 Characterization protects current behavior but is not proof that the original
 formula is correct. Before algorithmic optimization or spectroscopy
@@ -4035,6 +4035,35 @@ and branch coverage remains 80%.
 Implementation commit: this checkpoint.
 
 
+### D-113: Current spectroscopy responsibilities have independent references
+
+Status: Accepted under the user’s calculation-preserving refactor direction on
+2026-09-28; implemented as P7.4-a2.
+
+Scope: independent spectroscopy references only. No production formula,
+branch, grid, endpoint, normalization, or public behavior changes.
+
+A direct normalized Gaussian convolution fixes the transition-specific Doppler
+width and discrete Lorentzian-to-Voigt behavior. Direct Gaussian, sinc, and
+sinc-squared impulse convolutions fix device-grid and unit-sum conventions.
+The four exact response routes are compared against the analytic two-level
+answer. `loop`, `matrix`, and `2d` remain within `5e-14`; the observed
+resonant `chunked` sparse/dense accumulation difference is `1.51e-12`, so its
+fixed reference bound is `2e-12`. No expression changes.
+
+The complex-square-root absorbance agrees with its weak-susceptibility limit
+and maps zero response to zero. Broadening preserves the appropriate discrete
+response sum. No universal absorbance-area rule is claimed on a finite caller
+grid with the frequency prefactor and nonlinear refractive-index conversion.
+Together with D-112, D-072 references now cover every current spectroscopy
+responsibility and permit calculation-neutral structural movement. Production
+still has no thermal-state constructor; adding one remains a new capability.
+The full suite passes 1406 tests with 10 optional-GPU skips (1416 collected),
+branch coverage remains 80%, and the spectroscopy monolith reaches 94%.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
@@ -4097,8 +4126,9 @@ D-023 resolves the numerical-policy ambiguities found by the P1.5 audit:
 ignored options, fixed response cutoffs, automatic memory heuristics, fixed
 Doppler cutoffs, and duplicated constants are no longer accepted behavior.
 P7.4-a1/D-112 supplies independent analytic absorption and radiation/PFID
-transform references. O-007 remains open for broadening, device, area/sum, and
-remaining observable references beyond exact-route equivalence tests.
+transform references. P7.4-a2/D-113 completes direct broadening, device, exact
+route, weak-response, and defensible normalization references. O-007 is closed
+for current production behavior; new physical capabilities require new oracles.
 
 ### O-008: Public v0.3 namespace
 

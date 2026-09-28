@@ -1,7 +1,7 @@
 # Phase 7 spectroscopy references
 
 Last verified: 2026-09-28
-Current checkpoint: P7.4-a1 analytic two-level and single-coherence references
+Current checkpoint: P7.4-a2 independent spectroscopy references complete
 
 ## Purpose
 
@@ -63,19 +63,61 @@ PFID is exactly the same stored array value under the current public contract.
 This reference fixes the denominator orientation, Fourier sign, coherence
 phase, transition-index order, and radiation sign before any code movement.
 
-## Remaining required references
+## P7.4-a2 broadening and device references
 
-The following P7.4 references remain before the corresponding production
-responsibility moves:
+The transition-specific Doppler reference begins with the analytic complex
+Lorentzian above and independently constructs the normalized discrete Gaussian
+kernel on the actual angular-frequency grid. Its test parameters make
+`sigma_omega / delta_omega = 3` exactly through the documented
 
-- transition-specific Doppler broadening against a direct normalized Gaussian
-  convolution, including the Lorentzian-to-Voigt limit;
-- Gaussian and sinc-family device-function normalization and grid convention;
-- exact response-route equivalence against the analytic response rather than
-  only against another production route;
-- response-to-absorbance limiting behavior and any defensible sum/area rule;
-- an explicit decision whether a future thermal-state constructor is in
-  scope. It does not exist today and will not be inferred during refactoring.
+~~~text
+sigma_omega = |omega_0| sqrt(k_B T / (m c^2)).
+~~~
+
+Direct convolution agrees with the production filter in the boundary-free
+interior at the `5e-14` relative test bound. The normalized kernel and the
+broadened imaginary-response sum are conserved at floating-point precision.
+The accepted `omega_0 == 0` branch is exactly unchanged. This is a transparent
+discrete Lorentzian-to-Voigt reference; it does not call SciPy or a production
+broadening helper to build the expected array.
+
+Device-function references independently construct a Gaussian kernel from the
+declared FWHM and the existing odd-length sinc/sinc-squared grids. A centered
+unit impulse produces the direct convolution, and every kernel has unit sum at
+floating-point precision. These tests fix the current offset convention and
+normalization without asserting that another endpoint convention would be
+physically superior.
+
+## Exact routes and observable limit
+
+All four exact response routes are now compared with the analytic two-level
+answer, not merely with one another. `loop`, `matrix`, and `2d` agree at the
+original `5e-14` relative bound. At the resonant peak, `chunked` exhibits an
+observed `1.51e-12` relative difference from sparse/dense accumulation order;
+its fixed bound is `2e-12`. This is recorded floating-point behavior, not an
+authorization to change an expression.
+
+The response-to-absorbance conversion also agrees with its weak-susceptibility
+limit at `2e-10` relative tolerance for dimensionless susceptibilities of
+`1e-10` to `3e-10`, and maps an exact zero response to zero. A universal
+absorbance-area sum rule is not asserted: the public observable contains a
+complex square root, a frequency prefactor, and a caller-selected finite grid.
+The valid conservation statement is instead applied at the normalized
+response-broadening kernel, where the discrete imaginary-response sum is
+preserved.
+
+A future thermal-state constructor remains a possible new capability, not a
+missing production owner. Its physical definition is unnecessary for moving
+the current caller-density calculations and will not be inferred during this
+refactor.
+
+## Reference disposition
+
+D-072 spectroscopy coverage is complete for the current production behaviors:
+caller-supplied thermal test input, response poles, transform sign and phase,
+absorption/radiation/PFID observables, Doppler and device broadening, exact
+routes, and defensible normalization limits. Covered responsibilities may now
+move structurally with before/after parity tests.
 
 ## Evidence
 
@@ -85,7 +127,7 @@ types under test. Its expected response, Boltzmann weights, frequency
 conversion, susceptibility, refractive index, and absorbance are constructed
 directly from authoritative constants.
 
-P7.4 decomposition is not yet authorized for responsibilities whose independent
-reference remains open. P7.4-a1 changes no production calculation. The focused
-spectroscopy suite passes 35 tests; the full suite passes 1398 tests with 10
-optional-GPU skips (1408 collected), and branch coverage remains 80%.
+P7.4-a1 and P7.4-a2 change no production calculation. The analytic-reference
+file passes ten tests; the focused spectroscopy suite passes 43. The full suite
+passes 1406 tests with 10 optional-GPU skips (1416 collected), branch coverage
+remains 80%, and the spectroscopy monolith reaches 94%.

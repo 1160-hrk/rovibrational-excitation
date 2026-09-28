@@ -1930,6 +1930,16 @@ broadening, normalization/area, and remaining observable references are next.
 No production calculation changes. The full suite has 1398 passes and 10
 optional-GPU skips (1408 collected); branch coverage remains 80%.
 
+P7.4-a2/D-113 completes the current spectroscopy reference set. Direct
+normalized convolution covers transition Doppler/Voigt behavior and all three
+device functions; all exact response routes meet the analytic two-level answer.
+The resonant chunked route has an observed `1.51e-12` accumulation difference
+under a fixed `2e-12` bound. The weak-susceptibility and zero-response limits
+also pass. No production calculation changes. P7.4-b may now move one scientific
+responsibility at a time with before/after parity. The full suite has 1406
+passes and 10 optional-GPU skips (1416 collected), branch coverage remains 80%,
+and the spectroscopy monolith reaches 94%.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

@@ -52,7 +52,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1398 passed, 10 skipped (1408 collected) |
+| Pytest | 1406 passed, 10 skipped (1416 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -60,7 +60,7 @@ physics changes are detected by tests.
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
 | Strict mypy scope | 72 named modules |
-| Spectroscopy coverage | 90% |
+| Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
@@ -331,6 +331,16 @@ production package still has no thermal-state constructor, and none is
 inferred. Broadening, device, area/sum, and remaining observable references are
 next; no spectroscopy implementation has moved yet. The full suite has 1398
 passes and 10 optional-GPU skips (1408 collected); branch coverage remains 80%.
+
+P7.4-a2/D-113 completes the independent current-behavior reference set. A
+direct normalized Gaussian convolution fixes Doppler/Voigt behavior; direct
+impulse convolutions fix Gaussian, sinc, and sinc-squared device normalization.
+All four exact routes now meet the analytic response, with a separately
+recorded `1.51e-12` resonant chunked accumulation difference under a `2e-12`
+bound. The weak-susceptibility and zero-response limits also pass. No production
+calculation changes. The full suite has 1406 passes and 10 optional-GPU skips
+(1416 collected), branch coverage remains 80%, and the monolith reaches 94%.
+Structure-only spectroscopy decomposition is next.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
