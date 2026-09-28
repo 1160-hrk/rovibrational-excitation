@@ -9,11 +9,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from rovibrational_excitation.core.units import (
-    KrotovPenalty,
-    LocalControlGain,
-    converter,
-)
+from rovibrational_excitation.core.units import KrotovPenalty, LocalControlGain
 
 from .krotov_controls import KROTOV_CONTROL_OPTION_KEYS
 from .krotov_initial_field import (
@@ -21,6 +17,7 @@ from .krotov_initial_field import (
     KROTOV_INITIAL_FIELD_OPTION_KEYS,
 )
 from .local_initialization import parse_local_initialization
+from .spectral_constraints import parse_legacy_spectral_constraint
 
 OptimizationAlgorithm = Literal["local", "krotov", "legacy_batch_overlap", "grape"]
 
@@ -89,16 +86,6 @@ _REMOVED_LOCAL_KEYS = {
     ),
     "seed_max_segments": "provide initialization.max_segments",
 }
-_SPECTRUM_REQUIRED = {
-    "method",
-    "bands",
-    "units",
-    "mode",
-    "combine",
-    "fwhm",
-    "alpha_scale",
-}
-_SPECTRUM_OPTIONAL = {"weights"}
 _LOCAL_BOOL_KEYS = {
     "use_sin2_shape",
     "lookahead_enable",
@@ -186,111 +173,6 @@ def _validate_common_options(params: Mapping[str, Any]) -> None:
         value = params["propagator_func"]
         if value is not None and not callable(value):
             raise ValueError("propagator_func must be callable or None")
-
-
-def _sequence(value: Any, *, label: str) -> list[Any]:
-    if isinstance(value, (str, bytes, Mapping)):
-        raise ValueError(f"{label} must be a sequence")
-    try:
-        return list(value)
-    except TypeError as exc:
-        raise ValueError(f"{label} must be a sequence") from exc
-
-
-def _validate_spectrum_constraints(value: Any) -> None:
-    if not isinstance(value, Mapping):
-        raise ValueError("spectrum_constraints must be a mapping")
-    keys = set(value)
-    unknown = keys - (_SPECTRUM_REQUIRED | _SPECTRUM_OPTIONAL)
-    if unknown:
-        raise ValueError("unsupported spectrum_constraints options: " + _names(unknown))
-    missing = _SPECTRUM_REQUIRED - keys
-    if missing:
-        raise ValueError(
-            "missing required spectrum_constraints options: " + _names(missing)
-        )
-    if value["method"] != "monotonic_kernel":
-        raise ValueError("spectrum_constraints.method must be 'monotonic_kernel'")
-
-    bands = _sequence(value["bands"], label="spectrum_constraints.bands")
-    if not bands:
-        raise ValueError("spectrum_constraints.bands must be nonempty")
-    units = value["units"]
-    if not isinstance(units, str):
-        raise ValueError(
-            "spectrum_constraints.units must be a supported frequency unit"
-        )
-    try:
-        converter.convert_frequency(1.0, units, "PHz")
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            "spectrum_constraints.units must be a supported frequency unit"
-        ) from exc
-    for index, raw_band in enumerate(bands):
-        band = _sequence(
-            raw_band,
-            label=f"spectrum_constraints.bands[{index}]",
-        )
-        if len(band) != 2:
-            raise ValueError(
-                f"spectrum_constraints.bands[{index}] must be [center, width]"
-            )
-        center = _finite_real(
-            band[0],
-            label=f"spectrum_constraints.bands[{index}] center",
-        )
-        width = _finite_real(
-            band[1],
-            label=f"spectrum_constraints.bands[{index}] width",
-        )
-        try:
-            converter.convert_frequency(center, units, "PHz")
-            converted_width = float(converter.convert_frequency(width, units, "PHz"))
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"invalid spectrum_constraints.bands[{index}] frequency"
-            ) from exc
-        if converted_width <= 0.0:
-            raise ValueError(
-                f"spectrum_constraints.bands[{index}] width must be positive"
-            )
-
-    mode = value["mode"]
-    if not isinstance(mode, str) or mode not in {"pass", "stop"}:
-        raise ValueError("spectrum_constraints.mode must be one of: pass, stop")
-    combine = value["combine"]
-    if not isinstance(combine, str) or combine not in {"max", "sum"}:
-        raise ValueError("spectrum_constraints.combine must be one of: max, sum")
-    if not isinstance(value["fwhm"], bool):
-        raise ValueError("spectrum_constraints.fwhm must be a bool")
-    alpha_scale = _finite_real(
-        value["alpha_scale"],
-        label="spectrum_constraints.alpha_scale",
-    )
-    if alpha_scale < 0.0:
-        raise ValueError("spectrum_constraints.alpha_scale must be nonnegative")
-
-    if "weights" in value:
-        if combine != "sum":
-            raise ValueError(
-                "spectrum_constraints.weights is accepted only with combine='sum'"
-            )
-        if value["weights"] is not None:
-            weights = _sequence(
-                value["weights"],
-                label="spectrum_constraints.weights",
-            )
-            if len(weights) != len(bands):
-                raise ValueError("spectrum_constraints.weights length must match bands")
-            for raw_weight in weights:
-                weight = _finite_real(
-                    raw_weight,
-                    label="spectrum_constraints.weights entries",
-                )
-                if weight < 0.0:
-                    raise ValueError(
-                        "spectrum_constraints.weights entries must be nonnegative"
-                    )
 
 
 def _validate_local_options(params: Mapping[str, Any]) -> None:
@@ -426,7 +308,7 @@ def validate_algorithm_options(
     if algorithm == "local":
         _validate_local_options(params)
     if algorithm == "legacy_batch_overlap" and "spectrum_constraints" in params:
-        _validate_spectrum_constraints(params["spectrum_constraints"])
+        parse_legacy_spectral_constraint(params["spectrum_constraints"])
     return axes
 
 

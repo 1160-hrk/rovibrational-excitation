@@ -1067,6 +1067,23 @@ signs. Gain/shape multiplication, thresholds, seeding, clipping, grid indices,
 and propagation remain outside the evaluators and retain their established
 order.
 
+D-110 gives the historical ``legacy_batch_overlap`` spectral constraint one
+strict typed boundary. A supplied constraint is complete and explicit; no
+field is defaulted, coerced, case-normalized, or silently ignored. Its compiled
+mask uses the runner's unchanged ``np.fft.rfftfreq`` grid, and its update
+remains
+
+~~~text
+U[k] = FFT(source)[k] / (1 + alpha[k])
+u = inverse_rFFT(U).
+~~~
+
+The accepted Gaussian pass/stop, max/sum, FWHM/sigma, weights, clipping,
+frequency conversion, and ``alpha_scale`` formulas are unchanged. An omitted
+constraint retains the explicit unfiltered legacy update. Standard Krotov
+continues to reject spectral constraints because this historical filter is not
+an independent reference for interval-control Krotov monotonicity.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature

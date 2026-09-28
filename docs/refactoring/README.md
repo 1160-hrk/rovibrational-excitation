@@ -299,6 +299,15 @@ has 1387 passes and 10 optional-GPU skips (1397 collected), coverage remains
 80%, strict mypy remains at 64 modules, and the objective module is fully
 covered.
 
+P7.3-e4/D-110 then gives the historical spectral filter one strict typed
+configuration and compiled-filter boundary. The legacy runner no longer
+reinterprets validated input with hidden defaults or coercions. The exact
+Gaussian mask, rFFT grid, direct ``1+alpha`` denominator, and field update are
+unchanged, while standard Krotov continues to reject the option. The full suite
+has 1390 passes and 10 optional-GPU skips (1400 collected), coverage remains
+80%, strict mypy remains at 64 modules, and the spectral-constraint module is
+86% covered.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks
@@ -567,7 +576,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1 through P7.3-e3 typed result/objective/Local-response boundaries complete; remaining P7.3-e decomposition and P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1 through P7.3-e4 typed result/objective/Local-response/legacy-constraint boundaries complete; P7.3 acceptance and P7.4 pending |
 | 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in

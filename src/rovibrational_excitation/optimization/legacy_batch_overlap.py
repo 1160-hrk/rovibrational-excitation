@@ -19,7 +19,7 @@ from .krotov_initial_field import parse_krotov_initial_field
 from .objective import IndexedTargetPopulation
 from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
-from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
+from .spectral_constraints import parse_legacy_spectral_constraint
 
 DEFAULT_PARAMS = {
     "max_iter": 1000,
@@ -106,31 +106,17 @@ def run_legacy_batch_overlap_optimization(
     # Frequency grid for potential spectral constraints (PHz = cycles/fs)
     freq_phz = np.fft.rfftfreq(n_field_steps, d=dt_fs)
 
-    # Historical spectral kernel retained for this explicit legacy route.
-    sc_cfg = params.get("spectrum_constraints", None)
-    use_sc = False
-    alpha_mask = None
-    if isinstance(sc_cfg, dict):
-        method = str(sc_cfg.get("method", "")).strip().lower()
-        if method == "monotonic_kernel":
-            bands = sc_cfg.get("bands", [])
-            units = sc_cfg.get("units", "cm^-1")
-            mode = sc_cfg.get("mode", "pass")
-            combine = sc_cfg.get("combine", "max")
-            fwhm = bool(sc_cfg.get("fwhm", True))
-            weights = sc_cfg.get("weights", None)
-            alpha_scale = float(sc_cfg.get("alpha_scale", 1.0))
-            alpha_mask = build_alpha_mask(
-                freq_phz,
-                bands,
-                units=units,
-                mode=mode,
-                combine=combine,
-                fwhm=fwhm,
-                weights=weights,
-                alpha_scale=alpha_scale,
-            )
-            use_sc = True
+    # Compile the already-strict legacy-only constraint on this exact rFFT grid.
+    spectral_constraint = (
+        parse_legacy_spectral_constraint(params["spectrum_constraints"])
+        if "spectrum_constraints" in params
+        else None
+    )
+    spectral_filter = (
+        spectral_constraint.compile(freq_phz)
+        if spectral_constraint is not None
+        else None
+    )
 
     def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         ef = ElectricField.from_time_grid(time_grid)
@@ -215,12 +201,11 @@ def run_legacy_batch_overlap_optimization(
                 delta_field[jf + 1, 0] += dEx
                 delta_field[jf + 1, 1] += dEy
 
-        if use_sc and alpha_mask is not None:
-            # Solve the configured frequency-domain filtered update.
-            u_field = solve_update_in_frequency(delta_field, alpha_mask)
-            field_data = field_data + u_field
+        if spectral_filter is not None:
+            # Solve the explicitly configured frequency-domain filtered update.
+            field_data = field_data + spectral_filter.apply(delta_field)
         else:
-            # Fallback: plain time-local update
+            # The absent optional constraint selects the documented unfiltered update.
             field_data = field_data + delta_field
 
     # Final forward for outputs

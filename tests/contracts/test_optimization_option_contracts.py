@@ -12,6 +12,9 @@ from rovibrational_excitation.optimization.options import (
     validate_local_time_options,
 )
 from rovibrational_excitation.optimization.spectral_constraints import (
+    LegacySpectralConstraint,
+    build_alpha_mask,
+    parse_legacy_spectral_constraint,
     solve_update_in_frequency,
 )
 
@@ -270,6 +273,59 @@ def _spectrum(**overrides: Any) -> dict[str, Any]:
     }
     result.update(overrides)
     return result
+
+
+def test_legacy_spectral_constraint_freezes_validated_input() -> None:
+    raw = _spectrum(
+        bands=[[2300.0, 100.0], [2400.0, 75.0]],
+        combine="sum",
+        weights=[0.25, 0.75],
+    )
+
+    constraint = parse_legacy_spectral_constraint(raw)
+    raw["bands"][0][0] = 9999.0
+    raw["weights"][0] = 1.0
+
+    assert constraint == LegacySpectralConstraint(
+        bands=((2300.0, 100.0), (2400.0, 75.0)),
+        units="cm^-1",
+        mode="pass",
+        combine="sum",
+        fwhm=True,
+        weights=(0.25, 0.75),
+        alpha_scale=10.0,
+    )
+
+
+def test_compiled_legacy_spectral_filter_preserves_mask_and_update() -> None:
+    raw = _spectrum(
+        bands=[[0.05, 0.02]],
+        units="PHz",
+        mode="stop",
+        combine="max",
+        fwhm=False,
+        alpha_scale=2.5,
+    )
+    frequency = np.fft.rfftfreq(5, d=0.5)
+    source = np.arange(10.0).reshape(5, 2)
+    constraint = parse_legacy_spectral_constraint(raw)
+
+    spectral_filter = constraint.compile(frequency)
+    expected_mask = build_alpha_mask(
+        frequency,
+        raw["bands"],
+        units=raw["units"],
+        mode=raw["mode"],
+        combine=raw["combine"],
+        fwhm=raw["fwhm"],
+        alpha_scale=raw["alpha_scale"],
+    )
+
+    np.testing.assert_array_equal(spectral_filter.alpha_mask, expected_mask)
+    np.testing.assert_array_equal(
+        spectral_filter.apply(source),
+        solve_update_in_frequency(source, expected_mask),
+    )
 
 
 @pytest.mark.parametrize(

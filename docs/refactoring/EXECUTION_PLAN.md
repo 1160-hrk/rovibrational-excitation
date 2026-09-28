@@ -1881,6 +1881,18 @@ optional-GPU skips (1397 collected), 80% branch coverage, and strict mypy for
 legacy-only spectral constraint boundary without exposing it as standard
 Krotov behavior.
 
+P7.3-e4/D-110 moves the already strict legacy spectral-constraint schema into
+one frozen ``LegacySpectralConstraint`` and compiles one
+``LegacySpectralFilter`` on the unchanged runner rFFT grid. The runner no
+longer repeats parsing with implicit defaults or coercions. Constraint absence
+still selects the unfiltered legacy update; standard Krotov still rejects the
+option. Mask and solve formulas, update addition, field grid, and all Class-D
+values are unchanged. Full verification passes 1389 CPU tests with 10
+optional-GPU skips (1399 collected), 80% branch coverage, and strict mypy for
+64 modules; the spectral-constraint module now reaches 86% coverage. One P7.3
+acceptance/audit unit should next verify all optimizer interface owners and
+close the phase before P7.4.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

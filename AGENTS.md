@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-e3/D-109 typed Local responses; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-e4/D-110 typed legacy spectral constraints; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -479,6 +479,13 @@ suite has 1387 passes and 10 optional-GPU skips (1397 collected), 80% branch
 coverage, and strict mypy covers 64 modules. Constraint decomposition must
 continue without broadening the legacy spectral filter to standard Krotov.
 
+P7.3-e4/D-110 gives the legacy-only spectral filter one strict frozen
+configuration and compiled-mask boundary. It removes duplicate runner parsing
+and hidden defaults while preserving the exact Gaussian mask, rFFT grid,
+``1+alpha`` denominator, field update, and standard-Krotov rejection. The suite
+has 1390 passes and 10 optional-GPU skips (1400 collected), 80% branch
+coverage, and strict mypy covers 64 modules. P7.3 acceptance/audit is next.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -509,9 +516,10 @@ The next work is:
    both with no formula discrepancy. All required optimization oracles now pass.
    P7.3-e1/D-107 introduces the common typed result and P7.3-e2/D-108 introduces
    typed target evaluators plus the GRAPE discrete-L2 objective, and
-   P7.3-e3/D-109 separates the two exact Local response evaluators, all without
-   changing any fixed calculation. Next type legacy constraint orchestration in
-   a bounded unit. Complete
+   P7.3-e3/D-109 separates the two exact Local response evaluators, and
+   P7.3-e4/D-110 types the legacy-only spectral constraint and compiled filter,
+   all without changing any fixed calculation. Next run a bounded P7.3
+   ownership/acceptance audit before P7.4. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

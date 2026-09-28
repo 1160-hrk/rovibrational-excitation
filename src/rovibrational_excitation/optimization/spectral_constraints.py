@@ -8,11 +8,197 @@ convergence for standard Krotov control.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from math import isfinite
+from numbers import Real
+from typing import Any, Literal, cast
 
 import numpy as np
 
 from rovibrational_excitation.core.units.converters import converter
+
+SpectralMode = Literal["pass", "stop"]
+SpectralCombine = Literal["max", "sum"]
+
+_SPECTRUM_REQUIRED = {
+    "method",
+    "bands",
+    "units",
+    "mode",
+    "combine",
+    "fwhm",
+    "alpha_scale",
+}
+_SPECTRUM_OPTIONAL = {"weights"}
+
+
+@dataclass(frozen=True, slots=True)
+class LegacySpectralFilter:
+    """One historical penalty mask compiled on an exact rFFT grid."""
+
+    alpha_mask: np.ndarray
+
+    def apply(self, source: np.ndarray) -> np.ndarray:
+        return solve_update_in_frequency(source, self.alpha_mask)
+
+
+@dataclass(frozen=True, slots=True)
+class LegacySpectralConstraint:
+    """Validated configuration for the legacy batch-overlap filter only."""
+
+    bands: tuple[tuple[float, float], ...]
+    units: str
+    mode: SpectralMode
+    combine: SpectralCombine
+    fwhm: bool
+    weights: tuple[float, ...] | None
+    alpha_scale: float
+
+    def compile(self, freq_phz: np.ndarray) -> LegacySpectralFilter:
+        return LegacySpectralFilter(
+            build_alpha_mask(
+                freq_phz,
+                self.bands,
+                units=self.units,
+                mode=self.mode,
+                combine=self.combine,
+                fwhm=self.fwhm,
+                weights=self.weights,
+                alpha_scale=self.alpha_scale,
+            )
+        )
+
+
+def _names(values: set[Any]) -> str:
+    return ", ".join(
+        sorted(value if isinstance(value, str) else repr(value) for value in values)
+    )
+
+
+def _sequence(value: Any, *, label: str) -> list[Any]:
+    if isinstance(value, (str, bytes, Mapping)):
+        raise ValueError(f"{label} must be a sequence")
+    try:
+        return list(value)
+    except TypeError as exc:
+        raise ValueError(f"{label} must be a sequence") from exc
+
+
+def _finite_real(value: Any, *, label: str) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValueError(f"{label} must be a finite real number")
+    converted = float(value)
+    if not isfinite(converted):
+        raise ValueError(f"{label} must be a finite real number")
+    return converted
+
+
+def parse_legacy_spectral_constraint(value: Any) -> LegacySpectralConstraint:
+    """Validate and freeze the legacy-only spectral-constraint mapping."""
+    if not isinstance(value, Mapping):
+        raise ValueError("spectrum_constraints must be a mapping")
+    keys = set(value)
+    unknown = keys - (_SPECTRUM_REQUIRED | _SPECTRUM_OPTIONAL)
+    if unknown:
+        raise ValueError("unsupported spectrum_constraints options: " + _names(unknown))
+    missing = _SPECTRUM_REQUIRED - keys
+    if missing:
+        raise ValueError(
+            "missing required spectrum_constraints options: " + _names(missing)
+        )
+    if value["method"] != "monotonic_kernel":
+        raise ValueError("spectrum_constraints.method must be 'monotonic_kernel'")
+
+    raw_bands = _sequence(value["bands"], label="spectrum_constraints.bands")
+    if not raw_bands:
+        raise ValueError("spectrum_constraints.bands must be nonempty")
+    units = value["units"]
+    if not isinstance(units, str):
+        raise ValueError(
+            "spectrum_constraints.units must be a supported frequency unit"
+        )
+    try:
+        converter.convert_frequency(1.0, units, "PHz")
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "spectrum_constraints.units must be a supported frequency unit"
+        ) from exc
+
+    bands: list[tuple[float, float]] = []
+    for index, raw_band in enumerate(raw_bands):
+        band = _sequence(raw_band, label=f"spectrum_constraints.bands[{index}]")
+        if len(band) != 2:
+            raise ValueError(
+                f"spectrum_constraints.bands[{index}] must be [center, width]"
+            )
+        center = _finite_real(
+            band[0], label=f"spectrum_constraints.bands[{index}] center"
+        )
+        width = _finite_real(
+            band[1], label=f"spectrum_constraints.bands[{index}] width"
+        )
+        try:
+            converter.convert_frequency(center, units, "PHz")
+            converted_width = float(converter.convert_frequency(width, units, "PHz"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"invalid spectrum_constraints.bands[{index}] frequency"
+            ) from exc
+        if converted_width <= 0.0:
+            raise ValueError(
+                f"spectrum_constraints.bands[{index}] width must be positive"
+            )
+        bands.append((center, width))
+
+    mode = value["mode"]
+    if not isinstance(mode, str) or mode not in {"pass", "stop"}:
+        raise ValueError("spectrum_constraints.mode must be one of: pass, stop")
+    combine = value["combine"]
+    if not isinstance(combine, str) or combine not in {"max", "sum"}:
+        raise ValueError("spectrum_constraints.combine must be one of: max, sum")
+    fwhm = value["fwhm"]
+    if not isinstance(fwhm, bool):
+        raise ValueError("spectrum_constraints.fwhm must be a bool")
+    alpha_scale = _finite_real(
+        value["alpha_scale"], label="spectrum_constraints.alpha_scale"
+    )
+    if alpha_scale < 0.0:
+        raise ValueError("spectrum_constraints.alpha_scale must be nonnegative")
+
+    weights: tuple[float, ...] | None = None
+    if "weights" in value:
+        if combine != "sum":
+            raise ValueError(
+                "spectrum_constraints.weights is accepted only with combine='sum'"
+            )
+        if value["weights"] is not None:
+            raw_weights = _sequence(
+                value["weights"], label="spectrum_constraints.weights"
+            )
+            if len(raw_weights) != len(raw_bands):
+                raise ValueError("spectrum_constraints.weights length must match bands")
+            converted_weights: list[float] = []
+            for raw_weight in raw_weights:
+                weight = _finite_real(
+                    raw_weight, label="spectrum_constraints.weights entries"
+                )
+                if weight < 0.0:
+                    raise ValueError(
+                        "spectrum_constraints.weights entries must be nonnegative"
+                    )
+                converted_weights.append(weight)
+            weights = tuple(converted_weights)
+
+    return LegacySpectralConstraint(
+        bands=tuple(bands),
+        units=units,
+        mode=cast(SpectralMode, mode),
+        combine=cast(SpectralCombine, combine),
+        fwhm=fwhm,
+        weights=weights,
+        alpha_scale=alpha_scale,
+    )
 
 
 def _to_phz(x: float | np.ndarray, units: str) -> float | np.ndarray:

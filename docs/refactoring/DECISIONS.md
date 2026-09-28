@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-26
+Last updated: 2026-09-28
 
 ## How to use this log
 
@@ -3927,6 +3927,46 @@ Verification passes 1387 CPU tests with 10 optional-GPU skips (1397 collected),
 ``optimization.objective``, and both independent Local-mode references at the
 existing tolerances. No formula, field value, index, threshold, or operation
 order changes.
+
+Implementation commit: this checkpoint.
+
+### D-110: Legacy spectral constraints have one strict typed boundary
+
+Status: Accepted by the user on 2026-09-28; implemented as P7.3-e4.
+
+Scope: configuration and execution ownership for the independently referenced
+``legacy_batch_overlap`` frequency-domain filter. Standard Krotov remains
+outside this scope and continues to reject spectral constraints.
+
+``LegacySpectralConstraint`` now owns the complete required mapping, exact enum
+values, finite bands and weights, frequency unit validation, and nonnegative
+``alpha_scale``. It copies mutable input sequences into immutable tuples.
+``LegacySpectralFilter`` owns the exact mask compiled on the runner's existing
+rFFT grid and applies the unchanged solve
+``U[k] = FFT(source)[k] / (1 + alpha[k])``.
+
+The runner no longer reparses a validated mapping with hidden defaults,
+case/whitespace normalization, bool coercion, or a method-dependent silent
+no-op. Omitting the optional top-level constraint explicitly selects the
+historical unfiltered update; providing it requires the complete strict schema.
+
+Consequences:
+
+- ``optimization.spectral_constraints`` is the single validation, typed
+  configuration, mask-construction, and filter-application owner;
+- ``optimization.options`` delegates legacy validation to that owner and no
+  longer duplicates the schema;
+- the exact ``rfftfreq`` grid, Gaussian mask formulas, wavenumber conversion,
+  clipping, scale, direct ``1+alpha`` denominator, and update addition order are
+  unchanged;
+- no resampling, normalization, repair floor, or backend transfer is added;
+- standard Krotov still rejects ``spectrum_constraints`` before propagation.
+
+Verification passes 1390 CPU tests with 10 optional-GPU skips (1400 collected),
+80% branch coverage, strict mypy for 64 named modules, and the independent DFT,
+periodic-convolution, mask, option, time-grid, and legacy integration references.
+``optimization.spectral_constraints`` reaches 86% statement/branch coverage.
+No objective, update, field, time-grid, index, or physical formula changes.
 
 Implementation commit: this checkpoint.
 

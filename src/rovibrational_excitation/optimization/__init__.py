@@ -17,6 +17,7 @@ from .objective import (
     VectorTargetPopulation,
 )
 from .result import ControlLayout, OptimizationResult
+from .spectral_constraints import LegacySpectralConstraint, LegacySpectralFilter
 
 ALGO_REGISTRY = {
     "local": run_local_optimization,
@@ -33,6 +34,8 @@ __all__ = [
     "ALGO_REGISTRY",
     "ControlLayout",
     "OptimizationResult",
+    "LegacySpectralConstraint",
+    "LegacySpectralFilter",
     "DiagonalObservableLocalEvaluator",
     "DiscreteL2TargetObjective",
     "IndexedTargetPopulation",

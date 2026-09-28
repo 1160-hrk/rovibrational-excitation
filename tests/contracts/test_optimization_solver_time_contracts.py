@@ -146,6 +146,63 @@ def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
     assert result.trajectory.shape == (3, 2)
 
 
+def test_legacy_spectral_constraint_is_compiled_and_applied_on_exact_grid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _DirectionSpy()
+    compiled_frequencies: list[np.ndarray] = []
+    filtered_sources: list[np.ndarray] = []
+
+    class _Filter:
+        @staticmethod
+        def apply(source: np.ndarray) -> np.ndarray:
+            filtered_sources.append(np.array(source, copy=True))
+            return np.ones_like(source)
+
+    class _Constraint:
+        @staticmethod
+        def compile(frequency: np.ndarray) -> _Filter:
+            compiled_frequencies.append(np.array(frequency, copy=True))
+            return _Filter()
+
+    monkeypatch.setattr(legacy_module, "SchrodingerPropagator", lambda **_: spy)
+    monkeypatch.setattr(
+        legacy_module,
+        "parse_legacy_spectral_constraint",
+        lambda _: _Constraint(),
+    )
+
+    result = legacy_module.run_legacy_batch_overlap_optimization(
+        basis=_TwoStateBasis(),
+        hamiltonian=_Hamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "output_stride": 1},
+        params=_generated_initial_field(
+            initial_amplitude=0.0,
+            max_iter=1,
+            spectrum_constraints={
+                "method": "monotonic_kernel",
+                "bands": [[0.0, 0.1]],
+                "units": "PHz",
+                "mode": "pass",
+                "combine": "max",
+                "fwhm": True,
+                "alpha_scale": 1.0,
+            },
+        ),
+    )
+
+    np.testing.assert_array_equal(
+        compiled_frequencies[0],
+        np.fft.rfftfreq(9, d=0.1),
+    )
+    assert len(filtered_sources) == 1
+    np.testing.assert_array_equal(filtered_sources[0], np.zeros((9, 2)))
+    np.testing.assert_array_equal(result.controls_v_per_m, np.ones((9, 2)))
+    np.testing.assert_array_equal(spy.calls[-1]["field"], np.ones((9, 2)))
+
+
 def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

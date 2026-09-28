@@ -285,8 +285,13 @@ GRAPE discrete-L2 value is a separate objective type.
 D-109 adds distinct Local diagonal-observable and target-overlap evaluator
 results under the same owner. They return only the response data required by
 the unchanged Local orchestration; threshold, seed, clipping, grid, and
-propagation ownership stays in `local.py`. Spectral-constraint orchestration
-remains separate P7.3-e work.
+propagation ownership stays in `local.py`.
+
+D-110 gives `optimization.spectral_constraints` ownership of the strict frozen
+legacy configuration and its exact-rFFT-grid compiled filter. Options delegate
+to this owner; `legacy_batch_overlap.py` only selects absence versus the typed
+filter and adds the resulting unchanged update. This boundary is deliberately
+not shared with standard Krotov, which continues to reject the option.
 
 D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical
