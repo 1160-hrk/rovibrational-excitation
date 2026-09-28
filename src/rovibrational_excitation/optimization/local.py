@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from .local_initialization import (
     parse_local_initialization,
 )
 from .options import validate_algorithm_options, validate_local_time_options
+from .result import ControlLayout, OptimizationResult
 
 DEFAULT_PARAMS = {
     "field_max_v_per_m": 1e12,
@@ -40,16 +41,6 @@ DEFAULT_PARAMS = {
     "custom_weights_dict": None,
     "propagator_func": None,
 }
-
-
-class RunResult(TypedDict, total=False):
-    efield: ElectricField
-    time: np.ndarray
-    psi_traj: np.ndarray
-    metrics: dict
-    tlist: np.ndarray
-    field_data: np.ndarray
-    target_idx: int
 
 
 def _build_segments_and_tlist(
@@ -118,7 +109,7 @@ def _build_weights_for_basis(
 
 def run_local_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
-) -> RunResult:
+) -> OptimizationResult:
     """Run the versioned legacy local optimizer.
 
     ``gain`` and ``gain_units`` are required and converted to ``(V/m)^2 fs``
@@ -478,10 +469,10 @@ def run_local_optimization(
         control_axes[1]: float(gain * np.max(np.abs(mu_eff_y))),
     }
 
-    return RunResult(
-        efield=ef_total,
-        time=time_full,
-        psi_traj=psi_traj_full,
+    return OptimizationResult(
+        electric_field=ef_total,
+        trajectory_times_fs=time_full,
+        trajectory=psi_traj_full,
         metrics={
             "fidelity": fidelity,
             "gain_v_per_m_squared_fs": float(gain),
@@ -495,7 +486,8 @@ def run_local_optimization(
             "initialization_method": initialization.method,
             "seed_segments_used": int(seed_max_segments - seed_left),
         },
-        tlist=tlist,
-        field_data=full_field,
-        target_idx=target_idx if target_idx is not None else -1,
+        control_times_fs=tlist,
+        controls_v_per_m=full_field,
+        target_index=target_idx,
+        control_layout=ControlLayout.LOCAL_LEGACY_FIELD_SAMPLES,
     )

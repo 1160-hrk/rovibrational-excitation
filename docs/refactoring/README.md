@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-27
+Last verified: 2026-09-28
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -275,8 +275,15 @@ wavenumber conversion is also directly referenced. This validates only the
 historical `legacy_batch_overlap` filter, not standard Krotov monotonicity. No
 numerical expression changes. All D-072 optimization references now pass. The
 full suite has 1365 passes and 10 optional-GPU skips (1375 collected), 79%
-branch coverage, and strict mypy covers 62 modules. P7.3-e structural
-optimization decomposition is next.
+branch coverage, and strict mypy covers 62 modules.
+
+P7.3-e1/D-107 now gives all four optimizers one typed result while preserving
+three distinct control layouts. It removes ambiguous dictionary keys and
+standard-Krotov field aliases without copying, resampling, normalizing, or
+reconstructing any result array. Local `weights` mode uses `None` for its valid
+missing target. The full suite has 1380 passes and 10 optional-GPU skips (1390
+collected), 80% branch coverage, and strict mypy covers 63 modules. Objective
+and evaluator decomposition remains the next P7.3-e unit.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
@@ -546,7 +553,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references complete; P7.3-e decomposition and P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1 typed result complete; remaining P7.3-e decomposition and P7.4 pending |
 | 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in

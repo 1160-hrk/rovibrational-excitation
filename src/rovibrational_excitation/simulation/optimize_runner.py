@@ -190,14 +190,12 @@ def run_from_config(
             plot_all,  # lazy import
         )
 
-        efield_obj = result.get("efield")
-        time_full = result.get("time")
-        psi_traj = result.get("psi_traj")
-        tlist = result.get("tlist")
-        if tlist is None:
-            tlist = time_full
-        field_data = result.get("field_data")
-        target_idx = result.get("target_idx", -1)
+        efield_obj = result.electric_field
+        time_full = result.trajectory_times_fs
+        psi_traj = result.trajectory
+        tlist = result.control_times_fs
+        field_data = result.controls_v_per_m
+        target_idx = result.target_index
         missing_plot_data = [
             name
             for name, value in (

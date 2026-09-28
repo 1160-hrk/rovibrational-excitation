@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-27
+Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-d independent spectral reference; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-e1/D-107 typed optimization result; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -456,11 +456,14 @@ error under a fixed `1e-7` bound. GRAPE requires an explicit generated or
 sampled seed and rejects custom propagators. That P7.3-a checkpoint left Krotov, Local, spectral constraints, Class-D
 scales, and the no-op convergence predicate unchanged. P7.3-b/D-106 then split
 the former Krotov calculation into `legacy_batch_overlap` and implemented the
-independently referenced sequential interval-control standard route. The suite
-has 1365 passes and 10 optional-GPU skips (1375 collected); strict mypy covers
-62 modules. P7.3-c independently reproduces both Local update modes, and
-P7.3-d independently verifies the legacy spectral mask, DFT, and periodic
-convolution without numerical changes. P7.3-e structural decomposition is next.
+independently referenced sequential interval-control standard route. P7.3-c
+independently reproduces both Local update modes, and P7.3-d independently
+verifies the legacy spectral mask, DFT, and periodic convolution
+without numerical changes. P7.3-e1/D-107 gives all four solvers one typed
+`OptimizationResult` while retaining the exact canonical RK4, Local legacy,
+and standard-Krotov interval-control layouts. The suite has 1380 passes and 10
+optional-GPU skips (1390 collected), 80% branch coverage, and strict mypy
+covers 63 modules. P7.3-e objective/evaluator decomposition is next.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
@@ -490,8 +493,9 @@ The next work is:
    preserves the old route explicitly. P7.3-c completes the direct Local-control
    oracle, and P7.3-d completes the direct DFT/convolution spectral reference,
    both with no formula discrepancy. All required optimization oracles now pass.
-   Next introduce common optimization contracts and decompose orchestration
-   without changing any independently fixed calculation. Complete
+   P7.3-e1/D-107 introduces the common typed result without changing any fixed
+   calculation. Next introduce bounded objective/evaluator interfaces and
+   continue orchestration decomposition. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

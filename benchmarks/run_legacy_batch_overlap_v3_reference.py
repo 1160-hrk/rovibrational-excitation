@@ -67,7 +67,7 @@ def record_reference(
         backend="numpy", validate_units=True, renorm=True
     ).propagate(
         hamiltonian=run["H0"],
-        efield=result["efield"],
+        efield=result.electric_field,
         dipole_matrix=run["dipole"],
         initial_state=initial,
         axes=config["algorithms"]["legacy_batch_overlap"]["control_axes"],
@@ -78,11 +78,11 @@ def record_reference(
         sparse=False,
     )
 
-    optimized_trajectory = np.asarray(result["psi_traj"])
+    optimized_trajectory = np.asarray(result.trajectory)
     check_trajectory = np.asarray(check_trajectory)
     populations = np.abs(check_trajectory) ** 2
-    field = np.asarray(result["field_data"])
-    field_times = np.asarray(result["tlist"])
+    field = np.asarray(result.controls_v_per_m)
+    field_times = np.asarray(result.control_times_fs)
     target_index = basis.get_index(tuple(config["states"]["target"]))
 
     npz_path.parent.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,7 @@ def record_reference(
         "dimension": basis.size(),
         "target_index": target_index,
         "fidelity": float(populations[-1, target_index]),
-        "reported_fidelity": float(result["metrics"]["fidelity"]),
+        "reported_fidelity": float(result.metrics["fidelity"]),
         "final_populations": populations[-1].tolist(),
         "maximum_non_target_population": float(
             np.max(np.delete(populations[-1], target_index))

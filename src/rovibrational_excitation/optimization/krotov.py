@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any
 
 import numpy as np
 
@@ -13,21 +13,11 @@ from .krotov_controls import parse_krotov_initial_control
 from .krotov_rk4 import evaluate_krotov_iteration, propagate_interval_controls
 from .krotov_timegrid import KrotovIntervalGrid
 from .options import validate_algorithm_options
+from .result import ControlLayout, OptimizationResult
 from .timegrid import sample_optimization_output
 
 DEFAULT_MAX_ITER = 1000
 DEFAULT_TARGET_FIDELITY = 1.0
-
-
-class RunResult(TypedDict, total=False):
-    time: np.ndarray
-    psi_traj: np.ndarray
-    metrics: dict[str, float | int | list[float]]
-    control_times_fs: np.ndarray
-    control_data: np.ndarray
-    tlist: np.ndarray
-    field_data: np.ndarray
-    target_idx: int
 
 
 def _shape_function(control_times_fs: np.ndarray, total_fs: float) -> np.ndarray:
@@ -36,7 +26,7 @@ def _shape_function(control_times_fs: np.ndarray, total_fs: float) -> np.ndarray
 
 def run_krotov_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
-) -> RunResult:
+) -> OptimizationResult:
     """Optimize terminal population using sequential interval updates.
 
     Controls are piecewise constant on ``[t_n, t_{n+1})`` and stored at the
@@ -111,9 +101,9 @@ def run_krotov_optimization(
     )
     control_times = np.array(grid.control_times_fs, copy=True)
     control_data = np.array(controls, copy=True)
-    return RunResult(
-        time=time_out,
-        psi_traj=trajectory_out,
+    return OptimizationResult(
+        trajectory_times_fs=time_out,
+        trajectory=trajectory_out,
         metrics={
             "fidelity": fidelity,
             "terminal_objective": 1.0 - fidelity,
@@ -121,11 +111,11 @@ def run_krotov_optimization(
             "fidelity_history": fidelity_history,
         },
         control_times_fs=control_times,
-        control_data=control_data,
-        tlist=control_times,
-        field_data=control_data,
-        target_idx=target_idx,
+        controls_v_per_m=control_data,
+        target_index=target_idx,
+        control_layout=ControlLayout.PIECEWISE_CONSTANT_INTERVALS,
+        electric_field=None,
     )
 
 
-__all__ = ["RunResult", "run_krotov_optimization"]
+__all__ = ["run_krotov_optimization"]

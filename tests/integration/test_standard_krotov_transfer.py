@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
+from rovibrational_excitation.optimization import ControlLayout, OptimizationResult
 from rovibrational_excitation.optimization.krotov import run_krotov_optimization
 from rovibrational_excitation.optimization.krotov_rk4 import (
     propagate_interval_controls,
@@ -43,7 +44,7 @@ def _fine_final_state(model, result, axes: str, initial_index: int, dt_fs: float
         dipoles.append(np.asarray(cm_to_rad_phz(component), dtype=np.complex128))
     initial = np.zeros(model.basis.size(), dtype=np.complex128)
     initial[initial_index] = 1.0
-    refined_controls = np.repeat(result["control_data"], 2, axis=0)
+    refined_controls = np.repeat(result.controls_v_per_m, 2, axis=0)
     trajectory = propagate_interval_controls(
         h0_rad_per_fs=h0,
         dipoles_rad_per_fs_per_v_per_m=(dipoles[0], dipoles[1]),
@@ -82,12 +83,15 @@ def test_standard_krotov_transfers_two_level_population():
         params=params,
     )
 
-    history = np.asarray(result["metrics"]["fidelity_history"])
+    assert isinstance(result, OptimizationResult)
+    assert result.control_layout is ControlLayout.PIECEWISE_CONSTANT_INTERVALS
+    assert result.electric_field is None
+    history = np.asarray(result.metrics["fidelity_history"])
     assert history[0] < 0.05
-    assert result["metrics"]["fidelity"] > 0.999
+    assert result.metrics["fidelity"] > 0.999
     assert np.all(np.diff(history) >= -2e-12)
     np.testing.assert_allclose(
-        np.sum(np.abs(result["psi_traj"][-1]) ** 2), 1.0, rtol=0.0, atol=2e-5
+        np.sum(np.abs(result.trajectory[-1]) ** 2), 1.0, rtol=0.0, atol=2e-5
     )
 
 
@@ -122,8 +126,8 @@ def test_standard_krotov_concentrates_v0_to_v3_in_five_level_ladder():
         params=_generated_params(axes="zx", penalty=3.0e-21, iterations=40),
     )
 
-    populations = np.abs(result["psi_traj"][-1]) ** 2
-    history = np.asarray(result["metrics"]["fidelity_history"])
+    populations = np.abs(result.trajectory[-1]) ** 2
+    history = np.asarray(result.metrics["fidelity_history"])
     assert populations.shape == (5,)
     assert populations[3] > 0.985
     assert np.max(np.delete(populations, 3)) < 0.01

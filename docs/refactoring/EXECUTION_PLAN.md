@@ -1849,6 +1849,17 @@ Krotov monotonicity. All D-072 optimization references now pass. P7.3-e may
 introduce common optimization contracts and decompose orchestration while
 retaining the independently fixed calculations.
 
+P7.3-e1/D-107 replaces four partial result dictionaries with one typed
+`OptimizationResult`. An exact `ControlLayout` distinguishes GRAPE/legacy
+canonical RK4 samples, Local legacy samples, and standard Krotov midpoint
+interval controls; only sampled-field layouts carry an `ElectricField`.
+Arrays, metrics, time grids, and controls are retained by identity without
+repair or reinterpretation. Active tests, plotting orchestration, and the
+legacy benchmark consume the typed fields. Full verification passes 1380 CPU
+tests with 10 optional-GPU skips (1390 collected), 80% branch coverage, and
+strict mypy for 63 modules. P7.3-e2 should next introduce objective/evaluator
+interfaces in a bounded unit without changing any fixed formula.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

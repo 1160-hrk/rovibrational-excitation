@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any
 
 import numpy as np
 
@@ -15,6 +15,7 @@ from rovibrational_excitation.optimization.timegrid import (
 from .grape_rk4 import evaluate_discrete_rk4
 from .krotov_initial_field import parse_grape_initial_field
 from .options import validate_algorithm_options
+from .result import ControlLayout, OptimizationResult
 
 DEFAULT_PARAMS = {
     "max_iter": 200,
@@ -25,19 +26,9 @@ DEFAULT_PARAMS = {
 }
 
 
-class RunResult(TypedDict, total=False):
-    efield: ElectricField
-    time: np.ndarray
-    psi_traj: np.ndarray
-    metrics: dict
-    tlist: np.ndarray
-    field_data: np.ndarray
-    target_idx: int
-
-
 def run_grape_optimization(
     *, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict
-) -> RunResult:
+) -> OptimizationResult:
     """Optimize terminal target population with an exact discrete RK4 gradient.
 
     The minimized objective is ``1 - fidelity + lambda_a / 2 * sum(E**2)``.
@@ -144,12 +135,13 @@ def run_grape_optimization(
         output_stride=output_stride,
     )
 
-    return RunResult(
-        efield=ef_total,
-        time=time_full,
-        psi_traj=psi_traj_full,
+    return OptimizationResult(
+        electric_field=ef_total,
+        trajectory_times_fs=time_full,
+        trajectory=psi_traj_full,
         metrics={"fidelity": fidelity, "objective": objective},
-        tlist=tlist,
-        field_data=field_data,
-        target_idx=target_idx,
+        control_times_fs=tlist,
+        controls_v_per_m=field_data,
+        target_index=target_idx,
+        control_layout=ControlLayout.RK4_FIELD_SAMPLES,
     )

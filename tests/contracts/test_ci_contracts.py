@@ -141,6 +141,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/optimization/local_initialization.py",
         "src/rovibrational_excitation/optimization/model.py",
         "src/rovibrational_excitation/optimization/options.py",
+        "src/rovibrational_excitation/optimization/result.py",
         "src/rovibrational_excitation/optimization/spectral_constraints.py",
     ]
 

@@ -12,6 +12,8 @@ import pytest
 import yaml
 
 import rovibrational_excitation.visualization.plot_all as plot_all_module
+from rovibrational_excitation.fields import ElectricField
+from rovibrational_excitation.optimization import ControlLayout, OptimizationResult
 from rovibrational_excitation.optimization.config import (
     OptimizationConfigurationError,
     validate_optimization_config,
@@ -37,20 +39,32 @@ def _load(
     return loaded
 
 
-def _fake_result(*, complete_plot_data: bool = False, **_: Any) -> dict[str, Any]:
-    result: dict[str, Any] = {"metrics": {"fidelity": 0.0}}
+def _fake_result(*, complete_plot_data: bool = False, **_: Any) -> OptimizationResult:
+    trajectory_times = np.array([0.0])
+    trajectory = np.array([[1.0 + 0.0j]])
+    control_times = np.array([0.0])
+    controls = np.zeros((1, 2))
+    layout = ControlLayout.PIECEWISE_CONSTANT_INTERVALS
+    electric_field = None
     if complete_plot_data:
-        result.update(
-            {
-                "efield": object(),
-                "time": np.array([0.0]),
-                "psi_traj": object(),
-                "tlist": np.array([0.0]),
-                "field_data": object(),
-                "target_idx": 0,
-            }
+        control_times = np.array([0.0, 0.1, 0.2])
+        controls = np.zeros((3, 2))
+        layout = ControlLayout.RK4_FIELD_SAMPLES
+        electric_field = ElectricField(tlist=control_times, time_units="fs")
+        electric_field.add_arbitrary_Efield(
+            controls,
+            field_units="V/m",
         )
-    return result
+    return OptimizationResult(
+        trajectory_times_fs=trajectory_times,
+        trajectory=trajectory,
+        control_times_fs=control_times,
+        controls_v_per_m=controls,
+        target_index=0,
+        metrics={"fidelity": 0.0},
+        control_layout=layout,
+        electric_field=electric_field,
+    )
 
 
 def test_exactly_three_current_schema_optimization_configs_are_active() -> None:

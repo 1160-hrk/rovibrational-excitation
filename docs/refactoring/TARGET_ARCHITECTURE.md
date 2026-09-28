@@ -269,6 +269,15 @@ state endpoints and one piecewise-constant control per interval through
 `KrotovIntervalGrid` and `control_dt_fs`; it never converts the old odd field
 grid implicitly.
 
+D-107 gives `optimization.result` ownership of one typed in-memory optimizer
+result. Its explicit layout discriminator keeps canonical RK4 samples, Local
+legacy samples, and standard Krotov interval controls distinct. Common names
+carry explicit fs and V/m units; sampled layouts alone carry an
+`ElectricField`. The boundary retains algorithm-owned arrays by identity and
+performs no copy, resampling, normalization, time reconstruction, or layout
+conversion. Objective, evaluator, and constraint interfaces remain separate
+P7.3-e work.
+
 D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical
 fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the

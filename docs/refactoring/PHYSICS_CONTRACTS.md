@@ -1,6 +1,6 @@
 # Physics and numerical contracts
 
-Last verified against source and tests: 2026-09-26
+Last verified against source and tests: 2026-09-28
 Baseline commit: `613ce93`
 
 ## Scope and authority
@@ -1042,6 +1042,15 @@ The stored four-level artifacts and their configuration are explicitly legacy:
 `configs/reference_legacy_batch_overlap_viblad_v3.yaml` selects `legacy_batch_overlap`, and
 `benchmarks/krotov-v0-v3-v0.3.{json,npz}` characterize only that former
 calculation. They are not evidence for the standard update.
+
+Under D-107, every optimizer returns one typed `OptimizationResult` without
+reinterpreting its calculation. GRAPE and `legacy_batch_overlap` identify
+canonical RK4 field samples, Local identifies its frozen legacy field storage,
+and standard Krotov identifies midpoint piecewise-constant interval controls.
+The result boundary preserves the exact algorithm-owned arrays and never
+copies, normalizes, resamples, reconstructs time, or converts between layouts.
+Only sampled-field layouts carry an `ElectricField`. Local `weights` mode may
+have `target_index=None`; this changes no objective or update expression.
 
 ## 10. Spectroscopy evaluation contract
 

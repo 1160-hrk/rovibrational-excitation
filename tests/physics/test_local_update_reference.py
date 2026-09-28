@@ -12,6 +12,7 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
+from rovibrational_excitation.optimization import ControlLayout, OptimizationResult
 from rovibrational_excitation.optimization.local import run_local_optimization
 
 
@@ -178,18 +179,20 @@ def test_local_update_matches_direct_legacy_grid_reference(
         eval_mode=eval_mode
     )
 
-    np.testing.assert_array_equal(actual["tlist"], expected_tlist)
+    assert isinstance(actual, OptimizationResult)
+    assert actual.control_layout is ControlLayout.LOCAL_LEGACY_FIELD_SAMPLES
+    np.testing.assert_array_equal(actual.control_times_fs, expected_tlist)
     assert np.linalg.norm(expected_field[5:9]) > 1.0e6
     np.testing.assert_allclose(
-        actual["field_data"], expected_field, rtol=2e-15, atol=0.0
+        actual.controls_v_per_m, expected_field, rtol=2e-15, atol=0.0
     )
     np.testing.assert_allclose(
-        actual["psi_traj"], expected_trajectory, rtol=2e-15, atol=2e-18
+        actual.trajectory, expected_trajectory, rtol=2e-15, atol=2e-18
     )
-    assert actual["field_data"][-1, 0] == 0.0
-    assert actual["metrics"]["seed_segments_used"] == 1
-    assert actual["metrics"]["clipped_segment_fraction"] == 0.0
-    assert actual["metrics"]["fidelity"] == pytest.approx(
+    assert actual.controls_v_per_m[-1, 0] == 0.0
+    assert actual.metrics["seed_segments_used"] == 1
+    assert actual.metrics["clipped_segment_fraction"] == 0.0
+    assert actual.metrics["fidelity"] == pytest.approx(
         abs(expected_trajectory[-1, 1]) ** 2,
         rel=2e-15,
         abs=0.0,

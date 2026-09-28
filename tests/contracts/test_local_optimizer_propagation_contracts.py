@@ -145,13 +145,13 @@ def test_local_optimizer_converts_gain_before_unchanged_update_formula(
         },
     )
 
-    assert np.max(result["field_data"][:, 0]) == pytest.approx(10.0)
-    assert np.max(result["field_data"][:, 1]) == pytest.approx(10.0)
-    assert "running_cost" not in result["metrics"]
-    assert result["metrics"]["gain_v_per_m_squared_fs"] == pytest.approx(20.0)
-    assert result["metrics"]["field_fluence_proxy"] >= 0.0
-    assert result["metrics"]["clipped_segment_fraction"] == 0.0
-    assert result["metrics"]["reference_field_scale_v_per_m"] == {
+    assert np.max(result.controls_v_per_m[:, 0]) == pytest.approx(10.0)
+    assert np.max(result.controls_v_per_m[:, 1]) == pytest.approx(10.0)
+    assert "running_cost" not in result.metrics
+    assert result.metrics["gain_v_per_m_squared_fs"] == pytest.approx(20.0)
+    assert result.metrics["field_fluence_proxy"] >= 0.0
+    assert result.metrics["clipped_segment_fraction"] == 0.0
+    assert result.metrics["reference_field_scale_v_per_m"] == {
         "x": pytest.approx(20.0),
         "y": pytest.approx(20.0),
     }
@@ -199,8 +199,35 @@ def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
 
     assert [call["tlist"].size for call in spy.calls] == expected_call_lengths
     assert spy.calls[-1]["tlist"][-1] == pytest.approx(expected_full_last_time)
-    assert result["tlist"].size == expected_storage_length
-    assert result["tlist"][-1] == pytest.approx(expected_storage_last_time)
+    assert result.control_times_fs.size == expected_storage_length
+    assert result.control_times_fs[-1] == pytest.approx(expected_storage_last_time)
+
+
+def test_weights_mode_preserves_optional_target_as_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": None},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "weights",
+        },
+    )
+
+    assert result.target_index is None
+    assert result.metrics["fidelity"] == 0.0
 
 
 def test_local_optimizer_rejects_removed_or_missing_time_options() -> None:
@@ -248,8 +275,8 @@ def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
         local_module.SchrodingerPropagator = original_propagator
 
     expected_component = np.array([0.0, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 0.0])
-    np.testing.assert_array_equal(result["field_data"][:, 0], expected_component)
-    np.testing.assert_array_equal(result["field_data"][:, 1], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 0], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 1], expected_component)
     np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
     np.testing.assert_array_equal(spy.calls[1]["field"][:, 0], expected_component[4:9])
 
@@ -279,18 +306,18 @@ def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
         local_module.SchrodingerPropagator = original_propagator
 
     expected_component = np.array([0.0, 25.0, 25.0, 25.0, 25.0, 0.0, 0.0])
-    np.testing.assert_array_equal(result["field_data"][:, 0], expected_component)
-    np.testing.assert_array_equal(result["field_data"][:, 1], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 0], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 1], expected_component)
     np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
     np.testing.assert_array_equal(spy.calls[-1]["field"][:, 0], expected_component)
-    assert result["metrics"]["clipped_segment_fraction"] == 1.0
-    assert result["metrics"]["field_amplitude_max_v_per_m"] == pytest.approx(
+    assert result.metrics["clipped_segment_fraction"] == 1.0
+    assert result.metrics["field_amplitude_max_v_per_m"] == pytest.approx(
         np.sqrt(2.0) * 25.0
     )
-    assert result["metrics"]["field_amplitude_rms_v_per_m"] == pytest.approx(
+    assert result.metrics["field_amplitude_rms_v_per_m"] == pytest.approx(
         np.sqrt(5000.0 / 7.0)
     )
-    assert result["metrics"]["reference_field_scale_v_per_m"] == {
+    assert result.metrics["reference_field_scale_v_per_m"] == {
         "x": 0.0,
         "y": 0.0,
     }
@@ -319,9 +346,9 @@ def test_local_target_mode_retains_the_explicit_target_overlap_branch(
         },
     )
 
-    np.testing.assert_array_equal(result["field_data"], np.zeros((7, 2)))
-    assert result["metrics"]["initialization_method"] == "none"
-    assert result["metrics"]["seed_segments_used"] == 0
+    np.testing.assert_array_equal(result.controls_v_per_m, np.zeros((7, 2)))
+    assert result.metrics["initialization_method"] == "none"
+    assert result.metrics["seed_segments_used"] == 0
 
 
 @pytest.mark.parametrize(

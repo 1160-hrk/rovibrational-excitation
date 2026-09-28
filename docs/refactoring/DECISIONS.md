@@ -3790,6 +3790,55 @@ Implementation anchors are ``optimization/krotov_rk4.py``,
 ``tests/integration/test_standard_krotov_transfer.py``. P7.3-c, the independent
 Local-control update reference, is next.
 
+### D-107: Every optimizer returns one typed result without grid reinterpretation
+
+Status: Accepted by the user on 2026-09-27; implemented as P7.3-e1.
+
+Scope: GRAPE, standard Krotov, ``legacy_batch_overlap``, Local, configured
+optimization plotting, active optimizer references, and benchmark consumers.
+
+The four solvers previously declared separate partial ``TypedDict`` results.
+Their short keys obscured units, standard Krotov duplicated interval controls
+under sampled-field names, and consumers used optional dictionary lookup even
+though every solver owns a complete trajectory and control array. A shared
+contract is now safe because D-104, D-106, P7.3-c, and P7.3-d independently fix
+the calculations first.
+
+``optimization.result.OptimizationResult`` is the single frozen result type.
+It names trajectory and control times in fs, controls in V/m, the trajectory,
+optional target index, metrics, optional ``ElectricField``, and an exact
+``ControlLayout`` discriminator. The layouts remain physically distinct:
+
+- GRAPE and ``legacy_batch_overlap`` return canonical RK4 field samples;
+- Local returns its frozen legacy field-sample storage;
+- standard Krotov returns piecewise-constant midpoint interval controls and no
+  misleading ``ElectricField``.
+
+The boundary validates finite compatible shapes but preserves the exact
+algorithm-owned arrays and metrics object. It never copies, normalizes,
+resamples, reconstructs time, makes arrays read-only, or converts one layout
+into another. Local ``weights`` mode represents its valid missing target as
+``None``; the plot adapter alone maps that absence to its historical ``-1``
+presentation sentinel. Old result-dictionary keys and standard Krotov field
+aliases are removed rather than supported by a silent compatibility fallback.
+
+Consequences:
+
+- all four solver entry points and the configured runner consume one explicit
+  result API;
+- result layout can no longer be inferred from array length or key presence;
+- every existing independent optimization reference still compares the same
+  numerical arrays and metrics;
+- objective/evaluator/constraint orchestration remains the next P7.3-e unit;
+- no objective, update, propagation, normalization, field sample, time grid,
+  endpoint, index, or tolerance changes in this decision.
+
+Verification passes 1380 CPU tests with 10 optional-GPU skips (1390 collected),
+80% branch coverage, strict mypy for 63 named modules, and focused result/solver
+contracts. CUDA remains unverified.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

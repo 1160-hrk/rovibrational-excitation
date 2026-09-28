@@ -111,9 +111,9 @@ def test_grape_uses_full_internal_trajectory_and_thins_only_output(
     assert [call["sample_stride"] for call in spy.calls] == [1]
     assert [call["direction"] for call in spy.calls] == [PropagationDirection.FORWARD]
     np.testing.assert_array_equal(
-        result["time"], np.arange(5, dtype=float)[[0, 3, 4]] * 0.2
+        result.trajectory_times_fs, np.arange(5, dtype=float)[[0, 3, 4]] * 0.2
     )
-    assert result["psi_traj"].shape == (3, 2)
+    assert result.trajectory.shape == (3, 2)
 
 
 def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
@@ -141,9 +141,9 @@ def test_krotov_uses_explicit_backward_direction_on_ascending_grid(
         assert np.all(np.diff(call["tlist"]) > 0.0)
     np.testing.assert_array_equal(spy.calls[1]["field"], spy.calls[0]["field"])
     np.testing.assert_array_equal(
-        result["time"], np.arange(5, dtype=float)[[0, 3, 4]] * 0.2
+        result.trajectory_times_fs, np.arange(5, dtype=float)[[0, 3, 4]] * 0.2
     )
-    assert result["psi_traj"].shape == (3, 2)
+    assert result.trajectory.shape == (3, 2)
 
 
 def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
@@ -174,8 +174,8 @@ def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
             [1.0627984523092236e4, 1.0627984523092236e4],
         ]
     )
-    np.testing.assert_allclose(result["field_data"], expected, rtol=2e-15, atol=0.0)
-    np.testing.assert_array_equal(spy.calls[0]["field"], result["field_data"])
+    np.testing.assert_allclose(result.controls_v_per_m, expected, rtol=2e-15, atol=0.0)
+    np.testing.assert_array_equal(spy.calls[0]["field"], result.controls_v_per_m)
 
 
 def test_krotov_sampled_initial_field_is_consumed_without_resampling(
@@ -200,5 +200,5 @@ def test_krotov_sampled_initial_field_is_consumed_without_resampling(
         },
     )
 
-    np.testing.assert_array_equal(result["field_data"], external)
+    np.testing.assert_array_equal(result.controls_v_per_m, external)
     np.testing.assert_array_equal(spy.calls[0]["field"], external)

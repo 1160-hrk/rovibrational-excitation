@@ -245,8 +245,10 @@ def test_krotov_completes_one_real_forward_backward_iteration() -> None:
         },
     )
 
-    np.testing.assert_array_equal(result["time"], np.arange(5, dtype=float) * 0.2)
-    assert result["psi_traj"].shape == (5, 2)
-    assert result["field_data"].shape == (9, 2)
-    assert np.all(np.isfinite(result["psi_traj"]))
-    assert np.isfinite(result["metrics"]["fidelity"])
+    np.testing.assert_array_equal(
+        result.trajectory_times_fs, np.arange(5, dtype=float) * 0.2
+    )
+    assert result.trajectory.shape == (5, 2)
+    assert result.controls_v_per_m.shape == (9, 2)
+    assert np.all(np.isfinite(result.trajectory))
+    assert np.isfinite(result.metrics["fidelity"])

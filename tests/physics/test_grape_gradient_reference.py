@@ -10,6 +10,7 @@ from rovibrational_excitation.models.two_level import (
     TwoLevelBasis,
     TwoLevelDipoleMatrix,
 )
+from rovibrational_excitation.optimization import ControlLayout, OptimizationResult
 from rovibrational_excitation.optimization.grape import run_grape_optimization
 from rovibrational_excitation.optimization.grape_rk4 import evaluate_discrete_rk4
 
@@ -200,10 +201,12 @@ def test_grape_runner_applies_the_exact_discrete_gradient() -> None:
         },
     )
 
+    assert isinstance(result, OptimizationResult)
+    assert result.control_layout is ControlLayout.RK4_FIELD_SAMPLES
     np.testing.assert_allclose(
-        result["field_data"],
+        result.controls_v_per_m,
         seed - learning_rate * expected.gradient,
         rtol=0.0,
         atol=2e-10,
     )
-    assert result["metrics"]["fidelity"] > expected.fidelity
+    assert result.metrics["fidelity"] > expected.fidelity
