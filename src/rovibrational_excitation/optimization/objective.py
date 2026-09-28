@@ -82,9 +82,89 @@ class DiscreteL2TargetObjective:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class LocalControlResponse:
+    """Two ordered real responses used by one Local control update."""
+
+    first: float
+    second: float
+
+
+@dataclass(frozen=True, slots=True)
+class LocalWeightsEvaluation:
+    """Diagonal-observable Local response for two ordered controls."""
+
+    response: LocalControlResponse
+
+
+@dataclass(frozen=True, slots=True)
+class LocalTargetEvaluation:
+    """Target-overlap Local response and seed-sign derivatives."""
+
+    response: LocalControlResponse
+    overlap: complex
+    first_derivative: complex
+    second_derivative: complex
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DiagonalObservableLocalEvaluator:
+    """Preserve ``Im(<psi|A(-mu_a)|psi>)`` for Local weights mode."""
+
+    diagonal: RealArray
+
+    def evaluate(
+        self,
+        state: np.ndarray,
+        dipoles: tuple[np.ndarray, np.ndarray],
+    ) -> LocalWeightsEvaluation:
+        first_action = -dipoles[0] @ state
+        second_action = -dipoles[1] @ state
+        first_weighted_action = self.diagonal * first_action
+        second_weighted_action = self.diagonal * second_action
+        first_term = complex(np.vdot(state, first_weighted_action))
+        second_term = complex(np.vdot(state, second_weighted_action))
+        return LocalWeightsEvaluation(
+            response=LocalControlResponse(
+                first=float(np.imag(first_term)),
+                second=float(np.imag(second_term)),
+            )
+        )
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TargetOverlapLocalEvaluator:
+    """Preserve ``Im(conj(<t|psi>) <t|-mu_a|psi>)`` in target mode."""
+
+    target_state: ComplexArray
+
+    def evaluate(
+        self,
+        state: np.ndarray,
+        dipoles: tuple[np.ndarray, np.ndarray],
+    ) -> LocalTargetEvaluation:
+        overlap = complex(np.vdot(self.target_state, state))
+        first_derivative = complex(np.vdot(self.target_state, (-dipoles[0] @ state)))
+        second_derivative = complex(np.vdot(self.target_state, (-dipoles[1] @ state)))
+        return LocalTargetEvaluation(
+            response=LocalControlResponse(
+                first=float(np.imag(np.conj(overlap) * first_derivative)),
+                second=float(np.imag(np.conj(overlap) * second_derivative)),
+            ),
+            overlap=overlap,
+            first_derivative=first_derivative,
+            second_derivative=second_derivative,
+        )
+
+
 __all__ = [
+    "DiagonalObservableLocalEvaluator",
     "DiscreteL2TargetObjective",
     "IndexedTargetPopulation",
+    "LocalControlResponse",
+    "LocalTargetEvaluation",
+    "LocalWeightsEvaluation",
+    "TargetOverlapLocalEvaluator",
     "TargetPopulationEvaluation",
     "TargetPopulationEvaluator",
     "VectorTargetPopulation",

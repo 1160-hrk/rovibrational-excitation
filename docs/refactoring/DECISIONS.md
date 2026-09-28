@@ -3886,6 +3886,50 @@ changes.
 
 Implementation commit: this checkpoint.
 
+### D-109: Local control modes use distinct typed response evaluators
+
+Status: Accepted by the user on 2026-09-28; implemented as P7.3-e3.
+
+Scope: the two Local-control response calculations only; seed policy,
+lookahead, gain/shape application, clipping, field writes, propagation, and
+result diagnostics remain in ``optimization.local``.
+
+Local ``weights`` and ``target`` modes are different control functionals. The
+weights route computes, for each ordered control axis,
+``Im(<psi|A(-mu_a)|psi>)``. The target route computes the overlap
+``c=<target|psi>``, derivative ``d_a=<target|-mu_a|psi>``, and response
+``Im(conj(c)*d_a)``. Treating either as the D-108 target-population evaluator,
+or hiding both behind fields with inapplicable optional values, would erase
+scientific meaning needed by the existing seed predicates.
+
+``DiagonalObservableLocalEvaluator`` now owns the exact weights arithmetic and
+returns two ordered real responses. ``TargetOverlapLocalEvaluator`` owns the
+exact target arithmetic and returns the responses together with the unchanged
+overlap and derivatives required for the target seed trigger and signs. Their
+result types are intentionally distinct. Both retain caller arrays by identity
+and perform no validation, normalization, clipping, or threshold decision.
+
+Consequences:
+
+- ``local.py`` still builds and modifies ``A_diag`` in the same order before
+  constructing the weights evaluator;
+- lookahead still chooses ``psi_ref`` before evaluation;
+- ``drive_abs_min`` still tests both response magnitudes and ``c_abs_min``
+  still tests the target overlap;
+- target seed signs still use the real parts of the same two derivatives;
+- a missing target in the direct target-mode API retains the characterized
+  exact-zero overlap/derivative branch rather than inventing a target;
+- gain, shape, shape floor, seed count, componentwise clipping, shared endpoint,
+  segment slices, odd final prefix, and propagation calls are unchanged.
+
+Verification passes 1387 CPU tests with 10 optional-GPU skips (1397 collected),
+80% branch coverage, strict mypy for 64 named modules, 100% coverage of
+``optimization.objective``, and both independent Local-mode references at the
+existing tolerances. No formula, field value, index, threshold, or operation
+order changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

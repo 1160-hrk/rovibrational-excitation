@@ -1870,6 +1870,17 @@ population. Full verification passes 1384 CPU tests with 10 optional-GPU skips
 may next separate Local response evaluators or constraint orchestration, one
 referenced behavior at a time.
 
+P7.3-e3/D-109 separates the two Local response calculations into distinct typed
+evaluators. Weights mode retains `Im(<psi|A(-mu_a)|psi>)`; target mode retains
+its overlap, derivatives, and `Im(conj(c)*d_a)` responses. Local orchestration
+still owns lookahead, thresholds, seed signs, gain/shape, clipping, field
+writes, and every frozen grid/index decision. The missing-target zero branch is
+also characterized. Full verification passes 1387 CPU tests with 10
+optional-GPU skips (1397 collected), 80% branch coverage, and strict mypy for
+64 modules; `optimization.objective` is 100% covered. P7.3-e4 may next type the
+legacy-only spectral constraint boundary without exposing it as standard
+Krotov behavior.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

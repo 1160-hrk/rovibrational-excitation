@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-e2/D-108 typed optimization objectives; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-e3/D-109 typed Local responses; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -470,8 +470,14 @@ the direct indexed runner arithmetic and vector-vdot adjoint arithmetic as
 distinct implementations. The accepted GRAPE discrete-L2 value has its own
 typed objective. Local `weights` remains separate. The suite has 1384 passes
 and 10 optional-GPU skips (1394 collected), 80% branch coverage, and strict
-mypy covers 64 modules. Remaining Local-response and constraint decomposition
-must continue without formula changes.
+mypy covers 64 modules.
+
+P7.3-e3/D-109 extracts the exact Local weights and target response arithmetic
+into distinct typed evaluators. Lookahead, thresholds, seed signs, gain/shape,
+clipping, field writes, and the frozen legacy grid remain in `local.py`. The
+suite has 1387 passes and 10 optional-GPU skips (1397 collected), 80% branch
+coverage, and strict mypy covers 64 modules. Constraint decomposition must
+continue without broadening the legacy spectral filter to standard Krotov.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
@@ -502,9 +508,10 @@ The next work is:
    oracle, and P7.3-d completes the direct DFT/convolution spectral reference,
    both with no formula discrepancy. All required optimization oracles now pass.
    P7.3-e1/D-107 introduces the common typed result and P7.3-e2/D-108 introduces
-   typed target evaluators plus the GRAPE discrete-L2 objective without
-   changing any fixed calculation. Next separate Local response evaluation or
-   constraint orchestration in bounded units. Complete
+   typed target evaluators plus the GRAPE discrete-L2 objective, and
+   P7.3-e3/D-109 separates the two exact Local response evaluators, all without
+   changing any fixed calculation. Next type legacy constraint orchestration in
+   a bounded unit. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

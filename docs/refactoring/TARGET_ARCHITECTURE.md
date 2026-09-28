@@ -280,9 +280,13 @@ conversion.
 D-108 gives `optimization.objective` the typed target-evaluation boundary.
 Indexed runner calculations and vector-overlap adjoint calculations implement
 one protocol without being collapsed into one arithmetic path. The accepted
-GRAPE discrete-L2 value is a separate objective type. Local diagonal-observable
-control and spectral-constraint orchestration remain separate P7.3-e work and
-must not be mislabeled as target-population objectives.
+GRAPE discrete-L2 value is a separate objective type.
+
+D-109 adds distinct Local diagonal-observable and target-overlap evaluator
+results under the same owner. They return only the response data required by
+the unchanged Local orchestration; threshold, seed, clipping, grid, and
+propagation ownership stays in `local.py`. Spectral-constraint orchestration
+remains separate P7.3-e work.
 
 D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical

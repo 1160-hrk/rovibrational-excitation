@@ -1059,6 +1059,14 @@ costates. The typed evaluation reports fidelity and `1-fidelity` without
 normalization or repair. Only GRAPE applies the typed discrete-L2 objective;
 Local `weights` remains its separate diagonal-observable control functional.
 
+D-109 types the two Local responses without changing them. Weights mode uses
+`Im(<psi|A(-mu_a)|psi>)`; target mode uses
+`Im(conj(<target|psi>) <target|-mu_a|psi>)`. Target evaluation also returns the
+same overlap and derivatives used by the existing seed predicate and seed
+signs. Gain/shape multiplication, thresholds, seeding, clipping, grid indices,
+and propagation remain outside the evaluators and retain their established
+order.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature

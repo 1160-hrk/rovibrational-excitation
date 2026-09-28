@@ -17,7 +17,11 @@ from .local_initialization import (
     LocalSeedFieldInitialization,
     parse_local_initialization,
 )
-from .objective import IndexedTargetPopulation
+from .objective import (
+    DiagonalObservableLocalEvaluator,
+    IndexedTargetPopulation,
+    TargetOverlapLocalEvaluator,
+)
 from .options import validate_algorithm_options, validate_local_time_options
 from .result import ControlLayout, OptimizationResult
 
@@ -288,8 +292,14 @@ def run_local_optimization(
         if one_hot_idx is None and target_idx is not None:
             w_before = float(A_diag[target_idx])
             A_diag[target_idx] = w_before * weight_target_factor
+        weights_evaluator = DiagonalObservableLocalEvaluator(A_diag)
+        target_control_evaluator = None
     else:
         A_diag = None
+        weights_evaluator = None
+        target_control_evaluator = (
+            TargetOverlapLocalEvaluator(psi_target) if target_idx is not None else None
+        )
 
     def shape_function(t: np.ndarray, T: float) -> np.ndarray:
         return np.sin(np.pi * t / T) ** 2
@@ -312,14 +322,13 @@ def run_local_optimization(
                 psi_ref = psi_curr * phase
 
         if eval_mode == "weights" and A_diag is not None:
-            mu_x_psi = -mu_eff_x @ psi_ref
-            mu_y_psi = -mu_eff_y @ psi_ref
-            A_mu_x_psi = A_diag * mu_x_psi
-            A_mu_y_psi = A_diag * mu_y_psi
-            term_x = complex(np.vdot(psi_ref, A_mu_x_psi))
-            term_y = complex(np.vdot(psi_ref, A_mu_y_psi))
-            im_x = float(np.imag(term_x))
-            im_y = float(np.imag(term_y))
+            assert weights_evaluator is not None
+            evaluation = weights_evaluator.evaluate(
+                psi_ref,
+                (mu_eff_x, mu_eff_y),
+            )
+            im_x = evaluation.response.first
+            im_y = evaluation.response.second
             ex = float(gain * S * im_x)
             ey = float(gain * S * im_y)
             seed_triggered = abs(im_x) < drive_abs_min and abs(im_y) < drive_abs_min
@@ -341,19 +350,22 @@ def run_local_optimization(
                 ey = seed_amplitude_v_per_m * S_eff
                 seed_left -= 1
         else:
-            c = complex(np.vdot(psi_target, psi_ref)) if target_idx is not None else 0.0
-            d_x = (
-                complex(np.vdot(psi_target, (-mu_eff_x @ psi_ref)))
-                if target_idx is not None
-                else 0.0
-            )
-            d_y = (
-                complex(np.vdot(psi_target, (-mu_eff_y @ psi_ref)))
-                if target_idx is not None
-                else 0.0
-            )
-            val_x = float(np.imag(np.conj(c) * d_x))
-            val_y = float(np.imag(np.conj(c) * d_y))
+            if target_control_evaluator is None:
+                c = 0.0
+                d_x = 0.0
+                d_y = 0.0
+                val_x = 0.0
+                val_y = 0.0
+            else:
+                evaluation = target_control_evaluator.evaluate(
+                    psi_ref,
+                    (mu_eff_x, mu_eff_y),
+                )
+                c = evaluation.overlap
+                d_x = evaluation.first_derivative
+                d_y = evaluation.second_derivative
+                val_x = evaluation.response.first
+                val_y = evaluation.response.second
             ex = float(gain * S * val_x)
             ey = float(gain * S * val_y)
             seed_triggered = abs(c) < c_abs_min

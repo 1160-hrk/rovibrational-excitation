@@ -5,8 +5,13 @@ from .krotov import run_krotov_optimization
 from .legacy_batch_overlap import run_legacy_batch_overlap_optimization
 from .local import run_local_optimization
 from .objective import (
+    DiagonalObservableLocalEvaluator,
     DiscreteL2TargetObjective,
     IndexedTargetPopulation,
+    LocalControlResponse,
+    LocalTargetEvaluation,
+    LocalWeightsEvaluation,
+    TargetOverlapLocalEvaluator,
     TargetPopulationEvaluation,
     TargetPopulationEvaluator,
     VectorTargetPopulation,
@@ -28,8 +33,13 @@ __all__ = [
     "ALGO_REGISTRY",
     "ControlLayout",
     "OptimizationResult",
+    "DiagonalObservableLocalEvaluator",
     "DiscreteL2TargetObjective",
     "IndexedTargetPopulation",
+    "LocalControlResponse",
+    "LocalTargetEvaluation",
+    "LocalWeightsEvaluation",
+    "TargetOverlapLocalEvaluator",
     "TargetPopulationEvaluation",
     "TargetPopulationEvaluator",
     "VectorTargetPopulation",

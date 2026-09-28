@@ -230,6 +230,34 @@ def test_weights_mode_preserves_optional_target_as_none(
     assert result.metrics["fidelity"] == 0.0
 
 
+def test_target_mode_without_target_preserves_zero_overlap_seed_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": None},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "target",
+        },
+    )
+
+    assert result.target_index is None
+    assert result.metrics["fidelity"] == 0.0
+    assert result.metrics["seed_segments_used"] == 1
+
+
 def test_local_optimizer_rejects_removed_or_missing_time_options() -> None:
     common = {
         "basis": _OneStateBasis(),
