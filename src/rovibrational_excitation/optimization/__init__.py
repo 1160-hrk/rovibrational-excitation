@@ -4,6 +4,13 @@ from .grape import run_grape_optimization
 from .krotov import run_krotov_optimization
 from .legacy_batch_overlap import run_legacy_batch_overlap_optimization
 from .local import run_local_optimization
+from .objective import (
+    DiscreteL2TargetObjective,
+    IndexedTargetPopulation,
+    TargetPopulationEvaluation,
+    TargetPopulationEvaluator,
+    VectorTargetPopulation,
+)
 from .result import ControlLayout, OptimizationResult
 
 ALGO_REGISTRY = {
@@ -21,4 +28,9 @@ __all__ = [
     "ALGO_REGISTRY",
     "ControlLayout",
     "OptimizationResult",
+    "DiscreteL2TargetObjective",
+    "IndexedTargetPopulation",
+    "TargetPopulationEvaluation",
+    "TargetPopulationEvaluator",
+    "VectorTargetPopulation",
 ]

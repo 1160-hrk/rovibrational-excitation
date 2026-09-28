@@ -275,8 +275,14 @@ legacy samples, and standard Krotov interval controls distinct. Common names
 carry explicit fs and V/m units; sampled layouts alone carry an
 `ElectricField`. The boundary retains algorithm-owned arrays by identity and
 performs no copy, resampling, normalization, time reconstruction, or layout
-conversion. Objective, evaluator, and constraint interfaces remain separate
-P7.3-e work.
+conversion.
+
+D-108 gives `optimization.objective` the typed target-evaluation boundary.
+Indexed runner calculations and vector-overlap adjoint calculations implement
+one protocol without being collapsed into one arithmetic path. The accepted
+GRAPE discrete-L2 value is a separate objective type. Local diagonal-observable
+control and spectral-constraint orchestration remain separate P7.3-e work and
+must not be mislabeled as target-population objectives.
 
 D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
 generated or sampled input explicitly, converts public quantities to canonical

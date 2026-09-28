@@ -12,6 +12,7 @@ from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
 from .krotov_controls import parse_krotov_initial_control
 from .krotov_rk4 import evaluate_krotov_iteration, propagate_interval_controls
 from .krotov_timegrid import KrotovIntervalGrid
+from .objective import IndexedTargetPopulation
 from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
 from .timegrid import sample_optimization_output
@@ -73,7 +74,9 @@ def run_krotov_optimization(
         initial_state=initial_state,
         control_dt_fs=grid.control_dt_fs,
     )
-    fidelity = float(np.abs(trajectory[-1, target_idx]) ** 2)
+    target_evaluator = IndexedTargetPopulation(target_idx)
+    target_evaluation = target_evaluator.evaluate(trajectory[-1])
+    fidelity = target_evaluation.fidelity
     fidelity_history = [fidelity]
     completed_iterations = 0
 

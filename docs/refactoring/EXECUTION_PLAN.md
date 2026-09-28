@@ -1860,6 +1860,16 @@ tests with 10 optional-GPU skips (1390 collected), 80% branch coverage, and
 strict mypy for 63 modules. P7.3-e2 should next introduce objective/evaluator
 interfaces in a bounded unit without changing any fixed formula.
 
+P7.3-e2/D-108 introduces that typed target-evaluation boundary. Direct indexed
+population and vector ``vdot`` evaluation satisfy one protocol while retaining
+their existing arithmetic and overlap reuse. The GRAPE discrete-L2 value has a
+dedicated objective type; Krotov, legacy, and Local reporting retain their
+existing expressions. Local ``weights`` is explicitly not folded into target
+population. Full verification passes 1384 CPU tests with 10 optional-GPU skips
+(1394 collected), 80% branch coverage, and strict mypy for 64 modules. P7.3-e3
+may next separate Local response evaluators or constraint orchestration, one
+referenced behavior at a time.
+
 ### P7.4 Spectroscopy
 
 Before splitting the 898-line module, characterize:

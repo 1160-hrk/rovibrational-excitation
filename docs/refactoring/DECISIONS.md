@@ -3839,6 +3839,53 @@ contracts. CUDA remains unverified.
 
 Implementation commit: this checkpoint.
 
+### D-108: Target objectives share typed evaluations but retain arithmetic paths
+
+Status: Accepted by the user on 2026-09-28; implemented as P7.3-e2.
+
+Scope: target-population evaluation in GRAPE, standard Krotov,
+``legacy_batch_overlap``, Local result diagnostics, and the GRAPE discrete-L2
+objective value.
+
+The referenced solvers all report terminal target population, but they do not
+all compute it through the same expression. Runner-level code indexes the
+target basis amplitude directly, while the GRAPE and Krotov adjoint kernels use
+``vdot(target, state)`` and reuse that overlap in their costate construction.
+Replacing both with one implementation would needlessly change arithmetic in
+already referenced numerical paths. Local ``weights`` mode is a diagonal
+observable control functional and is not target-population optimization merely
+because its result may also report a target diagnostic.
+
+``optimization.objective`` therefore owns a common typed evaluation, not one
+forced formula. ``IndexedTargetPopulation`` preserves
+``abs(state[target_index])**2``. ``VectorTargetPopulation`` preserves the
+NumPy ``vdot`` path and exposes its exact overlap for adjoint construction.
+Both return ``TargetPopulationEvaluation(fidelity, infidelity)`` through the
+``TargetPopulationEvaluator`` protocol. ``DiscreteL2TargetObjective`` owns
+only the accepted GRAPE value
+``1-F + lambda_a/2 * sum(E**2)`` and preserves its operation order.
+
+Consequences:
+
+- target evaluation has one semantic interface while indexed and vector
+  arithmetic remain explicit;
+- GRAPE value and gradient consume the same single vector overlap as before;
+- Krotov costates and before/after fidelities retain the vector path, while its
+  public ``terminal_objective`` remains the existing ``1.0 - fidelity``;
+- legacy and Local target diagnostics retain direct basis indexing;
+- target arrays and control arrays are neither copied nor normalized by these
+  evaluators;
+- Local ``weights`` response, seed predicates, constraints, update equations,
+  stopping behavior, and every Class-D scalar remain outside this abstraction.
+
+Verification passes 1384 CPU tests with 10 optional-GPU skips (1394 collected),
+80% branch coverage, strict mypy for 64 named modules, and the complete
+independent GRAPE, Krotov, legacy, and Local references. No objective formula,
+gradient, update, time grid, field value, normalization, index, or tolerance
+changes.
+
+Implementation commit: this checkpoint.
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

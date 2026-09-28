@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-28
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.3-e1/D-107 typed optimization result; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.3-e2/D-108 typed optimization objectives; P8.0-a/D-105 safe tooling
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -465,6 +465,14 @@ and standard-Krotov interval-control layouts. The suite has 1380 passes and 10
 optional-GPU skips (1390 collected), 80% branch coverage, and strict mypy
 covers 63 modules. P7.3-e objective/evaluator decomposition is next.
 
+P7.3-e2/D-108 adds one target-population evaluator protocol while preserving
+the direct indexed runner arithmetic and vector-vdot adjoint arithmetic as
+distinct implementations. The accepted GRAPE discrete-L2 value has its own
+typed objective. Local `weights` remains separate. The suite has 1384 passes
+and 10 optional-GPU skips (1394 collected), 80% branch coverage, and strict
+mypy covers 64 modules. Remaining Local-response and constraint decomposition
+must continue without formula changes.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -493,9 +501,10 @@ The next work is:
    preserves the old route explicitly. P7.3-c completes the direct Local-control
    oracle, and P7.3-d completes the direct DFT/convolution spectral reference,
    both with no formula discrepancy. All required optimization oracles now pass.
-   P7.3-e1/D-107 introduces the common typed result without changing any fixed
-   calculation. Next introduce bounded objective/evaluator interfaces and
-   continue orchestration decomposition. Complete
+   P7.3-e1/D-107 introduces the common typed result and P7.3-e2/D-108 introduces
+   typed target evaluators plus the GRAPE discrete-L2 objective without
+   changing any fixed calculation. Next separate Local response evaluation or
+   constraint orchestration in bounded units. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

@@ -17,6 +17,7 @@ from .local_initialization import (
     LocalSeedFieldInitialization,
     parse_local_initialization,
 )
+from .objective import IndexedTargetPopulation
 from .options import validate_algorithm_options, validate_local_time_options
 from .result import ControlLayout, OptimizationResult
 
@@ -446,12 +447,14 @@ def run_local_optimization(
     )
     time_full, psi_traj_full = result_full[0], result_full[1]
 
-    def _fidelity(psi_final: np.ndarray, idx: int | None) -> float:
-        if idx is None:
-            return 0.0
-        return float(np.abs(psi_final[idx]) ** 2)
-
-    fidelity = _fidelity(psi_traj_full[-1], target_idx)
+    target_evaluator = (
+        IndexedTargetPopulation(target_idx) if target_idx is not None else None
+    )
+    fidelity = (
+        target_evaluator.evaluate(psi_traj_full[-1]).fidelity
+        if target_evaluator is not None
+        else 0.0
+    )
 
     # Diagnostic proxy only: this is not claimed as the optimizer objective.
     field_penalty = 1.0 / gain

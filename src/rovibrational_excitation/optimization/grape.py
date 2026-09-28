@@ -14,6 +14,7 @@ from rovibrational_excitation.optimization.timegrid import (
 
 from .grape_rk4 import evaluate_discrete_rk4
 from .krotov_initial_field import parse_grape_initial_field
+from .objective import DiscreteL2TargetObjective, IndexedTargetPopulation
 from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
 
@@ -125,9 +126,13 @@ def run_grape_optimization(
         algorithm="rk4",
         sparse=False,
     )
-    fidelity = float(np.abs(internal_trajectory[-1, target_idx]) ** 2)
-    objective = float(
-        1.0 - fidelity + 0.5 * lambda_a * float(np.sum(field_data * field_data))
+    target_evaluation = IndexedTargetPopulation(target_idx).evaluate(
+        internal_trajectory[-1]
+    )
+    fidelity = target_evaluation.fidelity
+    objective = DiscreteL2TargetObjective(lambda_a).evaluate(
+        target_evaluation,
+        field_data,
     )
     time_full, psi_traj_full = sample_optimization_output(
         internal_time,

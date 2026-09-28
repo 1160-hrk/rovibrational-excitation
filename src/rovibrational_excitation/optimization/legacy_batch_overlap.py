@@ -16,6 +16,7 @@ from rovibrational_excitation.optimization.timegrid import (
 )
 
 from .krotov_initial_field import parse_krotov_initial_field
+from .objective import IndexedTargetPopulation
 from .options import validate_algorithm_options
 from .result import ControlLayout, OptimizationResult
 from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
@@ -175,14 +176,13 @@ def run_legacy_batch_overlap_optimization(
         chi_traj = result[1][::-1]
         return time_b, chi_traj
 
-    def fidelity_of(psi: np.ndarray) -> float:
-        return float(np.abs(psi[target_idx]) ** 2)
+    target_evaluator = IndexedTargetPopulation(target_idx)
 
     prev_fid = -1.0
     for it in range(max_iter):
         # Forward
         time_f, psi_traj = forward(field_data)
-        fid = fidelity_of(psi_traj[-1])
+        fid = target_evaluator.evaluate(psi_traj[-1]).fidelity
 
         # Convergence checks
         if fid >= target_fidelity:
@@ -227,7 +227,7 @@ def run_legacy_batch_overlap_optimization(
     ef_total = ElectricField.from_time_grid(time_grid)
     ef_total.add_arbitrary_Efield(field_data, field_units="V/m")
     internal_time, internal_trajectory = forward(field_data)
-    fidelity = fidelity_of(internal_trajectory[-1])
+    fidelity = target_evaluator.evaluate(internal_trajectory[-1]).fidelity
     time_full, psi_traj_full = sample_optimization_output(
         internal_time,
         internal_trajectory,

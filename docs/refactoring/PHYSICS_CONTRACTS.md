@@ -1052,6 +1052,13 @@ copies, normalizes, resamples, reconstructs time, or converts between layouts.
 Only sampled-field layouts carry an `ElectricField`. Local `weights` mode may
 have `target_index=None`; this changes no objective or update expression.
 
+Under D-108, common target-population semantics do not erase the established
+arithmetic paths. Runner diagnostics retain direct indexed population;
+adjoint kernels retain `vdot(target, state)` and reuse the same overlap for
+costates. The typed evaluation reports fidelity and `1-fidelity` without
+normalization or repair. Only GRAPE applies the typed discrete-L2 objective;
+Local `weights` remains its separate diagonal-observable control functional.
+
 ## 10. Spectroscopy evaluation contract
 
 Experimental spectroscopy inputs are part of the physical problem. Temperature

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
+from .objective import VectorTargetPopulation
+
 ComplexArray = NDArray[np.complex128]
 RealArray = NDArray[np.float64]
 
@@ -132,7 +134,8 @@ def evaluate_krotov_iteration(
         initial_state=initial,
         control_dt_fs=dt,
     )
-    overlap = np.vdot(target, old_trajectory[-1])
+    target_evaluator = VectorTargetPopulation(target)
+    overlap = target_evaluator.overlap(old_trajectory[-1])
     costates = np.empty_like(old_trajectory)
     costates[-1] = overlap * target
     for interval in range(controls.shape[0] - 1, -1, -1):
@@ -161,8 +164,8 @@ def evaluate_krotov_iteration(
             dt_fs=dt,
         )
 
-    fidelity_before = float(np.abs(np.vdot(target, old_trajectory[-1])) ** 2)
-    fidelity_after = float(np.abs(np.vdot(target, updated_trajectory[-1])) ** 2)
+    fidelity_before = target_evaluator.evaluate(old_trajectory[-1]).fidelity
+    fidelity_after = target_evaluator.evaluate(updated_trajectory[-1]).fidelity
     return KrotovIteration(
         old_trajectory=old_trajectory,
         costates=costates,

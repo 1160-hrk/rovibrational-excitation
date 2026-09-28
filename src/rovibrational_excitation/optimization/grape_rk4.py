@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
+from .objective import DiscreteL2TargetObjective, VectorTargetPopulation
+
 ComplexArray = NDArray[np.complex128]
 RealArray = NDArray[np.float64]
 
@@ -144,10 +146,12 @@ def evaluate_discrete_rk4(
         state = unnormalized_state / norm
         trajectory[step_index + 1] = state
 
-    overlap = np.vdot(target, state)
-    fidelity = float(np.abs(overlap) ** 2)
-    objective = float(
-        1.0 - fidelity + 0.5 * float(lambda_a) * float(np.sum(field * field))
+    target_evaluator = VectorTargetPopulation(target)
+    overlap, target_evaluation = target_evaluator.evaluate_with_overlap(state)
+    fidelity = target_evaluation.fidelity
+    objective = DiscreteL2TargetObjective(float(lambda_a)).evaluate(
+        target_evaluation,
+        field,
     )
     gradient = np.asarray(float(lambda_a) * field, dtype=np.float64)
 

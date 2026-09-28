@@ -285,6 +285,13 @@ missing target. The full suite has 1380 passes and 10 optional-GPU skips (1390
 collected), 80% branch coverage, and strict mypy covers 63 modules. Objective
 and evaluator decomposition remains the next P7.3-e unit.
 
+P7.3-e2/D-108 adds the typed target objective/evaluator boundary without
+forcing one arithmetic expression. Indexed runner fidelity and vector ``vdot``
+adjoint fidelity stay distinct; only GRAPE receives the dedicated discrete-L2
+objective type. Local ``weights`` remains a separate diagonal-observable
+functional. The full suite has 1384 passes and 10 optional-GPU skips (1394
+collected), coverage remains 80%, and strict mypy covers 64 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks
@@ -553,7 +560,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1 typed result complete; remaining P7.3-e decomposition and P7.4 pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2 accepted; P7.3-a through P7.3-d references and P7.3-e1/e2 typed result/objective boundaries complete; remaining P7.3-e decomposition and P7.4 pending |
 | 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in
