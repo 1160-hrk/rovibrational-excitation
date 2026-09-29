@@ -4271,7 +4271,52 @@ calculation changes.
 Implementation commit: this checkpoint.
 
 
+### D-122: P7.4 numerical ownership passes acceptance with constructor debt explicit
+
+Status: Implemented on 2026-09-29 as P7.4-b8 under the user’s standing
+authorization for calculation-neutral audit work.
+
+Scope: acceptance evidence only. No API, formula, default, validation branch,
+threshold, route, or numerical behavior changes.
+
+`PHASE7_SPECTROSCOPY_ACCEPTANCE_AUDIT.md` maps every current scientific
+responsibility to one owner and one independent authority. Executable contracts
+fix facade identities, kernel owners, dependency direction, absence of broad or
+print-only failure paths, required method/pathway/unit inputs, and the remaining
+constructor defaults. D-112/D-113 and all route/pathway/polarization contracts
+pass after decomposition.
+
+Numerical ownership is accepted, but final P7.4 API acceptance remains open
+until O-014 resolves `axes="xy"`, case normalization, and the implicit first-axis
+`pol_int`. D-024 already accepts `pol_det=None` as same-polarization detection.
+The focused acceptance/reference suite passes 59 tests. The full suite passes
+1422 tests with 10 optional-GPU skips (1432 collected), branch coverage remains
+80%, and strict mypy covers 78 modules.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
+
+### O-014: Spectroscopy constructor polarization must become fully explicit
+
+Status: Open; user decision required before P7.4 final acceptance.
+
+Current direct construction defaults `axes` to `"xy"`, silently lowercases the
+axis string, and creates a unit `pol_int` along the first selected axis when it
+is omitted. These select a physical projection and therefore conflict with the
+repository direction that physics-bearing inputs be explicit.
+
+Recommended v0.3 contract:
+
+1. require `axes` with no default and accept only exact lowercase unique ordered
+   subsets of `xyz`;
+2. require a finite nonzero `pol_int` with exactly `len(axes)` components;
+3. retain `pol_det=None`, because D-024 explicitly defines it as detection in
+   the same physical polarization ket with analyzer-bra conjugation.
+
+This breaks only callers relying on an implicit interaction polarization; it
+does not change results for callers already passing the values explicitly.
 
 ### O-001: Trajectory endpoint when stride does not divide steps
 

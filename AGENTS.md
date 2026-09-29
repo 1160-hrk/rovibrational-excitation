@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b7/D-121 complete response-kernel owner; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b8/D-122 spectroscopy acceptance audit; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -556,6 +556,13 @@ the threshold. Dispatch, report state, empty-response behavior, and observable
 conversion remain unchanged. The suite remains 1417 passes with 10 optional-GPU
 skips (1427 collected), coverage remains 80%, and strict mypy covers 78 modules.
 
+P7.4-b8/D-122 accepts numerical spectroscopy ownership and adds executable
+facade, owner, dependency, and failure-policy guards. Final P7.4 acceptance is
+blocked only on O-014: current `axes="xy"`, `axes.lower()`, and implicit
+first-axis `pol_int`; D-024 already accepts `pol_det=None`. The suite has 1422
+passes and 10 optional-GPU skips (1432 collected), coverage remains 80%, and
+strict mypy covers 78 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -604,9 +611,10 @@ The next work is:
    conversion to its owner, and P7.4-b5/D-119 moves radiation/PFID response to
    its transform owner. P7.4-b6/D-120 moves the exact dense response kernels to
    their owner, and P7.4-b7/D-121 adds unchanged chunked exact/approximate
-   kernels to that owner. Continue one calculation-neutral spectroscopy
-   responsibility at a time. Complete
-   source/environment/generated-array provenance remains separate and must not
+   kernels to that owner. P7.4-b8/D-122 accepts numerical ownership; stop for
+   the O-014 constructor-strictness decision before final P7.4 acceptance.
+   Complete source/environment/generated-array provenance remains separate and
+   must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    D-105 corrects the release workflow and repository tooling before any tag.

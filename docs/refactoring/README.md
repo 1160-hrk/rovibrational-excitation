@@ -29,6 +29,7 @@ tests, and the decision log.
 | `PHASE7_OPTIMIZATION_REFERENCES.md` | Independent P7.3 optimizer oracles, discrepancies, formulas, and tolerances | Every P7.3 reference or optimizer formula decision |
 | `PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md` | P7.3 ownership, reference, fallback, typing, coverage, and explicit-exclusion evidence | Any P7.3 completion or optimizer capability claim |
 | `PHASE7_SPECTROSCOPY_REFERENCES.md` | Independent P7.4 response, transform, broadening, and observable oracles | Every P7.4 spectroscopy formula or decomposition decision |
+| `PHASE7_SPECTROSCOPY_ACCEPTANCE_AUDIT.md` | P7.4 owner, reference, fallback, and remaining constructor-debt evidence | Any P7.4 acceptance or spectroscopy public-constructor change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -385,6 +386,13 @@ entry selection, and chunked accumulation to the same response owner. Exact
 mode still prunes nothing response-relevant; threshold use and discarded L2 are
 unchanged. The full suite remains 1417 passes with 10 optional-GPU skips (1427
 collected), coverage remains 80%, and strict mypy covers 78 modules.
+
+P7.4-b8/D-122 accepts numerical ownership through a dedicated audit and five
+executable guards. Formula references, dependencies, and failure policy pass.
+Final P7.4 acceptance waits only on O-014: explicit lowercase `axes` and required
+`pol_int`; D-024 `pol_det=None` remains accepted. The full suite passes 1422
+with 10 optional-GPU skips (1432 collected), coverage remains 80%, and strict
+mypy covers 78 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

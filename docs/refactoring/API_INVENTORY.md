@@ -3,7 +3,7 @@
 Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-121 completed spectroscopy response-kernel ownership without changing the public surface
+Latest API checkpoint: D-122 accepts spectroscopy ownership and records O-014 constructor debt
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.

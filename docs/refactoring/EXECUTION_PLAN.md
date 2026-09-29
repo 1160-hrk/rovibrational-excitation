@@ -1994,6 +1994,15 @@ observable conversion remain calculator-owned. The focused suite passes 54
 tests; the full suite passes 1417 with 10 optional-GPU skips (1427 collected),
 coverage remains 80%, and strict mypy covers 78 modules.
 
+P7.4-b8/D-122 records the numerical ownership acceptance audit and adds five
+executable guards for facade identity, owners, dependency direction, exception
+policy, and remaining constructor defaults. All numerical responsibilities pass.
+P7.4 final acceptance is blocked only on O-014: whether to require exact
+lowercase `axes` and explicit `pol_int` while retaining the D-024
+`pol_det=None` meaning. The focused suite passes 59 tests; the full suite passes
+1422 with 10 optional-GPU skips (1432 collected), coverage remains 80%, and
+strict mypy covers 78 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;
