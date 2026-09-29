@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.2-a/D-132 executable public READMEs; P8.1-b/D-131 runner typing
+Verified checkpoints: P8.2-b/D-133 documentation index; P8.2-a/D-132 public READMEs
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1446 passed, 10 GPU tests skipped (1456 collected)
+1448 passed, 10 GPU tests skipped (1458 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -638,6 +638,11 @@ APIs and supported examples. Their quickstarts execute, every local link
 resolves, and contracts reject removed APIs, stale badges/coverage, and
 unqualified CUDA claims. The suite has 1446 passes and 10 optional-GPU skips
 (1456 collected). Broader docs/workflow migration is next.
+
+P8.2-b/D-133 rebuilds `docs/README.md` as the current documentation route/status
+index. It removes obsolete runner, example, sparse, and unverified GPU advice;
+parameter, sweep, propagation, and unit guides remain explicitly marked for
+migration audit.
 
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel

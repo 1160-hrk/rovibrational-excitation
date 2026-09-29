@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - English and Japanese READMEs now use executable unit-explicit examples and
   state the verified CPU, unverified CUDA, SymTop, optimizer, spectroscopy, and
   persistence boundaries.
+- The documentation index now distinguishes verified current contracts from
+  guides still undergoing v0.3 migration audit.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

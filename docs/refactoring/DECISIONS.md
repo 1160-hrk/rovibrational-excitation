@@ -4570,6 +4570,33 @@ with 10 optional-GPU skips (1456 collected).
 Implementation commit: this checkpoint.
 
 
+### D-133: The documentation index separates current contracts from migration debt
+
+Status: Implemented on 2026-09-29 as P8.2-b.
+
+Scope: `docs/README.md` and its repository contracts only. No public API,
+configuration schema, calculation, or physical behavior changes.
+
+The former index recommended unverified CuPy runs, obsolete `dense=False`,
+unit-incomplete physical values, a removed runner invocation, and deleted
+example filenames. It is replaced by a concise route map based on current
+supported examples and CLIs.
+
+The index labels result storage, Cartesian split theory, and release procedure
+as current; it labels the parameter, sweep, propagation, and unit guides as
+migration-audit work until each is independently corrected. It links normal
+simulation, external sampled fields, optimization, spectroscopy, physics
+contracts, and Codex documents without inventing recommended physical scales.
+CPU is the verified path and real CUDA remains explicitly unverified.
+
+Two contracts reject the obsolete recommendations and resolve every local link.
+The public README contracts continue to pass. The full suite has 1448 passes
+and 10 optional-GPU skips (1458 collected). Broader guide migration remains
+open and is not hidden by the new index.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

@@ -1,205 +1,142 @@
 # rovibrational-excitation ドキュメント
 
-このディレクトリには、rovibrational-excitation パッケージの詳細なドキュメントが含まれています。
+この索引は開発版 `0.3.0.dev1` の実装と検証状態を基準にしています。v0.2 の
+API とは後方互換ではありません。最初にルートの
+[English README](../README.md) または [日本語 README](../README_JP.md) で、
+対応モデル・数値経路・既知の制限を確認してください。
 
-## Codex・開発者向けリファクタ資料
+## 最短の実行手順
 
-リファクタ作業では、ルートの [`AGENTS.md`](../AGENTS.md) を入口として、
-次の資料をこの順序で参照してください。
-
-1. [`refactoring/PHYSICS_CONTRACTS.md`](refactoring/PHYSICS_CONTRACTS.md)
-2. [`refactoring/DECISIONS.md`](refactoring/DECISIONS.md)
-3. [`refactoring/TARGET_ARCHITECTURE.md`](refactoring/TARGET_ARCHITECTURE.md)
-4. [`refactoring/EXECUTION_PLAN.md`](refactoring/EXECUTION_PLAN.md)
-
-現状指標・進捗・既知の整理対象は
-[`refactoring/README.md`](refactoring/README.md) に集約しています。
-現行API・CLI・factory・examplesの移行先と廃止方針は
-[`refactoring/API_INVENTORY.md`](refactoring/API_INVENTORY.md) を参照してください。
-
-## 📖 ドキュメント一覧
-
-### 🔧 設定・パラメータ
-
-| ドキュメント | 内容 | 対象者 |
-|-------------|------|--------|
-| **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** | **全パラメータの詳細リファレンス** | 全ユーザー |
-| [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | パラメータスイープ仕様 | 中級ユーザー |
-| [RESULT_STORAGE.md](RESULT_STORAGE.md) | 結果の世代型保存形式と検証付き読み込み | 全ユーザー |
-
-### 📊 使用例・チュートリアル
-
-| リソース | 内容 | レベル |
-|----------|------|-------|
-| [../examples/](../examples/) | パラメータファイル例 | 初級～中級 |
-| [../tests/](../tests/) | テストコード例 | 上級 |
-
-### 🧮 数値計算法
-
-| ドキュメント | 内容 |
-|-------------|------|
-| [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) | 厳密 Cartesian split-operator 法、M 位相回転、高速化、適用条件 |
-| [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | Split-operator と RK4 の一般的な比較 |
-
-## 🚀 クイックスタート
-
-### 1. 基本的な使い方
-
-**まずはパラメータリファレンスから始めましょう**：
+source checkout から環境を作り、CI と同じ小さな例を実行します。
 
 ```bash
-# 1. パラメータファイルを作成
-cp examples/params_template.py my_params.py
-
-# 2. パラメータを編集（PARAMETER_REFERENCE.mdを参照）
-vim my_params.py
-
-# 3. シミュレーション実行
-python -m rovibrational_excitation.simulation.runner my_params.py
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e ".[dev,io,plot]"
+python examples/launcher.py --run quickstart --quick
 ```
 
-### 2. 設定手順
+単位付き parameter template は保存なしで実行できます。
 
-1. **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** で必須パラメータを確認
-2. 物理系に応じてパラメータを設定
-3. 必要に応じてスイープ設定を追加
-4. テスト実行でエラーがないことを確認
-
-## 📋 カテゴリ別ガイド
-
-### 初心者向け
-1. **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** の「基本例」から開始
-2. `examples/` フォルダの簡単な例を試す
-3. 小さな系（`V_max=2, J_max=2`）で動作確認
-
-### 中級者向け
-1. **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** の「スイープ例」を参照
-2. [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) でスイープ制御を学習
-3. パフォーマンス最適化を実践
-
-### 上級者向け
-1. **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** の「高度な設定例」を活用
-2. `backend="cupy"` でGPU計算を試す
-3. カスタム包絡線関数やスパース行列を使用
-
-## 🔍 目的別ガイド
-
-### CO2分子の励起シミュレーション
-```python
-# PARAMETER_REFERENCE.mdの基本例をベースに
-vibrational_frequency = 2349.0
-vibrational_frequency_units = "cm^-1"            # ν3 mode
-mu0_Cm = 0.3 * 3.33564e-30                      # ~0.3 Debye
-V_max, J_max = 3, 5                              # 適度なサイズ
+```bash
+python -m rovibrational_excitation.cli.simulate \
+  examples/params_template.py --no-save
 ```
 
-### パラメータスイープ
-```python
-# 複数条件の比較
-duration = [10.0, 20.0, 30.0]           # パルス幅
-amplitude_sweep = [1e8, 5e8, 1e9]       # 電場強度（明示的スイープ）
-polarization = [1.0, 0.0]               # 固定値
+外部波形を Python から注入する例は
+[`example_external_scalar_field.py`](../examples/example_external_scalar_field.py)、
+対応例の完全な一覧は [examples/README.md](../examples/README.md) を参照してください。
+`examples/archives/v0_2/` は履歴資料であり、現行例ではありません。
+
+## 文書の検証状態
+
+| 文書 | 内容 | 状態 |
+|---|---|---|
+| [RESULT_STORAGE.md](RESULT_STORAGE.md) | result/checkpoint schema v1、atomic generation、strict loader | 現行契約 |
+| [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) | 厳密 Cartesian split と helicity-projected 近似の原理 | 現行の物理契約 |
+| [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) | final tag、CPU/実 GPU gate、明示的な release 操作 | 現行 release 契約 |
+| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Dev Container と Jupyter の安全な起動 | release 前に環境全体を再検証予定 |
+| [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) | 通常 simulation parameter | 移行監査中 |
+| [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | parameter sweep | 移行監査中 |
+| [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | RK4/split の説明 | 移行監査中 |
+| [UNIT_SYSTEM.md](UNIT_SYSTEM.md) | 公開境界と内部単位 | 移行監査中 |
+
+「移行監査中」の文書には旧キーや旧例が残る可能性があります。値・単位・物理規約を
+推測して実行可能にせず、現時点では
+[`examples/params_template.py`](../examples/params_template.py) と実装の strict
+validation を優先してください。各文書は個別の契約テストを追加してから現行扱いへ
+移します。
+
+## 通常シミュレーション
+
+通常の parameter-file 実行入口は `rve-simulate` です。
+
+```bash
+rve-simulate examples/params_template.py --dry-run
+rve-simulate examples/params_template.py --no-save
 ```
 
-### 高強度レーザー計算
-```python
-# 強電場・非線形効果
-amplitude = 1e12                         # 極強電場
-V_max, J_max = 10, 20                    # 大きな基底
-backend = "cupy"                         # GPU加速
+- 生成電場では pulse の値と単位を全て明示します。
+- 外部電場では canonical `TimeGrid` と `ScalarField` または
+  `CartesianField` を構築します。
+- `field=None` と sampled field は別の明示的な入力経路で、resample や
+  fallback はありません。
+- parameter sweep の case 順序は checkpoint provenance の一部です。
+
+保存形式と検証付き読み込みは [RESULT_STORAGE.md](RESULT_STORAGE.md) を参照して
+ください。
+
+## 最適化
+
+現行 schema として対応する YAML は `configs/` 直下の 3 個だけです。用途、時間
+格子、field/control shape、seed、penalty、gain の単位は
+[configs/README.md](../configs/README.md) に記載しています。
+
+```bash
+rve-optimize --config configs/example_local_viblad_v3.yaml --no-plot
 ```
 
-### 超短パルス計算
-```python
-# フェムト秒パルス
-duration = 5.0                           # 5fs FWHM
-dt = 0.01                               # 細かい時間刻み
-gdd = 100.0                             # 群遅延分散
+YAML は CLI 用です。Python API では sampled field や interval control を直接
+注入できます。標準 Krotov、GRAPE/legacy batch、local control の時間格子を相互に
+変換したり、長さを暗黙修復したりしません。
+
+## 分光
+
+`rovibrational_excitation.spectroscopy` は次を分けて扱います。
+
+- standard absorption: 型付き projection から mOD を計算
+- Cartesian analyzer: 射影した complex molecular response を返す
+
+analyzer intensity/absorbance と production thermal-state constructor は未実装です。
+reference field や測定規約を推測せず、非対応操作はエラーにします。
+
+## 固定された重要契約
+
+- 相互作用は `H(t) = H0 - mu E(t)`。
+- 電場 sampling 間隔は伝播刻みの半分。
+- RK4 field grid は `2 * n_steps + 1` 点。
+- normal simulation の物理 scalar は値と単位を対で指定。
+- Morse potential は非ゼロの非調和性が必須。
+- 複数 `initial_states` は等振幅・同位相の coherent superposition。
+- incoherent mixture は専用 propagator を使用。
+- 非対応 backend/algorithm/storage は fallback せずエラー。
+
+詳細と優先順位は [物理契約](refactoring/PHYSICS_CONTRACTS.md) および
+[決定記録](refactoring/DECISIONS.md) が権威です。
+
+## CPU/CUDA 状態
+
+検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy を要求した場合に
+NumPy へ暗黙 fallback はしませんが、現在の低レベル GPU 経路には host round trip
+が残ります。skip された GPU test は実 GPU の検証根拠ではありません。
+
+## 開発者・Codex 向け
+
+リファクタ作業はルートの [AGENTS.md](../AGENTS.md) を入口にし、次の順で読みます。
+
+1. [PHYSICS_CONTRACTS.md](refactoring/PHYSICS_CONTRACTS.md)
+2. [DECISIONS.md](refactoring/DECISIONS.md)
+3. [TARGET_ARCHITECTURE.md](refactoring/TARGET_ARCHITECTURE.md)
+4. [EXECUTION_PLAN.md](refactoring/EXECUTION_PLAN.md)
+5. [refactoring/README.md](refactoring/README.md)
+
+公開 API の現状と移行先は
+[API_INVENTORY.md](refactoring/API_INVENTORY.md)、文書/workflow の残作業は
+[DOCUMENTATION_WORKFLOW_AUDIT.md](refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md) に
+記録しています。
+
+## 検証コマンド
+
+```bash
+pytest -q
+python scripts/smoke_examples.py
+python examples/tools/build_index.py --check
+ruff check --no-fix src tests examples benchmarks scripts
+ruff format --check src tests examples benchmarks scripts
+mypy
 ```
 
-## 💡 よく使われる設定パターン
-
-### 高速テスト用
-```python
-# 開発・デバッグ用の軽量設定
-V_max, J_max = 1, 1
-t_start, t_end, dt = -10.0, 10.0, 0.2
-sample_stride = 5
-save = False
-```
-
-### 本格計算用
-```python
-# 発表・論文用の高精度設定
-V_max, J_max = 5, 10
-t_start, t_end, dt = -100.0, 100.0, 0.05
-sample_stride = 1
-backend = "cupy"  # GPU使用
-```
-
-### バッチ処理用
-```python
-# 大量ケースの並列処理
-checkpoint_interval = 5    # 頻繁なチェックポイント
-nproc = 8                  # 並列数
-dry_run = True             # まずケース数確認
-```
-
-## 🛠️ トラブルシューティング
-
-### よくある問題と解決法
-
-1. **パラメータエラー**
-   - **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** の必須パラメータをチェック
-   - `examples/` の動作例と比較
-
-2. **メモリ不足**
-   - `V_max`, `J_max` を小さくする
-   - `sample_stride` を増やす
-   - `dense=False` でスパース行列を使用
-
-3. **計算が遅い**
-   - **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** の「パフォーマンス最適化」を参照
-   - GPU環境なら `backend="cupy"`
-   - 並列実行 `nproc=8`
-
-4. **スイープエラー**
-   - [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) でスイープルールを確認
-   - `--dry-run` でケース数をチェック
-
-## 📂 ディレクトリ構造
-
-```
-docs/
-├── README.md                    # このファイル（ドキュメント概要）
-├── PARAMETER_REFERENCE.md       # 全パラメータリファレンス ⭐
-└── SWEEP_SPECIFICATION.md       # スイープ仕様詳細
-
-examples/
-├── params_template.py           # 基本テンプレート
-├── params_CO2_AntiSymm.py      # CO2励起例
-├── params_example_new_sweep.py # 新スイープ仕様例
-└── params_example_checkpoint.py # チェックポイント例
-
-tests/
-├── test_*.py                   # テストコード（参考例）
-└── README.md                   # テスト実行方法
-```
-
-## 🔗 関連リンク
-
-- **メインパッケージ**: [../src/rovibrational_excitation/](../src/rovibrational_excitation/)
-- **使用例**: [../examples/](../examples/)
-- **テスト**: [../tests/](../tests/)
-- **GitHub**: プロジェクトリポジトリ（URL設定により）
-
-## 📝 更新履歴
-
-- **v1.3** (2024): パラメータリファレンス追加、スイープ仕様改善
-- **v1.2** (2024): チェックポイント機能追加
-- **v1.1** (2024): 新スイープ仕様導入
-- **v1.0** (2024): 初期リリース
-
----
-
-**💡 ヒント**: まずは **[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)** を読んで、パラメータの全体像を把握することをお勧めします。
+物理参照は `tests/physics/`、公開・failure policy は `tests/contracts/`、複合経路は
+`tests/integration/` が所有します。standalone の print/plot script を正しさの根拠には
+しません。

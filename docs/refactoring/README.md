@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1446 passed, 10 skipped (1456 collected) |
+| Pytest | 1448 passed, 10 skipped (1458 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -479,6 +479,11 @@ examples, and verified CPU capability matrix. Seven contracts execute both
 quickstarts, resolve links, and reject stale API/evidence. The suite has 1446
 passes and 10 optional-GPU skips (1456 collected); broader docs/workflow audit
 work remains.
+
+P8.2-b/D-133 rebuilds `docs/README.md` as a current route/status index and
+contract-tests its links and rejection of obsolete recommendations. Parameter,
+sweep, propagation, and unit guides remain explicitly labeled migration-audit
+work rather than being presented as current.
 
 P6.2-c
 implements D-069:

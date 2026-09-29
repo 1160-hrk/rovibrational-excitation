@@ -2134,6 +2134,11 @@ execute in subprocesses, local links resolve, and stale API/coverage/GPU claims
 are contract-rejected. The full suite passes 1446 tests with 10 optional-GPU
 skips. Broader `docs/` migration and workflow lint/Codecov disposition remain.
 
+P8.2-b/D-133 rebuilds `docs/README.md` as a current route/status index. It
+removes obsolete and unverified recommendations, marks four public guides as
+migration-audit work, and adds link/staleness contracts. No calculation or
+configuration behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;
