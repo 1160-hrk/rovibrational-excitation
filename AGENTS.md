@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b12/D-126 typed complex response; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b13/D-127 typed Cartesian analyzer; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -583,6 +583,14 @@ absorbance but never applies mOD or the device function. Existing absorbance
 outputs are unchanged. Typed arbitrary analyzer construction and legacy
 `pol_det` removal remain. The suite has 1432 passes and 10 optional-GPU skips
 (1442 collected), coverage remains 80%, and strict mypy covers 79 modules.
+
+P7.4-b13/D-127 adds `CartesianAnalyzerProjection` and the named
+`analyzer_complex_response` path. Interaction and analyzer kets are normalized,
+read-only, share exact axes, and must match Cartesian model coupling. Scalar
+models reject analyzers. Typed analyzer calculators expose complex response and
+reject mOD, and avoid a second Jones normalization. Direct legacy `pol_det`
+remains for the next removal unit. The suite has 1435 passes and 10 optional-GPU
+skips (1445 collected), coverage remains 80%, and strict mypy covers 79 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and

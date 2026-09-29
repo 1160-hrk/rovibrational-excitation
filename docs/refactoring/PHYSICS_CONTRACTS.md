@@ -1136,7 +1136,10 @@ global probe phase, and gives `mu_det = mu_int^dagger` for Hermitian component
 dipoles. Every selected axis contributes.
 
 An arbitrary analyzer ket `a` instead defines the complex projection
-`a^dagger chi e_int`. It is not automatically a scalar absorbance. Analyzer
+`a^dagger chi e_int`. `CartesianAnalyzerProjection` requires normalized
+interaction and analyzer kets on exactly the Cartesian model coupling axes; it
+is rejected for scalar coupling. This typed measurement exposes only complex
+response and rejects scalar mOD conversion. It is not automatically a scalar absorbance. Analyzer
 intensity or OD requires an explicit reference measurement; a zero reference
 transmission makes OD undefined and raises. The legacy arbitrary-`pol_det` mOD
 path is a temporary migration surface, not the target analyzer contract.

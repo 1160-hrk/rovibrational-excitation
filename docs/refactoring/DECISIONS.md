@@ -4401,6 +4401,32 @@ constructor or remove the legacy `pol_det` surface.
 Implementation commit: this checkpoint.
 
 
+### D-127: Arbitrary Cartesian analyzers have a typed complex-only path
+
+Status: Implemented on 2026-09-29 as P7.4-b13 under D-123.
+
+Scope: additive typed analyzer projection and strict observable routing. Existing
+standard-absorption formulae, arrays, thresholds, and numerical kernels remain
+unchanged.
+
+`CartesianAnalyzerProjection` stores normalized read-only interaction and
+analyzer Jones kets on one typed ordered Cartesian axis tuple. The
+`analyzer_complex_response` constructor accepts only Cartesian `SystemModel`
+instances and requires projection axes to match the model coupling axes exactly.
+Scalar models reject analyzers because their coupling has no physical
+polarization dependence. Standard Cartesian projection now enforces the same
+model-axis match.
+
+A calculator created by the analyzer constructor permits
+`calculate_complex_response` and rejects scalar `calculate` mOD conversion with
+a precise error. The already normalized typed Jones arrays are copied without a
+second normalization, avoiding additional roundoff. The direct legacy
+`pol_det` constructor remains only for the following migration checkpoint and
+is not the typed analyzer route.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

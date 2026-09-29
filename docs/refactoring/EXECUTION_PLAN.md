@@ -2039,6 +2039,16 @@ post-mOD device convolution. No formula or existing absorbance output changes.
 The full suite passes 1432 tests with 10 optional-GPU skips (1442 collected),
 coverage remains 80%, and strict mypy covers 79 modules.
 
+
+P7.4-b13/D-127 adds `CartesianAnalyzerProjection` and the named
+`analyzer_complex_response` constructor. Both Jones kets are normalized and
+read-only, projection axes must exactly equal Cartesian model coupling axes,
+and scalar models reject the inapplicable analyzer. Typed analyzer calculators
+return complex response and explicitly reject scalar mOD conversion. Typed
+arrays are not normalized twice. The old direct `pol_det` remains only for the
+next removal unit. The full suite passes 1435 tests with 10 optional-GPU skips
+(1445 collected), coverage remains 80%, and strict mypy covers 79 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

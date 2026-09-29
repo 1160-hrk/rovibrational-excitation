@@ -27,7 +27,10 @@ from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
 )
-from rovibrational_excitation.spectroscopy.projection import CartesianProjection
+from rovibrational_excitation.spectroscopy.projection import (
+    CartesianAnalyzerProjection,
+    CartesianProjection,
+)
 from rovibrational_excitation.spectroscopy.report import (
     SpectroscopyCalculationReport,
 )
@@ -94,6 +97,7 @@ class AbsorbanceCalculator:
         axes: str,
         pol_int: np.ndarray,
         pol_det: np.ndarray | None = None,
+        _polarizations_normalized: bool = False,
     ):
         self.basis = basis
         self.hamiltonian = hamiltonian
@@ -108,12 +112,17 @@ class AbsorbanceCalculator:
         self._validate_axes()
 
         # Polarization components follow the explicit order in ``axes``.
-        self.pol_int = self._normalize_polarization(pol_int, name="pol_int")
-        detection_polarization = self.pol_int if pol_det is None else pol_det
-        self.pol_det = self._normalize_polarization(
-            detection_polarization,
-            name="pol_det",
-        )
+        if _polarizations_normalized:
+            assert pol_det is not None
+            self.pol_int = np.array(pol_int, dtype=np.complex128, copy=True)
+            self.pol_det = np.array(pol_det, dtype=np.complex128, copy=True)
+        else:
+            self.pol_int = self._normalize_polarization(pol_int, name="pol_int")
+            detection_polarization = self.pol_int if pol_det is None else pol_det
+            self.pol_det = self._normalize_polarization(
+                detection_polarization,
+                name="pol_det",
+            )
 
         # 計算用の内部変数を初期化
         self._setup_matrices()
@@ -121,6 +130,7 @@ class AbsorbanceCalculator:
         self._last_calculation_report: SpectroscopyCalculationReport | None = None
         self._last_discarded_commutator_l2_fraction = 0.0
         self._last_discarded_density_l2_fraction = 0.0
+        self._measurement_kind = "direct"
 
     @classmethod
     def standard_absorption(
@@ -155,10 +165,15 @@ class AbsorbanceCalculator:
                 raise ValueError(
                     "CartesianProjection is required for Cartesian coupling"
                 )
+            model_axes = "".join(model.coupling.axes)
+            if projection.axes_string != model_axes:
+                raise ValueError(
+                    "projection axes must exactly match model coupling axes"
+                )
             axes = projection.axes_string
             interaction = projection.interaction
 
-        return cls(
+        calculator = cls(
             basis=model.basis,
             hamiltonian=model.hamiltonian,
             dipole_matrix=model.dipole,
@@ -167,7 +182,44 @@ class AbsorbanceCalculator:
             axes=axes,
             pol_int=interaction,
             pol_det=interaction,
+            _polarizations_normalized=True,
         )
+        calculator._measurement_kind = "standard_absorption"
+        return calculator
+
+    @classmethod
+    def analyzer_complex_response(
+        cls,
+        model: SystemModel,
+        conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
+        projection: CartesianAnalyzerProjection,
+    ) -> AbsorbanceCalculator:
+        """Build an analyzer-projected complex-response measurement."""
+        if not isinstance(model, SystemModel):
+            raise TypeError("model must be a SystemModel")
+        if model.coupling.mode is CouplingMode.SCALAR:
+            raise ValueError("Cartesian analyzer is not applicable to scalar coupling")
+        if not isinstance(projection, CartesianAnalyzerProjection):
+            raise TypeError("projection must be a CartesianAnalyzerProjection")
+        model_axes = "".join(model.coupling.axes)
+        if projection.axes_string != model_axes:
+            raise ValueError("projection axes must exactly match model coupling axes")
+
+        calculator = cls(
+            basis=model.basis,
+            hamiltonian=model.hamiltonian,
+            dipole_matrix=model.dipole,
+            conditions=conditions,
+            phase_matching=phase_matching,
+            axes=projection.axes_string,
+            pol_int=projection.interaction,
+            pol_det=projection.analyzer,
+            _polarizations_normalized=True,
+        )
+        calculator._measurement_kind = "analyzer_complex_response"
+        return calculator
 
     def _validate_axes(self):
         """Validate an exact lowercase unique Cartesian component order."""
@@ -585,6 +637,11 @@ class AbsorbanceCalculator:
         ``device_resolution`` and ``device_resolution_units`` must be supplied
         together exactly when ``apply_device_function=True``.
         """
+        if self._measurement_kind == "analyzer_complex_response":
+            raise ValueError(
+                "analyzer complex response requires calculate_complex_response; "
+                "scalar mOD conversion is undefined"
+            )
         self._validate_response_request(
             method=method,
             wavenumber_units=wavenumber_units,

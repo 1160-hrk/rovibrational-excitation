@@ -9,6 +9,7 @@ from pathlib import Path
 from rovibrational_excitation import spectroscopy
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
+    CartesianAnalyzerProjection,
     CartesianProjection,
     ComplexResponseSpectrum,
     ExperimentalConditions,
@@ -40,12 +41,16 @@ def _imports(path: Path) -> set[str]:
 def test_facade_and_typed_owners_are_single_identity() -> None:
     assert spectroscopy.__all__ == [
         "AbsorbanceCalculator",
+        "CartesianAnalyzerProjection",
         "CartesianProjection",
         "ComplexResponseSpectrum",
         "ExperimentalConditions",
         "SpectroscopyCalculationReport",
         "create_calculator_from_params",
     ]
+    assert inspect.getmodule(CartesianAnalyzerProjection).__name__.endswith(
+        "projection"
+    )
     assert inspect.getmodule(CartesianProjection).__name__.endswith("projection")
     assert inspect.getmodule(ComplexResponseSpectrum) is result
     assert inspect.getmodule(ExperimentalConditions) is conditions

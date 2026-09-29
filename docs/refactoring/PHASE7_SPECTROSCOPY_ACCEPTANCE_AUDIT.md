@@ -79,6 +79,12 @@ per-molecule response in C^2 m^2 / J, and calculation report; it never applies
 the mOD conversion or device function. A typed arbitrary analyzer is still the
 remaining constructor migration.
 
+
+D-127 supplies that typed analyzer: its interaction and analyzer Jones kets are
+normalized, read-only, share exact typed axes, and must match Cartesian model
+coupling. The named path is complex-response-only and scalar models reject it.
+Only the direct legacy `pol_det` surface remains to remove.
+
 ## Remaining release work
 
 After the temporary constructor is removed and analyzer capability remains truthful, P7.4 can receive its final acceptance decision.

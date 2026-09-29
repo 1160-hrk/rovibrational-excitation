@@ -419,6 +419,15 @@ constructor and legacy `pol_det` removal remain next. The full suite passes 1432
 with 10 optional-GPU skips (1442 collected), coverage remains 80%, and strict
 mypy covers 79 modules.
 
+
+P7.4-b13/D-127 adds the typed arbitrary-analyzer path. One immutable
+`CartesianAnalyzerProjection` carries normalized interaction and analyzer kets;
+its axes must exactly match a Cartesian model and it is rejected for scalar
+coupling. The named calculator permits complex response and rejects mOD. The
+legacy direct `pol_det` surface remains only for the next migration unit. The
+full suite passes 1435 with 10 optional-GPU skips (1445 collected), coverage
+remains 80%, and strict mypy covers 79 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks

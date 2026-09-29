@@ -3,7 +3,7 @@
 Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-126 adds the typed projected complex-response result
+Latest API checkpoint: D-127 adds the typed Cartesian analyzer projection
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -314,7 +314,7 @@ separately characterized behavior decision.
 | Current package | Exact exported names | Target | Disposition |
 |---|---|---|---|
 | `optimization` | `run_local_optimization`, `run_krotov_optimization`, `run_grape_optimization`, `ALGO_REGISTRY` | typed functions under `optimization`; private registry | run functions target public in subpackage; registry internal |
-| `spectroscopy` | `AbsorbanceCalculator`, `CartesianProjection`, `ComplexResponseSpectrum`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; D-123/D-126 separate standard mOD from the typed pre-mOD complex response; typed arbitrary analyzer remains in migration |
+| `spectroscopy` | `AbsorbanceCalculator`, `CartesianAnalyzerProjection`, `CartesianProjection`, `ComplexResponseSpectrum`, `ExperimentalConditions`, `SpectroscopyCalculationReport`, `create_calculator_from_params` | decomposed spectroscopy modules with a tested facade | target public in subpackage; D-123/D-126 separate standard mOD from the typed pre-mOD complex response; typed arbitrary analyzer remains in migration |
 
 `cli/__init__.py` remains empty. `simulation.__all__` contains only
 `run_simulation_case`; specialized validation, convergence, sweep, and runner

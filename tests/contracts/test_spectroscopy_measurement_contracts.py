@@ -17,6 +17,7 @@ from rovibrational_excitation.models.two_level import (
 )
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
+    CartesianAnalyzerProjection,
     CartesianProjection,
     ComplexResponseSpectrum,
     ExperimentalConditions,
@@ -253,3 +254,80 @@ def test_complex_response_returns_each_existing_route_before_mod_conversion() ->
         )
         assert actual.calculation_report.executed_method == method
         assert actual.calculation_report.device_function_applied is False
+
+
+def test_typed_analyzer_returns_complex_response_and_rejects_mod() -> None:
+    model = _two_level_model(coupling=CouplingSpec.cartesian("xy"))
+    projection = CartesianAnalyzerProjection(
+        axes=(Axis.X, Axis.Y),
+        interaction=np.array([1.0, 1.0j]),
+        analyzer=np.array([1.0, 0.0]),
+    )
+    calculator = AbsorbanceCalculator.analyzer_complex_response(
+        model,
+        _conditions(),
+        phase_matching="unfiltered",
+        projection=projection,
+    )
+    rho = np.diag([1.0, 0.0]).astype(np.complex128)
+    wavenumber = np.linspace(400.0, 600.0, 17)
+
+    response = calculator.calculate_complex_response(
+        rho,
+        wavenumber,
+        method="loop",
+        wavenumber_units="cm^-1",
+    )
+
+    assert isinstance(response, ComplexResponseSpectrum)
+    np.testing.assert_array_equal(calculator.pol_int, projection.interaction)
+    np.testing.assert_array_equal(calculator.pol_det, projection.analyzer)
+    with pytest.raises(ValueError, match="analyzer.*complex response"):
+        calculator.calculate(
+            rho,
+            wavenumber,
+            method="loop",
+            wavenumber_units="cm^-1",
+        )
+
+
+def test_analyzer_projection_is_strict_and_model_coupling_conditional() -> None:
+    scalar = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
+    cartesian = _two_level_model(coupling=CouplingSpec.cartesian("xy"))
+    analyzer = CartesianAnalyzerProjection(
+        axes=(Axis.X, Axis.Y),
+        interaction=np.array([1.0, 0.0]),
+        analyzer=np.array([0.0, 1.0]),
+    )
+    mismatched = CartesianAnalyzerProjection(
+        axes=(Axis.X, Axis.Z),
+        interaction=np.array([1.0, 0.0]),
+        analyzer=np.array([0.0, 1.0]),
+    )
+
+    assert not analyzer.interaction.flags.writeable
+    assert not analyzer.analyzer.flags.writeable
+    with pytest.raises(ValueError, match="not applicable to scalar"):
+        AbsorbanceCalculator.analyzer_complex_response(
+            scalar,
+            _conditions(),
+            phase_matching="unfiltered",
+            projection=analyzer,
+        )
+    with pytest.raises(ValueError, match="must exactly match model coupling axes"):
+        AbsorbanceCalculator.analyzer_complex_response(
+            cartesian,
+            _conditions(),
+            phase_matching="unfiltered",
+            projection=mismatched,
+        )
+    with pytest.raises(ValueError, match="must exactly match model coupling axes"):
+        AbsorbanceCalculator.standard_absorption(
+            cartesian,
+            _conditions(),
+            phase_matching="unfiltered",
+            projection=CartesianProjection(
+                axes=(Axis.X, Axis.Z),
+                interaction=np.array([1.0, 0.0]),
+            ),
+        )

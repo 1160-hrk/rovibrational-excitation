@@ -7,6 +7,7 @@ import inspect
 from pathlib import Path
 
 from rovibrational_excitation.spectroscopy import (
+    CartesianAnalyzerProjection,
     ComplexResponseSpectrum,
     ExperimentalConditions,
     SpectroscopyCalculationReport,
@@ -205,6 +206,12 @@ def test_calculation_report_has_one_package_owner() -> None:
 
     monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
     assert "class SpectroscopyCalculationReport" not in monolith
+
+
+def test_cartesian_analyzer_projection_has_one_package_owner() -> None:
+    assert inspect.getmodule(CartesianAnalyzerProjection).__name__.endswith(
+        "projection"
+    )
 
 
 def test_complex_response_result_has_one_package_owner() -> None:
