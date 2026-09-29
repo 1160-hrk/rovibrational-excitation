@@ -146,6 +146,7 @@ files = [
     "src/rovibrational_excitation/spectroscopy/broadening.py",
     "src/rovibrational_excitation/spectroscopy/conditions.py",
     "src/rovibrational_excitation/spectroscopy/observables.py",
+    "src/rovibrational_excitation/spectroscopy/projection.py",
     "src/rovibrational_excitation/spectroscopy/report.py",
     "src/rovibrational_excitation/spectroscopy/response.py",
     "src/rovibrational_excitation/spectroscopy/transform.py",

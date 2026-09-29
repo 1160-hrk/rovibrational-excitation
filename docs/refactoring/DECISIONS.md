@@ -4296,27 +4296,62 @@ The focused acceptance/reference suite passes 59 tests. The full suite passes
 Implementation commit: this checkpoint.
 
 
+### D-123: Spectroscopy separates standard absorption from analyzer observables
+
+Status: Accepted by the user on 2026-09-29; migration in progress as P7.4-b9.
+
+Scope: spectroscopy coupling projection, ordinary transmission detection, and
+future analyzer-resolved observables.
+
+A scalar model obtains its internal storage axis from the model-owned
+`CouplingSpec` and accepts no dummy Cartesian axes or Jones vector. A Cartesian
+model requires an exact typed ordered axis set and a finite nonzero interaction
+Jones ket. Ordinary transmission absorption detects the same physical probe
+mode: the detection bra conjugates that ket, so Hermitian component dipoles give
+`mu_det = mu_int.conj().T`, including the reverse rotating operator for circular
+polarization.
+
+An arbitrary analyzer is a distinct measurement. Its Jones ket first defines
+the complex projected response `a^dagger chi e_int`; that response must not be
+passed through the scalar response-to-mOD conversion and called analyzer
+absorbance. Analyzer intensity or absorbance requires an explicit reference
+measurement. Zero reference transmission makes OD undefined and must raise; it
+may instead be reported only through an explicitly selected intensity or
+complex-response observable.
+
+The strict low-level boundary will require a typed measurement. Ergonomic normal
+use is a named `standard_absorption` entry rather than an ambiguous `pol_det=None`
+fallback. Analyzer helpers and any QWP/polarizer angle conversion must state
+their propagation, phase, angle, and reference conventions before numerical
+implementation.
+
+P7.4-b9 adds the typed `CartesianProjection` and the named standard-absorption
+entry while retaining the old constructor temporarily. Scalar and Cartesian
+validation plus all four exact routes prove bitwise parity with the existing
+explicit same-polarization path. No formula, array, threshold, or route changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
 
-Status: Open; user decision required before P7.4 final acceptance.
+Status: Resolution accepted by D-123; migration in progress.
 
-Current direct construction defaults `axes` to `"xy"`, silently lowercases the
-axis string, and creates a unit `pol_int` along the first selected axis when it
-is omitted. These select a physical projection and therefore conflict with the
-repository direction that physics-bearing inputs be explicit.
+The user clarified that axes and Jones polarization are applicable only to a
+Cartesian polarization-dependent model. Scalar TwoLevel, VibLadder, and
+M-incoherent-average calculations must not require dummy axes or polarization.
+Cartesian interaction polarization is required. Ordinary absorption uses the
+same physical probe ket as its detection mode, whose analyzer bra produces the
+adjoint dipole projection.
 
-Recommended v0.3 contract:
-
-1. require `axes` with no default and accept only exact lowercase unique ordered
-   subsets of `xyz`;
-2. require a finite nonzero `pol_int` with exactly `len(axes)` components;
-3. retain `pol_det=None`, because D-024 explicitly defines it as detection in
-   the same physical polarization ket with analyzer-bra conjugation.
-
-This breaks only callers relying on an implicit interaction polarization; it
-does not change results for callers already passing the values explicitly.
+P7.4-b9 introduces that named standard-absorption path with exact parity while
+the old `axes="xy"`, case normalization, implicit first-axis `pol_int`, and
+arbitrary `pol_det` constructor remain only as a temporary migration surface.
+O-014 closes when every supported caller moves to the typed path and the legacy
+constructor surface is removed. Analyzer complex response and measured
+intensity/absorbance follow the separate D-123 observable contract.
 
 ### O-001: Trajectory endpoint when stride does not divide steps
 

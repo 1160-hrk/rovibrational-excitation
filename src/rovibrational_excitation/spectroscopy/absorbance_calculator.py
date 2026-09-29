@@ -6,12 +6,15 @@
 @core/の標準オブジェクト（Basis, Hamiltonian, DipoleMatrix）と統合。
 """
 
+from __future__ import annotations
+
 from typing import Literal
 
 import numpy as np
 
 from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.dipole import DipoleOperator
+from rovibrational_excitation.core.model import CouplingMode, SystemModel
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
 from rovibrational_excitation.spectroscopy import (
@@ -24,6 +27,7 @@ from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
 )
+from rovibrational_excitation.spectroscopy.projection import CartesianProjection
 from rovibrational_excitation.spectroscopy.report import (
     SpectroscopyCalculationReport,
 )
@@ -118,6 +122,53 @@ class AbsorbanceCalculator:
         self._last_calculation_report: SpectroscopyCalculationReport | None = None
         self._last_discarded_commutator_l2_fraction = 0.0
         self._last_discarded_density_l2_fraction = 0.0
+
+    @classmethod
+    def standard_absorption(
+        cls,
+        model: SystemModel,
+        conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
+        projection: CartesianProjection | None = None,
+    ) -> AbsorbanceCalculator:
+        """Build the ordinary transmission-absorbance measurement.
+
+        Scalar models use their model-owned storage axis and accept no Jones
+        projection. Cartesian models require an explicit interaction Jones ket.
+        Detection is the analyzer bra of the same physical probe ket, so for
+        Hermitian Cartesian dipoles ``mu_det == mu_int.conj().T``.
+        """
+        if not isinstance(model, SystemModel):
+            raise TypeError("model must be a SystemModel")
+
+        if model.coupling.mode is CouplingMode.SCALAR:
+            if projection is not None:
+                raise ValueError(
+                    "Cartesian projection is not applicable to scalar coupling"
+                )
+            axis = model.coupling.scalar_axis
+            assert axis is not None
+            axes = axis.value
+            interaction = np.ones(1, dtype=np.complex128)
+        else:
+            if not isinstance(projection, CartesianProjection):
+                raise ValueError(
+                    "CartesianProjection is required for Cartesian coupling"
+                )
+            axes = projection.axes_string
+            interaction = projection.interaction
+
+        return cls(
+            basis=model.basis,
+            hamiltonian=model.hamiltonian,
+            dipole_matrix=model.dipole,
+            conditions=conditions,
+            phase_matching=phase_matching,
+            axes=axes,
+            pol_int=interaction,
+            pol_det=interaction,
+        )
 
     def _validate_axes(self):
         """Validate a nonempty, unique Cartesian component order."""

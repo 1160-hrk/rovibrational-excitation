@@ -1118,18 +1118,30 @@ as a pair, with `device_resolution_units="cm^-1"`. Radiation and PFID routes
 have the same explicit grid-unit boundary. Internal exact/approximate routing
 and every response formula consume the same canonical cm^-1 arrays as before.
 
-For ordered Cartesian components `axes`, interaction and detection use
+Spectroscopy projection follows model coupling. Scalar coupling consumes its
+model-owned storage axis and has no laboratory axes or Jones input. Cartesian
+coupling requires an exact typed ordered subset of `x`, `y`, and `z` plus a
+finite nonzero interaction Jones ket with the same number of components.
+
+Ordinary transmission absorption detects the same physical probe mode. For
+ordered Cartesian components its interaction and detection operators are
 
 ~~~text
 mu_int = sum_a e_int[a] mu_a
-mu_det = sum_a conj(e_det[a]) mu_a
+mu_det = sum_a conj(e_int[a]) mu_a
 ~~~
 
-Thus identical excitation and detection polarization gives a Jones bra-ket
-contraction and is invariant under a global polarization phase. Every selected
-axis contributes, and each finite nonzero Jones vector must have exactly
-`len(axes)` components.
-The projected per-molecule response is converted through
+Thus ordinary absorption is a Jones bra-ket contraction, is invariant under a
+global probe phase, and gives `mu_det = mu_int^dagger` for Hermitian component
+dipoles. Every selected axis contributes.
+
+An arbitrary analyzer ket `a` instead defines the complex projection
+`a^dagger chi e_int`. It is not automatically a scalar absorbance. Analyzer
+intensity or OD requires an explicit reference measurement; a zero reference
+transmission makes OD undefined and raises. The legacy arbitrary-`pol_det` mOD
+path is a temporary migration surface, not the target analyzer contract.
+
+The projected per-molecule response for ordinary absorption is converted through
 `chi = number_density * response / epsilon_0`. No unconditional `1/3` factor is
 applied after polarization projection. Any isotropic orientational average must
 already be represented by the density matrix and lab-frame dipole operators,

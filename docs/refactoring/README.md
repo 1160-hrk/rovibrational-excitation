@@ -389,10 +389,14 @@ collected), coverage remains 80%, and strict mypy covers 78 modules.
 
 P7.4-b8/D-122 accepts numerical ownership through a dedicated audit and five
 executable guards. Formula references, dependencies, and failure policy pass.
-Final P7.4 acceptance waits only on O-014: explicit lowercase `axes` and required
-`pol_int`; D-024 `pol_det=None` remains accepted. The full suite passes 1422
-with 10 optional-GPU skips (1432 collected), coverage remains 80%, and strict
-mypy covers 78 modules.
+
+P7.4-b9/D-123 begins the approved constructor migration. The named
+`standard_absorption` path uses model-owned scalar coupling without dummy
+polarization and requires `CartesianProjection` otherwise. It preserves the
+existing ordinary-absorption arrays bitwise, including the circular analyzer
+bra. The legacy constructor and arbitrary-analyzer observable split remain to
+be completed. The full suite passes 1426 with 10 optional-GPU skips (1436
+collected), coverage remains 80%, and strict mypy covers 79 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

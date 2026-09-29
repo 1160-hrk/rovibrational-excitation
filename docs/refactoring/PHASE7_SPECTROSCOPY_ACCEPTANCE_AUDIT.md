@@ -1,7 +1,7 @@
 # Phase 7 spectroscopy acceptance audit
 
 Verified: 2026-09-29
-Status: **Numerical ownership accepted; constructor strictness decision open.**
+Status: **Numerical ownership accepted; D-123 constructor migration in progress.**
 
 ## Scope
 
@@ -49,26 +49,24 @@ downgrade, ignored method option, automatic memory budget, fixed Doppler skip,
 or hidden exact-route threshold. Units, phase matching, method, and
 method-specific controls fail explicitly.
 
-## Open constructor decision
+## Constructor migration
 
-Three current behaviors choose a physical polarization when the caller omits or
-case-varies input:
+D-123 resolves the target semantics. Scalar coupling takes its internal axis
+from `SystemModel` and rejects a Cartesian projection. Cartesian coupling
+requires `CartesianProjection`, whose axes are typed and whose interaction ket
+is finite, nonzero, and normalized. The named `standard_absorption` path uses
+the same physical probe ket for detection, so circular detection remains the
+adjoint rotating operator. All four exact routes are bitwise equal to the old
+explicit same-polarization construction.
 
-1. `axes` defaults to `"xy"`;
-2. `axes.lower()` silently accepts uppercase/mixed case;
-3. `pol_int=None` creates a unit Jones ket on the first selected axis.
-
-D-024 explicitly accepts only `pol_det=None`: it means the same physical ket as
-`pol_int` and detection applies the analyzer bra. The recommended v0.3
-resolution is therefore to require `axes` and `pol_int`, reject non-lowercase
-axes, and retain `pol_det=None`. This is an API/physical-input behavior change
-and requires explicit user approval before implementation. Until then, an
-executable acceptance-debt test records the current behavior without endorsing
-it as the final API.
+The old direct constructor still defaults `axes`, lowercases strings, invents a
+first-axis `pol_int`, and accepts arbitrary `pol_det`; it remains only until
+callers migrate. Arbitrary analyzer complex response and analyzer
+intensity/absorbance are separate D-123 observables and are not yet implemented.
 
 ## Remaining release work
 
-After the constructor decision, P7.4 can receive its final acceptance decision.
+After the temporary constructor is removed and analyzer capability remains truthful, P7.4 can receive its final acceptance decision.
 Phase 8 must still rewrite the stale spectroscopy facade examples together with
 the English/Japanese READMEs, verify public snippets, and publish the exact
 capability/limitation matrix. Real-CUDA evidence remains a separate release

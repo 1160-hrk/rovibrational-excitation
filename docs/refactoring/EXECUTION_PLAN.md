@@ -1997,11 +1997,21 @@ coverage remains 80%, and strict mypy covers 78 modules.
 P7.4-b8/D-122 records the numerical ownership acceptance audit and adds five
 executable guards for facade identity, owners, dependency direction, exception
 policy, and remaining constructor defaults. All numerical responsibilities pass.
-P7.4 final acceptance is blocked only on O-014: whether to require exact
-lowercase `axes` and explicit `pol_int` while retaining the D-024
-`pol_det=None` meaning. The focused suite passes 59 tests; the full suite passes
-1422 with 10 optional-GPU skips (1432 collected), coverage remains 80%, and
-strict mypy covers 78 modules.
+The focused suite passes 59 tests; the full suite passes 1422 with 10
+optional-GPU skips (1432 collected), coverage remains 80%, and strict mypy
+covers 78 modules.
+
+P7.4-b9/D-123 starts the approved O-014 migration without removing the old
+constructor. `CartesianProjection` owns exact typed axes and a normalized Jones
+ket. `standard_absorption` consumes the existing `SystemModel`: scalar coupling
+uses its model-owned storage axis with no dummy polarization, while Cartesian
+coupling requires that projection. Detection uses the same physical probe ket
+and its analyzer bra. Four exact routes are bitwise identical to the previous
+explicit same-polarization construction. Arbitrary analyzer observables remain
+separate and are not advertised by this unit. The full suite passes 1426 tests
+with 10 optional-GPU skips (1436 collected), coverage remains 80%, and strict
+mypy covers 79 modules. The temporary constructor must still be removed before
+P7.4 final acceptance.
 
 ### Phase 7 acceptance
 
