@@ -52,14 +52,14 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1406 passed, 10 skipped (1416 collected) |
+| Pytest | 1408 passed, 10 skipped (1418 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 72 named modules |
+| Strict mypy scope | 73 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -342,6 +342,13 @@ calculation changes. The full suite has 1406 passes and 10 optional-GPU skips
 (1416 collected), branch coverage remains 80%, and the monolith reaches 94%.
 Structure-only spectroscopy decomposition is next.
 
+P7.4-b1/D-114 moves the unchanged `ExperimentalConditions` and exact unit-label
+validator to `spectroscopy.conditions`. The facade, monolith compatibility
+name, and factory share the same class; numerical property bodies are unchanged.
+The focused suite passes 45 tests, the full suite passes 1408 with 10
+optional-GPU skips (1418 collected), total coverage remains 80%, spectroscopy
+remains 94%, and strict mypy covers 73 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks
@@ -529,7 +536,7 @@ stable. The old README claim of 63% coverage is stale.
 
 | File | Physical lines | Main concern |
 |---|---:|---|
-| `spectroscopy/absorbance_calculator.py` | 1,049 | Multiple response/spectrum responsibilities despite 90% measured coverage |
+| `spectroscopy/absorbance_calculator.py` | 983 | Conditions moved; response, broadening, transform, and observable responsibilities remain despite 94% coverage |
 | `simulation/runner.py` | 628 | Construction, execution, multiprocessing, output, error handling |
 | `dynamics/scaling/converter.py` | 562 | Strict scaling, array conversion, and object preparation |
 | `dynamics/algorithms/rk4/schrodinger.py` | 478 | Dense, sparse, CPU, GPU, validation paths in one module |

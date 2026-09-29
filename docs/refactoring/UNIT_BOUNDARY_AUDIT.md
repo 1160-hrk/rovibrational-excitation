@@ -1,7 +1,7 @@
 # Unit-boundary audit
 
-Last verified: 2026-09-28
-Current checkpoint: Phase 4 closed; P7.3/D-111 preserves all decided optimizer units
+Last verified: 2026-09-29
+Current checkpoint: Phase 4 closed; P7.4-b1/D-114 moves spectroscopy conditions unchanged
 
 ## Purpose
 
@@ -280,6 +280,11 @@ modules and the high-level runner are now strict-mypy targets, but the Class-D
 quantities above remain deliberately undefined rather than receiving inferred
 units. Their resolution is not required to claim that the already decided
 Class-A/Class-B boundaries are preserved.
+
+P7.4-b1/D-114 gives spectroscopy condition value/unit pairs one dedicated
+owner. Accepted labels, float conversion, positivity checks, canonical values,
+number density, and coherence decay are unchanged; no new conversion or unit is
+introduced.
 
 Every unit updates this audit, D-045 or a successor decision, the physics
 contract, examples, and API inventory in the same commit.

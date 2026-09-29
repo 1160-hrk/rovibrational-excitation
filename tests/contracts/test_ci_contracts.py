@@ -109,6 +109,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/visualization/plot_electric_field_vector.py",
         "src/rovibrational_excitation/visualization/plot_population.py",
         "src/rovibrational_excitation/visualization/spectrogram.py",
+        "src/rovibrational_excitation/spectroscopy/conditions.py",
         "src/rovibrational_excitation/simulation/case.py",
         "src/rovibrational_excitation/simulation/convergence.py",
         "src/rovibrational_excitation/simulation/generated.py",

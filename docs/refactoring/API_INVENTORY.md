@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-28
+Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-111 accepted the P7.3 optimization boundary
+Latest API checkpoint: D-114 moved spectroscopy conditions to one owner
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -430,6 +430,10 @@ branches remain the separately documented visualization debt. There is no
 optimization-specific disk-result schema, and this inventory makes no
 persistence claim for `output.dir` beyond the run directory and optional
 figures.
+
+`ExperimentalConditions` is now owned by `spectroscopy.conditions`; the
+package facade, calculator, and factory expose the same class object. This is
+an ownership move only and preserves every accepted label and formula.
 
 ## 5. Factories and registries
 

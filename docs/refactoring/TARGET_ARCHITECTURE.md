@@ -685,7 +685,7 @@ already constructed basis and weights, never molecule names.
 | `simulation/serialization.py` | `io/serialization.py` | Complete in P3.1-g as a 100% exact rename; typed schema redesign deferred |
 | `simulation/checkpoint.py` | `io/checkpoint.py` | Complete in P3.1-g as a 100% exact rename; manager/persistence split deferred |
 | `plots/*` | `visualization/*` | Complete in P3.1-h as five 100% exact renames; old namespace removed and optional Matplotlib remains lazy |
-| `spectroscopy/absorbance_calculator.py` | `spectroscopy/{response,broadening,transform,observables}.py` | P7.4-a2 completes current-behavior references; move one responsibility at a time with parity; no production thermal owner exists |
+| `spectroscopy/absorbance_calculator.py` | `spectroscopy/{conditions,response,broadening,transform,observables}.py` | `conditions.py` complete in P7.4-b1 with unchanged formulas; remaining responsibilities move one at a time with parity; no production thermal-state constructor exists |
 | `optimization/*.py` | typed optimization modules | Characterize objectives and gradients first |
 
 Migration uses `git mv` first, import repair second, and internal redesign only

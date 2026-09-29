@@ -4064,6 +4064,30 @@ branch coverage remains 80%, and the spectroscopy monolith reaches 94%.
 Implementation commit: this checkpoint.
 
 
+### D-114: Experimental spectroscopy conditions have one dedicated owner
+
+Status: Implemented on 2026-09-29 as P7.4-b1 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership move only. No value, unit, validation branch, formula, public
+name, or numerical behavior changes.
+
+`ExperimentalConditions` and its exact unit-label validator move from the
+response monolith to `spectroscopy.conditions`. The number-density and
+coherence-decay property bodies move unchanged and continue to use the
+authoritative constants layer. The spectroscopy facade, calculator module, and
+factory all resolve the same class object. An architecture contract forbids
+upper workflow dependencies in the new owner, and the owner is a mandatory
+strict-mypy target.
+
+The focused ownership and spectroscopy suites pass 45 tests. The full suite
+passes 1408 tests with 10 optional-GPU skips (1418 collected), total branch
+coverage remains 80%, the spectroscopy package remains 94% covered, and strict
+mypy covers 73 modules. No calculation changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

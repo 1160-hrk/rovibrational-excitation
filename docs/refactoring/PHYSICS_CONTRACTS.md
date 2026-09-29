@@ -1105,7 +1105,9 @@ instead of being inferred or converted by an undocumented formula.
 
 `ExperimentalConditions` is frozen and exposes the canonical values consumed
 by numerical code as `temperature_k`, `pressure_pa`, `optical_length_m`,
-`coherence_time_ps`, and `molecular_mass_kg`. Number density remains
+`coherence_time_ps`, and `molecular_mass_kg`. P7.4-b1/D-114 moves this
+unchanged boundary to `spectroscopy.conditions`; all callers and the facade
+share that single owner. Number density remains
 `pressure_pa / (k_B * temperature_k)`, and the coherence decay remains
 `1 / (coherence_time_ps * 1e-12)`. Spectroscopy uses the constants from
 `core.units.constants`; local rounded copies are forbidden.

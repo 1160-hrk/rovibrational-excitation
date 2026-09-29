@@ -1940,6 +1940,14 @@ responsibility at a time with before/after parity. The full suite has 1406
 passes and 10 optional-GPU skips (1416 collected), branch coverage remains 80%,
 and the spectroscopy monolith reaches 94%.
 
+P7.4-b1/D-114 moves the existing experimental-condition value/unit boundary
+into `spectroscopy.conditions`. Property formulas, strict validation, facade
+identity, calculator use, and factory construction are unchanged. Architecture
+guards fix the owner and dependency direction. The focused suite passes 45
+tests; the full suite passes 1408 with 10 optional-GPU skips (1418 collected),
+total coverage remains 80%, spectroscopy remains 94%, and strict mypy covers
+73 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;
