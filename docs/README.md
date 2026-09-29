@@ -38,7 +38,7 @@ python -m rovibrational_excitation.cli.simulate \
 | [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) | final tag、CPU/実 GPU gate、明示的な release 操作 | 現行 release 契約 |
 | [DOCKER_SETUP.md](DOCKER_SETUP.md) | Dev Container と Jupyter の安全な起動 | release 前に環境全体を再検証予定 |
 | [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) | 通常 simulation parameter と generated/external field | 現行 schema 契約 |
-| [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | parameter sweep | 移行監査中 |
+| [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | ordered Cartesian-product sweep と resume provenance | 現行契約 |
 | [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | RK4/split の説明 | 移行監査中 |
 | [UNIT_SYSTEM.md](UNIT_SYSTEM.md) | 公開境界と内部単位 | 移行監査中 |
 

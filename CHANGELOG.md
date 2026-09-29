@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   guides still undergoing v0.3 migration audit.
 - The normal-simulation parameter reference now follows the strict generated,
   sampled-field, model, unit, and execution schemas.
+- The sweep guide now documents exact singleton, insertion-order,
+  Cartesian-product, result-path, dry-run, and resume-provenance behavior.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

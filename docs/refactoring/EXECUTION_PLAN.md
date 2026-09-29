@@ -2144,6 +2144,11 @@ and generated-field schemas. Required keys, removed-name rejection, local
 links, the corrected template CLI, and the real-CUDA disclosure are executable
 contracts. Sweep, propagation, and unit guides remain next.
 
+P8.2-d/D-135 rebuilds the sweep guide around exact insertion order, singleton
+scalarization, Cartesian-product and checkpoint-provenance behavior. Dry-run
+help now describes its unchanged count-only behavior, and the public simulate
+CLI joins strict mypy as module 82. Propagation and unit guides remain.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

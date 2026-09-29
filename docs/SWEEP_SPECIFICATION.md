@@ -1,175 +1,166 @@
-# スイープ仕様 (Sweep Specification)
+# parameter sweep specification
 
-## 概要
+通常 simulation の parameter file は、実行前に ordered Cartesian product へ展開されます。
+この文書は開発版 `0.3.0.dev1` の実装を説明します。各 case の物理 key と unit は
+[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) に従います。
 
-rovibrational-excitation パッケージでは、パラメータスイープを自動的に行うことができます。新しい仕様では、より明確で直感的なスイープ制御が可能になりました。
+## 最初に dry run する
 
-## スイープ判定ルール
-
-パラメータがスイープ対象になるかどうかは、以下の優先順位で判定されます：
-
-### 1. `_sweep` 接尾辞 → 明示的にスイープ対象
-
-キー名が `_sweep` で終わる場合、明示的にスイープ対象として扱われます。**展開時には接尾辞が取り除かれたキー名で保存されます。**
-
-```python
-# 明示的なスイープ指定
-amplitude_sweep = [1e8, 5e8, 1e9]          # 3ケース → 'amplitude' として保存
-polarization_sweep = [[1, 0], [0, 1]]      # 2ケース → 'polarization' として保存
-duration_sweep = [20.0, 30.0, 40.0, 50.0] # 4ケース → 'duration' として保存
-
-# 合計: 3 × 2 × 4 = 24ケース
-# 各ケースでは 'amplitude', 'polarization', 'duration' キーでアクセス可能
+```bash
+rve-simulate my_params.py --dry-run --no-save
 ```
 
-### 2. 固定値キー (FIXED_VALUE_KEYS) → 常に固定値
+`--dry-run` は展開後の case 件数を報告し、propagation を実行しません。
+`--no-save` も併記すると result root/case directory を作りません。保存を有効にした
+dry run が directory を先に materialize する挙動は、通常実行と同じ path を確認するための
+現行契約です。
 
-特定のキーは、リスト形式であっても常に固定値として扱われます：
+## 判定順序
+
+parameter file の各 public variable を insertion order で一度ずつ分類します。
+
+1. `str` と `bytes` は固定値。
+2. key が `_sweep` で終わる場合、nonempty sized iterable を明示 sweep とする。
+3. `polarization` と `initial_states` は list でも固定値。
+4. それ以外の nonempty sized iterable は sweep。
+5. その他は固定値。
+
+empty または長さを取得できない `_sweep` 値はエラーです。通常 key の empty iterable は
+展開されず固定値のまま残りますが、ほとんどの物理 parameter では後段の strict
+validation に失敗します。
+
+## 明示 `_sweep` suffix
+
+suffix は各 case で除かれます。
 
 ```python
-# これらのキーは常に固定値
-polarization = [1.0, 0.0]      # x偏光（1ケースのみ）
-initial_states = [0, 5]        # コヒーレント重ね合わせ（1ケースのみ）
+amplitude_sweep = [1.0e8, 5.0e8]
+phase_rad_sweep = [0.0, 0.5]
 ```
 
-現在の固定値キー一覧：
-- `polarization` - 偏光ベクトル
-- `initial_states` - 初期状態
+展開後の case key は `amplitude` と `phase_rad` です。元の suffix 付き key は case に
+残りません。
 
-`envelope_kind` と `modulation_kind` は文字列なので通常は自動的に固定値です。
-複数種類を比較する場合だけ `envelope_kind_sweep` または
-`modulation_kind_sweep` を明示してください。
-
-### 3. 通常のリスト → 長さで判定（従来通り）
-
-上記に該当しない場合、リストの長さで判定されます：
+list 自体が一つの物理値である key も、suffix を使えば明示 sweep にできます。
 
 ```python
-# 長さ > 1 の場合はスイープ対象
-V_max = [3, 5, 7]              # 3ケース（スイープ）
-amplitude = [0.1, 0.2]         # 2ケース（スイープ）
-
-# 長さ = 1 の場合は固定値
-J_max = [2]                    # 1ケース（固定値）
-```
-
-## 使用例
-
-### 基本的な使用例
-
-```python
-# パラメータファイル例
-import numpy as np
-
-description = "sweep_example"
-
-# 固定パラメータ
-V_max, J_max = 5, 3
-t_start, t_end, dt = -100.0, 100.0, 0.1
-t_center = 0.0
-vibrational_frequency = 1.0
-vibrational_frequency_units = "rad/fs"
-mu0_Cm = 1e-30
-
-# スイープパラメータ
-duration = [20.0, 30.0, 40.0]              # 3ケース
-amplitude_sweep = [1e8, 5e8, 1e9]          # 3ケース
-
-# 固定値（FIXED_VALUE_KEYS）
-polarization = [1.0, 0.0]                  # x偏光（固定）
-
-# 合計: 3 × 3 = 9ケース
-```
-
-### 偏光をスイープしたい場合
-
-```python
-# 偏光もスイープしたい場合は _sweep 接尾辞を使用
 polarization_sweep = [
-    [1, 0],                    # x偏光
-    [0, 1],                    # y偏光  
-    [1/np.sqrt(2), 1j/np.sqrt(2)]  # 円偏光
-]                              # 3ケース
-
-duration = [20.0, 30.0]        # 2ケース
-
-# 合計: 3 × 2 = 6ケース
+    [1.0, 0.0],
+    [0.0, 1.0],
+]
+initial_states_sweep = [
+    [0],
+    [1],
+    [0, 1],
+]
 ```
 
-### 複雑なスイープ例
+`initial_states=[0, 1]` は一つの coherent superposition ですが、上の
+`initial_states_sweep` は3種類の初期状態 specification を比較します。
+
+## suffix なし iterable
+
+固定値 key 以外の list、tuple、NumPy array など、nonempty で長さを持つ iterable は
+sweep dimension になります。
 
 ```python
-# 複数パラメータの組み合わせ
-V_max = [3, 5]                 # 2ケース
-duration_sweep = [20, 30, 40]  # 3ケース  
-amplitude_sweep = [1e8, 1e9]   # 2ケース
-
-# 固定値
-polarization = [1.0, 0.0]      # 固定（x偏光）
-J_max = 2                      # 固定
-initial_states = [0]           # 固定（基底状態）
-
-# 合計: 2 × 3 × 2 = 12ケース
+duration = [10.0, 20.0]
+amplitude = [1.0e8, 5.0e8]
 ```
 
-## エラーケース
+この例は `2 * 2 = 4` cases です。明示性のため、特に list 自体が物理値になり得る場合は
+`_sweep` suffix を推奨します。
 
-### `_sweep` 接尾辞でiterableでない場合
+### 1要素 iterable
+
+1要素でも sweep dimension です。
 
 ```python
-# エラーになる例
-amplitude_sweep = 1e8  # 非iterable
-
-# ValueError: Parameter 'amplitude_sweep' has '_sweep' suffix but is not iterable
+V_max = [3]
 ```
 
-## 後方互換性
+case 内では scalar `V_max=3` に正規化されます。case 数は増えませんが、`V_max` は
+sweep key list、result path、declared-run provenance に残ります。「1要素だから固定」とは
+扱いません。固定 scalar にしたい場合は `V_max=3` と書きます。
 
-既存のパラメータファイルは基本的にそのまま動作しますが、一部変更が必要な場合があります：
+## 固定 list key
 
-### 変更が必要なケース
+suffix のない次の2 key だけは list のまま固定されます。
+
+- `polarization`: 一つの Jones vector
+- `initial_states`: 一つの pure-state/coherent-superposition specification
 
 ```python
-# 旧仕様（問題あり）
-polarization = [1.0, 0.0]  # 2ケース生成されていた
-
-# 新仕様（修正済み）
-polarization = [1.0, 0.0]  # 1ケース（固定値）
-
-# または明示的にスイープしたい場合
-polarization_sweep = [[1, 0], [0, 1]]  # 2ケース
+polarization = [1.0, 0.0]
+initial_states = [0, 1]
 ```
 
-## 推奨事項
+これらを sweep したい場合は、前節の nested list と `_sweep` suffix を使います。
 
-1. **明示性を重視**: スイープしたいパラメータには `_sweep` 接尾辞を使用
-2. **固定値の確認**: `polarization` などの特別なキーは固定値として扱われることを理解
-3. **テスト実行**: パラメータファイルをテストして期待するケース数が生成されるか確認
+## Cartesian product と順序
+
+sweep dimension は parameter file の insertion order を保持します。Cartesian product
+では右端の dimension が最も速く変化します。
 
 ```python
-# ケース数確認例
-from rovibrational_excitation.simulation.runner import _expand_cases, _load_params_file
-
-params = _load_params_file("your_params.py")
-cases = list(_expand_cases(params))
-print(f"Total cases: {len(cases)}")
+amplitude = [1.0, 2.0]
+phase_rad_sweep = [0.1, 0.2]
 ```
 
-## マイグレーションガイド
+展開順は次の通りです。
 
-既存のパラメータファイルを新仕様に移行する手順：
+```text
+(amplitude=1.0, phase_rad=0.1)
+(amplitude=1.0, phase_rad=0.2)
+(amplitude=2.0, phase_rad=0.1)
+(amplitude=2.0, phase_rad=0.2)
+```
 
-1. `polarization` がリストの場合、意図を確認
-   - 固定値の場合：そのまま（新仕様では自動的に固定値扱い）
-   - スイープの場合：`polarization_sweep` に変更
+全 dimension は Cartesian product です。二つの list を element-wise に zip する mode は
+ありません。値と unit の組を両方 sweep すると全組合せになるため、意図しない unit/value
+pair を作らないよう注意してください。
 
-2. その他のスイープパラメータを明示的にする（オプション）
-   ```python
-   # 旧仕様
-   amplitude = [1e8, 5e8, 1e9]
-   
-   # 新仕様（推奨）
-   amplitude_sweep = [1e8, 5e8, 1e9]
-   ```
+## result path
 
-3. テスト実行で期待するケース数が生成されることを確認 
+保存時は sweep key order で nested directory を作ります。上の例では概念的に次の path
+になります。
+
+```text
+amplitude_1/phase_rad_0.1/
+amplitude_1/phase_rad_0.2/
+amplitude_2/phase_rad_0.1/
+amplitude_2/phase_rad_0.2/
+```
+
+各 case には scalar 化した値、`save`, `outdir` が渡されます。result payload と strict
+loader は [RESULT_STORAGE.md](RESULT_STORAGE.md) を参照してください。
+
+## checkpoint と resume
+
+checkpoint schema v1 は、展開後の全 case をこの exact order のまま正規化して SHA-256
+へ含めます。parameter、unit、dimension order、値、case membership のいずれかが変わると
+別 run と判断し、resume 前にエラーになります。resume は同じ parameter file から全 case
+を再構成・検証してから completed case を除外します。
+
+`checkpoint_interval` は正の integer で、CLI option として指定します。
+
+```bash
+rve-simulate my_params.py --checkpoint-interval 5
+rve-simulate --resume results/my_run --checkpoint-interval 5
+```
+
+checkpoint pair の保存形式と保証範囲は [RESULT_STORAGE.md](RESULT_STORAGE.md) を参照して
+ください。
+
+## error policy
+
+次は暗黙修復せずエラーです。
+
+- `_sweep` value が nonempty sized iterable でない
+- 展開後に必須 scalar が list/array のまま残る
+- suffix を除いた case key が model/schema に不適用
+- 展開後 case の unknown key、欠落 unit、非対応 execution policy
+- resume 時の ordered expanded-run hash 不一致
+
+case 数・順序を確認するために private helper を import せず、CLI の
+`--dry-run --no-save` を使ってください。

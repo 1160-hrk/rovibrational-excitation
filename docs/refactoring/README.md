@@ -53,14 +53,14 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1451 passed, 10 skipped (1461 collected) |
+| Pytest | 1455 passed, 10 skipped (1465 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 81 named modules |
+| Strict mypy scope | 82 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -489,6 +489,11 @@ P8.2-c/D-134 rebuilds the parameter guide from authoritative strict schemas and
 corrects only comments in the executable template. Required generated/model
 keys and stale-name rejection are contract-tested; the template calculation
 still passes end to end. Sweep, propagation, and unit guides remain.
+
+P8.2-d/D-135 rebuilds the sweep guide around its actual classifier, insertion
+order, singleton scalarization, Cartesian product, paths, and resume identity.
+CLI help and a stale test comment are corrected without changing behavior;
+strict mypy now covers 82 modules. Propagation and unit guides remain.
 
 P6.2-c
 implements D-069:

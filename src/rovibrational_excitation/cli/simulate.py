@@ -17,7 +17,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("paramfile", nargs="?", help="Python parameter file")
     parser.add_argument("-j", "--nproc", type=int, help="number of worker processes")
     parser.add_argument("--no-save", action="store_true", help="do not write files")
-    parser.add_argument("--dry-run", action="store_true", help="list cases only")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="report expanded case count without execution",
+    )
     parser.add_argument(
         "--resume",
         metavar="RESULTS_DIR",

@@ -81,6 +81,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
     assert mypy["follow_imports"] == "silent"
     assert mypy["files"] == [
         "src/rovibrational_excitation/__init__.py",
+        "src/rovibrational_excitation/cli/simulate.py",
         "src/rovibrational_excitation/core/dipole.py",
         "src/rovibrational_excitation/core/model.py",
         "src/rovibrational_excitation/core/execution.py",

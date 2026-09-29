@@ -4626,6 +4626,35 @@ full suite has 1451 passes and 10 optional-GPU skips (1461 collected).
 Implementation commit: this checkpoint.
 
 
+### D-135: Sweep documentation preserves exact expansion and provenance semantics
+
+Status: Implemented on 2026-09-29 as P8.2-d.
+
+Scope: sweep documentation, CLI help text, and one stale test docstring only.
+No case expansion, ordering, path, checkpoint, resume, or calculation behavior
+changes.
+
+The old guide incorrectly said singleton lists were fixed, used removed model
+keys, imported private runner aliases, implied broad backward compatibility,
+and did not explain ordered checkpoint identity. The replacement documents the
+actual classifier precedence, the two fixed list-valued keys, explicit suffix
+removal, singleton scalarization, insertion-ordered Cartesian product, rightmost
+fast variation, nested result paths, dry-run directory behavior, and exact
+ordered-run resume validation.
+
+`--dry-run` has always reported only the expanded count; its help now says so
+instead of promising a case listing. The guide recommends `--dry-run --no-save`
+when no directory materialization is wanted. The former misleading singleton
+test docstring is corrected while its assertions remain unchanged.
+
+Four contracts independently exercise singleton/order/fixed-list behavior,
+reject private/stale guide content, verify dry-run help, and resolve all links.
+The public simulate CLI joins strict mypy as module 82. The full suite has 1455
+passes and 10 optional-GPU skips (1465 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

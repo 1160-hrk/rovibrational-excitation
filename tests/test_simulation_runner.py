@@ -287,7 +287,7 @@ class TestExpandCases:
         assert "J_max" in sweep_keys
 
     def test_single_element_list(self):
-        """単一要素リストは固定値として扱われるテスト"""
+        """単一要素リストもスイープ次元としてscalar化されるテスト"""
         base = {"V_max": [5], "amplitude": [0.1, 0.2]}
 
         cases = list(_expand_cases(base))
