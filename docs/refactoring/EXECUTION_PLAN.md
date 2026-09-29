@@ -2049,6 +2049,16 @@ arrays are not normalized twice. The old direct `pol_det` remains only for the
 next removal unit. The full suite passes 1435 tests with 10 optional-GPU skips
 (1445 collected), coverage remains 80%, and strict mypy covers 79 modules.
 
+
+P7.4-b14/D-128 completes O-014. Direct construction and the condition factory
+accept one typed standard or analyzer projection; raw axes and Jones arguments
+are removed. All standard mOD methods, including radiation/PFID, reject analyzer
+measurements, while typed analyzer calculations expose only the approved complex
+response. Named model-aware constructors retain scalar and exact-axis checks.
+Standard numerical outputs and all kernels remain unchanged. The full suite
+passes 1435 tests with 10 optional-GPU skips (1445 collected), coverage remains
+80%, and strict mypy covers 79 modules. Final P7.4 acceptance audit is next.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

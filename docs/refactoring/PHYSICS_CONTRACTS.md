@@ -1139,10 +1139,11 @@ An arbitrary analyzer ket `a` instead defines the complex projection
 `a^dagger chi e_int`. `CartesianAnalyzerProjection` requires normalized
 interaction and analyzer kets on exactly the Cartesian model coupling axes; it
 is rejected for scalar coupling. This typed measurement exposes only complex
-response and rejects scalar mOD conversion. It is not automatically a scalar absorbance. Analyzer
-intensity or OD requires an explicit reference measurement; a zero reference
-transmission makes OD undefined and raises. The legacy arbitrary-`pol_det` mOD
-path is a temporary migration surface, not the target analyzer contract.
+response and rejects scalar mOD conversion. It is not automatically a scalar
+absorbance. Analyzer intensity or OD requires an explicit reference measurement;
+a zero reference transmission makes OD undefined and raises. No raw
+detection-Jones constructor or analyzer-to-mOD path exists; all scalar mOD
+methods reject analyzer measurements.
 
 The projected complex per-molecule response is public before scalar conversion
 as a read-only cm^-1 grid and a C^2 m^2 / J response array. This observable does

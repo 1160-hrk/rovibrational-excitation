@@ -12,6 +12,8 @@ from rovibrational_excitation.models.two_level import (
 )
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
+    CartesianAnalyzerProjection,
+    CartesianProjection,
     ExperimentalConditions,
     create_calculator_from_params,
 )
@@ -50,9 +52,10 @@ def two_level_case():
         dipole,
         conditions,
         phase_matching="unfiltered",
-        axes="xy",
-        pol_int=np.array([1.0, 0.0]),
-        pol_det=np.array([1.0, 0.0]),
+        projection=CartesianProjection.from_jones(
+            axes="xy",
+            interaction=np.array([1.0, 0.0]),
+        ),
     )
     rho = np.diag([1.0, 0.0]).astype(np.complex128)
     wavenumber = np.linspace(400.0, 600.0, 17)
@@ -140,9 +143,10 @@ def test_calculator_factory_requires_and_forwards_condition_units(two_level_case
         molecular_mass=44.0e-3 / CONSTANTS.AVOGADRO,
         molecular_mass_units="kg",
         phase_matching="unfiltered",
-        axes="xy",
-        pol_int=np.array([1.0, 0.0]),
-        pol_det=np.array([1.0, 0.0]),
+        projection=CartesianProjection.from_jones(
+            axes="xy",
+            interaction=np.array([1.0, 0.0]),
+        ),
     )
 
     assert calculator.conditions == reference.conditions
@@ -378,35 +382,37 @@ def test_exact_methods_enumerate_detection_transition_support():
         _OrthogonalTransitionDipole(),
         conditions,
         phase_matching="unfiltered",
-        axes="xy",
-        pol_int=np.array([1.0, 0.0]),
-        pol_det=np.array([0.0, 1.0]),
+        projection=CartesianAnalyzerProjection.from_jones(
+            axes="xy",
+            interaction=np.array([1.0, 0.0]),
+            analyzer=np.array([0.0, 1.0]),
+        ),
     )
     state = np.array([1.0, 0.0, 1.0], dtype=np.complex128) / np.sqrt(2.0)
     rho = np.outer(state, state.conj())
     wavenumber = np.linspace(400.0, 1200.0, 19)
 
-    loop = calculator.calculate(
+    loop = calculator.calculate_complex_response(
         rho, wavenumber, method="loop", wavenumber_units=WAVENUMBER_UNITS
-    )
-    matrix = calculator.calculate(
+    ).molecular_response_c2_m2_per_j
+    matrix = calculator.calculate_complex_response(
         rho, wavenumber, method="matrix", wavenumber_units=WAVENUMBER_UNITS
-    )
-    two_dimensional = calculator.calculate(
+    ).molecular_response_c2_m2_per_j
+    two_dimensional = calculator.calculate_complex_response(
         rho, wavenumber, method="2d", wavenumber_units=WAVENUMBER_UNITS
-    )
-    chunked = calculator.calculate(
+    ).molecular_response_c2_m2_per_j
+    chunked = calculator.calculate_complex_response(
         rho,
         wavenumber,
         method="chunked",
         wavenumber_units=WAVENUMBER_UNITS,
         chunk_size=7,
-    )
+    ).molecular_response_c2_m2_per_j
 
-    assert np.max(np.abs(loop)) > 1.0e-3
-    np.testing.assert_allclose(matrix, loop, rtol=2e-14, atol=2e-14)
-    np.testing.assert_allclose(two_dimensional, loop, rtol=2e-14, atol=2e-14)
-    np.testing.assert_allclose(chunked, loop, rtol=2e-14, atol=2e-14)
+    assert np.max(np.abs(loop)) > 0.0
+    np.testing.assert_allclose(matrix, loop, rtol=2e-14, atol=0.0)
+    np.testing.assert_allclose(two_dimensional, loop, rtol=2e-14, atol=0.0)
+    np.testing.assert_allclose(chunked, loop, rtol=2e-14, atol=0.0)
 
 
 def test_approximate_sparse_requires_relative_threshold_and_reports_discarding():
@@ -417,9 +423,10 @@ def test_approximate_sparse_requires_relative_threshold_and_reports_discarding()
         _ThreeLevelDipole(),
         conditions,
         phase_matching="unfiltered",
-        axes="xy",
-        pol_int=np.array([1.0, 0.0]),
-        pol_det=np.array([1.0, 0.0]),
+        projection=CartesianProjection.from_jones(
+            axes="xy",
+            interaction=np.array([1.0, 0.0]),
+        ),
     )
     rho = np.diag([1.0, 0.5, 0.0]).astype(np.complex128)
     wavenumber = np.linspace(400.0, 1200.0, 19)
@@ -610,16 +617,25 @@ def _spectroscopy_conditions():
     return _experimental_conditions()
 
 
-def _circular_calculator(polarization, *, axes="xy", pol_det=None):
+def _circular_calculator(polarization, *, axes="xy", analyzer=None):
+    if analyzer is None:
+        projection = CartesianProjection.from_jones(
+            axes=axes,
+            interaction=polarization,
+        )
+    else:
+        projection = CartesianAnalyzerProjection.from_jones(
+            axes=axes,
+            interaction=polarization,
+            analyzer=analyzer,
+        )
     return AbsorbanceCalculator(
         _ThreeLevelBasis(),
         _DegenerateCircularHamiltonian(),
         _DegenerateCircularDipole(),
         _spectroscopy_conditions(),
         phase_matching="unfiltered",
-        axes=axes,
-        pol_int=polarization,
-        pol_det=pol_det,
+        projection=projection,
     )
 
 
@@ -744,10 +760,10 @@ def test_polarization_vectors_are_strictly_validated():
         with pytest.raises(ValueError):
             _circular_calculator(invalid, axes="xyz")
 
-    with pytest.raises(ValueError, match="pol_det.*shape"):
+    with pytest.raises(ValueError, match="analyzer.*shape"):
         _circular_calculator(
             np.array([1.0, 0.0]),
-            pol_det=[1.0, 0.0, 0.0],
+            analyzer=[1.0, 0.0, 0.0],
         )
 
 
@@ -831,9 +847,10 @@ def _pathway_calculator(basis, phase_matching):
         _ThreeLevelDipole(),
         _spectroscopy_conditions(),
         phase_matching=phase_matching,
-        axes="x",
-        pol_int=np.array([1.0]),
-        pol_det=np.array([1.0]),
+        projection=CartesianProjection.from_jones(
+            axes="x",
+            interaction=np.array([1.0]),
+        ),
     )
 
 
@@ -918,8 +935,10 @@ def test_phase_matching_mode_is_required_and_never_falls_back():
         AbsorbanceCalculator(
             *args,
             phase_matching="automatic",
-            axes="x",
-            pol_int=np.array([1.0]),
+            projection=CartesianProjection.from_jones(
+                axes="x",
+                interaction=np.array([1.0]),
+            ),
         )
     with pytest.raises(ValueError, match="requires basis.V_array"):
         _pathway_calculator(_BasisWithoutV(), "pump_probe")

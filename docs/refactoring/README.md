@@ -428,6 +428,15 @@ legacy direct `pol_det` surface remains only for the next migration unit. The
 full suite passes 1435 with 10 optional-GPU skips (1445 collected), coverage
 remains 80%, and strict mypy covers 79 modules.
 
+
+P7.4-b14/D-128 completes the constructor migration and resolves O-014. One typed
+projection replaces raw axes and interaction/detection arrays in direct and
+factory construction. Standard projections own every mOD path; analyzer
+projections expose only complex response and are rejected by absorption,
+radiation, and PFID mOD methods. Standard calculations remain unchanged. The
+full suite passes 1435 with 10 optional-GPU skips (1445 collected), coverage
+remains 80%, and strict mypy covers 79 modules. Final P7.4 acceptance is next.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks

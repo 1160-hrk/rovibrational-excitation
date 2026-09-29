@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b13/D-127 typed Cartesian analyzer; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b14/D-128 strict typed spectroscopy construction; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -592,6 +592,14 @@ reject mOD, and avoid a second Jones normalization. Direct legacy `pol_det`
 remains for the next removal unit. The suite has 1435 passes and 10 optional-GPU
 skips (1445 collected), coverage remains 80%, and strict mypy covers 79 modules.
 
+P7.4-b14/D-128 completes O-014. Direct/factory construction requires one typed
+standard or analyzer projection; raw axes and Jones arguments are gone. Standard
+projections own all mOD entry points. Analyzer projections expose complex
+response and are rejected by absorption, radiation, and PFID mOD methods.
+Standard arrays and numerical kernels remain unchanged. The suite has 1435
+passes and 10 optional-GPU skips (1445 collected), coverage remains 80%, and
+strict mypy covers 79 modules. Final P7.4 acceptance is next.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -640,11 +648,12 @@ The next work is:
    conversion to its owner, and P7.4-b5/D-119 moves radiation/PFID response to
    its transform owner. P7.4-b6/D-120 moves the exact dense response kernels to
    their owner, and P7.4-b7/D-121 adds unchanged chunked exact/approximate
-   kernels to that owner. P7.4-b8/D-122 accepts numerical ownership, and
-   P7.4-b9/D-123 begins the approved strict measurement migration. Continue by
-   replacing the temporary constructor only under exact standard-absorption
-   parity; do not implement analyzer intensity or OD without its independent
-   reference and explicit baseline contract. Complete source/environment and
+   kernels to that owner. P7.4-b8/D-122 accepts numerical ownership;
+   P7.4-b9 through P7.4-b14/D-128 complete the approved typed measurement
+   migration with exact standard-absorption parity and complex-only analyzer
+   response. Perform the final P7.4 acceptance audit next. Do not implement
+   analyzer intensity or OD without its independent reference and explicit
+   baseline contract. Complete source/environment and
    generated-array provenance remains separate and must not be overstated. Do
    not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

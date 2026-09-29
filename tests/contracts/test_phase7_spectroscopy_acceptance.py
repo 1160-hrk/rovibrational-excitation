@@ -16,6 +16,7 @@ from rovibrational_excitation.spectroscopy import (
     SpectroscopyCalculationReport,
     broadening,
     conditions,
+    create_calculator_from_params,
     observables,
     report,
     response,
@@ -113,14 +114,19 @@ def test_spectroscopy_has_no_broad_or_print_only_failure_path() -> None:
                 assert node.func.id != "print", path
 
 
-def test_method_and_pathway_policy_are_required_but_constructor_defaults_remain_debt() -> (
-    None
-):
+def test_method_pathway_and_typed_projection_are_required() -> None:
     constructor = inspect.signature(AbsorbanceCalculator)
     assert constructor.parameters["phase_matching"].default is inspect.Parameter.empty
-    assert constructor.parameters["axes"].default is inspect.Parameter.empty
-    assert constructor.parameters["pol_int"].default is inspect.Parameter.empty
-    assert constructor.parameters["pol_det"].default is None
+    assert constructor.parameters["projection"].default is inspect.Parameter.empty
+    assert "axes" not in constructor.parameters
+    assert "pol_int" not in constructor.parameters
+    assert "pol_det" not in constructor.parameters
+
+    factory = inspect.signature(create_calculator_from_params)
+    assert factory.parameters["projection"].default is inspect.Parameter.empty
+    assert "axes" not in factory.parameters
+    assert "pol_int" not in factory.parameters
+    assert "pol_det" not in factory.parameters
 
     calculate = inspect.signature(AbsorbanceCalculator.calculate)
     assert calculate.parameters["method"].default is inspect.Parameter.empty
@@ -129,3 +135,5 @@ def test_method_and_pathway_policy_are_required_but_constructor_defaults_remain_
     source = (PACKAGE / "absorbance_calculator.py").read_text()
     assert "self.axes = axes.lower()" not in source
     assert "if pol_int is None:" not in source
+    assert "pol_det:" not in source
+    assert "_polarizations_normalized" not in source

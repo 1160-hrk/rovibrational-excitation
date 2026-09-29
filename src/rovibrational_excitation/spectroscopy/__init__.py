@@ -1,99 +1,17 @@
 #!/usr/bin/env python3
-"""
-Spectroscopy Module
-===================
+"""Spectroscopy observables for rovibrational simulations.
 
-This module provides tools for calculating spectroscopic properties
-from quantum mechanical simulations of rovibrational excitation.
+Ordinary transmission absorption is constructed with
+``AbsorbanceCalculator.standard_absorption``. Scalar models obtain their
+storage axis from ``SystemModel``; Cartesian models require a
+``CartesianProjection``. ``calculate`` returns the established scalar mOD
+spectrum.
 
-Classes
--------
-AbsorbanceCalculator
-    Main class for calculating absorbance spectra from density matrices
-ExperimentalConditions
-    Dataclass for experimental conditions (temperature, pressure, etc.)
-SpectroscopyCalculationReport
-    Immutable report of the requested and executed numerical policy
-
-Functions
----------
-create_calculator_from_params
-    Helper function to create AbsorbanceCalculator from parameters
-
-Examples
---------
-Basic usage:
-
->>> from rovibrational_excitation.spectroscopy import AbsorbanceCalculator, ExperimentalConditions
->>> from rovibrational_excitation.core.units.constants import CONSTANTS
->>> from rovibrational_excitation.models.linear_molecule import (
-...     LinMolBasis,
-...     LinMolDipoleMatrix,
-... )
->>>
->>> # Create basis and other components
->>> basis = LinMolBasis(V_max=5, J_max=10, use_M=True)
->>> H0 = basis.generate_H0()
->>> dipole_matrix = LinMolDipoleMatrix(basis=basis, mu0=1e-30)
->>>
->>> # Set up experimental conditions
->>> conditions = ExperimentalConditions(
-...     temperature=300,
-...     temperature_units='K',
-...     pressure=1e5,
-...     pressure_units='Pa',
-...     optical_length=1e-3,
-...     optical_length_units='m',
-...     coherence_time=500,
-...     coherence_time_units='ps',
-...     molecular_mass=44e-3 / CONSTANTS.AVOGADRO,
-...     molecular_mass_units='kg',
-... )
->>>
->>> # Create calculator
->>> calculator = AbsorbanceCalculator(
-...     basis=basis,
-...     hamiltonian=H0,
-...     dipole_matrix=dipole_matrix,
-...     conditions=conditions,
-...     phase_matching='pump_probe',
-...     axes='xy',
-...     pol_int=np.array([1, 0]),
-... )
->>>
->>> # Calculate spectrum
->>> wavenumber = np.arange(2000, 2500, 0.1)
->>> absorbance = calculator.calculate(
-...     rho,
-...     wavenumber,
-...     method='loop',
-...     wavenumber_units='cm^-1',
-... )
-
-Advanced usage with 3D dipole components:
-
->>> # Using all three dipole components
->>> calculator = AbsorbanceCalculator(
-...     basis=basis,
-...     hamiltonian=H0,
-...     dipole_matrix=dipole_matrix,
-...     conditions=conditions,
-...     phase_matching='pump_probe',
-...     axes='xyz',
-...     pol_int=np.array([1, 0, 0]),    # x-polarized interaction
-...     pol_det=np.array([0, 1, 0])     # y-polarized detection
-... )
-
-Memory-efficient calculation for large systems:
-
->>> # Automatic optimization for large basis sets
->>> absorbance = calculator.calculate(
-...     rho, wavenumber,
-...     method='auto',
-...     wavenumber_units='cm^-1',
-...     memory_budget_bytes=2 * 1024**3,
-...     chunk_size=1000
-... )
+Analyzer-resolved measurements use ``CartesianAnalyzerProjection`` with
+``AbsorbanceCalculator.analyzer_complex_response``.
+``calculate_complex_response`` returns an immutable ``ComplexResponseSpectrum``
+before scalar mOD conversion. Analyzer intensity and analyzer absorbance are
+not implemented because they require an explicit reference measurement.
 """
 
 from .absorbance_calculator import (

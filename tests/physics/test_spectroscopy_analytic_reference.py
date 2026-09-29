@@ -12,6 +12,7 @@ from rovibrational_excitation.models.two_level import (
 )
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
+    CartesianProjection,
     ExperimentalConditions,
 )
 
@@ -50,9 +51,10 @@ def _calculator(
         TwoLevelDipoleMatrix(basis, mu0=DIPOLE_C_M),
         _conditions() if conditions is None else conditions,
         phase_matching="unfiltered",
-        axes="x",
-        pol_int=np.array([1.0]),
-        pol_det=np.array([1.0]),
+        projection=CartesianProjection.from_jones(
+            axes="x",
+            interaction=np.array([1.0]),
+        ),
     )
 
 

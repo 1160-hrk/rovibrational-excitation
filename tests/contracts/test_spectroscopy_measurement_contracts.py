@@ -55,17 +55,18 @@ def _two_level_model(*, coupling: CouplingSpec) -> SystemModel:
     )
 
 
-def test_scalar_standard_absorption_is_bitwise_identical_to_explicit_legacy() -> None:
+def test_scalar_standard_absorption_is_bitwise_identical_to_typed_direct() -> None:
     model = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
-    legacy = AbsorbanceCalculator(
+    direct = AbsorbanceCalculator(
         model.basis,
         model.hamiltonian,
         model.dipole,
         _conditions(),
         phase_matching="unfiltered",
-        axes="x",
-        pol_int=np.array([1.0]),
-        pol_det=np.array([1.0]),
+        projection=CartesianProjection(
+            axes=(Axis.X,),
+            interaction=np.array([1.0]),
+        ),
     )
     standard = AbsorbanceCalculator.standard_absorption(
         model,
@@ -76,15 +77,15 @@ def test_scalar_standard_absorption_is_bitwise_identical_to_explicit_legacy() ->
     wavenumber = np.linspace(400.0, 600.0, 17)
 
     assert standard.axes == "x"
-    assert np.array_equal(standard.mu_int, legacy.mu_int)
-    assert np.array_equal(standard.mu_det, legacy.mu_det)
+    assert np.array_equal(standard.mu_int, direct.mu_int)
+    assert np.array_equal(standard.mu_det, direct.mu_det)
     for method, options in (
         ("loop", {}),
         ("matrix", {}),
         ("2d", {}),
         ("chunked", {"chunk_size": 5}),
     ):
-        expected = legacy.calculate(
+        expected = direct.calculate(
             rho,
             wavenumber,
             method=method,
@@ -116,8 +117,7 @@ def test_cartesian_standard_absorption_uses_analyzer_bra_of_probe_ket() -> None:
     )
 
     assert calculator.axes == "xy"
-    np.testing.assert_array_equal(calculator.pol_int, probe.interaction)
-    np.testing.assert_array_equal(calculator.pol_det, probe.interaction)
+    assert calculator.projection is probe
     np.testing.assert_allclose(calculator.mu_det, calculator.mu_int.conj().T)
 
 
@@ -144,9 +144,9 @@ def test_projection_is_conditional_on_model_coupling() -> None:
         )
 
 
-def test_legacy_constructor_no_longer_invents_axes_or_interaction_ket() -> None:
+def test_direct_constructor_requires_one_typed_projection() -> None:
     model = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
-    with pytest.raises(TypeError, match="axes.*pol_int"):
+    with pytest.raises(TypeError, match="projection"):
         AbsorbanceCalculator(
             model.basis,
             model.hamiltonian,
@@ -154,15 +154,14 @@ def test_legacy_constructor_no_longer_invents_axes_or_interaction_ket() -> None:
             _conditions(),
             phase_matching="unfiltered",
         )
-    with pytest.raises(ValueError, match="lowercase"):
+    with pytest.raises(TypeError, match="projection must be"):
         AbsorbanceCalculator(
             model.basis,
             model.hamiltonian,
             model.dipole,
             _conditions(),
             phase_matching="unfiltered",
-            axes="X",
-            pol_int=np.array([1.0]),
+            projection=np.array([1.0]),  # type: ignore[arg-type]
         )
 
 
@@ -280,13 +279,24 @@ def test_typed_analyzer_returns_complex_response_and_rejects_mod() -> None:
     )
 
     assert isinstance(response, ComplexResponseSpectrum)
-    np.testing.assert_array_equal(calculator.pol_int, projection.interaction)
-    np.testing.assert_array_equal(calculator.pol_det, projection.analyzer)
+    assert calculator.projection is projection
     with pytest.raises(ValueError, match="analyzer.*complex response"):
         calculator.calculate(
             rho,
             wavenumber,
             method="loop",
+            wavenumber_units="cm^-1",
+        )
+    with pytest.raises(ValueError, match="analyzer complex response"):
+        calculator.calculate_radiation_spectrum(
+            rho,
+            wavenumber,
+            wavenumber_units="cm^-1",
+        )
+    with pytest.raises(ValueError, match="analyzer complex response"):
+        calculator.calculate_pfid_spectrum(
+            rho,
+            wavenumber,
             wavenumber_units="cm^-1",
         )
 

@@ -4298,7 +4298,7 @@ Implementation commit: this checkpoint.
 
 ### D-123: Spectroscopy separates standard absorption from analyzer observables
 
-Status: Accepted by the user on 2026-09-29; migration in progress as P7.4-b9.
+Status: Accepted by the user on 2026-09-29; migration completed by D-128.
 
 Scope: spectroscopy coupling projection, ordinary transmission detection, and
 future analyzer-resolved observables.
@@ -4427,11 +4427,41 @@ is not the typed analyzer route.
 Implementation commit: this checkpoint.
 
 
+### D-128: Spectroscopy construction requires one typed measurement projection
+
+Status: Implemented on 2026-09-29 as P7.4-b14; resolves O-014.
+
+Scope: public spectroscopy construction and observable failure policy. Numerical
+response kernels, standard-absorption conversion, route selection, thresholds,
+and returned standard spectra are unchanged.
+
+The direct `AbsorbanceCalculator` constructor and
+`create_calculator_from_params` now require exactly one `CartesianProjection` or
+`CartesianAnalyzerProjection`. Raw `axes`, `pol_int`, and `pol_det` arguments
+and their implicit/legacy branches are removed. The named standard and analyzer
+constructors route through the same typed boundary; model-aware named
+constructors additionally enforce scalar applicability and exact Cartesian
+coupling-axis agreement.
+
+`CartesianProjection` selects standard absorption and is the only measurement
+accepted by scalar mOD methods. `CartesianAnalyzerProjection` selects projected
+complex response. Its calculator rejects `calculate`, radiation mOD, and PFID
+mOD, so no arbitrary analyzer can enter scalar response-to-mOD conversion. The
+Jones kets are copied from their already normalized immutable projection and are
+never normalized again.
+
+Analyzer intensity and analyzer absorbance remain intentionally unavailable;
+their explicit reference-field contract and independent physics reference are
+separate future work, not a fallback from complex response.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
 
-Status: Resolution accepted by D-123; migration in progress.
+Status: Resolved by D-128 on 2026-09-29.
 
 The user clarified that axes and Jones polarization are applicable only to a
 Cartesian polarization-dependent model. Scalar TwoLevel, VibLadder, and
@@ -4440,12 +4470,12 @@ Cartesian interaction polarization is required. Ordinary absorption uses the
 same physical probe ket as its detection mode, whose analyzer bra produces the
 adjoint dipole projection.
 
-P7.4-b9 introduces that named standard-absorption path with exact parity.
-P7.4-b10/D-124 removes the old `axes="xy"`, case normalization, and implicit
-first-axis `pol_int`. Explicit arbitrary `pol_det` remains only as a temporary
-migration surface. O-014 closes when it has a typed complex-response replacement
-and the legacy constructor surface is removed. Analyzer intensity/absorbance
-follows the separate D-123 observable contract.
+P7.4-b9 introduces the named standard-absorption path with exact parity;
+D-124 removes invented defaults; D-126 exposes the typed pre-mOD complex
+response; D-127 adds the typed Cartesian analyzer; and D-128 removes all raw
+`axes`, `pol_int`, and `pol_det` construction. Every mOD entry rejects analyzer
+measurements. Analyzer intensity/absorbance remains a separate unimplemented
+D-123 observable that requires an explicit reference measurement.
 
 ### O-001: Trajectory endpoint when stride does not divide steps
 

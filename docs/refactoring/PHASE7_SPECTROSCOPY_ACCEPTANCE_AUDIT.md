@@ -1,7 +1,7 @@
 # Phase 7 spectroscopy acceptance audit
 
 Verified: 2026-09-29
-Status: **Numerical ownership accepted; D-123 constructor migration in progress.**
+Status: **Numerical ownership and typed measurement migration complete; final acceptance pending.**
 
 ## Scope
 
@@ -85,9 +85,16 @@ normalized, read-only, share exact typed axes, and must match Cartesian model
 coupling. The named path is complex-response-only and scalar models reject it.
 Only the direct legacy `pol_det` surface remains to remove.
 
+
+D-128 removes that final surface. Direct construction and the conditions factory
+require one typed projection; raw axes and Jones inputs no longer exist. Every
+scalar mOD method rejects analyzer measurements, including radiation and PFID.
+O-014 is resolved and the final P7.4 acceptance audit can now proceed.
+
 ## Remaining release work
 
-After the temporary constructor is removed and analyzer capability remains truthful, P7.4 can receive its final acceptance decision.
+The temporary constructor is removed and analyzer capability is truthful.
+P7.4 is ready for its final acceptance decision.
 Phase 8 must still rewrite the stale spectroscopy facade examples together with
 the English/Japanese READMEs, verify public snippets, and publish the exact
 capability/limitation matrix. Real-CUDA evidence remains a separate release

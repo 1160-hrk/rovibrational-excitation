@@ -62,14 +62,8 @@ class AbsorbanceCalculator:
         Probe interaction前の密度行列に適用する位相整合経路。pump_probeは
         ``V_i == V_j`` のブロックを選ぶ。この選別は吸収計算前だけに
         適用され、post-probeの放射/PFID密度には適用されない。
-    axes : str
-        必須。使用する双極子成分と偏光ベクトルの成分順序。
-        小文字の一意な順序付き部分集合だけを受理する。
-    pol_int : np.ndarray
-        相互作用光の偏光ket。成分数は ``len(axes)`` と一致させる。
-    pol_det : np.ndarray, optional
-        検出光の偏光ket。Noneの場合はpol_intと同じ物理偏光を使い、
-        検出演算子では自動的に複素共役する。
+    projection : CartesianProjection or CartesianAnalyzerProjection
+        型付き偏光測定。標準吸収は前者、アナライザー複素応答は後者。
 
     Examples
     --------
@@ -78,8 +72,10 @@ class AbsorbanceCalculator:
     >>> dipole = LinMolDipoleMatrix(basis=basis, mu0=1.0e-30)
     >>> calculator = AbsorbanceCalculator(
     ...     basis, H0, dipole, conditions,
-    ...     phase_matching='pump_probe', axes='xyz',
-    ...     pol_int=np.array([1, 0, 0]),
+    ...     phase_matching="pump_probe",
+    ...     projection=CartesianProjection.from_jones(
+    ...         axes="xyz", interaction=np.array([1, 0, 0])
+    ...     ),
     ... )
     >>> absorbance = calculator.calculate(
     ...     rho, wavenumber, method='loop', wavenumber_units='cm^-1'
@@ -94,10 +90,7 @@ class AbsorbanceCalculator:
         conditions: ExperimentalConditions,
         *,
         phase_matching: Literal["unfiltered", "pump_probe"],
-        axes: str,
-        pol_int: np.ndarray,
-        pol_det: np.ndarray | None = None,
-        _polarizations_normalized: bool = False,
+        projection: CartesianProjection | CartesianAnalyzerProjection,
     ):
         self.basis = basis
         self.hamiltonian = hamiltonian
@@ -107,30 +100,38 @@ class AbsorbanceCalculator:
             raise ValueError("phase_matching must be 'unfiltered' or 'pump_probe'")
         self.conditions = conditions
 
-        # 軸の検証と設定
-        self.axes = axes
-        self._validate_axes()
-
-        # Polarization components follow the explicit order in ``axes``.
-        if _polarizations_normalized:
-            assert pol_det is not None
-            self.pol_int = np.array(pol_int, dtype=np.complex128, copy=True)
-            self.pol_det = np.array(pol_det, dtype=np.complex128, copy=True)
-        else:
-            self.pol_int = self._normalize_polarization(pol_int, name="pol_int")
-            detection_polarization = self.pol_int if pol_det is None else pol_det
-            self.pol_det = self._normalize_polarization(
-                detection_polarization,
-                name="pol_det",
+        if not isinstance(
+            projection,
+            (CartesianProjection, CartesianAnalyzerProjection),
+        ):
+            raise TypeError(
+                "projection must be CartesianProjection or CartesianAnalyzerProjection"
             )
+        self.projection = projection
+        self.axes = projection.axes_string
+        self._interaction_ket = np.array(
+            projection.interaction, dtype=np.complex128, copy=True
+        )
+        if isinstance(projection, CartesianAnalyzerProjection):
+            self._detection_ket = np.array(
+                projection.analyzer,
+                dtype=np.complex128,
+                copy=True,
+            )
+            self._measurement_kind = "analyzer_complex_response"
+        else:
+            self._detection_ket = np.array(
+                projection.interaction,
+                dtype=np.complex128,
+                copy=True,
+            )
+            self._measurement_kind = "standard_absorption"
 
-        # 計算用の内部変数を初期化
         self._setup_matrices()
         self._prepared_2d = False
         self._last_calculation_report: SpectroscopyCalculationReport | None = None
         self._last_discarded_commutator_l2_fraction = 0.0
         self._last_discarded_density_l2_fraction = 0.0
-        self._measurement_kind = "direct"
 
     @classmethod
     def standard_absorption(
@@ -158,8 +159,10 @@ class AbsorbanceCalculator:
                 )
             axis = model.coupling.scalar_axis
             assert axis is not None
-            axes = axis.value
-            interaction = np.ones(1, dtype=np.complex128)
+            projection = CartesianProjection(
+                axes=(axis,),
+                interaction=np.ones(1, dtype=np.complex128),
+            )
         else:
             if not isinstance(projection, CartesianProjection):
                 raise ValueError(
@@ -170,22 +173,15 @@ class AbsorbanceCalculator:
                 raise ValueError(
                     "projection axes must exactly match model coupling axes"
                 )
-            axes = projection.axes_string
-            interaction = projection.interaction
 
-        calculator = cls(
+        return cls(
             basis=model.basis,
             hamiltonian=model.hamiltonian,
             dipole_matrix=model.dipole,
             conditions=conditions,
             phase_matching=phase_matching,
-            axes=axes,
-            pol_int=interaction,
-            pol_det=interaction,
-            _polarizations_normalized=True,
+            projection=projection,
         )
-        calculator._measurement_kind = "standard_absorption"
-        return calculator
 
     @classmethod
     def analyzer_complex_response(
@@ -207,54 +203,14 @@ class AbsorbanceCalculator:
         if projection.axes_string != model_axes:
             raise ValueError("projection axes must exactly match model coupling axes")
 
-        calculator = cls(
+        return cls(
             basis=model.basis,
             hamiltonian=model.hamiltonian,
             dipole_matrix=model.dipole,
             conditions=conditions,
             phase_matching=phase_matching,
-            axes=projection.axes_string,
-            pol_int=projection.interaction,
-            pol_det=projection.analyzer,
-            _polarizations_normalized=True,
+            projection=projection,
         )
-        calculator._measurement_kind = "analyzer_complex_response"
-        return calculator
-
-    def _validate_axes(self):
-        """Validate an exact lowercase unique Cartesian component order."""
-        if not isinstance(self.axes, str):
-            raise TypeError("axes must be a string")
-        if self.axes != self.axes.lower():
-            raise ValueError("axes must contain exact lowercase Cartesian labels")
-        if not self.axes or len(self.axes) > 3:
-            raise ValueError("axes must contain between one and three components")
-        if any(component not in "xyz" for component in self.axes):
-            raise ValueError(
-                f"Invalid axes '{self.axes}'. Must contain only 'x', 'y', 'z'."
-            )
-        if len(set(self.axes)) != len(self.axes):
-            raise ValueError("axes must not contain duplicate components")
-
-    def _normalize_polarization(
-        self,
-        polarization: np.ndarray,
-        *,
-        name: str,
-    ) -> np.ndarray:
-        """Return a finite normalized Jones vector in the ``axes`` basis."""
-        vector = np.asarray(polarization, dtype=np.complex128)
-        expected_shape = (len(self.axes),)
-        if vector.shape != expected_shape:
-            raise ValueError(
-                f"{name} must have shape {expected_shape} matching axes='{self.axes}'"
-            )
-        if not np.all(np.isfinite(vector.real)) or not np.all(np.isfinite(vector.imag)):
-            raise ValueError(f"{name} must contain only finite values")
-        norm = float(np.linalg.norm(vector))
-        if not np.isfinite(norm) or norm == 0.0:
-            raise ValueError(f"{name} must have a finite nonzero norm")
-        return vector / norm
 
     def _setup_matrices(self):
         """内部行列の準備"""
@@ -351,9 +307,9 @@ class AbsorbanceCalculator:
             dtype=np.complex128,
         )
         self.mu_det = np.zeros_like(self.mu_int)
-        for coefficient, axis in zip(self.pol_int, self.axes):
+        for coefficient, axis in zip(self._interaction_ket, self.axes):
             self.mu_int += coefficient * self.mu_components[axis]
-        for coefficient, axis in zip(self.pol_det.conj(), self.axes):
+        for coefficient, axis in zip(self._detection_ket.conj(), self.axes):
             self.mu_det += coefficient * self.mu_components[axis]
 
         # A scale-relative roundoff threshold removes only numerical zero noise;
@@ -637,11 +593,7 @@ class AbsorbanceCalculator:
         ``device_resolution`` and ``device_resolution_units`` must be supplied
         together exactly when ``apply_device_function=True``.
         """
-        if self._measurement_kind == "analyzer_complex_response":
-            raise ValueError(
-                "analyzer complex response requires calculate_complex_response; "
-                "scalar mOD conversion is undefined"
-            )
+        self._require_standard_absorption()
         self._validate_response_request(
             method=method,
             wavenumber_units=wavenumber_units,
@@ -876,6 +828,13 @@ class AbsorbanceCalculator:
             molecular_mass_kg=self.conditions.molecular_mass_kg,
         )
 
+    def _require_standard_absorption(self) -> None:
+        if self._measurement_kind == "analyzer_complex_response":
+            raise ValueError(
+                "analyzer complex response requires a complex-response observable; "
+                "scalar mOD conversion is undefined"
+            )
+
     def calculate_radiation_spectrum(
         self,
         rho: np.ndarray,
@@ -902,6 +861,7 @@ class AbsorbanceCalculator:
         np.ndarray
             放射スペクトル [mOD]
         """
+        self._require_standard_absorption()
         require_exact_units(
             wavenumber_units,
             name="wavenumber_units",
@@ -992,9 +952,7 @@ def create_calculator_from_params(
     molecular_mass: float,
     molecular_mass_units: str,
     phase_matching: Literal["unfiltered", "pump_probe"],
-    axes: str,
-    pol_int: np.ndarray,
-    pol_det: np.ndarray | None = None,
+    projection: CartesianProjection | CartesianAnalyzerProjection,
 ) -> AbsorbanceCalculator:
     """
     パラメータから計算機を作成するヘルパー関数
@@ -1019,12 +977,8 @@ def create_calculator_from_params(
         1分子あたりの質量と必須単位。現在は ``kg`` のみ。
     phase_matching : {'unfiltered', 'pump_probe'}
         Probe interaction前の密度行列に適用する位相整合経路
-    axes : str
-        使用する軸
-    pol_int : np.ndarray
-        必須の相互作用Jones ket
-    pol_det : np.ndarray, optional
-        一時的な明示検出Jones ket。通常吸収にはstandard_absorptionを使う。
+    projection : CartesianProjection or CartesianAnalyzerProjection
+        必須の型付き偏光測定。
 
     Returns
     -------
@@ -1050,7 +1004,5 @@ def create_calculator_from_params(
         dipole_matrix=dipole_matrix,
         conditions=conditions,
         phase_matching=phase_matching,
-        axes=axes,
-        pol_int=pol_int,
-        pol_det=pol_det,
+        projection=projection,
     )
