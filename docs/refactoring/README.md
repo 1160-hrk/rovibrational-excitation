@@ -437,6 +437,13 @@ radiation, and PFID mOD methods. Standard calculations remain unchanged. The
 full suite passes 1435 with 10 optional-GPU skips (1445 collected), coverage
 remains 80%, and strict mypy covers 79 modules. Final P7.4 acceptance is next.
 
+
+P7.4-c/D-129 accepts the final spectroscopy boundary and completes Phase 7.
+The complete CPU/coverage/quality/example/build/installed-wheel gates pass;
+standard absorption remains numerically unchanged and analyzer measurements are
+truthfully complex-only. Analyzer intensity/absorbance, a thermal-state
+constructor, and real-CUDA evidence remain outside this acceptance.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks
@@ -712,7 +719,7 @@ These commits are the starting point, not the final architecture.
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
-| 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2/P7.3 accepted; P7.4 spectroscopy pending |
+| 7 | Simulation, optimization, spectroscopy decomposition | Complete — P7.1 through P7.4 accepted by D-093, D-103, D-111, and D-129 |
 | 8 | Public API, documentation, and release | In progress — P8.0-a tooling and P8.0-b archive consolidation complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in

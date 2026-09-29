@@ -4457,6 +4457,34 @@ separate future work, not a fallback from complex response.
 Implementation commit: this checkpoint.
 
 
+### D-129: Accept the final Phase 7 spectroscopy boundary
+
+Status: Accepted on 2026-09-29 as P7.4-c; completes P7.4 and Phase 7.
+
+Scope: acceptance audit and documentation only. No calculation, array, formula,
+threshold, routing, normalization, or public schema changes.
+
+The audit confirms one owner for each condition, response, broadening, transform,
+observable, report, projection, and result responsibility; no forbidden reverse
+dependency or broad/print-only failure; exact and explicit approximate routes;
+required units, pathway, method controls, and typed measurements; bitwise
+standard-absorption parity; and complex-only analyzer response. Raw Jones
+construction and analyzer-to-mOD conversion are absent.
+
+Acceptance evidence is 1435 passing CPU tests with 10 optional-GPU skips out of
+1445 collected, 80% repository branch coverage, 94% calculator coverage, clean
+Ruff format/lint, strict mypy across 79 configured modules, all supported example
+smokes, a current generated example index, valid sdist/wheel metadata, and an
+installed-wheel import of the typed spectroscopy facade.
+
+This acceptance does not claim analyzer intensity/absorbance, a thermal-state
+constructor, source/environment provenance, or real-CUDA validation. Analyzer
+intensity/absorbance still requires an independent reference and explicit
+reference-field contract. CUDA remains the separate open Phase 5/release gate.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

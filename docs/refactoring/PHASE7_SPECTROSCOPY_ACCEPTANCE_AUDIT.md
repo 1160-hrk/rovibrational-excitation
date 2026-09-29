@@ -1,7 +1,7 @@
 # Phase 7 spectroscopy acceptance audit
 
 Verified: 2026-09-29
-Status: **Numerical ownership and typed measurement migration complete; final acceptance pending.**
+Status: **Accepted by D-129; P7.4 complete.**
 
 ## Scope
 
@@ -91,11 +91,14 @@ require one typed projection; raw axes and Jones inputs no longer exist. Every
 scalar mOD method rejects analyzer measurements, including radiation and PFID.
 O-014 is resolved and the final P7.4 acceptance audit can now proceed.
 
-## Remaining release work
+## Final acceptance evidence
 
-The temporary constructor is removed and analyzer capability is truthful.
-P7.4 is ready for its final acceptance decision.
-Phase 8 must still rewrite the stale spectroscopy facade examples together with
-the English/Japanese READMEs, verify public snippets, and publish the exact
-capability/limitation matrix. Real-CUDA evidence remains a separate release
-gate and is not supplied by this CPU audit.
+D-129 accepts P7.4 with 1435 passing CPU tests, 10 optional-GPU skips, 80%
+repository branch coverage, 94% calculator coverage, clean Ruff and strict mypy,
+all supported example smokes, current generated example index, valid sdist/wheel
+metadata, and installed-wheel facade import.
+
+The acceptance is intentionally bounded. Analyzer intensity/absorbance and a
+thermal-state constructor are not implemented. Real-CUDA evidence, complete
+source/environment provenance, and Phase 8 README/public API release work remain
+separate gates and are not supplied by this CPU audit.

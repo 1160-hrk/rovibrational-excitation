@@ -2059,6 +2059,16 @@ Standard numerical outputs and all kernels remain unchanged. The full suite
 passes 1435 tests with 10 optional-GPU skips (1445 collected), coverage remains
 80%, and strict mypy covers 79 modules. Final P7.4 acceptance audit is next.
 
+
+P7.4-c/D-129 accepts the final spectroscopy boundary and completes Phase 7.
+Ownership, references, dependency direction, strict failures, typed measurement
+construction, standard-absorption parity, and complex-only analyzer response all
+pass. The full suite has 1435 CPU passes and 10 optional-GPU skips, branch
+coverage is 80%, the calculator is 94% covered, Ruff/mypy pass, all supported
+examples and their index pass, build/Twine pass, and the installed wheel exposes
+the typed facade. No calculation changes. Analyzer intensity/absorbance,
+thermal-state construction, and real CUDA remain explicitly outside acceptance.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;
