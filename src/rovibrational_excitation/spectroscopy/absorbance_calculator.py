@@ -31,6 +31,7 @@ from rovibrational_excitation.spectroscopy.projection import CartesianProjection
 from rovibrational_excitation.spectroscopy.report import (
     SpectroscopyCalculationReport,
 )
+from rovibrational_excitation.spectroscopy.result import ComplexResponseSpectrum
 
 # Short aliases refer to the authoritative constants layer; no local values.
 H_DIRAC = CONSTANTS.HBAR
@@ -376,10 +377,9 @@ class AbsorbanceCalculator:
         self._last_discarded_commutator_l2_fraction = discarded_fraction
         return i_indices, j_indices
 
-    def calculate(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
+    @staticmethod
+    def _validate_response_request(
+        *,
         method: Literal[
             "matrix",
             "loop",
@@ -388,21 +388,13 @@ class AbsorbanceCalculator:
             "auto",
             "approximate_sparse",
         ],
-        *,
         wavenumber_units: str,
-        apply_doppler: bool = False,
-        apply_device_function: bool = False,
-        device_resolution: float | None = None,
-        device_resolution_units: str | None = None,
-        chunk_size: int | None = None,
-        relative_threshold: float | None = None,
-        memory_budget_bytes: int | None = None,
-    ) -> np.ndarray:
-        """Calculate absorbance from a wavenumber grid explicitly in cm^-1.
-
-        ``device_resolution`` and ``device_resolution_units`` must be supplied
-        together exactly when ``apply_device_function=True``.
-        """
+        apply_doppler: bool,
+        chunk_size: int | None,
+        relative_threshold: float | None,
+        memory_budget_bytes: int | None,
+    ) -> None:
+        """Validate options shared by absorbance and complex response."""
         require_exact_units(
             wavenumber_units,
             name="wavenumber_units",
@@ -471,6 +463,136 @@ class AbsorbanceCalculator:
                 "transition uses its own Doppler width"
             )
 
+    def _execute_response_request(
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        *,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        apply_doppler: bool,
+        require_uniform_grid: bool,
+        chunk_size: int | None,
+        relative_threshold: float | None,
+        memory_budget_bytes: int | None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, str, int]:
+        """Execute one validated molecular-response request."""
+        rho_array = self._select_pre_probe_density(self._validate_density_matrix(rho))
+        wavenumber_array = np.asarray(wavenumber, dtype=float)
+        if require_uniform_grid:
+            self._uniform_grid_spacing(wavenumber_array, name="wavenumber")
+
+        estimated_2d_bytes = self._estimate_2d_bytes(wavenumber_array)
+        if method == "auto":
+            assert memory_budget_bytes is not None
+            executed_method = (
+                "2d" if estimated_2d_bytes <= memory_budget_bytes else "chunked"
+            )
+        elif method == "approximate_sparse":
+            executed_method = "chunked"
+        else:
+            executed_method = method
+
+        self._last_discarded_commutator_l2_fraction = 0.0
+        if executed_method == "chunked":
+            assert chunk_size is not None
+            omega, molecular_response = self._calculate_chunked(
+                rho_array,
+                wavenumber_array,
+                chunk_size=chunk_size,
+                relative_threshold=relative_threshold,
+            )
+        elif executed_method == "2d":
+            omega, molecular_response = self._calculate_2d(rho_array, wavenumber_array)
+        elif executed_method == "matrix":
+            omega, molecular_response = self._calculate_matrix(
+                rho_array,
+                wavenumber_array,
+                apply_doppler,
+            )
+        else:
+            omega, molecular_response = self._calculate_loop(
+                rho_array,
+                wavenumber_array,
+                apply_doppler,
+            )
+
+        return (
+            wavenumber_array,
+            omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        )
+
+    def _record_calculation_report(
+        self,
+        *,
+        requested_method: str,
+        executed_method: str,
+        estimated_2d_bytes: int,
+        memory_budget_bytes: int | None,
+        relative_threshold: float | None,
+        device_function_applied: bool,
+    ) -> SpectroscopyCalculationReport:
+        """Create and retain the report for one completed request."""
+        report = SpectroscopyCalculationReport(
+            requested_method=requested_method,
+            executed_method=executed_method,
+            estimated_2d_bytes=estimated_2d_bytes,
+            memory_budget_bytes=memory_budget_bytes,
+            relative_threshold=relative_threshold,
+            discarded_commutator_l2_fraction=(
+                self._last_discarded_commutator_l2_fraction
+            ),
+            phase_matching=self.phase_matching,
+            discarded_density_l2_fraction=(self._last_discarded_density_l2_fraction),
+            device_function_applied=device_function_applied,
+        )
+        self._last_calculation_report = report
+        return report
+
+    def calculate(
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        *,
+        wavenumber_units: str,
+        apply_doppler: bool = False,
+        apply_device_function: bool = False,
+        device_resolution: float | None = None,
+        device_resolution_units: str | None = None,
+        chunk_size: int | None = None,
+        relative_threshold: float | None = None,
+        memory_budget_bytes: int | None = None,
+    ) -> np.ndarray:
+        """Calculate absorbance from a wavenumber grid explicitly in cm^-1.
+
+        ``device_resolution`` and ``device_resolution_units`` must be supplied
+        together exactly when ``apply_device_function=True``.
+        """
+        self._validate_response_request(
+            method=method,
+            wavenumber_units=wavenumber_units,
+            apply_doppler=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
         if apply_device_function:
             if (
                 device_resolution is None
@@ -493,47 +615,26 @@ class AbsorbanceCalculator:
                 "when apply_device_function=True"
             )
 
-        rho_array = self._select_pre_probe_density(self._validate_density_matrix(rho))
-        wavenumber_array = np.asarray(wavenumber, dtype=float)
-        if apply_doppler or apply_device_function:
-            self._uniform_grid_spacing(wavenumber_array, name="wavenumber")
-
-        estimated_2d_bytes = self._estimate_2d_bytes(wavenumber_array)
-        requested_method = method
-        if method == "auto":
-            executed_method = (
-                "2d" if estimated_2d_bytes <= memory_budget_bytes else "chunked"
-            )
-        elif method == "approximate_sparse":
-            executed_method = "chunked"
-        else:
-            executed_method = method
-
-        self._last_discarded_commutator_l2_fraction = 0.0
-        if executed_method == "chunked":
-            omega, molecular_response = self._calculate_chunked(
-                rho_array,
-                wavenumber_array,
-                chunk_size=chunk_size,
-                relative_threshold=relative_threshold,
-            )
-        elif executed_method == "2d":
-            omega, molecular_response = self._calculate_2d(rho_array, wavenumber_array)
-        elif executed_method == "matrix":
-            omega, molecular_response = self._calculate_matrix(
-                rho_array,
-                wavenumber_array,
-                apply_doppler,
-            )
-        else:
-            omega, molecular_response = self._calculate_loop(
-                rho_array,
-                wavenumber_array,
-                apply_doppler,
-            )
-
+        (
+            wavenumber_array,
+            omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        ) = self._execute_response_request(
+            rho,
+            wavenumber,
+            method=method,
+            apply_doppler=apply_doppler,
+            require_uniform_grid=apply_doppler or apply_device_function,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
         spectrum = self._response_to_absorbance(omega, molecular_response)
         if apply_device_function:
+            assert device_resolution is not None
+            assert device_resolution_units is not None
             spectrum = self.apply_device_function(
                 spectrum,
                 wavenumber_array,
@@ -542,20 +643,73 @@ class AbsorbanceCalculator:
                 resolution_units=device_resolution_units,
             )
 
-        self._last_calculation_report = SpectroscopyCalculationReport(
-            requested_method=requested_method,
+        self._record_calculation_report(
+            requested_method=method,
             executed_method=executed_method,
             estimated_2d_bytes=estimated_2d_bytes,
             memory_budget_bytes=memory_budget_bytes,
             relative_threshold=relative_threshold,
-            discarded_commutator_l2_fraction=(
-                self._last_discarded_commutator_l2_fraction
-            ),
-            phase_matching=self.phase_matching,
-            discarded_density_l2_fraction=(self._last_discarded_density_l2_fraction),
             device_function_applied=apply_device_function,
         )
         return spectrum
+
+    def calculate_complex_response(
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        *,
+        wavenumber_units: str,
+        apply_doppler: bool = False,
+        chunk_size: int | None = None,
+        relative_threshold: float | None = None,
+        memory_budget_bytes: int | None = None,
+    ) -> ComplexResponseSpectrum:
+        """Return the projected complex per-molecule response before mOD."""
+        self._validate_response_request(
+            method=method,
+            wavenumber_units=wavenumber_units,
+            apply_doppler=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        (
+            wavenumber_array,
+            _omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        ) = self._execute_response_request(
+            rho,
+            wavenumber,
+            method=method,
+            apply_doppler=apply_doppler,
+            require_uniform_grid=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        report = self._record_calculation_report(
+            requested_method=method,
+            executed_method=executed_method,
+            estimated_2d_bytes=estimated_2d_bytes,
+            memory_budget_bytes=memory_budget_bytes,
+            relative_threshold=relative_threshold,
+            device_function_applied=False,
+        )
+        return ComplexResponseSpectrum(
+            wavenumber_cm_inverse=wavenumber_array,
+            molecular_response_c2_m2_per_j=molecular_response,
+            calculation_report=report,
+        )
 
     def _calculate_2d(
         self, rho: np.ndarray, wavenumber: np.ndarray

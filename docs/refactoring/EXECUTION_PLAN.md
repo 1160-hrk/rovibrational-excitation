@@ -2030,6 +2030,15 @@ formula, threshold, route, accumulation order, or returned spectrum. The full
 suite passes 1429 tests with 10 optional-GPU skips (1439 collected), coverage
 remains 80%, and strict mypy covers 79 modules.
 
+P7.4-b12/D-126 exposes that existing pre-mOD array through
+`calculate_complex_response` and immutable `ComplexResponseSpectrum`. The result
+stores a read-only cm^-1 grid, projected per-molecule response in C^2 m^2 / J,
+and the calculation report. Absorbance and complex response share one strict
+validation/dispatch implementation; only absorbance permits the existing
+post-mOD device convolution. No formula or existing absorbance output changes.
+The full suite passes 1432 tests with 10 optional-GPU skips (1442 collected),
+coverage remains 80%, and strict mypy covers 79 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

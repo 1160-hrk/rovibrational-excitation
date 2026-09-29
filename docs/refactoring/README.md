@@ -409,6 +409,16 @@ public analyzer observable or calculation formula changes in this checkpoint;
 the full suite passes 1429 with 10 optional-GPU skips (1439 collected), coverage
 remains 80%, and strict mypy covers 79 modules.
 
+
+P7.4-b12/D-126 publishes the approved pre-mOD observable as immutable
+`ComplexResponseSpectrum`. `calculate_complex_response` reuses the exact
+phase-matching, Doppler, routing, approximation, and report policies, while
+instrument convolution remains specific to scalar mOD. The public arrays are a
+read-only cm^-1 grid and projected response in C^2 m^2 / J. The typed analyzer
+constructor and legacy `pol_det` removal remain next. The full suite passes 1432
+with 10 optional-GPU skips (1442 collected), coverage remains 80%, and strict
+mypy covers 79 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks

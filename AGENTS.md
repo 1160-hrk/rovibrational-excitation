@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b11/D-125 response/observable separation; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b12/D-126 typed complex response; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -574,6 +574,15 @@ conversion once and retains device convolution afterward. Exact empty chunked
 output remains float zeros. Analyzer response is not yet exposed. The suite has
 1429 passes and 10 optional-GPU skips (1439 collected), coverage remains 80%,
 and strict mypy covers 79 modules.
+
+P7.4-b12/D-126 exposes the existing projected pre-mOD response through
+`calculate_complex_response` and immutable `ComplexResponseSpectrum`. The result
+owns read-only cm^-1 and C^2 m^2 / J arrays plus the exact calculation report.
+It shares phase matching, Doppler, routing, approximation, and dispatch with
+absorbance but never applies mOD or the device function. Existing absorbance
+outputs are unchanged. Typed arbitrary analyzer construction and legacy
+`pol_det` removal remain. The suite has 1432 passes and 10 optional-GPU skips
+(1442 collected), coverage remains 80%, and strict mypy covers 79 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and

@@ -7,6 +7,7 @@ import inspect
 from pathlib import Path
 
 from rovibrational_excitation.spectroscopy import (
+    ComplexResponseSpectrum,
     ExperimentalConditions,
     SpectroscopyCalculationReport,
     absorbance_calculator,
@@ -15,6 +16,7 @@ from rovibrational_excitation.spectroscopy import (
     observables,
     report,
     response,
+    result,
     transform,
 )
 
@@ -203,6 +205,14 @@ def test_calculation_report_has_one_package_owner() -> None:
 
     monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
     assert "class SpectroscopyCalculationReport" not in monolith
+
+
+def test_complex_response_result_has_one_package_owner() -> None:
+    assert ComplexResponseSpectrum is result.ComplexResponseSpectrum
+    assert inspect.getmodule(ComplexResponseSpectrum) is result
+
+    monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
+    assert "class ComplexResponseSpectrum" not in monolith
 
 
 def test_broadening_and_device_kernels_have_one_package_owner() -> None:

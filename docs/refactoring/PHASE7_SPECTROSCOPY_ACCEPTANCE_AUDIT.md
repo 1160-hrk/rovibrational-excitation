@@ -72,6 +72,13 @@ the facade performs the existing mOD conversion once before optional device
 convolution. This is a prerequisite only; analyzer complex response is not yet
 public and explicit legacy `pol_det` remains.
 
+
+D-126 exposes this boundary through immutable `ComplexResponseSpectrum` and
+`calculate_complex_response`. The result records the cm^-1 grid, projected
+per-molecule response in C^2 m^2 / J, and calculation report; it never applies
+the mOD conversion or device function. A typed arbitrary analyzer is still the
+remaining constructor migration.
+
 ## Remaining release work
 
 After the temporary constructor is removed and analyzer capability remains truthful, P7.4 can receive its final acceptance decision.

@@ -1141,7 +1141,10 @@ intensity or OD requires an explicit reference measurement; a zero reference
 transmission makes OD undefined and raises. The legacy arbitrary-`pol_det` mOD
 path is a temporary migration surface, not the target analyzer contract.
 
-The projected per-molecule response for ordinary absorption is converted through
+The projected complex per-molecule response is public before scalar conversion
+as a read-only cm^-1 grid and a C^2 m^2 / J response array. This observable does
+not apply the instrument function. The projected per-molecule response for
+ordinary absorption is converted through
 `chi = number_density * response / epsilon_0`. No unconditional `1/3` factor is
 applied after polarization projection. Any isotropic orientational average must
 already be represented by the density matrix and lab-frame dipole operators,

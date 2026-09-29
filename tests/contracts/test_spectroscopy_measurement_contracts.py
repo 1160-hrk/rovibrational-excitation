@@ -18,6 +18,7 @@ from rovibrational_excitation.models.two_level import (
 from rovibrational_excitation.spectroscopy import (
     AbsorbanceCalculator,
     CartesianProjection,
+    ComplexResponseSpectrum,
     ExperimentalConditions,
 )
 
@@ -187,3 +188,68 @@ def test_cartesian_projection_requires_typed_unique_axes_and_finite_nonzero_ket(
             axes=("x", "y"),  # type: ignore[arg-type]
             interaction=np.array([1.0, 0.0]),
         )
+
+
+def test_complex_response_is_a_typed_immutable_snapshot() -> None:
+    model = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
+    calculator = AbsorbanceCalculator.standard_absorption(
+        model,
+        _conditions(),
+        phase_matching="unfiltered",
+    )
+    rho = np.diag([1.0, 0.0]).astype(np.complex128)
+    wavenumber = np.linspace(400.0, 600.0, 17)
+
+    result = calculator.calculate_complex_response(
+        rho,
+        wavenumber,
+        method="loop",
+        wavenumber_units="cm^-1",
+    )
+
+    assert isinstance(result, ComplexResponseSpectrum)
+    np.testing.assert_array_equal(result.wavenumber_cm_inverse, wavenumber)
+    assert np.iscomplexobj(result.molecular_response_c2_m2_per_j)
+    assert result.calculation_report is calculator.last_calculation_report
+    assert not result.wavenumber_cm_inverse.flags.writeable
+    assert not result.molecular_response_c2_m2_per_j.flags.writeable
+    with pytest.raises(ValueError, match="read-only"):
+        result.molecular_response_c2_m2_per_j[0] = 0.0
+
+
+def test_complex_response_returns_each_existing_route_before_mod_conversion() -> None:
+    model = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
+    calculator = AbsorbanceCalculator.standard_absorption(
+        model,
+        _conditions(),
+        phase_matching="unfiltered",
+    )
+    rho = np.diag([1.0, 0.0]).astype(np.complex128)
+    wavenumber = np.linspace(400.0, 600.0, 17)
+
+    route_calls = (
+        ("loop", {}, lambda: calculator._calculate_loop(rho, wavenumber)),
+        ("matrix", {}, lambda: calculator._calculate_matrix(rho, wavenumber)),
+        ("2d", {}, lambda: calculator._calculate_2d(rho, wavenumber)),
+        (
+            "chunked",
+            {"chunk_size": 5},
+            lambda: calculator._calculate_chunked(rho, wavenumber, chunk_size=5),
+        ),
+    )
+    for method, options, raw_route in route_calls:
+        _omega, expected = raw_route()
+        actual = calculator.calculate_complex_response(
+            rho,
+            wavenumber,
+            method=method,
+            wavenumber_units="cm^-1",
+            **options,
+        )
+        np.testing.assert_array_equal(
+            actual.molecular_response_c2_m2_per_j,
+            expected,
+            err_msg=method,
+        )
+        assert actual.calculation_report.executed_method == method
+        assert actual.calculation_report.device_function_applied is False

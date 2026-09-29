@@ -4377,6 +4377,30 @@ an analyzer intensity/absorbance formula.
 Implementation commit: this checkpoint.
 
 
+### D-126: Projected complex molecular response is a typed observable
+
+Status: Implemented on 2026-09-29 as P7.4-b12 under D-123.
+
+Scope: additive spectroscopy API plus calculation-neutral validation and dispatch
+reuse. Existing absorbance arrays, formulae, route selection, thresholds,
+Doppler behavior, and device convolution order remain unchanged.
+
+`calculate_complex_response` exposes the already computed projected molecular
+response before susceptibility scaling and response-to-mOD conversion. It uses
+the same required cm^-1 grid, phase matching, exact/approximate method controls,
+Doppler policy, accumulation kernels, and observable calculation report as
+standard absorbance. Instrument convolution is intentionally absent because it
+is currently defined for the converted scalar mOD spectrum.
+
+The immutable `ComplexResponseSpectrum` owns read-only copies of the cm^-1 grid,
+the complex per-molecule response in C^2 m^2 / J, and the exact calculation
+report. Common request validation and dispatch now have one implementation for
+both observables. This checkpoint does not yet add the typed arbitrary-analyzer
+constructor or remove the legacy `pol_det` surface.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

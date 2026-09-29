@@ -103,11 +103,13 @@ from .absorbance_calculator import (
 from .conditions import ExperimentalConditions
 from .projection import CartesianProjection
 from .report import SpectroscopyCalculationReport
+from .result import ComplexResponseSpectrum
 
 # Define what gets imported with "from spectroscopy import *"
 __all__ = [
     "AbsorbanceCalculator",
     "CartesianProjection",
+    "ComplexResponseSpectrum",
     "ExperimentalConditions",
     "SpectroscopyCalculationReport",
     "create_calculator_from_params",
