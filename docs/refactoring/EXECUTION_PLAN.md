@@ -2139,6 +2139,11 @@ removes obsolete and unverified recommendations, marks four public guides as
 migration-audit work, and adds link/staleness contracts. No calculation or
 configuration behavior changes.
 
+P8.2-c/D-134 rebuilds the normal-simulation parameter guide from strict model
+and generated-field schemas. Required keys, removed-name rejection, local
+links, the corrected template CLI, and the real-CUDA disclosure are executable
+contracts. Sweep, propagation, and unit guides remain next.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

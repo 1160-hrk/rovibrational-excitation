@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1448 passed, 10 skipped (1458 collected) |
+| Pytest | 1451 passed, 10 skipped (1461 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -484,6 +484,11 @@ P8.2-b/D-133 rebuilds `docs/README.md` as a current route/status index and
 contract-tests its links and rejection of obsolete recommendations. Parameter,
 sweep, propagation, and unit guides remain explicitly labeled migration-audit
 work rather than being presented as current.
+
+P8.2-c/D-134 rebuilds the parameter guide from authoritative strict schemas and
+corrects only comments in the executable template. Required generated/model
+keys and stale-name rejection are contract-tested; the template calculation
+still passes end to end. Sweep, propagation, and unit guides remain.
 
 P6.2-c
 implements D-069:

@@ -4597,6 +4597,35 @@ open and is not hidden by the new index.
 Implementation commit: this checkpoint.
 
 
+### D-134: Normal-simulation parameters are documented from strict schemas
+
+Status: Implemented on 2026-09-29 as P8.2-c.
+
+Scope: normal-simulation parameter documentation and template comments only.
+No parameter value, schema, default, validation branch, field sample, or
+calculation changes.
+
+The old parameter guide mixed current and removed names, omitted required unit
+partners, showed incomplete model configurations, recommended unverified CuPy,
+and invoked the wrong module. It is replaced by a route-oriented reference
+derived from the current validators and executable template.
+
+The new guide distinguishes generated and externally sampled fields; enumerates
+all required execution, model, and generated-pulse keys; records model-specific
+axes/polarization/M-average/SymTop contracts; explains time/frequency units,
+modulation pairs, split interaction, initial-state semantics, output shapes,
+and strict failure policy; and delegates sweep detail to its owner. It supplies
+no universal physical scale recommendation.
+
+Three contracts compare every private authoritative model/generated required
+key with the guide, reject removed names and the old CLI, require the real-CUDA
+disclosure, and resolve local links. The unchanged template calculation executes
+end to end after its command comment and CUDA status note are corrected. The
+full suite has 1451 passes and 10 optional-GPU skips (1461 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

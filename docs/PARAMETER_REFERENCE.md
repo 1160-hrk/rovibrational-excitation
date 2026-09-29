@@ -1,607 +1,280 @@
-# パラメータリファレンス (Parameter Reference)
+# 通常シミュレーション parameter reference
 
-## 概要
+対象は開発版 `0.3.0.dev1` の normal simulation です。最適化 YAML は
+[configs/README.md](../configs/README.md)、保存 schema は
+[RESULT_STORAGE.md](RESULT_STORAGE.md) を参照してください。v0.2 の parameter 名や
+暗黙 default は移行しません。unknown key と model/algorithm に不適用な key は
+propagation 前にエラーになります。
 
-rovibrational-excitation パッケージでは、パラメータファイル（`.py` ファイル）を使用してシミュレーション設定を行います。このドキュメントでは、指定可能な全パラメータの詳細と使用例を説明します。
+## 信頼できる開始点
 
-## パラメータファイルの基本構造
+完全な実行例は [`examples/params_template.py`](../examples/params_template.py) です。
+この template は CI で保存なしの end-to-end 実行を行います。
 
-```python
-#!/usr/bin/env python
-"""
-パラメータファイル例
-"""
-import numpy as np
-
-# メタ情報
-description = "my_simulation"
-
-# モデル設定
-basis_type = "linmol"
-representation = "m_resolved"
-axes = "xy"
-initial_states = [0]
-
-# 時間軸設定
-t_start, t_end, dt = -50.0, 50.0, 0.1
-
-# 物理パラメータ
-V_max, J_max = 3, 5
-vibrational_frequency = 2349.0
-vibrational_frequency_units = "cm^-1"
-anharmonic_shift = 0.0
-anharmonic_shift_units = "cm^-1"
-rotational_constant = 0.02
-rotational_constant_units = "rad/fs"
-vibration_rotation_coupling = 0.0
-vibration_rotation_coupling_units = "rad/fs"
-potential_type = "harmonic"
-mu0_Cm = 1.0e-30
-
-# 電場パラメータ
-duration = [20.0, 30.0]  # スイープ対象
-carrier_frequency = 2349.0
-carrier_frequency_units = "cm^-1"
-amplitude = 1e9
-polarization = [1.0, 0.0]  # 固定値
-
-# 実行設定（暗黙値なし）
-backend = "numpy"
-storage = "dense"
-algorithm = "rk4"
-nondimensional = False
-renorm = False
-return_traj = True
-sample_stride = 1
+```bash
+cp examples/params_template.py my_params.py
+python -m rovibrational_excitation.cli.simulate my_params.py --dry-run
+python -m rovibrational_excitation.cli.simulate my_params.py --no-save
 ```
 
-## パラメータ一覧
-
-### 1. 必須パラメータ
-
-#### 1.1 メタ情報
-
-| パラメータ | 型 | 必須 | 説明 | 例 |
-|-----------|---|------|------|-----|
-| `description` | `str` | 推奨 | シミュレーションの説明（結果ディレクトリ名に使用） | `"CO2_excitation"` |
-
-#### 1.2 時間軸設定
-
-| パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
-|-----------|---|------|------|------|-----|
-| `t_start` | `float` | ✅ | fs | 時間軸の開始時刻 | `-100.0` |
-| `t_end` | `float` | ✅ | fs | 時間軸の終了時刻 | `100.0` |
-| `dt` | `float` | ✅ | fs | 電場のサンプリング間隔 | `0.1` |
-
-`dt` は電場のサンプリング間隔です。RK4 / split-operator の1時間発展ステップは
-左端・中点・右端を使うため `2 * dt` 進みます。したがって
-`t_end - t_start` は `2 * dt` の整数倍でなければエラーになります。
-
-#### 1.3 量子系設定
-
-| パラメータ | 型 | 必須 | 説明 | 例 |
-|-----------|---|------|------|-----|
-| `basis_type` | `str` | ✅ | モデル名 | `"linmol"` |
-| `V_max` | `int` | LinMol / VibLadder ✅ | 最大振動量子数 | `3` |
-| `J_max` | `int` | LinMol ✅ | 最大回転量子数 | `5` |
-| `representation` | `str` | LinMol ✅ | `"m_resolved"`: Mを明示、`"m_incoherent_average"`: M縮退の非干渉平均 | `"m_resolved"` |
-
-`representation="m_incoherent_average"` は M=0 の純粋状態近似ではありません。固定直線偏光を内部 z 軸へ
-合わせ、初期 J の各 M ブロックを別々に時間発展し、規格化重み
-`1 / (2J+1)` で population を非干渉和します。円偏光・楕円偏光・時間依存偏光は
-受け付けません。外部の直線偏光方向は任意ですが、`axes` は指定できません。
-
-複数の `initial_states` は同じ J 内（異なる v）のコヒーレント重ね合わせだけを
-許します。異なる J をまたぐ指定は、等方的な M 平均でコヒーレンスを一意に
-定められないためエラーです。
-
-#### 1.4 基本電場パラメータ
-
-| パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
-|-----------|---|------|------|------|-----|
-| `envelope_kind` | `str` | ✅ | - | 包絡線の種類（下表） | `"gaussian_fwhm"` |
-| `duration` | `float` | ✅ | fs | 包絡線の幅（意味は種類ごとに異なる） | `20.0` |
-| `t_center` | `float` | ✅ | fs | パルス中心時刻（暗黙値なし） | `0.0` |
-| `modulation_kind` | `str` | ✅ | - | `"none"` または `"sinusoidal"` | `"none"` |
-| `carrier_frequency` | `float` | ✅ | 次行で指定 | 搬送波周波数（通常周波数・波数・角周波数を選択可） | `2349.0` |
-| `carrier_frequency_units` | `str` | ✅ | - | `carrier_frequency` の単位 | `"cm^-1"` |
-| `amplitude` | `float` | ✅ | V/m | 電場振幅 | `1e9` |
-| `polarization` | `list` | generated `m_resolved` ✅ | - | Jones偏光ベクトル [x, y] | `[1.0, 0.0]` |
-
-`carrier_frequency_units` は必須です。通常周波数は `Hz`、`kHz`、`MHz`、
-`GHz`、`THz`、`PHz`、波数は `cm^-1`、`cm-1`、`wavenumber`、
-角周波数は `rad/s`、`rad/ps`、`rad/fs` を選べます。通常周波数と波数の
-入力値には `2π` を含めません。角周波数を選んだ場合だけ入力値に `2π` が
-含まれます。runner は検証済みの `Frequency` 境界で一度だけ `rad/fs` へ
-正規化します。旧 `carrier_freq` は単位が曖昧なため削除され、移行エラーに
-なります。
-
-通常 runner が受け付ける包絡線は `gaussian`（`duration` は標準偏差）、
-`gaussian_fwhm`（FWHM）、`lorentzian`（半値半幅）、`lorentzian_fwhm`（FWHM）です。
-Voigt は2個の幅が必要なため、この単一 `duration` スキーマでは受け付けません。Voigt、
-任意 callable、任意波形は、正確な `TimeGrid` を持つ `ScalarField` または
-`CartesianField` として Python API に注入してください。runner は補間・再標本化しません。
-
-`duration` は必須です。旧名 `pulse_duration` は削除済みで、自動変換せず
-時間発展前に移行エラーになります。
-
-`polarization` は生成電場を使う `m_resolved` LinMol で必須です。
-TwoLevel と VibLadder は偏光自由度を持たないため指定せず、指定した場合は
-適用不能キーとしてエラーになります。両モデルは内部の固定 x 成分から生成した
-スカラー電場と結合し、typed scalar field に Jones 偏光を保持しません。
-
-LinMol の `representation="m_incoherent_average"` も偏光を省略できます。
-指定する場合は固定直線偏光だけを受け付け、その方向には依存しません。ただしこれは
-偏光自由度がないためではなく、量子化軸を固定直線偏光へ合わせて M 縮退を
-非干渉平均する、D-017 の近似によるものです。
-
-#### 1.5 基本物理パラメータ
-
-| パラメータ | 型 | 必須 | 単位 | 説明 | 例 |
-|-----------|---|------|------|------|-----|
-| `vibrational_frequency` | `float` | LinMol / VibLadder ✅ | 対応する `*_units` | 0→1振動遷移周波数 | `2349.0` |
-| `vibrational_frequency_units` | `str` | LinMol / VibLadder ✅ | - | 振動周波数の単位 | `"cm^-1"` |
-| `anharmonic_shift` | `float` | LinMol / VibLadder ✅ | 対応する `*_units` | 隣接遷移周波数の準位ごとの減少量 | `0.0` |
-| `anharmonic_shift_units` | `str` | LinMol / VibLadder ✅ | - | 非調和シフトの単位 | `"cm^-1"` |
-| `rotational_constant` | `float` | LinMol ✅ | 対応する `*_units` | 回転定数 | `0.3902` |
-| `rotational_constant_units` | `str` | LinMol ✅ | - | 回転定数の単位 | `"cm^-1"` |
-| `vibration_rotation_coupling` | `float` | LinMol ✅ | 対応する `*_units` | 振動-回転相互作用定数 | `0.0` |
-| `vibration_rotation_coupling_units` | `str` | LinMol ✅ | - | 振動-回転相互作用定数の単位 | `"cm^-1"` |
-| `potential_type` | `str` | LinMol / VibLadder ✅ | - | `"harmonic"` または `"morse"` | `"harmonic"` |
-| `mu0_Cm` | `float` | 全モデル ✅ | C·m | 双極子モーメント | `1e-30` |
-| `energy_gap` | `float` | TwoLevel ✅ | `energy_gap_units`で指定 | 二準位間のエネルギー差 | `1.0` |
-| `energy_gap_units` | `str` | TwoLevel ✅ | - | energy_gap の単位 | `"rad/fs"` |
-
-ゼロが正しい物理値である場合も `0.0` を明示してください。省略とゼロは区別され、
-基底クラスを直接生成する場合も LinMol、VibLadder、TwoLevel の物理定数は未指定だとエラーになります。
-双極子行列の直接生成では `mu0` が必須で、振動を含むモデルでは `potential_type` も必須です。
-
-#### 1.6 初期状態
+parameter file は Python module として実行されます。信頼できない file を読み込ませないで
+ください。CLI は module の public variable を読み、値と単位 label を変更せず各 case へ
+渡します。
+
+## 二つの電場入力経路
+
+`run_simulation_case(params, field=...)` の `field` keyword は必須です。
+
+1. `field=None`: parameter から pulse と canonical `TimeGrid` を生成する。
+2. `field=ScalarField(...)` または `field=CartesianField(...)`: Python で用意した
+   sampled field を注入する。
+
+二つの key 集合は混在できません。外部 field 経路に生成 pulse key があればエラーです。
+どちらの経路も補間、padding、切り詰め、規格化、時間刻みの自動変更を行いません。
+
+## 全経路で必要な選択
+
+| key | 型 | 契約 |
+|---|---|---|
+| `basis_type` | `str` | `twolevel`, `vibladder`, `linmol`, `symtop` |
+| `initial_states` | `list[int]` | 空でない basis index list。暗黙の基底状態なし |
+| `backend` | `str` | `numpy` または `cupy` |
+| `storage` | `str` | `dense` または `csr` |
+| `algorithm` | `str` | `rk4` または `split_operator` |
+| `return_traj` | `bool` | trajectory 全体か final state だけか |
+| `sample_stride` | positive `int` | trajectory 出力 stride。伝播刻みは変えない |
+| `nondimensional` | `bool` | 明示的な nondimensional propagation 選択 |
+| `renorm` | `bool` | step ごとの wavefunction 規格化を選択 |
+
+CuPy と CSR の組合せは非対応です。density/Liouville は NumPy dense RK4 のみです。
+SymTop は NumPy RK4 のみです。実 CUDA は未検証で、GPU 経路には host round trip が
+残ります。`backend="cupy"` を要求して利用不能な場合、NumPy へ fallback せず
+エラーになります。
+
+### optional workflow key
+
+| key | 型・default | 意味 |
+|---|---|---|
+| `description` | `str`, file name または `run` | batch result directory の label |
+| `save` | `bool`, CLI が選択 | result を保存するか |
+| `outdir` | path | direct Python call で保存する場合の case directory。batch CLI は生成する |
+| `validate_units` | `bool`, `True` | solver 内部の dimension check。公開入力の必須 unit pair を省略可能にはしない |
+| `verbose` | `bool`, `False` | solver/scaling diagnostic output |
+
+## model 別の必須 parameter
+
+全ての物理 scalar は値と専用 unit key の組で指定します。unit label は caller の値と
+ともに保存され、model boundary で canonical 値へ一度だけ変換されます。
+
+### TwoLevel
+
+| key | 内容 |
+|---|---|
+| `energy_gap`, `energy_gap_units` | 二準位 energy gap。frequency または energy unit |
+| `dipole_scale`, `dipole_scale_units` | 遷移双極子 scale |
+
+TwoLevel は scalar coupling です。`representation`, `axes`, `polarization` は指定できません。
+
+### VibLadder
+
+| key | 内容 |
+|---|---|
+| `V_max` | 最大振動量子数。non-negative integer |
+| `vibrational_frequency`, `vibrational_frequency_units` | 0→1 遷移 frequency |
+| `anharmonic_shift`, `anharmonic_shift_units` | 隣接遷移 frequency の準位ごとの減少量 |
+| `dipole_scale`, `dipole_scale_units` | 双極子 scale |
+| `potential_type` | `harmonic` または `morse` |
+
+VibLadder は scalar coupling です。Morse では `anharmonic_shift` が非ゼロでなければ
+エラーです。最大 bound level は model instance の frequency と anharmonicity から
+導出され、`V_max` が範囲外ならエラーです。
+
+### LinMol
+
+| key | 内容 |
+|---|---|
+| `representation` | `m_resolved` または `m_incoherent_average` |
+| `V_max`, `J_max` | 最大振動・回転量子数 |
+| `vibrational_frequency`, `vibrational_frequency_units` | 0→1 遷移 frequency |
+| `anharmonic_shift`, `anharmonic_shift_units` | 非調和 shift |
+| `rotational_constant`, `rotational_constant_units` | 回転定数 |
+| `vibration_rotation_coupling`, `vibration_rotation_coupling_units` | vibration-rotation coupling |
+| `dipole_scale`, `dipole_scale_units` | 双極子 scale |
+| `potential_type` | `harmonic` または `morse` |
+
+`m_resolved` では ordered Cartesian coupling を表す `axes` が必須です。2文字は
+`x`, `y`, `z` から異なるものを選び、field column 0/1 に順に対応します。
+
+`m_incoherent_average` では `axes` を指定できません。固定直線偏光を内部 z 軸へ合わせ、
+初期 J の各 M block を別々に伝播し、規格化 weight `1/(2J+1)` で population を
+非干渉和します。複数 `initial_states` は同じ J 内の異なる v に限られます。
+
+Morse の非ゼロ非調和性と bound-level 制限は VibLadder と同じです。
+
+### SymTop
+
+| key | 内容 |
+|---|---|
+| `molecule` | 現在の production preset は `CH3F` |
+| `nuclear_spin_isomer` | `ortho` または `para` のどちらか一つ |
+| `V_max`, `J_max` | 最大振動・回転量子数 |
+| `vibrational_frequency`, `vibrational_frequency_units` | 0→1 遷移 frequency |
+| `anharmonic_shift`, `anharmonic_shift_units` | 非調和 shift |
+| `rotational_constant_perpendicular`, `rotational_constant_perpendicular_units` | perpendicular 回転定数 |
+| `rotational_constant_parallel`, `rotational_constant_parallel_units` | parallel 回転定数 |
+| `vibration_rotation_coupling_perpendicular`, `vibration_rotation_coupling_perpendicular_units` | perpendicular vibration-rotation coupling |
+| `vibration_rotation_coupling_parallel`, `vibration_rotation_coupling_parallel_units` | parallel vibration-rotation coupling |
+| `dipole_scale`, `dipole_scale_units` | 双極子 scale |
+| `potential_type` | `harmonic` または `morse` |
+| `axes` | ordered Cartesian coupling axes |
+
+SymTop は signed `|v,J,K,M>` order の rigid parallel band、Delta K=0、Cartesian
+Delta M=0,+/-1 です。`molecule` と核 spin sector が許す level だけを構築します。
+all-isomer pure state、split operator、CuPy、optimization は非対応です。
+
+## generated-field 経路
+
+`field=None` の場合、次の全 key が必須です。
+
+| value key | unit/selector key | 契約 |
+|---|---|---|
+| `t_start` | `t_start_units` | field grid の開始時刻 |
+| `t_end` | `t_end_units` | field grid の終了時刻 |
+| `dt` | `dt_units` | field sampling interval |
+| `duration` | `duration_units` | positive envelope width |
+| `t_center` | `t_center_units` | pulse center |
+| `carrier_frequency` | `carrier_frequency_units` | carrier frequency |
+| `amplitude` | `amplitude_units` | field amplitude |
+| `envelope_kind` | — | envelope selector |
+| `modulation_kind` | — | `none` または `sinusoidal` |
 
-| パラメータ | 型 | 必須 | 説明 | 例 |
-|-----------|---|------|------|-----|
-| `initial_states` | `list[int]` | ✅ | 初期状態のインデックス（暗黙の基底状態なし） | `[0]` |
+受理する generated envelope は次の4個です。
 
-複数インデックスは、等振幅・同位相で正規化したコヒーレント重ね合わせとして扱います。インコヒーレント混合には `MixedStatePropagator` を使用します。空リストはエラーです。
+| `envelope_kind` | `duration` の意味 |
+|---|---|
+| `gaussian` | standard deviation |
+| `gaussian_fwhm` | full width at half maximum |
+| `lorentzian` | half width at half maximum |
+| `lorentzian_fwhm` | full width at half maximum |
+
+Voigt、custom callable、任意 waveform は sampled field として注入します。
+
+### 時間格子
 
-### 2. オプションパラメータ
+全 time value に unit が必要です。内部では fs へ一度だけ変換します。
+
+- `dt` は field sampling interval。
+- propagation step は厳密に `2 * dt`。
+- `t_end - t_start` は `2 * dt` の正の整数倍。
+- field sample 数は奇数で `2 * n_steps + 1`。
+- grid は有限、単調増加、等間隔、両 endpoint を含む。
 
-#### 2.1 電場高度設定
+格子・刻みの自動選択はありません。精度は caller が別の coarse/fine grid と目的の
+observable を選び、明示的に convergence を評価します。
 
-| パラメータ | 型 | デフォルト | 単位 | 説明 | 例 |
-|-----------|---|-----------|------|------|-----|
-| `gdd` | `float` | `0.0` | fs² | 群遅延分散（2次） | `1000.0` |
-| `tod` | `float` | `0.0` | fs³ | 群遅延分散（3次） | `50000.0` |
-| `phase_rad` | `float` | `0.0` | rad | キャリア位相 | `np.pi/4` |
+### frequency と 2 pi
 
-#### 2.2 正弦波変調
-
-| パラメータ | 型 | デフォルト | 説明 | 例 |
-|-----------|---|-----------|------|-----|
-| `modulation_kind` | `str` | 必須 | `"none"` または `"sinusoidal"` | `"sinusoidal"` |
-| `amplitude_sin_mod` | `float` | - | 変調振幅 | `0.1` |
-| `carrier_freq_sin_mod` | `float` | - | 既存のスペクトル変調係数（単位契約は未確定） | `0.01` |
-| `phase_rad_sin_mod` | `float` | `0.0` | 変調位相 | `np.pi/2` |
-| `type_mod_sin_mod` | `str` | sinusoidal時は必須 | 変調タイプ | `"phase"` or `"amplitude"` |
-
-`modulation_kind="sinusoidal"` では `amplitude_sin_mod`、`carrier_freq_sin_mod`、
-`type_mod_sin_mod` をすべて明示します。`phase_rad_sin_mod` だけは加算的な不在値
-`0.0` を既定値として保持します。`modulation_kind="none"` と正弦変調用キーの併記は
-エラーです。旧 `Sinusoidal_modulation` は削除済みで、自動変換しません。
-
-#### 2.3 ハミルトニアンの定義
-
-振動エネルギーは `vibrational_frequency` を0→1遷移周波数として受け取り、明示された単位から内部の角周波数へ一度だけ変換した後、`E_v = (omega + delta_omega)(v + 1/2) - (delta_omega / 2)(v + 1/2)^2` で定義します。
-
-`potential_type = "morse"` の場合、`anharmonic_shift` は非ゼロ必須です。Morse準位パラメータは正規化済みの `vibrational_frequency` と `anharmonic_shift` からケースごとに計算され、`V_max <= floor(N) - 1` を満たさない入力はエラーになります。
-
-#### 2.4 双極子行列設定
-
-| パラメータ | 型 | 必須 | 説明 | 例 |
-|-----------|---|------|------|-----|
-| `backend` | `str` | ✅ | 双極子行列生成と時間発展で共通の計算バックエンド | `"numpy"`, `"cupy"` |
-| `storage` | `str` | ✅ | 行列保存方式 | `"dense"`, `"csr"` |
-
-`backend` は双極子行列生成と時間発展の両方に適用されます。CuPy 経路は密行列専用で、
-`backend = "cupy"` と `storage = "csr"` の組合せは型不一致へ進む前に
-エラーになります。削除済みの `dense` または `sparse` を指定した場合もエラーです。
-
-#### 2.5 伝播設定
-
-| パラメータ | 型 | 必須/既定値 | 説明 | 例 |
-|-----------|---|-------------|------|-----|
-| `axes` | `str` | `m_resolved` で必須 | 電場-双極子の軸対応。M平均では指定不可 | `"xy"`, `"zx"` |
-| `algorithm` | `str` | ✅ | 時間発展法 | `"rk4"`, `"split_operator"` |
-| `split_interaction` | `str` | M-resolved LinMol の split 法で必須 | split相互作用モデル | `"cartesian"`, `"helicity_projected"` |
-| `renorm` | `bool` | ✅ | 各ステップで状態を再規格化するか | `False` |
-| `nondimensional` | `bool` | ✅ | 無次元化して時間発展するか | `False` |
-| `validate_units` | `bool` | `True` | 物理単位を検証するか | `False` |
-| `verbose` | `bool` | `False` | 詳細な検証情報を表示するか | `True` |
-| `return_traj` | `bool` | ✅ | 軌跡を返すか | `True` |
-| `sample_stride` | `int` | ✅ | サンプリング間隔 | `1` |
-
-`auto_timestep` と `target_accuracy` は削除済みです。指定した場合は、
-入力時間格子を暗黙変更せずエラーになります。
-
-runner は保存結果との対応を保証するため、常に物理時間 `t_p` を生成します。
-`return_traj = False` の場合、`t_p` は `[t_end]`、population は `(1, n_states)` です。
-`split_interaction` は `algorithm="split_operator"` かつ
-`basis_type="linmol"`, `representation="m_resolved"` の場合だけ指定します。
-RK4、TwoLevel、VibLadder、M平均で指定するとエラーです。
-`split_interaction = "cartesian"` は RK4 と同じ実 Cartesian 電場を使用します。
-`"helicity_projected"` は片方向遷移演算子とその随伴を使う明示的な近似です。
-split法はスパース入力を受け付けますが、相互作用の固有ベクトルは密行列なので、
-`storage = "csr"` はsplit法のスパースメモリスケーリングを意味しません。
-
-
-#### 2.6 出力設定
-
-単位名が不正な場合、値を未変換のまま継続せず `ValueError` になります。必須値の欠落、
-非有限値、ゼロ偏光、モデルに不正な整数値も時間発展前にエラーになります。未知キー、
-別モデルの物理パラメータ、生成電場と外部電場の混在、アルゴリズムに適用不能なキーも、
-無視せず該当キーを示してエラーになります。
-
-| パラメータ | 型 | デフォルト | 説明 | 例 |
-|-----------|---|-----------|------|-----|
-| `save` | `bool` | `True` | 結果を保存するか | `False` |
-| `outdir` | `str` | 自動生成 | 出力ディレクトリ | `"/path/to/output"` |
-
-### 3. スイープ制御パラメータ
-
-#### 3.1 固定値キー (FIXED_VALUE_KEYS)
-
-以下のキーは常に固定値として扱われます（リスト形式でもスイープ対象になりません）：
-
-| キー | 説明 | 例 |
-|-----|------|-----|
-| `polarization` | 適用可能な LinMol での偏光ベクトル | `[1.0, 0.0]` |
-| `initial_states` | 初期状態 | `[0, 5]` |
-
-#### 3.2 明示的スイープ指定
-
-キー名に `_sweep` 接尾辞を付けると明示的にスイープ対象になります：
-
-```python
-# 明示的スイープ指定
-amplitude_sweep = [1e8, 5e8, 1e9]      # 3ケース → 'amplitude' として保存
-duration_sweep = [20.0, 30.0, 40.0]   # 3ケース → 'duration' として保存
-
-# 合計: 3 × 3 = 9ケース
-```
-
-#### 3.3 従来のスイープ判定
-
-`_sweep` 接尾辞がなく、FIXED_VALUE_KEYS に含まれないキーは、リストの長さで判定されます：
-
-```python
-# 従来の判定ルール
-V_max = [3, 5, 7]     # 長さ3 → スイープ対象（3ケース）
-J_max = [2]           # 長さ1 → 固定値
-amplitude = 1e9       # スカラー → 固定値
-```
-
-## 外部サンプル電場をPythonから注入する
-
-Python APIでは、パルス生成パラメータの代わりに、既にサンプリング済みの
-実数電場を渡せます。入口は
-`rovibrational_excitation.simulation.runner.run_simulation_case` です。
-
-```python
-import numpy as np
-
-from rovibrational_excitation.core.time import TimeGrid
-from rovibrational_excitation.fields import ScalarField
-from rovibrational_excitation.simulation.runner import run_simulation_case
-
-grid = TimeGrid.from_bounds(-50.0, 50.0, 0.1)
-samples_v_per_m = 1.0e8 * np.exp(-(grid.field_times_fs / 20.0) ** 2)
-field = ScalarField(grid, samples_v_per_m)
-
-params = {
-    "basis_type": "twolevel",
-    "energy_gap": 0.2,
-    "energy_gap_units": "rad/fs",
-    "mu0_Cm": 3.0e-30,
-    "initial_states": [0],
-    "backend": "numpy",
-    "storage": "dense",
-    "algorithm": "rk4",
-    "return_traj": True,
-    "sample_stride": 1,
-    "nondimensional": False,
-    "renorm": False,
-    "save": False,
-}
-population = run_simulation_case(params, field=field)
-```
-
-TwoLevel、VibLadder、`m_incoherent_average`は`ScalarField`を使います。
-`m_resolved` LinMolは次のように`CartesianField(grid, E0, E1)`を使い、
-2成分の順序を`axes`（例: `"xy"`）へ対応させます。
-
-外部注入では`t_start`、`t_end`、`dt`、`duration`、
-`carrier_frequency`、`carrier_frequency_units`、`amplitude`、`polarization`などの生成用キーを同時に
-指定するとエラーです。時間は`field.time_grid`だけが正本です。入力配列は
-防御コピーされ、有限・実数・1次元・格子と同じ長さでなければエラーになります。
-格子は有限、単調増加、等間隔、奇数長で、両端点を含む必要があります。
-ライブラリは切り詰め、padding、丸め、補間、resampling、規格化を行いません。
-
-一般の`CartesianField`からJones偏光やscalar波形を推定しません。
-近似`split_interaction="helicity_projected"`を外部電場で明示的に使う場合だけ、
-コンストラクタへ規格化済みの`jones_polarization`と対応する
-`scalar_samples_v_per_m`を両方渡す必要があります。厳密なCartesian RK4 /
-split-operatorではこの追加情報は不要です。
-
-保存された `result.npz["E"]` は、scalarなら `(n_samples,)`、
-Cartesianなら `(n_samples, 2)` です。ファイルの場所は固定名ではなく
-[結果の保存形式](RESULT_STORAGE.md) に従い公開済み世代から解決してください。
-
-## 使用例
-
-### 基本例
-
-```python
-#!/usr/bin/env python
-"""
-基本的なシミュレーション設定
-"""
-import numpy as np
-
-# メタ情報
-description = "basic_simulation"
-
-# 時間軸（短時間で高速計算）
-t_start, t_end, dt = -20.0, 20.0, 0.1
-
-# 量子系（小規模で高速計算）
-V_max, J_max = 2, 2
-
-# 物理パラメータ
-vibrational_frequency = 2349.0
-vibrational_frequency_units = "cm^-1"  # CO2 ν3 mode
-mu0_Cm = 0.3 * 3.33564e-30                      # ~0.3 Debye
-
-# 電場パラメータ
-envelope_kind = "gaussian_fwhm"
-modulation_kind = "none"
-duration = 10.0
-t_center = 0.0
-carrier_frequency = 2349.0
-carrier_frequency_units = "cm^-1"
-amplitude = 1e9
-polarization = [1.0, 0.0]  # x偏光
-
-# 初期状態
-initial_states = [0]  # 基底状態
-
-# 計算設定
-backend = "numpy"
-sample_stride = 1
-```
-
-### スイープ例
-
-```python
-#!/usr/bin/env python
-"""
-パラメータスイープの例
-"""
-import numpy as np
-
-description = "parameter_sweep"
-
-# 基本設定
-t_start, t_end, dt = -50.0, 50.0, 0.1
-V_max, J_max = 3, 3
-vibrational_frequency = 2349.0
-vibrational_frequency_units = "cm^-1"
-mu0_Cm = 0.3 * 3.33564e-30
-t_center = 0.0
-carrier_frequency = 2349.0
-carrier_frequency_units = "cm^-1"
-envelope_kind = "gaussian_fwhm"
-modulation_kind = "none"
-
-# スイープパラメータ
-duration = [10.0, 20.0, 30.0]           # 3ケース
-amplitude_sweep = [1e8, 5e8, 1e9]       # 3ケース → 'amplitude'として保存
-polarization = [1.0, 0.0]               # 固定値（x偏光）
-
-# 初期状態
-initial_states = [0]
-
-# 合計ケース数: 3 × 3 = 9ケース
-```
-
-### 高度な設定例
-
-```python
-#!/usr/bin/env python
-"""
-高度な機能を使用した設定例
-"""
-import numpy as np
-
-description = "advanced_simulation"
-
-# 時間軸
-t_start, t_end, dt = -100.0, 100.0, 0.05
-
-# 量子系（大規模計算）
-V_max, J_max = 5, 10
-representation = "m_resolved"
-axes = "xy"
-
-# 物理パラメータ（CO2分子）
-vibrational_frequency = 2349.0
-vibrational_frequency_units = "cm^-1"
-anharmonic_shift = 2.349
-anharmonic_shift_units = "cm^-1"
-rotational_constant = 0.39
-rotational_constant_units = "cm^-1"
-vibration_rotation_coupling = 0.000039
-vibration_rotation_coupling_units = "cm^-1"
-mu0_Cm = 0.3 * 3.33564e-30
-potential_type = "morse"
-
-# 電場パラメータ（成形パルス）
-# Voigtや任意波形は外部 sampled field として Python API に注入する
-envelope_kind = "gaussian_fwhm"
-duration = 50.0
-t_center = 0.0
-carrier_frequency = 2349.0
-carrier_frequency_units = "cm^-1"
-amplitude = 5e9
-polarization = [1/np.sqrt(2), 1j/np.sqrt(2)]   # 円偏光
-phase_rad = np.pi/4
-gdd = 1000.0                                    # 群遅延分散
-tod = 50000.0                                   # 3次分散
-
-# 正弦波変調
-modulation_kind = "sinusoidal"
-amplitude_sin_mod = 0.1
-carrier_freq_sin_mod = 0.01
-phase_rad_sin_mod = np.pi/2
-type_mod_sin_mod = "phase"
-
-# 初期状態（複数状態の重ね合わせ）
-initial_states = [0, 1, 2]
-
-# 計算設定
-backend = "cupy"        # GPU計算
-storage = "csr"        # CSRスパース行列
-axes = "xy"
-sample_stride = 5       # メモリ節約
-```
-
-## 単位系
-
-### 時間
-- **基本単位**: fs（フェムト秒）
-
-### 周波数
-- **内部標準単位**: rad/fs
-- **通常周波数入力**: 1 THz = 0.001 cycles/fs = `2π × 10^-3 rad/fs`
-- **波数入力**: 1 cm⁻¹ = `2π c × 10^-13 rad/fs`（c は m/s）
-- **入力規則**: `*_units` を必須指定し、通常周波数・波数には `2π` を含めない
-
-### 電場
-- **基本単位**: V/m
-- **典型値**: 1e8 ～ 1e12 V/m
-
-### 双極子モーメント
-- **基本単位**: C·m
-- **変換**: Debye → C·m: `μ_D × 3.33564e-30`
-
-## 時間刻みの収束判定
-
-時間グリッドの構造が正しいことと、選んだ `dt` で目的の観測量が
-収束していることは別です。`assess_simulation_convergence` は、呼出し側が
-指定した粗い計算と細かい計算をそのまま実行し、観測量の最大絶対差だけを
-報告します。`dt` の変更、電場の再サンプリング、再試行、結果ファイルの
-保存は行いません。
-
-生成電場では、完全な厳格シミュレーション設定を2つ用意し、`dt` だけを
-変えます。開始時刻と終了時刻は厳密に一致し、細かい側の `dt` は粗い側
-より小さくなければなりません。
-
-```python
-from copy import deepcopy
-
-from rovibrational_excitation.simulation.convergence import (
-    assess_simulation_convergence,
-)
-
-# coarse_params は通常計算に必要な全パラメータを含む辞書
-coarse_params["save"] = False
-fine_params = deepcopy(coarse_params)
-fine_params["dt"] = coarse_params["dt"] / 2
-
-report = assess_simulation_convergence(
-    coarse_params,
-    fine_params,
-    observable_name="final_population",
-    observable=lambda population: population[-1],
-    tolerance=1.0e-6,
-)
-
-print(report.max_absolute_difference)
-print(report.converged)
-```
-
-判定式は
-`max(abs(coarse_observable - fine_observable)) <= tolerance` です。
-`tolerance` の単位は観測量と同じで、既定値や暗黙の相対許容差はありません。
-観測量は空でない有限数値を返し、粗い計算と細かい計算で同じ形にする必要が
-あります。外部電場では `coarse_field` と `fine_field` も渡します。両方とも
-`ScalarField`、または両方とも `CartesianField` でなければならず、設定辞書は
-同一、電場の `TimeGrid` だけを変えます。返された観測量配列は読み取り専用
-です。
-
-## パフォーマンス最適化
-
-### 高速化のコツ
-
-1. **小さな系から始める**: `V_max`, `J_max` を小さく設定
-2. **時間軸を短く**: `t_start`, `t_end` の範囲を最小限に
-3. **サンプリング間隔**: `sample_stride` を増やしてメモリ節約
-4. **バックエンド選択**: CuPy（GPU）利用可能な場合は `backend="cupy"`
-
-### メモリ節約
-
-```python
-# メモリ効率の良い設定
-sample_stride = 10      # サンプリング間隔を増やす
-storage = "csr"        # CSRスパース行列を使用
-backend = "numpy"       # CPUで確実に動作
-```
-
-### 大規模計算
-
-```python
-# 大規模計算の設定
-V_max, J_max = 10, 20   # 大きな基底
-backend = "cupy"        # GPU加速
-storage = "dense"      # GPU計算では密行列を使用
-nproc = 8               # 並列実行
-checkpoint_interval = 5 # チェックポイント頻度を上げる
-```
-
-## トラブルシューティング
-
-### よくあるエラー
-
-1. **パラメータ不足**:
-   ```
-   KeyError: 't_start'
-   ```
-   → 必須パラメータが不足。上記リストを確認
-
-2. **スイープキーエラー**:
-   ```
-   ValueError: Parameter 'amplitude_sweep' has '_sweep' suffix but is not iterable
-   ```
-   → `_sweep` 接尾辞キーは必ずリストにする
-
-3. **メモリ不足**:
-   ```
-   MemoryError
-   ```
-   → `V_max`, `J_max` を小さくするか `sample_stride` を増やす
-
-### デバッグ方法
-
-1. **ドライラン**: 計算を実行せずケース数確認
-   ```bash
-   python -m rovibrational_excitation.simulation.runner params.py --dry-run
-   ```
-
-2. **小規模テスト**: パラメータを小さくして動作確認
-
-3. **ログ確認**: エラーメッセージとパラメータを照合
-
-## 関連ドキュメント
-
-- [スイープ仕様](SWEEP_SPECIFICATION.md) - パラメータスイープの詳細
-- [パッケージAPI](../src/rovibrational_excitation/) - モジュール詳細
-- [examples/](../examples/) - パラメータファイル例
+`carrier_frequency_units` と model frequency unit には ordinary frequency、波数、
+angular frequency を選べます。例えば `Hz`–`PHz` と `cm^-1` は 2 pi を含まない
+入力、`rad/s`, `rad/ps`, `rad/fs` は 2 pi を含む angular frequency です。内部では
+`rad/fs` へ一度だけ変換します。
+
+### polarization
+
+- generated `m_resolved` LinMol と SymTop: finite nonzero 2-component
+  `polarization` が必須。
+- TwoLevel/VibLadder: scalar model のため `polarization` は不適用。
+- LinMol M average: 省略可能。指定する場合は固定直線偏光だけを受理し、方向を内部
+  z 軸へ合わせる。円/楕円/時間依存偏光は不適用。
+
+polarization は物理的な field 値を規格化するものではなく、Jones direction を
+規格化して使用します。
+
+### optional phase と dispersion
+
+| key | default/条件 |
+|---|---|
+| `phase_rad` | `0.0` |
+| `gdd`, `gdd_units` | pair 全体を省略すると厳密な zero。片方だけはエラー |
+| `tod`, `tod_units` | pair 全体を省略すると厳密な zero。片方だけはエラー |
+
+### sinusoidal modulation
+
+`modulation_kind="none"` のとき modulation 用 key は併記できません。
+`modulation_kind="sinusoidal"` では次が必要です。
+
+| key | 契約 |
+|---|---|
+| `modulation_depth` | finite scalar。amplitude mode は `0 <= depth <= 1` |
+| `modulation_delay`, `modulation_delay_units` | time delay pair |
+| `modulation_mode` | `phase` または `amplitude` |
+| `modulation_phase_rad` | optional、default `0.0` |
+
+## external sampled-field 経路
+
+Python API の完全な例は
+[`example_external_scalar_field.py`](../examples/example_external_scalar_field.py) です。
+
+- TwoLevel、VibLadder、LinMol M average は `ScalarField`。
+- LinMol M-resolved と SymTop は `CartesianField`。
+- sample は finite real で、grid と同じ length。
+- signed field sample の unit は direct electric-field amplitude。intensity label は不可。
+- constructor は defensive read-only copy を作る。
+- generated-field key は params に含めない。
+
+Cartesian field から Jones polarization や scalar waveform を推測しません。
+LinMol の `split_interaction="helicity_projected"` を選ぶ場合だけ、field construction 時に
+対応する normalized Jones ket と scalar sample を明示する必要があります。厳密
+Cartesian RK4/split にはこの追加 metadata は不要です。
+
+## split operator
+
+LinMol `m_resolved` で `algorithm="split_operator"` を選ぶ場合、
+`split_interaction` が必須です。
+
+- `cartesian`: 実 Cartesian field から Hermitian interaction を作る厳密 route。
+- `helicity_projected`: 片方向 transition operator と随伴を使う明示的近似。
+
+RK4、scalar model、LinMol M average、SymTop へ `split_interaction` を指定すると
+エラーです。CSR input を受けても interaction eigendecomposition は dense なので、
+split operator の `storage="csr"` は完全な sparse-memory scaling を意味しません。
+
+## initial state の意味
+
+`initial_states=[i]` は basis index `i` の pure state です。複数 index は等振幅・
+同位相の coherent superposition を作って規格化します。classical/incoherent mixture を
+表しません。incoherent mixture は `MixedStatePropagator` と statistical weight を使います。
+
+## 保存と return shape
+
+- `return_traj=True`: `sample_stride` ごとの状態に加え、割り切れない場合も exact endpoint
+  を必ず含む。
+- `return_traj=False`: final time/state だけを返す。
+- normal Python API の return は population array。
+- `save=True` の result は versioned generation と manifest を通して公開。
+
+保存済み array key、strict loader、checkpoint/resume は
+[RESULT_STORAGE.md](RESULT_STORAGE.md) を参照してください。direct Python call で
+`save=True` を使う場合は case `outdir` を明示してください。batch CLI は case ごとに
+生成します。
+
+## parameter sweep
+
+parameter file の iterable 展開と `_sweep` suffix は
+[SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) が所有します。`polarization` と
+`initial_states` は list でも固定値です。まず `--dry-run` で case 数と順序を確認して
+ください。展開順序は checkpoint の declared-run provenance に含まれます。
+
+## failure policy
+
+次は警告付き継続ではなく、propagation 前のエラーです。
+
+- 必須 key または unit pair の欠落
+- unknown key、別 model の key、入力 route に不適用な key
+- non-finite scalar、zero polarization、不正な integer/range
+- unsupported backend/storage/algorithm combination
+- Morse の zero anharmonicity または bound-level 超過
+- external field/grid shape 不一致
+- split interaction selector の欠落・不適用
+
+library は user input を暗黙 clip、renormalize、symmetrize、resample、修復しません。

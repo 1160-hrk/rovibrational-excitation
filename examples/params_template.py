@@ -8,7 +8,7 @@ rovibrational-excitation パラメータファイル テンプレート
 使用方法:
     1. このファイルをコピー: cp params_template.py my_params.py
     2. 必要な部分を編集
-    3. 実行: python -m rovibrational_excitation.simulation.runner my_params.py
+    3. 実行: python -m rovibrational_excitation.cli.simulate my_params.py
 
 詳細: docs/PARAMETER_REFERENCE.md を参照
 """
@@ -104,7 +104,7 @@ initial_states = [0]  # [0] = 基底状態のみ
 # 7. 必須パラメータ - 計算設定
 # ============================================================================
 # 実行方式（すべて明示必須）
-backend = "numpy"  # "numpy" または "cupy"（GPU）
+backend = "numpy"  # "numpy" または "cupy"（実 CUDA は未検証）
 storage = "dense"  # "dense" または "csr"
 algorithm = "rk4"  # "rk4" または "split_operator"
 nondimensional = False
