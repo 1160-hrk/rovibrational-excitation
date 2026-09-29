@@ -1986,6 +1986,14 @@ accumulation. The focused suite passes 54 tests; the full suite passes 1417 with
 10 optional-GPU skips (1427 collected), coverage remains 80%, and strict mypy
 covers 78 modules. Chunked exact/approximate extraction remains separate.
 
+P7.4-b7/D-121 moves the unchanged CSR commutator, exact/approximate entry
+selection, and fixed-order chunk accumulation to `spectroscopy.response`. Exact
+mode retains all response-relevant nonzeros; only explicit approximation uses
+the relative threshold. Report state, empty-response return, dispatch, and
+observable conversion remain calculator-owned. The focused suite passes 54
+tests; the full suite passes 1417 with 10 optional-GPU skips (1427 collected),
+coverage remains 80%, and strict mypy covers 78 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

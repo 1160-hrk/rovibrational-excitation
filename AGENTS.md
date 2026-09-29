@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b6/D-120 exact dense response owner; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b7/D-121 complete response-kernel owner; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -547,7 +547,14 @@ P7.4-b6/D-120 moves unchanged 2D preparation and exact 2D/matrix/loop
 response kernels to `spectroscopy.response`. Route-specific accumulation, cache
 lifetime, Doppler binding, and observable conversion are preserved. The suite
 has 1417 passes and 10 optional-GPU skips (1427 collected), coverage remains
-80%, and strict mypy covers 78 modules. Chunked policy remains separate.
+80%, and strict mypy covers 78 modules.
+
+P7.4-b7/D-121 moves the unchanged CSR commutator, explicit exact/approximate
+entry selection, and chunked accumulation to `spectroscopy.response`. Exact
+mode retains every response-relevant nonzero; only explicit approximation uses
+the threshold. Dispatch, report state, empty-response behavior, and observable
+conversion remain unchanged. The suite remains 1417 passes with 10 optional-GPU
+skips (1427 collected), coverage remains 80%, and strict mypy covers 78 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
@@ -596,8 +603,9 @@ The next work is:
    the immutable report to its owner, and P7.4-b4/D-118 moves absorbance
    conversion to its owner, and P7.4-b5/D-119 moves radiation/PFID response to
    its transform owner. P7.4-b6/D-120 moves the exact dense response kernels to
-   their owner while leaving chunked policy separate. Continue one
-   calculation-neutral spectroscopy responsibility at a time. Complete
+   their owner, and P7.4-b7/D-121 adds unchanged chunked exact/approximate
+   kernels to that owner. Continue one calculation-neutral spectroscopy
+   responsibility at a time. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

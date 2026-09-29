@@ -315,24 +315,13 @@ class AbsorbanceCalculator:
         commutator: np.ndarray,
         relative_threshold: float | None,
     ) -> tuple[np.ndarray, np.ndarray]:
-        response_relevant = ~np.eye(self.N_level, dtype=bool)
-        response_relevant &= self._mu_det_support.T
-        nonzero = response_relevant & (commutator != 0.0)
-
-        if relative_threshold is None or not np.any(nonzero):
-            self._last_discarded_commutator_l2_fraction = 0.0
-            return np.where(nonzero)
-
-        magnitudes = np.abs(commutator)
-        scale = float(np.max(magnitudes[nonzero]))
-        retained = nonzero & (magnitudes >= relative_threshold * scale)
-        discarded = nonzero & ~retained
-        total_norm = float(np.linalg.norm(commutator[nonzero]))
-        discarded_norm = float(np.linalg.norm(commutator[discarded]))
-        self._last_discarded_commutator_l2_fraction = (
-            discarded_norm / total_norm if total_norm > 0.0 else 0.0
+        i_indices, j_indices, discarded_fraction = response.select_response_entries(
+            commutator,
+            self._mu_det_support,
+            relative_threshold,
         )
-        return np.where(retained)
+        self._last_discarded_commutator_l2_fraction = discarded_fraction
+        return i_indices, j_indices
 
     def calculate(
         self,
@@ -570,57 +559,26 @@ class AbsorbanceCalculator:
         chunk_size: int,
         relative_threshold: float | None = None,
     ) -> np.ndarray:
-        """
-        Memory-efficient chunked calculation for large systems
-        """
-        from scipy.sparse import csr_matrix
-
-        # 応答行列を計算（疎行列最適化）
-        mu_int_sparse = csr_matrix(self.mu_int)
-        rho_sparse = csr_matrix(rho)
-
-        # コミュテータ [mu_int, rho] を疎行列で計算
-        rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
-
-        # Exact mode retains every response-relevant nonzero element.
-        # Approximate mode applies an explicit scale-relative cutoff.
-        rho1_dense = rho1_sparse.toarray()  # type: ignore
+        """Evaluate the exact or explicitly approximate chunked route."""
+        commutator = response.sparse_commutator(self.mu_int, rho)
         i_indices, j_indices = self._response_entry_indices(
-            rho1_dense,
+            commutator,
             relative_threshold,
         )
 
         if len(i_indices) == 0:
             return np.zeros_like(wavenumber)
 
-        # 周波数をチャンクに分割
-        response = np.zeros(len(wavenumber), dtype=complex)
-
-        for start_idx in range(0, len(wavenumber), chunk_size):
-            end_idx = min(start_idx + chunk_size, len(wavenumber))
-            omega_chunk = (
-                2 * np.pi * C * wavenumber[start_idx:end_idx] * 100
-            )  # cm^-1 to rad/s
-
-            # チャンクごとに応答を計算
-            response_chunk = np.zeros(len(omega_chunk), dtype=complex)
-
-            for idx, (i, j) in enumerate(zip(i_indices, j_indices)):
-                if i != j:  # 非対角要素のみ
-                    omega_ij = self.omega_vj_vpjp_mat[j, i]
-                    mu_det_ij = self.mu_det[j, i]  # 検出双極子
-                    rho1_ij = rho1_dense[i, j]
-
-                    # 応答関数: -1 / (i*(omega + omega_ij))
-                    denominator = 1j * (omega_chunk + omega_ij)
-                    kernel = -1.0 / denominator
-
-                    response_chunk += (1j / H_DIRAC) * mu_det_ij * rho1_ij * kernel
-
-            response[start_idx:end_idx] = response_chunk
-
-        omega = 2 * np.pi * C * wavenumber * 100
-        return self._response_to_absorbance(omega, response)
+        omega, response_sum = response.calculate_chunked_response(
+            commutator,
+            wavenumber,
+            i_indices,
+            j_indices,
+            self.mu_det,
+            self.omega_vj_vpjp_mat,
+            chunk_size=chunk_size,
+        )
+        return self._response_to_absorbance(omega, response_sum)
 
     def _response_to_absorbance(
         self, omega: np.ndarray, response: np.ndarray

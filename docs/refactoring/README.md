@@ -380,6 +380,12 @@ lifetime, Doppler binding, and all D-112/D-113 values are preserved. The focused
 suite passes 54 tests; the full suite passes 1417 with 10 optional-GPU skips
 (1427 collected), coverage remains 80%, and strict mypy covers 78 modules.
 
+P7.4-b7/D-121 moves the unchanged CSR commutator, explicit exact/approximate
+entry selection, and chunked accumulation to the same response owner. Exact
+mode still prunes nothing response-relevant; threshold use and discarded L2 are
+unchanged. The full suite remains 1417 passes with 10 optional-GPU skips (1427
+collected), coverage remains 80%, and strict mypy covers 78 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks

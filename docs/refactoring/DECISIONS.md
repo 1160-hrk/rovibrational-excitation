@@ -4244,6 +4244,33 @@ owned pending its own calculation-neutral extraction.
 Implementation commit: this checkpoint.
 
 
+### D-121: Chunked exact and approximate responses share the response owner
+
+Status: Implemented on 2026-09-29 as P7.4-b7 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership extraction only. No sparse commutator, response-support mask,
+exact nonzero policy, relative-threshold expression, discarded-norm report,
+chunk boundary, transition order, denominator, sign, index orientation, empty
+response branch, public option, or numerical result changes.
+
+The CSR commutator, exact/approximate entry selection, and chunked accumulation
+move to `spectroscopy.response`. The calculator retains policy validation,
+method dispatch, report state, the early `zeros_like(wavenumber)` return, and
+observable conversion. Exact mode still retains every response-relevant nonzero
+element. Only explicit `approximate_sparse` supplies a relative threshold, and
+the discarded L2 fraction is computed from the same masks before being copied
+to the calculation report.
+
+D-023 and D-113 remain authoritative for explicit approximation and the fixed
+`2e-12` chunked analytic bound. The focused ownership/reference suite passes 54
+tests. The full suite passes 1417 tests with 10 optional-GPU skips (1427
+collected), branch coverage remains 80%, and strict mypy covers 78 modules. No
+calculation changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

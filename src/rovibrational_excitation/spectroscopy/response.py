@@ -131,3 +131,71 @@ def calculate_loop_response(
         response_sum += transition_response
 
     return omega, response_sum
+
+
+def sparse_commutator(mu_int: np.ndarray, rho: np.ndarray) -> np.ndarray:
+    """Return the existing CSR-computed interaction commutator as dense."""
+    from scipy.sparse import csr_matrix
+
+    mu_int_sparse = csr_matrix(mu_int)
+    rho_sparse = csr_matrix(rho)
+    commutator_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
+    return np.asarray(commutator_sparse.toarray())
+
+
+def select_response_entries(
+    commutator: np.ndarray,
+    mu_det_support: np.ndarray,
+    relative_threshold: float | None,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """Select exact or explicit approximate response entries and loss."""
+    response_relevant = ~np.eye(commutator.shape[0], dtype=bool)
+    response_relevant &= mu_det_support.T
+    nonzero = response_relevant & (commutator != 0.0)
+
+    if relative_threshold is None or not np.any(nonzero):
+        i_indices, j_indices = np.where(nonzero)
+        return i_indices, j_indices, 0.0
+
+    magnitudes = np.abs(commutator)
+    scale = float(np.max(magnitudes[nonzero]))
+    retained = nonzero & (magnitudes >= relative_threshold * scale)
+    discarded = nonzero & ~retained
+    total_norm = float(np.linalg.norm(commutator[nonzero]))
+    discarded_norm = float(np.linalg.norm(commutator[discarded]))
+    discarded_fraction = discarded_norm / total_norm if total_norm > 0.0 else 0.0
+    i_indices, j_indices = np.where(retained)
+    return i_indices, j_indices, discarded_fraction
+
+
+def calculate_chunked_response(
+    commutator: np.ndarray,
+    wavenumber: np.ndarray,
+    i_indices: np.ndarray,
+    j_indices: np.ndarray,
+    mu_det: np.ndarray,
+    complex_bohr_frequencies: np.ndarray,
+    *,
+    chunk_size: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Evaluate the existing chunked response with fixed entry order."""
+    response_sum = np.zeros(len(wavenumber), dtype=complex)
+
+    for start_idx in range(0, len(wavenumber), chunk_size):
+        end_idx = min(start_idx + chunk_size, len(wavenumber))
+        omega_chunk = 2 * np.pi * CONSTANTS.C * wavenumber[start_idx:end_idx] * 100
+        response_chunk = np.zeros(len(omega_chunk), dtype=complex)
+
+        for _idx, (i, j) in enumerate(zip(i_indices, j_indices)):
+            if i != j:
+                omega_ij = complex_bohr_frequencies[j, i]
+                mu_det_ij = mu_det[j, i]
+                rho1_ij = commutator[i, j]
+                denominator = 1j * (omega_chunk + omega_ij)
+                kernel = -1.0 / denominator
+                response_chunk += (1j / CONSTANTS.HBAR) * mu_det_ij * rho1_ij * kernel
+
+        response_sum[start_idx:end_idx] = response_chunk
+
+    omega = 2 * np.pi * CONSTANTS.C * wavenumber * 100
+    return omega, response_sum

@@ -59,11 +59,16 @@ def test_dense_response_kernels_have_one_package_owner() -> None:
     assert inspect.getmodule(response.calculate_2d_response) is response
     assert inspect.getmodule(response.calculate_matrix_response) is response
     assert inspect.getmodule(response.calculate_loop_response) is response
+    assert inspect.getmodule(response.sparse_commutator) is response
+    assert inspect.getmodule(response.select_response_entries) is response
+    assert inspect.getmodule(response.calculate_chunked_response) is response
 
     monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
     assert "intensity_factors" not in monolith
     assert "responses.append" not in monolith
     assert "resp_lin_per_mole += response" not in monolith
+    assert "from scipy.sparse import csr_matrix" not in monolith
+    assert "relative_threshold * scale" not in monolith
 
 
 def test_response_owner_has_no_upper_layer_dependencies() -> None:
