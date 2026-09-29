@@ -4539,6 +4539,37 @@ modules. Runtime bytecode inside the function is otherwise unchanged.
 Implementation commit: this checkpoint.
 
 
+### D-132: Public READMEs describe only executable v0.3 surfaces
+
+Status: Implemented on 2026-09-29 as P8.2-a under D-073, D-105, and the Phase 8
+documentation audit.
+
+Scope: English/Japanese repository READMEs, documentation contracts, and
+release-facing claims only. No source, formula, parameter, numerical path, or
+saved schema changes.
+
+Both READMEs are rewritten together from the current typed API and supported
+examples. They publish the exact eight-name root, explicit subpackage ownership,
+one unit-complete generated-field example, the external sampled-field route,
+current model/solver limits, strict result/checkpoint behavior, supported CLI
+and examples, optimizer entry, and spectroscopy exclusions. The old root and
+procedural calls, deleted package tree, obsolete 63% report, nonexistent
+`tests.yml` badge, and unqualified GPU-performance claims are removed.
+
+The READMEs state that CPU is the verified production path, that CuPy never
+falls back to NumPy, and that real CUDA is not yet verified because host round
+trips and the mandatory real-GPU gate remain. SymTop's narrow NumPy RK4 scope
+and analyzer intensity/absorbance exclusions are explicit.
+
+Seven contracts check both languages for removed calls and stale evidence,
+execute the marked quickstart in fresh subprocesses, resolve every local link,
+and require the unverified-CUDA disclosure. All four existing supported smoke
+runs and the generated example index pass. The full suite passes 1446 tests
+with 10 optional-GPU skips (1456 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

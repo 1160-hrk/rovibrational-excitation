@@ -3,7 +3,7 @@
 Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-131 types both public simulation field routes
+Latest API checkpoint: D-132 documents the exact executable v0.3 surface
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -487,10 +487,10 @@ under `examples/archives/v0_2/optimization_configs/`. Archived files are
 historical migration evidence, are excluded from Ruff and execution, and are
 not public API callers.
 
-D-130 replaces the stale root package docstring and removes its old API
-examples. The English and Japanese README API examples remain separate Phase 8
-documentation debt; archiving old examples does not recreate any compatibility
-shim.
+D-130 replaces the stale root package docstring, and D-132 rewrites both
+public READMEs from the exact root and supported examples. Executable contracts
+reject the former root/procedural calls and stale evidence. Archived examples
+do not recreate compatibility shims.
 
 ## 7. P0.1 acceptance record
 

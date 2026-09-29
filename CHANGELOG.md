@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI smoke coverage for the supported parameter template and example index
 
 ### 🔧 Changed
+- The package root now exposes only the exact lazy typed v0.3 API; v0.2 root
+  convenience names have no compatibility shims.
+- English and Japanese READMEs now use executable unit-explicit examples and
+  state the verified CPU, unverified CUDA, SymTop, optimizer, spectroscopy, and
+  persistence boundaries.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

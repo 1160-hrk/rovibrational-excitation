@@ -2083,7 +2083,7 @@ thermal-state construction, and real CUDA remain explicitly outside acceptance.
 Tasks:
 
 - implement the exact D-073 root exports and remove the old root surface — completed by P8.1-a/D-130;
-- rewrite README and Japanese README against the actual API;
+- rewrite README and Japanese README against the actual API — completed by P8.2-a/D-132;
 - close the Markdown/YAML/workflow findings in
   `DOCUMENTATION_WORKFLOW_AUDIT.md`, including executable public snippets,
   truthful badges, Codecov wiring, and release gating before any tag;
@@ -2127,6 +2127,12 @@ covers 80 modules. README migration is next; no calculation behavior changed.
 P8.1-b/D-131 makes the public runner annotation match its existing generated
 and sampled field routes. The explicit `field` keyword remains required and no
 execution branch changes. `simulation.runner` joins strict mypy as module 81.
+
+P8.2-a/D-132 rewrites the English/Japanese public READMEs from the exact root,
+supported examples, and verified capability matrix. Their marked quickstarts
+execute in subprocesses, local links resolve, and stale API/coverage/GPU claims
+are contract-rejected. The full suite passes 1446 tests with 10 optional-GPU
+skips. Broader `docs/` migration and workflow lint/Codecov disposition remain.
 
 ### Phase 8 acceptance
 

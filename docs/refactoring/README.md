@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1439 passed, 10 skipped (1449 collected) |
+| Pytest | 1446 passed, 10 skipped (1456 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -473,6 +473,12 @@ P8.1-b/D-131 corrects the public `run_simulation_case` annotation to its two
 existing explicit routes: `field=None` for generated input, or a sampled scalar
 or Cartesian field. Runtime logic is unchanged; strict mypy now covers 81
 modules.
+
+P8.2-a/D-132 rewrites both public READMEs from the exact root, supported
+examples, and verified CPU capability matrix. Seven contracts execute both
+quickstarts, resolve links, and reject stale API/evidence. The suite has 1446
+passes and 10 optional-GPU skips (1456 collected); broader docs/workflow audit
+work remains.
 
 P6.2-c
 implements D-069:

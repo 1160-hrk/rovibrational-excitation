@@ -2,7 +2,7 @@
 
 Verified: 2026-09-29
 Scope: all repository Markdown, YAML/YML, and .github/workflows files.
-Disposition: **Inventory complete; release safety corrected, broader public-doc migration remains open.**
+Disposition: **Inventory complete; public READMEs and release safety corrected, broader docs/workflow migration remains open.**
 
 This is a content and wiring audit, not a new physics specification. The
 authoritative calculation contracts remain PHYSICS_CONTRACTS.md and
@@ -35,7 +35,7 @@ the count difference never promotes generated or archived artifacts.
 
 | Files | Current finding | Required disposition |
 |---|---|---|
-| README.md, README_JP.md | Both still teach removed root/procedural APIs and use_M, claim obsolete coverage/support, advertise CUDA beyond executed evidence, and link a nonexistent tests.yml workflow. | Rewrite together during Phase 8 from supported executable examples and the D-073 root API. Replace badges with produced evidence and state the SymTop/CUDA matrix precisely. |
+| README.md, README_JP.md | D-132 rewrites both from the exact D-073 root and supported examples. Marked quickstarts execute, local links resolve, stale APIs/evidence are rejected, and SymTop/CUDA/analyzer limits are explicit. | Keep both languages contract-synchronized; update measured counts only from complete local gates. |
 | docs/README.md | params_template.py is now schema-tested and executed end to end without saving. Other snippets still omit required value/unit pairs or recommend unverified CuPy routes. | Rebuild the broader index and migrate remaining snippets one at a time. |
 | docs/PARAMETER_REFERENCE.md, SWEEP_SPECIFICATION.md, TIME_PROPAGATION.md, UNIT_SYSTEM.md | Mixed old/new examples remain. | Audit units, solver capability, and CLI snippets against frozen contracts without inferring defaults. |
 | docs/DOCKER_SETUP.md | D-105 corrects Jupyter authentication, active example, quality, coverage, build, and publication commands. The rest of the container guide still needs final Phase 8 verification. | Recheck the complete Dev Container/Makefile flow in a clean checkout. |
@@ -72,8 +72,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    decomposition from independent references.
 2. D-105 completes the pre-tag tooling safety gate. Do not weaken the real-GPU
    job or substitute skipped CPU tests for its evidence.
-3. In Phase 8, finalize D-073 root exports, then rewrite the English/Japanese
-   READMEs and docs/README.md using executed examples.
+3. D-130 finalizes the root and D-132 rewrites both public READMEs with
+   executable examples. Rebuild docs/README.md next from audited current guides.
 4. Migrate remaining public guides and snippets, and add automated local-link,
    supported-snippet, YAML, and actionlint checks.
 5. On the final clean commit, repeat build/clean install, all active examples,
