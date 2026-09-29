@@ -1964,6 +1964,13 @@ construction, and public behavior are unchanged. The focused suite passes 48
 tests; the full suite passes 1411 with 10 optional-GPU skips (1421 collected),
 coverage remains 80%, and strict mypy covers 75 modules.
 
+P7.4-b4/D-118 moves the unchanged response-to-mOD conversion to
+`spectroscopy.observables`. The calculator delegate supplies the same condition
+properties; square-root branch, constants, operation order, and units remain
+fixed by D-113. The focused suite passes 50 tests; the full suite passes 1413
+with 10 optional-GPU skips (1423 collected), coverage remains 80%, and strict
+mypy covers 76 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

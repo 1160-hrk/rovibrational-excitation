@@ -59,7 +59,7 @@ physics changes are detected by tests.
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 75 named modules |
+| Strict mypy scope | 76 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -361,6 +361,12 @@ P7.4-b3/D-117 moves the byte-identical immutable calculation report to
 class identity; all fields and construction behavior are unchanged. The focused
 suite passes 48 tests; the full suite passes 1411 with 10 optional-GPU skips
 (1421 collected), coverage remains 80%, and strict mypy covers 75 modules.
+
+P7.4-b4/D-118 moves the unchanged response-to-mOD conversion to
+`spectroscopy.observables`. The calculator remains a delegate and D-113 fixes
+the square-root, constants, and weak-response behavior. The focused suite passes
+50 tests; the full suite passes 1413 with 10 optional-GPU skips (1423
+collected), coverage remains 80%, and strict mypy covers 76 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

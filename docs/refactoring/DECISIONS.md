@@ -4164,6 +4164,31 @@ coverage remains 80%, and strict mypy covers 75 modules. No calculation changes.
 Implementation commit: this checkpoint.
 
 
+### D-118: Absorbance conversion has one dedicated observable owner
+
+Status: Implemented on 2026-09-29 as P7.4-b4 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership extraction only. No susceptibility expression, square-root
+branch, number-density input, optical-length factor, frequency factor, mOD
+conversion, public method, exception, or numerical result changes.
+
+The existing molecular-response-to-mOD body moves to
+`spectroscopy.observables.response_to_absorbance`. `AbsorbanceCalculator` keeps
+its private compatibility method as a thin delegate and supplies the same
+condition properties. Operation order and authoritative epsilon-zero and
+light-speed constants are unchanged. D-113 weak-response and zero-response
+references remain the scientific authority.
+
+Architecture contracts reject a second conversion body in the calculator and
+upper-layer dependencies in the new owner. The focused ownership/reference
+suite passes 50 tests. The full suite passes 1413 tests with 10 optional-GPU
+skips (1423 collected), branch coverage remains 80%, and strict mypy covers 76
+modules. No calculation changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

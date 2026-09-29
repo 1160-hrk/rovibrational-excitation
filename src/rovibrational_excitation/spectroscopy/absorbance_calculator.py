@@ -14,7 +14,7 @@ from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.dipole import DipoleOperator
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
-from rovibrational_excitation.spectroscopy import broadening
+from rovibrational_excitation.spectroscopy import broadening, observables
 from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
@@ -26,7 +26,6 @@ from rovibrational_excitation.spectroscopy.report import (
 # Short aliases refer to the authoritative constants layer; no local values.
 H_DIRAC = CONSTANTS.HBAR
 C = CONSTANTS.C
-EPS = CONSTANTS.EPSILON0
 
 
 class AbsorbanceCalculator:
@@ -673,18 +672,13 @@ class AbsorbanceCalculator:
     def _response_to_absorbance(
         self, omega: np.ndarray, response: np.ndarray
     ) -> np.ndarray:
-        """線形応答を吸光度に変換 [mOD]"""
-        dens_num = self.conditions.number_density
-
-        result = np.sqrt(1 + response / EPS * dens_num)
-        absorbance = (
-            2 * self.conditions.optical_length_m * omega / C * result.imag  # type: ignore
+        """Convert the molecular response to absorbance in mOD."""
+        return observables.response_to_absorbance(
+            omega,
+            response,
+            number_density=self.conditions.number_density,
+            optical_length_m=self.conditions.optical_length_m,
         )
-
-        # mODに変換
-        absorbance *= np.log10(np.exp(1)) * 1000
-
-        return absorbance
 
     @staticmethod
     def _filter_complex_gaussian(
