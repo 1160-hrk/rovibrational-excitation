@@ -99,8 +99,9 @@ def test_root_import_keeps_optional_matplotlib_lazy():
             sys.executable,
             "-c",
             (
-                "import sys; import rovibrational_excitation as rve; "
-                "assert rve.visualization.__name__ == "
+                "import sys; "
+                "import rovibrational_excitation.visualization as visualization; "
+                "assert visualization.__name__ == "
                 "'rovibrational_excitation.visualization'; "
                 "assert 'matplotlib' not in sys.modules; "
                 "assert 'matplotlib.pyplot' not in sys.modules"

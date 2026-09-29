@@ -53,19 +53,19 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1408 passed, 10 skipped (1418 collected) |
+| Pytest | 1438 passed, 10 skipped (1448 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 78 named modules |
+| Strict mypy scope | 80 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
 
-These rows were last verified locally on 2026-09-28. On 2026-09-16, D-071
+These rows were last verified locally on 2026-09-29. On 2026-09-16, D-071
 through D-073 make device-native CUDA plus a real-GPU run mandatory for v0.3,
 define independent optimization/spectroscopy reference construction, and fix
 the exact minimal typed root API. P6.3-c implements D-075: `LinMolParameters`
@@ -460,6 +460,14 @@ P8.0-b/D-115 gives all tracked v0.2 artifacts one versioned archive root:
 archived file body are unchanged. Contracts reject loose archived Python files
 and the superseded directory names; generated/runtime artifacts remain
 untracked. No calculation behavior changes.
+
+P8.1-a/D-130 implements the exact eight-name D-073 package root. All runtime
+exports resolve lazily to their authoritative objects; the old model, core, and
+spectroscopy convenience names are removed without shims. A fresh root import
+loads no workflow or optional heavy dependency. The full suite has 1438 passes
+and 10 optional-GPU skips (1448 collected), branch coverage remains 80%, and
+strict mypy covers 80 modules. README migration is next; no calculation
+behavior changes.
 
 P6.2-c
 implements D-069:

@@ -3,7 +3,7 @@
 Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-128 requires one typed spectroscopy measurement
+Latest API checkpoint: D-130 implements the exact lazy v0.3 root surface
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -20,8 +20,8 @@ behavior are understood.
 | **internal** | Required by package orchestration; not a supported user API |
 | **delete** | Remove after its replacement and characterization tests exist |
 
-The exact target root namespace is accepted under D-073. Current root exports
-remain an implementation migration surface until Phase 8.
+The exact target root namespace accepted under D-073 is implemented by D-130.
+The old root migration surface no longer exists.
 
 P6.1-a changes no import path, export, signature, or runtime implementation.
 It adds behavior guards before the planned TwoLevel ownership move. The
@@ -116,30 +116,35 @@ There is no duplicate coupling definition or model-to-dynamics import.
 
 ### 2.1 Names declared in `rovibrational_excitation.__all__`
 
-| Current root name | Observed callers | Target path or replacement | Disposition |
-|---|---|---|---|
-| `LinMolBasis` | README and direct subpackage examples use the concept; no source file imports it from root | `models.linear_molecule.LinMolBasis` | temporary public |
-| `Hamiltonian` | Root re-export remains; internal callers now use the target module | `core.operators.Hamiltonian` | temporary root re-export pending O-008; target submodule complete |
-| `StateVector` | Tests and examples use `core.basis.StateVector` | `core.states.StateVector` | temporary public |
-| `DensityMatrix` | Tests use `core.basis.DensityMatrix` | `core.states.DensityMatrix` | temporary public |
-| `ElectricField` | Simulation, optimization, tests, and examples | root re-export backed by `fields.ElectricField` | target public; D-047/D-048 require explicit input units and canonical fs/V/m storage |
-| `LinMolDipoleMatrix` | Tests and examples use its model subpackage | constructed by `models.linear_molecule`; advanced class remains under that model | temporary public |
-| `AbsorbanceCalculator` | spectroscopy examples and tests | `spectroscopy.AbsorbanceCalculator` or decomposed facade | temporary public at root; target public in subpackage |
-| `ExperimentalConditions` | spectroscopy examples and tests | `spectroscopy.ExperimentalConditions` | D-046 requires exact value/unit pairs and frozen canonical fields; temporary public at root; target public in subpackage |
-| `create_calculator_from_params` | spectroscopy examples and tests | typed spectroscopy constructor under `spectroscopy` | D-046 requires and forwards every condition unit; temporary public at root; target public in subpackage |
+| Root name | Authoritative owner | Disposition |
+|---|---|---|
+| `__version__` | root package metadata | target public |
+| `ElectricField` | `fields.field.ElectricField` | target public lazy re-export |
+| `TimeGrid` | `core.time.TimeGrid` | target public lazy re-export |
+| `ExecutionPolicy` | `core.execution.ExecutionPolicy` | target public lazy re-export |
+| `PropagationProblem` | `dynamics.problem.PropagationProblem` | target public lazy re-export |
+| `PropagationOptions` | `dynamics.options.PropagationOptions` | target public lazy re-export |
+| `PropagationResult` | `dynamics.result.PropagationResult` | target public lazy re-export |
+| `run_simulation_case` | `simulation.runner.run_simulation_case` | target public lazy re-export |
 
-Every current root `__all__` name therefore has an explicit disposition. Only
-`ElectricField` remains from that list. D-073 additionally adds `__version__`,
-`TimeGrid`, `ExecutionPolicy`, the three typed propagation contracts, and
-`run_simulation_case` to the final root.
+D-130 implements this exact ordered list. Lazy access returns and caches the
+object from its authoritative module; it does not create wrapper classes or a
+second runner function.
+
+The former root exports `LinMolBasis`, `Hamiltonian`, `StateVector`,
+`DensityMatrix`, `LinMolDipoleMatrix`, `AbsorbanceCalculator`,
+`ExperimentalConditions`, and `create_calculator_from_params` are removed
+without shims. Their supported owners are respectively the explicit `models`,
+`core`, and `spectroscopy` subpackages.
 
 ### 2.2 Other accessible root attributes
 
-`__version__` and `__author__` are accessible but absent from `__all__`.
-`core`, `fields`, `simulation`, `spectroscopy`, and `visualization` are bound
-by eager root imports. Each now has an explicit package initializer.
-`dipole` is no longer a root attribute after D-081. `simulation` narrowly
-exports `run_simulation_case`.
+`__author__` remains package metadata but is not promised by `__all__`. A plain
+root import does not bind or import `core`, `fields`, `simulation`,
+`spectroscopy`, `optimization`, or `visualization`. Python binds a subpackage
+attribute only after callers explicitly import that subpackage. In particular,
+root loading does not import persistence, Pandas, Matplotlib, optimization, or
+spectroscopy dependencies.
 
 P7.1-a/D-084 adds the internal `simulation.field_preparation` owner for
 generated waveform sampling. It adds no public export. Private polarization
@@ -165,7 +170,7 @@ a private re-export and use `io.json_safe` directly.
 | `__version__` | root metadata | target public; add to `__all__` |
 | `__author__` | package metadata only | internal; do not promise as API |
 | `core` | explicit `core/__init__.py` with narrow exports | target public subpackage |
-| `fields` | explicit field construction, envelopes, and modulation package | target public subpackage; `ElectricField` remains a temporary root re-export pending O-008 |
+| `fields` | explicit field construction, envelopes, and modulation package | target public subpackage; `ElectricField` is the stable lazy root re-export under D-130 |
 | `dipole` | removed under D-081 | no replacement package or compatibility shim; use `models.*` |
 | `visualization` | explicit target package with module-level plotting helpers | target public subpackage; root import does not load optional Matplotlib |
 | `simulation` | typed `simulation` workflows | target public subpackage |
@@ -477,7 +482,8 @@ under `examples/archives/v0_2/optimization_configs/`. Archived files are
 historical migration evidence, are excluded from Ruff and execution, and are
 not public API callers.
 
-The stale root package docstring and root README APIs remain Phase 8
+D-130 replaces the stale root package docstring and removes its old API
+examples. The English and Japanese README API examples remain separate Phase 8
 documentation debt; archiving old examples does not recreate any compatibility
 shim.
 

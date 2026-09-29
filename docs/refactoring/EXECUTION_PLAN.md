@@ -2082,7 +2082,7 @@ thermal-state construction, and real CUDA remain explicitly outside acceptance.
 
 Tasks:
 
-- implement the exact D-073 root exports and remove the old root surface;
+- implement the exact D-073 root exports and remove the old root surface — completed by P8.1-a/D-130;
 - rewrite README and Japanese README against the actual API;
 - close the Markdown/YAML/workflow findings in
   `DOCUMENTATION_WORKFLOW_AUDIT.md`, including executable public snippets,
@@ -2116,6 +2116,13 @@ three supported `configs/*.yaml` documents remain unchanged. A contract forbids
 loose archived Python files and the superseded archive directory names. Ignored
 runtime output, caches, build products, coverage files, and local validation
 plots remain outside version control. No calculation behavior changed.
+
+P8.1-a/D-130 implements the exact D-073 root surface with lazy authoritative
+object resolution. Old convenience exports are removed without shims, and a
+plain root import loads no workflow, persistence, optimization, spectroscopy,
+visualization, Pandas, or Matplotlib module. The full CPU suite passes 1438
+tests with 10 optional-GPU skips, branch coverage remains 80%, and strict mypy
+covers 80 modules. README migration is next; no calculation behavior changed.
 
 ### Phase 8 acceptance
 

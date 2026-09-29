@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-c/D-129 final spectroscopy acceptance; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P8.1-a/D-130 exact lazy root API; P7.4-c/D-129 final spectroscopy acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -184,14 +184,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.0-a:
+Current local CPU baseline after P8.1-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1327 passed, 10 GPU tests skipped (1337 collected)
+1438 passed, 10 GPU tests skipped (1448 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -620,6 +620,14 @@ bodies. Current `configs/` remains exactly three supported documents. Contracts
 forbid loose archived Python files and superseded archive directories; ignored
 runtime/generated artifacts stay untracked. No calculation behavior changes.
 
+P8.1-a/D-130 implements the exact eight-name D-073 package root through lazy
+resolution to authoritative objects. Old root convenience exports are removed
+without shims, and a plain package import loads no workflow, persistence,
+optimization, spectroscopy, visualization, Pandas, or Matplotlib module. The
+suite has 1438 passes and 10 optional-GPU skips (1448 collected), branch
+coverage remains 80%, and strict mypy covers 80 modules. README and
+workflow/documentation migration is next; no calculation behavior changes.
+
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -655,9 +663,10 @@ The next work is:
    its transform owner. P7.4-b6/D-120 moves the exact dense response kernels to
    their owner, and P7.4-b7/D-121 adds unchanged chunked exact/approximate
    kernels to that owner. P7.4-c/D-129 now accepts the complete spectroscopy
-   boundary and closes Phase 7. Phase 8 public API and documentation migration
-   is next. Do not implement analyzer intensity or OD without its independent
-   reference and explicit baseline contract. Complete source/environment and
+   boundary and closes Phase 7. P8.1-a/D-130 implements the exact lazy D-073
+   root API. Phase 8 README and documentation/workflow migration is next. Do
+   not implement analyzer intensity or OD without its independent reference and
+   explicit baseline contract. Complete source/environment and
    generated-array provenance remains separate and must not be overstated. Do
    not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

@@ -2756,7 +2756,7 @@ and best recommendation are presented to the user.
 
 ### D-073: v0.3 root API is minimal and typed
 
-Status: Accepted by the user on 2026-09-16; implementation pending Phase 8.
+Status: Accepted by the user on 2026-09-16; implemented by D-130 as P8.1-a.
 
 The exact supported root `rovibrational_excitation.__all__` for v0.3 is:
 
@@ -4481,6 +4481,37 @@ This acceptance does not claim analyzer intensity/absorbance, a thermal-state
 constructor, source/environment provenance, or real-CUDA validation. Analyzer
 intensity/absorbance still requires an independent reference and explicit
 reference-field contract. CUDA remains the separate open Phase 5/release gate.
+
+Implementation commit: this checkpoint.
+
+
+### D-130: The v0.3 package root is exact and lazy
+
+Status: Implemented on 2026-09-29 as P8.1-a under the user-accepted D-073
+contract.
+
+Scope: package-root exports and import behavior only. No model, field,
+propagation, optimization, spectroscopy, persistence, or numerical calculation
+changes.
+
+`rovibrational_excitation.__all__` is exactly the eight names fixed by D-073.
+The seven runtime objects are resolved on first access from their authoritative
+modules and cached at the root, preserving exact class/function identity while
+a plain package import avoids loading simulation, persistence, optimization,
+spectroscopy, visualization, Pandas, or Matplotlib. Static type checking sees
+the same object types through type-only imports.
+
+The eight old convenience names are removed without compatibility shims under
+D-001. Models, spectroscopy, low-level states/operators, advanced fields,
+optimization, and visualization now require explicit subpackage imports. The
+former visualization contract is updated to import its subpackage explicitly
+while retaining lazy Matplotlib loading.
+
+Three root-specific contracts freeze the exact ordered export list, canonical
+object identity, absence of old convenience shims, and fresh-process lazy
+imports. The full suite passes 1438 tests with 10 optional-GPU skips (1448
+collected), branch coverage remains 80%, and strict mypy covers 80 modules.
+No calculation behavior changes.
 
 Implementation commit: this checkpoint.
 
