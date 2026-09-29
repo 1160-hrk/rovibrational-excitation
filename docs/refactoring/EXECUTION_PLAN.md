@@ -2021,6 +2021,15 @@ remains temporarily until typed complex analyzer response replaces it. The full
 suite passes 1427 tests with 10 optional-GPU skips (1437 collected), coverage
 remains 80%, and strict mypy covers 79 modules.
 
+P7.4-b11/D-125 separates complex molecular-response production from the
+unchanged response-to-mOD conversion. The four numerical routes return their
+existing angular-frequency and response arrays; `calculate` converts exactly
+once and still applies the optional device function afterward. Exact empty
+chunked dtype/value behavior is frozen. This adds no analyzer API and changes no
+formula, threshold, route, accumulation order, or returned spectrum. The full
+suite passes 1429 tests with 10 optional-GPU skips (1439 collected), coverage
+remains 80%, and strict mypy covers 79 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

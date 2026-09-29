@@ -65,6 +65,13 @@ interaction ket from direct construction and its factory. Explicit arbitrary
 response. Analyzer intensity/absorbance is a separate D-123 observable and is
 not yet implemented.
 
+
+D-125 establishes the required internal split without changing results: every
+numerical route returns angular frequency plus complex molecular response, and
+the facade performs the existing mOD conversion once before optional device
+convolution. This is a prerequisite only; analyzer complex response is not yet
+public and explicit legacy `pol_det` remains.
+
 ## Remaining release work
 
 After the temporary constructor is removed and analyzer capability remains truthful, P7.4 can receive its final acceptance decision.

@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b10/D-124 strict spectroscopy inputs; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b11/D-125 response/observable separation; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -565,6 +565,15 @@ removes direct axes/pol_int defaults and case coercion. Explicit arbitrary
 `pol_det` and the analyzer-observable split remain. The suite has 1427 passes
 and 10 optional-GPU skips (1437 collected), coverage remains 80%, and strict
 mypy covers 79 modules.
+
+
+P7.4-b11/D-125 makes the internal response/observable boundary explicit without
+changing calculation results. All four routes return their existing angular
+frequency and complex molecular response; the facade applies the unchanged mOD
+conversion once and retains device convolution afterward. Exact empty chunked
+output remains float zeros. Analyzer response is not yet exposed. The suite has
+1429 passes and 10 optional-GPU skips (1439 collected), coverage remains 80%,
+and strict mypy covers 79 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and

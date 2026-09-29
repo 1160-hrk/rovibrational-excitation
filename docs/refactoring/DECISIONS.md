@@ -4355,6 +4355,28 @@ explicit calls and all spectroscopy reference values are unchanged.
 Implementation commit: this checkpoint.
 
 
+### D-125: Molecular response is separated from mOD conversion
+
+Status: Implemented on 2026-09-29 as P7.4-b11.
+
+Scope: calculation-neutral spectroscopy facade responsibility split. No response
+formula, normalization, route, threshold, accumulation order, device function,
+or returned absorbance value changes.
+
+The four private exact/approximate calculation routes now return their existing
+angular-frequency array and complex molecular response. The public `calculate`
+method applies the unchanged response-to-mOD conversion once after dispatch and
+continues to apply the optional device function only after that conversion. The
+previous empty chunked shortcut now traverses the same zero-response boundary;
+an exact regression fixes its float dtype and bitwise-zero result.
+
+This boundary is the prerequisite for the D-123 typed analyzer complex-response
+observable. It does not expose that observable, reinterpret `pol_det`, or define
+an analyzer intensity/absorbance formula.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

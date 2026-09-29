@@ -177,6 +177,22 @@ def test_exact_methods_retain_physical_scale_transitions(two_level_case):
     assert calculator.last_calculation_report.discarded_commutator_l2_fraction == 0.0
 
 
+def test_chunked_empty_response_remains_exact_float_zeros(two_level_case):
+    calculator, _rho, wavenumber = two_level_case
+    maximally_mixed = np.eye(2, dtype=np.complex128) / 2.0
+
+    spectrum = calculator.calculate(
+        maximally_mixed,
+        wavenumber,
+        method="chunked",
+        wavenumber_units=WAVENUMBER_UNITS,
+        chunk_size=5,
+    )
+
+    assert spectrum.dtype == wavenumber.dtype
+    np.testing.assert_array_equal(spectrum, np.zeros_like(wavenumber))
+
+
 def test_method_is_required_and_controls_are_mode_specific(two_level_case):
     calculator, rho, wavenumber = two_level_case
 

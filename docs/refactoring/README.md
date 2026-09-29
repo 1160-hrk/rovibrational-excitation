@@ -400,6 +400,15 @@ rejects case coercion; scalar standard absorption still requires neither. The
 full suite passes 1427 with 10 optional-GPU skips (1437 collected), coverage
 remains 80%, and strict mypy covers 79 modules.
 
+
+P7.4-b11/D-125 then makes the internal observable boundary explicit. All four
+response routes return the same complex molecular response and angular-frequency
+arrays, while `calculate` owns the one unchanged mOD conversion followed by the
+optional device function. Empty chunked output remains exact float zero. No
+public analyzer observable or calculation formula changes in this checkpoint;
+the full suite passes 1429 with 10 optional-GPU skips (1439 collected), coverage
+remains 80%, and strict mypy covers 79 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,
 pushes, or publishes. The tag workflow accepts final versions only and blocks

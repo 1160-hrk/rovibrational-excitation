@@ -132,6 +132,44 @@ def test_absorbance_conversion_has_one_package_owner() -> None:
     assert "np.log10(np.exp(1))" not in monolith
 
 
+def test_response_routes_do_not_own_observable_conversion() -> None:
+    path = SPECTROSCOPY / "absorbance_calculator.py"
+    tree = ast.parse(path.read_text(), filename=str(path))
+    calculator = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "AbsorbanceCalculator"
+    )
+    methods = {
+        node.name: node
+        for node in calculator.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+    route_names = (
+        "_calculate_2d",
+        "_calculate_matrix",
+        "_calculate_loop",
+        "_calculate_chunked",
+    )
+    for name in route_names:
+        calls = {
+            node.func.attr
+            for node in ast.walk(methods[name])
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        }
+        assert "_response_to_absorbance" not in calls, name
+
+    calculate_calls = [
+        node
+        for node in ast.walk(methods["calculate"])
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "_response_to_absorbance"
+    ]
+    assert len(calculate_calls) == 1
+
+
 def test_observables_owner_has_no_upper_layer_dependencies() -> None:
     path = SPECTROSCOPY / "observables.py"
     tree = ast.parse(path.read_text(), filename=str(path))

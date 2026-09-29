@@ -511,27 +511,28 @@ class AbsorbanceCalculator:
 
         self._last_discarded_commutator_l2_fraction = 0.0
         if executed_method == "chunked":
-            spectrum = self._calculate_chunked(
+            omega, molecular_response = self._calculate_chunked(
                 rho_array,
                 wavenumber_array,
                 chunk_size=chunk_size,
                 relative_threshold=relative_threshold,
             )
         elif executed_method == "2d":
-            spectrum = self._calculate_2d(rho_array, wavenumber_array)
+            omega, molecular_response = self._calculate_2d(rho_array, wavenumber_array)
         elif executed_method == "matrix":
-            spectrum = self._calculate_matrix(
+            omega, molecular_response = self._calculate_matrix(
                 rho_array,
                 wavenumber_array,
                 apply_doppler,
             )
         else:
-            spectrum = self._calculate_loop(
+            omega, molecular_response = self._calculate_loop(
                 rho_array,
                 wavenumber_array,
                 apply_doppler,
             )
 
+        spectrum = self._response_to_absorbance(omega, molecular_response)
         if apply_device_function:
             spectrum = self.apply_device_function(
                 spectrum,
@@ -556,7 +557,9 @@ class AbsorbanceCalculator:
         )
         return spectrum
 
-    def _calculate_2d(self, rho: np.ndarray, wavenumber: np.ndarray) -> np.ndarray:
+    def _calculate_2d(
+        self, rho: np.ndarray, wavenumber: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Evaluate the cached two-dimensional response route."""
         if not self._prepared_2d or not np.array_equal(
             wavenumber, self._prepared_wavenumber
@@ -571,11 +574,11 @@ class AbsorbanceCalculator:
             self._one_over_denominator,
         )
         omega = self._omega_2d[:, 0]
-        return self._response_to_absorbance(omega, response_sum)
+        return omega, response_sum
 
     def _calculate_matrix(
         self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Evaluate the exact list-and-sum response route."""
         omega, response_sum = response.calculate_matrix_response(
             rho,
@@ -587,11 +590,11 @@ class AbsorbanceCalculator:
             apply_doppler=apply_doppler,
             doppler_broadener=self._apply_doppler_broadening,
         )
-        return self._response_to_absorbance(omega, response_sum)
+        return omega, response_sum
 
     def _calculate_loop(
         self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Evaluate the exact in-place accumulation response route."""
         omega, response_sum = response.calculate_loop_response(
             rho,
@@ -603,7 +606,7 @@ class AbsorbanceCalculator:
             apply_doppler=apply_doppler,
             doppler_broadener=self._apply_doppler_broadening,
         )
-        return self._response_to_absorbance(omega, response_sum)
+        return omega, response_sum
 
     def _calculate_chunked(
         self,
@@ -611,16 +614,13 @@ class AbsorbanceCalculator:
         wavenumber: np.ndarray,
         chunk_size: int,
         relative_threshold: float | None = None,
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Evaluate the exact or explicitly approximate chunked route."""
         commutator = response.sparse_commutator(self.mu_int, rho)
         i_indices, j_indices = self._response_entry_indices(
             commutator,
             relative_threshold,
         )
-
-        if len(i_indices) == 0:
-            return np.zeros_like(wavenumber)
 
         omega, response_sum = response.calculate_chunked_response(
             commutator,
@@ -631,7 +631,7 @@ class AbsorbanceCalculator:
             self.omega_vj_vpjp_mat,
             chunk_size=chunk_size,
         )
-        return self._response_to_absorbance(omega, response_sum)
+        return omega, response_sum
 
     def _response_to_absorbance(
         self, omega: np.ndarray, response: np.ndarray
