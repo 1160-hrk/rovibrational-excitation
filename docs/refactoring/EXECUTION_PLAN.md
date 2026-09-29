@@ -2124,6 +2124,10 @@ visualization, Pandas, or Matplotlib module. The full CPU suite passes 1438
 tests with 10 optional-GPU skips, branch coverage remains 80%, and strict mypy
 covers 80 modules. README migration is next; no calculation behavior changed.
 
+P8.1-b/D-131 makes the public runner annotation match its existing generated
+and sampled field routes. The explicit `field` keyword remains required and no
+execution branch changes. `simulation.runner` joins strict mypy as module 81.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

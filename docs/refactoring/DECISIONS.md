@@ -4516,6 +4516,29 @@ No calculation behavior changes.
 Implementation commit: this checkpoint.
 
 
+### D-131: The public simulation runner types both existing field routes
+
+Status: Implemented on 2026-09-29 as P8.1-b under the existing D-041 field
+contract.
+
+Scope: public type annotation and docstring only. No validation, field
+construction, propagation, persistence, or numerical behavior changes.
+
+`run_simulation_case` has always executed two explicit routes: `field=None`
+selects the fully specified generated-field parameters, while a `ScalarField`
+or `CartesianField` selects external sampled injection. The supported generated
+examples and parameter template already call the first route, but the annotation
+incorrectly excluded `None`.
+
+The annotation is now `SampledField | None`; the required keyword remains
+required, so callers still explicitly select one route. A root API contract
+resolves the annotation and freezes exactly scalar, Cartesian, or `None`.
+`simulation.runner` also joins strict mypy, raising its configured scope to 81
+modules. Runtime bytecode inside the function is otherwise unchanged.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

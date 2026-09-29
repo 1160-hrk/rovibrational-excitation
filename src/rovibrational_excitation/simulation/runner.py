@@ -77,9 +77,9 @@ def _run_one_safe(params: dict[str, Any], max_retries: int = 2) -> CaseRunOutcom
 def run_simulation_case(
     params: Mapping[str, Any],
     *,
-    field: SampledField,
+    field: SampledField | None,
 ) -> np.ndarray:
-    """Run one case with an explicitly sampled scalar or Cartesian field."""
+    """Run one generated-field or explicitly sampled-field case."""
     if not isinstance(params, Mapping):
         raise TypeError("params must be a mapping")
     return _execute_one(dict(params), field=field)

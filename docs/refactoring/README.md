@@ -53,14 +53,14 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1438 passed, 10 skipped (1448 collected) |
+| Pytest | 1439 passed, 10 skipped (1449 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 80 named modules |
+| Strict mypy scope | 81 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -468,6 +468,11 @@ loads no workflow or optional heavy dependency. The full suite has 1438 passes
 and 10 optional-GPU skips (1448 collected), branch coverage remains 80%, and
 strict mypy covers 80 modules. README migration is next; no calculation
 behavior changes.
+
+P8.1-b/D-131 corrects the public `run_simulation_case` annotation to its two
+existing explicit routes: `field=None` for generated input, or a sampled scalar
+or Cartesian field. Runtime logic is unchanged; strict mypy now covers 81
+modules.
 
 P6.2-c
 implements D-069:

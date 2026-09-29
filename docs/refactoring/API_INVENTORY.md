@@ -3,7 +3,7 @@
 Last verified: 2026-09-29
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-130 implements the exact lazy v0.3 root surface
+Latest API checkpoint: D-131 types both public simulation field routes
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -130,6 +130,11 @@ There is no duplicate coupling definition or model-to-dynamics import.
 D-130 implements this exact ordered list. Lazy access returns and caches the
 object from its authoritative module; it does not create wrapper classes or a
 second runner function.
+
+D-131 corrects the runner annotation to `SampledField | None`, matching its two
+already-supported explicit routes. The keyword has no default: `None` selects
+generated-field parameters, while a scalar or Cartesian sampled field selects
+external injection.
 
 The former root exports `LinMolBasis`, `Hamiltonian`, `StateVector`,
 `DensityMatrix`, `LinMolDipoleMatrix`, `AbsorbanceCalculator`,

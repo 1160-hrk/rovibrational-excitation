@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.1-a/D-130 exact lazy root API; P7.4-c/D-129 final spectroscopy acceptance
+Verified checkpoints: P8.1-b/D-131 runner field-route typing; P8.1-a/D-130 exact lazy root API
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1438 passed, 10 GPU tests skipped (1448 collected)
+1439 passed, 10 GPU tests skipped (1449 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -627,6 +627,11 @@ optimization, spectroscopy, visualization, Pandas, or Matplotlib module. The
 suite has 1438 passes and 10 optional-GPU skips (1448 collected), branch
 coverage remains 80%, and strict mypy covers 80 modules. README and
 workflow/documentation migration is next; no calculation behavior changes.
+
+P8.1-b/D-131 types `run_simulation_case` as accepting the two already-supported
+explicit routes: generated input through `field=None`, or externally sampled
+scalar/Cartesian input. The keyword remains required; runtime logic is
+unchanged. Strict mypy now covers 81 modules.
 
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
