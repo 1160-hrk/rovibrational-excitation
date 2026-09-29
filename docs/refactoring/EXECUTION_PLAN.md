@@ -2013,6 +2013,14 @@ with 10 optional-GPU skips (1436 collected), coverage remains 80%, and strict
 mypy covers 79 modules. The temporary constructor must still be removed before
 P7.4 final acceptance.
 
+P7.4-b10/D-124 removes the direct-constructor and factory defaults for `axes`
+and `pol_int` and rejects non-lowercase axis strings rather than coercing them.
+Scalar standard absorption remains model-driven and needs neither input.
+Explicit existing calculations retain identical values; arbitrary `pol_det`
+remains temporarily until typed complex analyzer response replaces it. The full
+suite passes 1427 tests with 10 optional-GPU skips (1437 collected), coverage
+remains 80%, and strict mypy covers 79 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

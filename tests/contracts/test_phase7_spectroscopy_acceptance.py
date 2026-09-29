@@ -109,8 +109,8 @@ def test_method_and_pathway_policy_are_required_but_constructor_defaults_remain_
 ):
     constructor = inspect.signature(AbsorbanceCalculator)
     assert constructor.parameters["phase_matching"].default is inspect.Parameter.empty
-    assert constructor.parameters["axes"].default == "xy"
-    assert constructor.parameters["pol_int"].default is None
+    assert constructor.parameters["axes"].default is inspect.Parameter.empty
+    assert constructor.parameters["pol_int"].default is inspect.Parameter.empty
     assert constructor.parameters["pol_det"].default is None
 
     calculate = inspect.signature(AbsorbanceCalculator.calculate)
@@ -118,5 +118,5 @@ def test_method_and_pathway_policy_are_required_but_constructor_defaults_remain_
     assert calculate.parameters["wavenumber_units"].default is inspect.Parameter.empty
 
     source = (PACKAGE / "absorbance_calculator.py").read_text()
-    assert "self.axes = axes.lower()" in source
-    assert "if pol_int is None:" in source
+    assert "self.axes = axes.lower()" not in source
+    assert "if pol_int is None:" not in source

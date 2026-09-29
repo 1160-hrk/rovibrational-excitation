@@ -4333,6 +4333,28 @@ explicit same-polarization path. No formula, array, threshold, or route changes.
 Implementation commit: this checkpoint.
 
 
+### D-124: Spectroscopy direct construction no longer invents polarization
+
+Status: Implemented on 2026-09-29 as P7.4-b10 under the accepted D-123
+measurement contract.
+
+Scope: public-constructor and factory validation only. No response formula,
+normalization, route, threshold, array value, or accumulation order changes.
+
+Direct `AbsorbanceCalculator` and `create_calculator_from_params` calls now
+require both `axes` and `pol_int`. Axis labels must already be exact lowercase;
+uppercase and mixed case raise instead of being normalized. The implicit `xy`
+selection and implicit unit ket on the first selected axis are removed.
+
+Scalar callers use the P7.4-b9 named standard-absorption entry, which obtains
+the nonphysical storage axis from the model-owned coupling and requires no
+dummy Jones input. Explicit legacy `pol_det` remains temporarily available only
+until analyzer complex response has a separately typed replacement. Existing
+explicit calls and all spectroscopy reference values are unchanged.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
@@ -4346,12 +4368,12 @@ Cartesian interaction polarization is required. Ordinary absorption uses the
 same physical probe ket as its detection mode, whose analyzer bra produces the
 adjoint dipole projection.
 
-P7.4-b9 introduces that named standard-absorption path with exact parity while
-the old `axes="xy"`, case normalization, implicit first-axis `pol_int`, and
-arbitrary `pol_det` constructor remain only as a temporary migration surface.
-O-014 closes when every supported caller moves to the typed path and the legacy
-constructor surface is removed. Analyzer complex response and measured
-intensity/absorbance follow the separate D-123 observable contract.
+P7.4-b9 introduces that named standard-absorption path with exact parity.
+P7.4-b10/D-124 removes the old `axes="xy"`, case normalization, and implicit
+first-axis `pol_int`. Explicit arbitrary `pol_det` remains only as a temporary
+migration surface. O-014 closes when it has a typed complex-response replacement
+and the legacy constructor surface is removed. Analyzer intensity/absorbance
+follows the separate D-123 observable contract.
 
 ### O-001: Trajectory endpoint when stride does not divide steps
 

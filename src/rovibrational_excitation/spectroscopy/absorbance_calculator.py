@@ -58,10 +58,10 @@ class AbsorbanceCalculator:
         Probe interaction前の密度行列に適用する位相整合経路。pump_probeは
         ``V_i == V_j`` のブロックを選ぶ。この選別は吸収計算前だけに
         適用され、post-probeの放射/PFID密度には適用されない。
-    axes : str, default 'xy'
-        使用する双極子成分と偏光ベクトルの成分順序
-        ('x', 'y', 'z', 'xy', 'xz', 'yz', 'xyz'等)
-    pol_int : np.ndarray, optional
+    axes : str
+        必須。使用する双極子成分と偏光ベクトルの成分順序。
+        小文字の一意な順序付き部分集合だけを受理する。
+    pol_int : np.ndarray
         相互作用光の偏光ket。成分数は ``len(axes)`` と一致させる。
     pol_det : np.ndarray, optional
         検出光の偏光ket。Noneの場合はpol_intと同じ物理偏光を使い、
@@ -74,7 +74,8 @@ class AbsorbanceCalculator:
     >>> dipole = LinMolDipoleMatrix(basis=basis, mu0=1.0e-30)
     >>> calculator = AbsorbanceCalculator(
     ...     basis, H0, dipole, conditions,
-    ...     phase_matching='pump_probe', axes='xyz'
+    ...     phase_matching='pump_probe', axes='xyz',
+    ...     pol_int=np.array([1, 0, 0]),
     ... )
     >>> absorbance = calculator.calculate(
     ...     rho, wavenumber, method='loop', wavenumber_units='cm^-1'
@@ -89,8 +90,8 @@ class AbsorbanceCalculator:
         conditions: ExperimentalConditions,
         *,
         phase_matching: Literal["unfiltered", "pump_probe"],
-        axes: str = "xy",
-        pol_int: np.ndarray | None = None,
+        axes: str,
+        pol_int: np.ndarray,
         pol_det: np.ndarray | None = None,
     ):
         self.basis = basis
@@ -102,13 +103,10 @@ class AbsorbanceCalculator:
         self.conditions = conditions
 
         # 軸の検証と設定
-        self.axes = axes.lower()
+        self.axes = axes
         self._validate_axes()
 
         # Polarization components follow the explicit order in ``axes``.
-        if pol_int is None:
-            pol_int = np.zeros(len(self.axes), dtype=np.complex128)
-            pol_int[0] = 1.0
         self.pol_int = self._normalize_polarization(pol_int, name="pol_int")
         detection_polarization = self.pol_int if pol_det is None else pol_det
         self.pol_det = self._normalize_polarization(
@@ -171,7 +169,11 @@ class AbsorbanceCalculator:
         )
 
     def _validate_axes(self):
-        """Validate a nonempty, unique Cartesian component order."""
+        """Validate an exact lowercase unique Cartesian component order."""
+        if not isinstance(self.axes, str):
+            raise TypeError("axes must be a string")
+        if self.axes != self.axes.lower():
+            raise ValueError("axes must contain exact lowercase Cartesian labels")
         if not self.axes or len(self.axes) > 3:
             raise ValueError("axes must contain between one and three components")
         if any(component not in "xyz" for component in self.axes):
@@ -779,8 +781,8 @@ def create_calculator_from_params(
     molecular_mass: float,
     molecular_mass_units: str,
     phase_matching: Literal["unfiltered", "pump_probe"],
-    axes: str = "xy",
-    pol_int: np.ndarray | None = None,
+    axes: str,
+    pol_int: np.ndarray,
     pol_det: np.ndarray | None = None,
 ) -> AbsorbanceCalculator:
     """
@@ -808,8 +810,10 @@ def create_calculator_from_params(
         Probe interaction前の密度行列に適用する位相整合経路
     axes : str
         使用する軸
-    pol_int, pol_det : np.ndarray, optional
-        偏光ベクトル
+    pol_int : np.ndarray
+        必須の相互作用Jones ket
+    pol_det : np.ndarray, optional
+        一時的な明示検出Jones ket。通常吸収にはstandard_absorptionを使う。
 
     Returns
     -------

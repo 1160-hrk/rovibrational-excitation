@@ -899,7 +899,12 @@ def test_phase_matching_mode_is_required_and_never_falls_back():
     with pytest.raises(TypeError, match="phase_matching"):
         AbsorbanceCalculator(*args)
     with pytest.raises(ValueError, match="phase_matching must be"):
-        AbsorbanceCalculator(*args, phase_matching="automatic")
+        AbsorbanceCalculator(
+            *args,
+            phase_matching="automatic",
+            axes="x",
+            pol_int=np.array([1.0]),
+        )
     with pytest.raises(ValueError, match="requires basis.V_array"):
         _pathway_calculator(_BasisWithoutV(), "pump_probe")
     malformed_shape = _SameVBlockBasis()

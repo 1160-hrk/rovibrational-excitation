@@ -57,7 +57,8 @@ Basic usage:
 ...     dipole_matrix=dipole_matrix,
 ...     conditions=conditions,
 ...     phase_matching='pump_probe',
-...     axes='xy'
+...     axes='xy',
+...     pol_int=np.array([1, 0]),
 ... )
 >>>
 >>> # Calculate spectrum

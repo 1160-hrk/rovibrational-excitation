@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b9/D-123 typed standard absorption; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b10/D-124 strict spectroscopy inputs; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -560,10 +560,11 @@ P7.4-b8/D-122 accepts numerical spectroscopy ownership and adds executable
 facade, owner, dependency, and failure-policy guards. P7.4-b9/D-123 begins the
 approved O-014 migration: named standard absorption uses model-owned scalar
 coupling or required typed Cartesian projection, and every exact route is
-bitwise equal to the prior explicit same-polarization path. The temporary
-constructor and arbitrary-analyzer observable split remain. The suite has 1426
-passes and 10 optional-GPU skips (1436 collected), coverage remains 80%, and
-strict mypy covers 79 modules.
+bitwise equal to the prior explicit same-polarization path. P7.4-b10/D-124
+removes direct axes/pol_int defaults and case coercion. Explicit arbitrary
+`pol_det` and the analyzer-observable split remain. The suite has 1427 passes
+and 10 optional-GPU skips (1437 collected), coverage remains 80%, and strict
+mypy covers 79 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and

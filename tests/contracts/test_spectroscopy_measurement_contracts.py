@@ -142,6 +142,28 @@ def test_projection_is_conditional_on_model_coupling() -> None:
         )
 
 
+def test_legacy_constructor_no_longer_invents_axes_or_interaction_ket() -> None:
+    model = _two_level_model(coupling=CouplingSpec.scalar(Axis.X))
+    with pytest.raises(TypeError, match="axes.*pol_int"):
+        AbsorbanceCalculator(
+            model.basis,
+            model.hamiltonian,
+            model.dipole,
+            _conditions(),
+            phase_matching="unfiltered",
+        )
+    with pytest.raises(ValueError, match="lowercase"):
+        AbsorbanceCalculator(
+            model.basis,
+            model.hamiltonian,
+            model.dipole,
+            _conditions(),
+            phase_matching="unfiltered",
+            axes="X",
+            pol_int=np.array([1.0]),
+        )
+
+
 def test_cartesian_projection_requires_typed_unique_axes_and_finite_nonzero_ket() -> (
     None
 ):

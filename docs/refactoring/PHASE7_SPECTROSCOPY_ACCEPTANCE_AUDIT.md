@@ -59,10 +59,11 @@ the same physical probe ket for detection, so circular detection remains the
 adjoint rotating operator. All four exact routes are bitwise equal to the old
 explicit same-polarization construction.
 
-The old direct constructor still defaults `axes`, lowercases strings, invents a
-first-axis `pol_int`, and accepts arbitrary `pol_det`; it remains only until
-callers migrate. Arbitrary analyzer complex response and analyzer
-intensity/absorbance are separate D-123 observables and are not yet implemented.
+D-124 removes default axes, case normalization, and the invented first-axis
+interaction ket from direct construction and its factory. Explicit arbitrary
+`pol_det` remains only until callers migrate to a typed analyzer complex
+response. Analyzer intensity/absorbance is a separate D-123 observable and is
+not yet implemented.
 
 ## Remaining release work
 
