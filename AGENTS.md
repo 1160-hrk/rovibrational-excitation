@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b1/D-114 spectroscopy conditions owner; P8.0-a/D-105 safe tooling
+Verified checkpoints: P7.4-b1/D-114 spectroscopy conditions owner; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -526,6 +526,12 @@ CPU gates and a real self-hosted CUDA reference pass. Jupyter is authenticated
 and localhost-only by default. Supported examples and their generated index
 are now CI contracts. External GPU and PyPI execution remain unverified.
 
+P8.0-b/D-115 consolidates every tracked v0.2 artifact under
+`examples/archives/v0_2/{scripts,optimization_configs}` without changing file
+bodies. Current `configs/` remains exactly three supported documents. Contracts
+forbid loose archived Python files and superseded archive directories; ignored
+runtime/generated artifacts stay untracked. No calculation behavior changes.
+
 The user accepted D-071 through D-073 on 2026-09-16. CUDA is a supported v0.3
 target and final release requires real-GPU evidence after device-native kernel
 separation. Optimization and spectroscopy decomposition require independent
@@ -587,6 +593,7 @@ The next work is:
 10. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`. All optimization references now pass; obtain
    the remaining spectroscopy references before its Phase 7 decomposition.
-11. Preserve the D-044 support boundary: active examples, benchmarks, and
-   scripts remain executable and linted; archives remain historical until
-   individually migrated and smoke-tested.
+11. Preserve the D-044/D-115 support boundary: active examples, benchmarks,
+   scripts, and exactly three current configs remain executable and tested;
+   versioned archives remain historical until individually migrated and
+   smoke-tested. Do not promote ignored runtime/generated artifacts.

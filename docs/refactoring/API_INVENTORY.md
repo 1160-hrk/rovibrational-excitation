@@ -470,10 +470,12 @@ D-044 reduces the supported set to three top-level typed examples:
 normalization, and execute through `scripts/smoke_examples.py` in CI.
 
 Former v0.2 examples, parameter modules, notebook, and dedicated helpers are
-under `examples/archives/v0_2_scripts/`. Additional optimizer scripts with
+under `examples/archives/v0_2/scripts/`. Additional optimizer scripts with
 undefined experiment-specific constants and the external C++ RK4 example are
-also archived without inferred fixes. Archived files are historical migration
-evidence, are excluded from Ruff and execution, and are not public API callers.
+also stored there without inferred fixes. Historical optimization documents are
+under `examples/archives/v0_2/optimization_configs/`. Archived files are
+historical migration evidence, are excluded from Ruff and execution, and are
+not public API callers.
 
 The stale root package docstring and root README APIs remain Phase 8
 documentation debt; archiving old examples does not recreate any compatibility

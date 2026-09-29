@@ -359,6 +359,13 @@ index are executable CI contracts; archived examples are not scanned. The full
 suite has 1327 passes and 10 optional-GPU skips (1337 collected). Calculation
 behavior is unchanged; external GPU and PyPI execution remain unverified.
 
+P8.0-b/D-115 gives all tracked v0.2 artifacts one versioned archive root:
+`scripts/` and `optimization_configs/` now live below
+`examples/archives/v0_2/`. The three supported optimization configs and every
+archived file body are unchanged. Contracts reject loose archived Python files
+and the superseded directory names; generated/runtime artifacts remain
+untracked. No calculation behavior changes.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -618,7 +625,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | In progress — P7.1/P7.2/P7.3 accepted; P7.4 spectroscopy pending |
-| 8 | Public API, documentation, and release | In progress — P8.0-a safe pre-tag tooling complete; root API/docs, external release evidence, and final bump remain |
+| 8 | Public API, documentation, and release | In progress — P8.0-a tooling and P8.0-b archive consolidation complete; root API/docs, external release evidence, and final bump remain |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

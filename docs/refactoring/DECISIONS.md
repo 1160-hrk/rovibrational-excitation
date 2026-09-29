@@ -1810,7 +1810,7 @@ in seconds, write no result files, and run in CI through
 
 Former v0.2 examples, dedicated optimization helpers, parameter modules, and
 notebooks are historical migration material under
-`examples/archives/v0_2_scripts/`. Legacy local-optimizer scripts with
+`examples/archives/v0_2/scripts/`. Legacy local-optimizer scripts with
 undefined experiment-specific constants and the external C++ RK4 example were
 archived without guessing values or changing their calculation logic.
 `examples/archives/` is excluded from Ruff and smoke execution.
@@ -2190,7 +2190,7 @@ Status: Accepted and implemented on 2026-09-03 as P4.3-m.
 Scope: historical optimization YAML disposition and missing dipole values.
 
 Thirteen incomplete v0.2 optimizer YAML files are moved, with history, to
-`examples/archives/v0_2_optimization_configs/`. They remain historical records
+`examples/archives/v0_2/optimization_configs/`. They remain historical records
 and receive no invented dipole value. They are excluded from the supported
 configuration set and must be explicitly migrated and tested before reuse.
 
@@ -4084,6 +4084,32 @@ The focused ownership and spectroscopy suites pass 45 tests. The full suite
 passes 1408 tests with 10 optional-GPU skips (1418 collected), total branch
 coverage remains 80%, the spectroscopy package remains 94% covered, and strict
 mypy covers 73 modules. No calculation changes.
+
+Implementation commit: this checkpoint.
+
+
+### D-115: v0.2 repository artifacts have one versioned archive root
+
+Status: Implemented on 2026-09-29 as P8.0-b under the user’s standing
+authorization for calculation-neutral repository cleanup.
+
+Scope: tracked historical examples and optimization YAML paths only. No source,
+configuration value, formula, execution branch, or numerical behavior changes.
+
+The three strict current-schema optimization documents remain in `configs/`
+and retain their exact contents. All tracked v0.2 scripts, helpers, notebook,
+experimental optimizer files, external-extension example, spectroscopy
+migration evidence, and incomplete optimization YAML are consolidated under
+`examples/archives/v0_2/`, with scripts in `scripts/` and YAML in
+`optimization_configs/`. Every tracked move uses Git history-preserving rename
+semantics; archived file bodies are unchanged.
+
+The archive has an explicit unsupported-status README. A repository contract
+requires both versioned subdirectories, forbids loose Python files directly
+under `examples/archives/`, and rejects the two superseded directory names.
+Ignored results, caches, build products, coverage data, and local validation
+plots are not promoted into the tracked archive. `results/` remains the current
+runtime output contract, not historical source material.
 
 Implementation commit: this checkpoint.
 

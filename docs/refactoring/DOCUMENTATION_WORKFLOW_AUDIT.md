@@ -1,6 +1,6 @@
 # Documentation, YAML, and GitHub workflow audit
 
-Verified: 2026-09-25
+Verified: 2026-09-29
 Scope: all repository Markdown, YAML/YML, and .github/workflows files.
 Disposition: **Inventory complete; release safety corrected, broader public-doc migration remains open.**
 
@@ -49,7 +49,10 @@ examples; archives are never scanned. params_template.py keeps its numerical
 values but labels them as examples rather than universal recommendations and
 uses the library unit boundary instead of approximate hand-conversion advice.
 configs/README.md correctly marks only three top-level YAML documents as
-supported. benchmarks/README.md labels v0.2.10 data as a historical baseline.
+supported. D-115 consolidates all tracked historical v0.2 material under
+`examples/archives/v0_2/{scripts,optimization_configs}`; ignored result, cache,
+build, coverage, and validation-image artifacts are not tracked archives.
+benchmarks/README.md labels v0.2.10 data as a historical baseline.
 Historical test/archive reports retain their dates and are not current
 capability evidence. Refactoring docs remain the agent-facing source of truth.
 
@@ -61,7 +64,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 | .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; builds and clean-installs distributions; publishes PyPI before creating the GitHub Release. | The workflow is intentionally blocked until a [self-hosted, linux, x64, gpu] runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
 | codecov.yml | Configures informational Codecov statuses. | No workflow uploads coverage to Codecov; badges/docs must not imply current Codecov evidence. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
-| examples/archives/**/*.yaml | Parse as YAML but are explicitly v0.2 archive. | Do not promote without migration and an executable reference run. |
+| examples/archives/v0_2/optimization_configs/*.yaml | Parse as YAML but are explicitly unsupported v0.2 archives. | Do not promote without migration and an executable reference run. |
 
 ## Completion sequence
 

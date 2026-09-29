@@ -2,7 +2,7 @@
 
 Only the three YAML files in this directory are supported current-schema
 optimization documents. Historical v0.2 documents live under
-`examples/archives/v0_2_optimization_configs/` and must not be used as input.
+`examples/archives/v0_2/optimization_configs/` and must not be used as input.
 
 ## Included runs
 

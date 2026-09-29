@@ -376,11 +376,12 @@ For each legacy file, identify unique logic and callers:
 If unique logic exists, add an equivalence test before removing it. If no caller
 or unique formula exists, delete it in a cleanup commit.
 
-The archived `absorbance_from_density_matrix.py` is intentionally retained as
-non-executable migration evidence until Phase 7. It contains legacy PFID,
-Doppler, and response formulas that must be characterized against
-`AbsorbanceCalculator` before removal. Its duplicated approximate constants
-and hard-coded thresholds are evidence to review, not accepted defaults.
+The archived
+`examples/archives/v0_2/scripts/absorbance_from_density_matrix.py` is retained
+as non-executable migration evidence. Its legacy PFID, Doppler, and response
+formulas have now been independently characterized by P7.4-a1/a2 against
+`AbsorbanceCalculator`; its duplicated approximate constants and hard-coded
+thresholds remain historical evidence, not accepted defaults.
 
 Acceptance:
 
@@ -1970,7 +1971,7 @@ Tasks:
 - update every supported example — completed early under D-044 with three
   typed smoke examples;
 - move unsupported examples to an explicit archive or delete them — completed
-  early under D-044 for the former v0.2 script set;
+  early under D-044 for the former v0.2 script set and consolidated by D-115;
 - update version to 0.3.0;
 - produce migration notes stating that backward compatibility is intentionally
   broken;
@@ -1988,6 +1989,13 @@ supported examples and the parameter template execute in CI smoke, and the
 generated example index cannot scan archives. Root API/README migration,
 CodeCov disposition, actionlint, final release evidence, and version bump
 remain Phase 8 work. No calculation behavior changed.
+
+P8.0-b/D-115 consolidates all tracked v0.2 example and optimization-config
+material under `examples/archives/v0_2/{scripts,optimization_configs}`. The
+three supported `configs/*.yaml` documents remain unchanged. A contract forbids
+loose archived Python files and the superseded archive directory names. Ignored
+runtime output, caches, build products, coverage files, and local validation
+plots remain outside version control. No calculation behavior changed.
 
 ### Phase 8 acceptance
 

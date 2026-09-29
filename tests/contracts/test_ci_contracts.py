@@ -174,7 +174,12 @@ def test_supported_examples_are_explicit_and_archives_are_excluded():
         "example_typed_spectral_modulation.py",
         "example_typed_twolevel.py",
     }
-    assert (examples / "archives" / "v0_2_scripts").is_dir()
+    archive = examples / "archives" / "v0_2"
+    assert (archive / "scripts").is_dir()
+    assert (archive / "optimization_configs").is_dir()
+    assert not list((examples / "archives").glob("*.py"))
+    assert not (examples / "archives" / "v0_2_scripts").exists()
+    assert not (examples / "archives" / "v0_2_optimization_configs").exists()
 
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert pyproject["tool"]["ruff"]["extend-exclude"] == ["examples/archives"]
