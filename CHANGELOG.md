@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sampled-field, model, unit, and execution schemas.
 - The sweep guide now documents exact singleton, insertion-order,
   Cartesian-product, result-path, dry-run, and resume-provenance behavior.
+- The time-propagation guide now documents only implemented RK4/split paths,
+  exact timing/output semantics, capability failures, and CUDA limitations.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.2-d/D-135 sweep guide; P8.2-c/D-134 parameter guide
+Verified checkpoints: P8.2-e/D-136 propagation guide; P8.2-d/D-135 sweep guide
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1455 passed, 10 GPU tests skipped (1465 collected)
+1466 passed, 10 GPU tests skipped (1476 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the

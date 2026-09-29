@@ -4655,6 +4655,42 @@ passes and 10 optional-GPU skips (1465 collected).
 Implementation commit: this checkpoint.
 
 
+### D-136: Time-propagation documentation describes only executable paths
+
+Status: Implemented on 2026-09-29 as P8.2-e.
+
+Scope: time-propagation documentation and documentation contracts only. No
+field sample, operator, RK4 stage, split factor, state reduction, scaling,
+backend dispatch, or result calculation changes.
+
+The former guide mixed the current coefficient-space split implementation with
+unimplemented real-space FFT and fourth-order Suzuki methods, implied that
+split CSR stayed sparse through spectral decomposition, and offered broad
+performance recommendations without binding them to the typed public boundary.
+
+The replacement starts from the frozen `H(t) = H0 - mu E(t)` sign and
+`propagation_dt = 2 * field_dt` grid. It documents the required
+`PropagationProblem`/`PropagationOptions` inputs; the pure, incoherent, and
+density state meanings; NumPy dense/CSR RK4; second-order Cartesian and
+helicity-projected split; explicit stride/endpoint/scaling/renormalization
+semantics; backward and convergence limits; SymTop restrictions; and every
+unsupported backend/storage/state combination without fallback.
+
+The guide distinguishes exact Cartesian Hamiltonian selection from finite-step
+Strang error and from the explicit helicity-projected approximation. It states
+that split CSR is densified for eigendecomposition and that real-space FFT,
+fourth-order Suzuki, and adaptive split are not implemented. It also records
+the existing CuPy host round trips and lack of real-CUDA evidence.
+
+Eleven parametrized documentation contracts exercise accepted and rejected
+capability rows and freeze the timing, output, split-mode, no-repair, and CUDA
+disclosures. Existing time-grid, split-interaction, density, and result
+contracts pass unchanged. The full suite has 1466 passes and 10 optional-GPU
+skips (1476 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

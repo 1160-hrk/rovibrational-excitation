@@ -2147,7 +2147,14 @@ contracts. Sweep, propagation, and unit guides remain next.
 P8.2-d/D-135 rebuilds the sweep guide around exact insertion order, singleton
 scalarization, Cartesian-product and checkpoint-provenance behavior. Dry-run
 help now describes its unchanged count-only behavior, and the public simulate
-CLI joins strict mypy as module 82. Propagation and unit guides remain.
+CLI joins strict mypy as module 82.
+
+P8.2-e/D-136 replaces the aspirational propagation-method survey with the
+implemented typed time-grid, RK4/split, state-path, output, capability, and
+CUDA contracts. It explicitly rejects claims for real-space FFT, fourth-order
+Suzuki, adaptive propagation, sparse spectral split, and verified CUDA. The
+full suite has 1466 passes and 10 optional-GPU skips (1476 collected). No
+calculation code changes; the unit guide remains next.
 
 ### Phase 8 acceptance
 

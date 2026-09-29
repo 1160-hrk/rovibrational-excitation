@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1455 passed, 10 skipped (1465 collected) |
+| Pytest | 1466 passed, 10 skipped (1476 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -493,7 +493,14 @@ still passes end to end. Sweep, propagation, and unit guides remain.
 P8.2-d/D-135 rebuilds the sweep guide around its actual classifier, insertion
 order, singleton scalarization, Cartesian product, paths, and resume identity.
 CLI help and a stale test comment are corrected without changing behavior;
-strict mypy now covers 82 modules. Propagation and unit guides remain.
+strict mypy now covers 82 modules.
+
+P8.2-e/D-136 rebuilds the time-propagation guide from `TimeGrid`, typed
+propagation options/results, capability validation, and the actual RK4/split
+implementations. It removes unimplemented FFT/Suzuki/adaptive recommendations,
+records dense conversion for spectral split, and keeps real CUDA explicitly
+unverified. The suite has 1466 passes and 10 optional-GPU skips (1476
+collected). No calculation code changes; the unit guide remains.
 
 P6.2-c
 implements D-069:

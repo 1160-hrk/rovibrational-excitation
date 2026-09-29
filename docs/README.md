@@ -39,10 +39,10 @@ python -m rovibrational_excitation.cli.simulate \
 | [DOCKER_SETUP.md](DOCKER_SETUP.md) | Dev Container と Jupyter の安全な起動 | release 前に環境全体を再検証予定 |
 | [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) | 通常 simulation parameter と generated/external field | 現行 schema 契約 |
 | [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | ordered Cartesian-product sweep と resume provenance | 現行契約 |
-| [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | RK4/split の説明 | 移行監査中 |
+| [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | 時間格子、RK4/split、状態・backend 対応 | 現行の数値契約 |
 | [UNIT_SYSTEM.md](UNIT_SYSTEM.md) | 公開境界と内部単位 | 移行監査中 |
 
-「移行監査中」の文書には旧キーや旧例が残る可能性があります。値・単位・物理規約を
+「移行監査中」の単位系文書には旧キーや旧例が残る可能性があります。値・単位・物理規約を
 推測して実行可能にせず、現時点では
 [`examples/params_template.py`](../examples/params_template.py) と実装の strict
 validation を優先してください。各文書は個別の契約テストを追加してから現行扱いへ
