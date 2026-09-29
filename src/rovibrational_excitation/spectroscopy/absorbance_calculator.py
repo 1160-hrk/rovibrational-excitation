@@ -14,7 +14,12 @@ from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.dipole import DipoleOperator
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
-from rovibrational_excitation.spectroscopy import broadening, observables, transform
+from rovibrational_excitation.spectroscopy import (
+    broadening,
+    observables,
+    response,
+    transform,
+)
 from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
@@ -277,24 +282,11 @@ class AbsorbanceCalculator:
 
     def _prepare_2d_calculation(self, wavenumber: np.ndarray) -> None:
         """Prepare canonical cm^-1 input for the internal 2D calculation."""
-        omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
-
-        # 周波数配列を2D化
-        omega_2d = omega.reshape(-1, 1)
-
-        # 各遷移に対する分母を事前計算
-        n_freq = len(omega)
-        n_trans = self.ind_nonzero.shape[1]
-
-        self._omega_2d = omega_2d
-        self._one_over_denominator = np.zeros((n_freq, n_trans), dtype=np.complex128)
-
-        for idx, trans in enumerate(self.ind_nonzero.T):
-            i, j = tuple(trans)
-            self._one_over_denominator[:, idx] = 1 / (
-                1j * (omega + self.omega_vj_vpjp_mat[i, j])
-            )
-
+        self._omega_2d, self._one_over_denominator = response.prepare_2d_denominators(
+            wavenumber,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+        )
         self._prepared_2d = True
         self._prepared_wavenumber = np.array(wavenumber, copy=True)
 
@@ -523,92 +515,53 @@ class AbsorbanceCalculator:
         return spectrum
 
     def _calculate_2d(self, rho: np.ndarray, wavenumber: np.ndarray) -> np.ndarray:
-        """2D配列を使った高速計算"""
-        # 事前準備がされていない、または波数が異なる場合は準備
+        """Evaluate the cached two-dimensional response route."""
         if not self._prepared_2d or not np.array_equal(
             wavenumber, self._prepared_wavenumber
         ):
             self._prepare_2d_calculation(wavenumber)
 
-        # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
-
-        # 強度因子を計算
-        intensity_factors = np.zeros(self.ind_nonzero.shape[1], dtype=np.complex128)
-        for idx, trans in enumerate(self.ind_nonzero.T):
-            i, j = tuple(trans)
-            intensity_factors[idx] = (
-                -1j / H_DIRAC * self.mu_det[i, j] * rho_after_int[j, i]
-            )
-
-        # 2D演算で応答を計算
-        resp_lin_per_mole_2d = self._one_over_denominator * intensity_factors
-        resp_lin_per_mole = np.sum(resp_lin_per_mole_2d, axis=1)
-
-        # 吸光度への変換
+        response_sum = response.calculate_2d_response(
+            rho,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self._one_over_denominator,
+        )
         omega = self._omega_2d[:, 0]
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
+        return self._response_to_absorbance(omega, response_sum)
 
     def _calculate_matrix(
         self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
     ) -> np.ndarray:
-        """行列演算による計算"""
-        omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
-
-        # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
-
-        # 各遷移に対する応答を計算
-        responses = []
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            response = (
-                -1j
-                / H_DIRAC
-                * self.mu_det[i, j]
-                * rho_after_int[j, i]
-                / (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
-
-            if apply_doppler:
-                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
-                response = self._apply_doppler_broadening(omega, response, omega_trans)
-
-            responses.append(response)
-
-        # 全応答の和
-        resp_lin_per_mole = np.sum(responses, axis=0)
-
-        # 吸光度への変換
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
+        """Evaluate the exact list-and-sum response route."""
+        omega, response_sum = response.calculate_matrix_response(
+            rho,
+            wavenumber,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+            apply_doppler=apply_doppler,
+            doppler_broadener=self._apply_doppler_broadening,
+        )
+        return self._response_to_absorbance(omega, response_sum)
 
     def _calculate_loop(
         self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
     ) -> np.ndarray:
-        """ループによる計算（メモリ効率重視）"""
-        omega = 2 * np.pi * C * 1e2 * wavenumber
-
-        rho_after_int = self.mu_int @ rho - rho @ self.mu_int
-
-        resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
-
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            response = (
-                -1j
-                / H_DIRAC
-                * self.mu_det[i, j]
-                * rho_after_int[j, i]
-                / (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
-
-            if apply_doppler:
-                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
-                response = self._apply_doppler_broadening(omega, response, omega_trans)
-
-            resp_lin_per_mole += response
-
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
+        """Evaluate the exact in-place accumulation response route."""
+        omega, response_sum = response.calculate_loop_response(
+            rho,
+            wavenumber,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+            apply_doppler=apply_doppler,
+            doppler_broadener=self._apply_doppler_broadening,
+        )
+        return self._response_to_absorbance(omega, response_sum)
 
     def _calculate_chunked(
         self,

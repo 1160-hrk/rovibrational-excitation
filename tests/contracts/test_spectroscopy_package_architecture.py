@@ -14,6 +14,7 @@ from rovibrational_excitation.spectroscopy import (
     conditions,
     observables,
     report,
+    response,
     transform,
 )
 
@@ -32,6 +33,41 @@ def test_experimental_conditions_have_one_package_owner() -> None:
 
 def test_conditions_owner_depends_only_on_core_and_array_support() -> None:
     path = SPECTROSCOPY / "conditions.py"
+    tree = ast.parse(path.read_text(), filename=str(path))
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            imported.add(node.module)
+
+    forbidden = (
+        "rovibrational_excitation.cli",
+        "rovibrational_excitation.dynamics",
+        "rovibrational_excitation.fields",
+        "rovibrational_excitation.io",
+        "rovibrational_excitation.models",
+        "rovibrational_excitation.optimization",
+        "rovibrational_excitation.simulation",
+        "rovibrational_excitation.visualization",
+    )
+    assert not {name for name in imported if name.startswith(forbidden)}, imported
+
+
+def test_dense_response_kernels_have_one_package_owner() -> None:
+    assert inspect.getmodule(response.prepare_2d_denominators) is response
+    assert inspect.getmodule(response.calculate_2d_response) is response
+    assert inspect.getmodule(response.calculate_matrix_response) is response
+    assert inspect.getmodule(response.calculate_loop_response) is response
+
+    monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
+    assert "intensity_factors" not in monolith
+    assert "responses.append" not in monolith
+    assert "resp_lin_per_mole += response" not in monolith
+
+
+def test_response_owner_has_no_upper_layer_dependencies() -> None:
+    path = SPECTROSCOPY / "response.py"
     tree = ast.parse(path.read_text(), filename=str(path))
     imported: set[str] = set()
     for node in ast.walk(tree):

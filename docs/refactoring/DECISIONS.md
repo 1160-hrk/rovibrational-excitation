@@ -4215,6 +4215,35 @@ changes.
 Implementation commit: this checkpoint.
 
 
+### D-120: Exact dense spectroscopy responses have one kernel owner
+
+Status: Implemented on 2026-09-29 as P7.4-b6 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership extraction for the exact 2D, matrix, and loop routes only. No
+commutator, transition order, denominator, sign, dipole index, Doppler call,
+accumulation strategy, 2D cache, frequency conversion, observable conversion,
+selection threshold, chunked route, or numerical result changes.
+
+The exact dense response bodies and 2D denominator preparation move to
+`spectroscopy.response`. The calculator retains method selection, validation,
+cache lifetime, Doppler-condition binding, report generation, and observable
+conversion. The matrix route still builds a list then calls `np.sum`; the loop
+route still accumulates in place; and the 2D route retains its cached
+denominator array and transition iteration. The explicit Doppler callback
+preserves transition-specific broadening without importing experimental
+conditions into the kernel owner.
+
+D-112/D-113 analytic exact-route references remain authoritative. Architecture
+contracts reject duplicate dense bodies and upper-layer imports. The focused
+ownership/reference suite passes 54 tests. The full suite passes 1417 tests with
+10 optional-GPU skips (1427 collected), branch coverage remains 80%, and strict
+mypy covers 78 modules. The chunked exact/approximate path remains separately
+owned pending its own calculation-neutral extraction.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

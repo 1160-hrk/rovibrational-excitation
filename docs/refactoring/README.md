@@ -59,7 +59,7 @@ physics changes are detected by tests.
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 77 named modules |
+| Strict mypy scope | 78 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -373,6 +373,12 @@ P7.4-b5/D-119 moves the unchanged radiation/PFID response loop to
 public methods and conversion boundaries remain unchanged. The focused suite
 passes 52 tests; the full suite passes 1415 with 10 optional-GPU skips (1425
 collected), coverage remains 80%, and strict mypy covers 77 modules.
+
+P7.4-b6/D-120 moves unchanged 2D preparation and exact 2D/matrix/loop
+response kernels to `spectroscopy.response`. Route-specific accumulation, cache
+lifetime, Doppler binding, and all D-112/D-113 values are preserved. The focused
+suite passes 54 tests; the full suite passes 1417 with 10 optional-GPU skips
+(1427 collected), coverage remains 80%, and strict mypy covers 78 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

@@ -1978,6 +1978,14 @@ sign, phase, indices, and denominator. The focused suite passes 52 tests; the
 full suite passes 1415 with 10 optional-GPU skips (1425 collected), coverage
 remains 80%, and strict mypy covers 77 modules.
 
+P7.4-b6/D-120 moves unchanged 2D denominator preparation and the exact 2D,
+matrix, and loop response bodies to `spectroscopy.response`. Calculator
+validation, cache lifetime, method policy, report generation, and observable
+conversion remain in place. D-112/D-113 fix every formula and route-specific
+accumulation. The focused suite passes 54 tests; the full suite passes 1417 with
+10 optional-GPU skips (1427 collected), coverage remains 80%, and strict mypy
+covers 78 modules. Chunked exact/approximate extraction remains separate.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;
