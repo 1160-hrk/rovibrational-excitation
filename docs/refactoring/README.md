@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1466 passed, 10 skipped (1476 collected) |
+| Pytest | 1481 passed, 10 skipped (1491 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -500,7 +500,14 @@ propagation options/results, capability validation, and the actual RK4/split
 implementations. It removes unimplemented FFT/Suzuki/adaptive recommendations,
 records dense conversion for spectral split, and keeps real CUDA explicitly
 unverified. The suite has 1466 passes and 10 optional-GPU skips (1476
-collected). No calculation code changes; the unit guide remains.
+collected). No calculation code changes.
+
+P8.2-f/D-137 rebuilds the unit guide from the converter tables and frozen
+quantity boundaries. It records preserved caller provenance, canonical internal
+views, 2π semantics, direct-field versus intensity acceptance, optimizer units,
+spectroscopy exact labels, and unresolved Class-D quantities without inference.
+The suite has 1481 passes and 10 optional-GPU skips (1491 collected). No
+calculation code changes.
 
 P6.2-c
 implements D-069:

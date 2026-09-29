@@ -4691,6 +4691,46 @@ skips (1476 collected).
 Implementation commit: this checkpoint.
 
 
+### D-137: Unit documentation separates provenance from canonical calculation values
+
+Status: Implemented on 2026-09-29 as P8.2-f.
+
+Scope: public unit-system documentation and documentation contracts only. No
+conversion factor, accepted unit, parameter value, optimizer expression,
+spectroscopy formula, field sample, or numerical result changes.
+
+The prior frequency note correctly described the ordinary/angular split but
+still referred to the deleted `ParameterProcessor` and omitted most active
+physical boundaries. It did not explain which representation is persisted,
+where intensity is accepted, why gain and penalty have inverse dimensions, or
+which optimizer quantities remain scientifically unresolved.
+
+The replacement records the adopted pattern: caller value plus required unit,
+one frozen validation/conversion boundary, a unit-named canonical value, and a
+unit-agnostic kernel. Normal-simulation mappings and saved parameter JSON retain
+the submitted value/unit pair for provenance; frozen schemas provide canonical
+fs, rad/fs, J, C*m, V/m, fs², fs³, gain, and penalty views without overwriting
+that mapping.
+
+Every converter-supported spelling is listed and contract-checked. The guide
+states that ordinary frequency and wavenumber exclude 2π while angular
+frequency includes it, and independently reproduces equivalent THz, PHz, and
+rad/fs inputs. It separates the normal generated-pulse intensity boundary from
+direct-amplitude-only low-level, sampled, and optimizer fields. It also records
+exact spectroscopy labels and keeps GRAPE/legacy penalty-like values plus local
+thresholds as unresolved Class-D quantities rather than inventing units.
+
+Fifteen documentation contracts compare nine supported-unit sets with the
+converter, verify all intensity aliases, canonical scalar projections,
+frequency equivalence, signed-field intensity rejection, provenance wording,
+optimizer directionality, spectroscopy labels, forbidden silent repair, and
+local links. The existing 222 focused unit/input/optimizer/spectroscopy cases
+pass unchanged. The full suite has 1481 passes and 10 optional-GPU skips (1491
+collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

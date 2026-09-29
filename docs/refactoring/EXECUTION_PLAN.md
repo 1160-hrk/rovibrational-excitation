@@ -2154,7 +2154,15 @@ implemented typed time-grid, RK4/split, state-path, output, capability, and
 CUDA contracts. It explicitly rejects claims for real-space FFT, fourth-order
 Suzuki, adaptive propagation, sparse spectral split, and verified CUDA. The
 full suite has 1466 passes and 10 optional-GPU skips (1476 collected). No
-calculation code changes; the unit guide remains next.
+calculation code changes.
+
+P8.2-f/D-137 rebuilds the unit guide around required caller value/unit pairs,
+unchanged provenance, one conversion to named canonical values, exact converter
+spellings, ordinary/angular frequency and wavenumber semantics, context-specific
+field/intensity acceptance, opposite local-gain/standard-Krotov-penalty
+dimensions, and exact spectroscopy labels. Unresolved Class-D optimizer values
+remain unmodified. The full suite has 1481 passes and 10 optional-GPU skips
+(1491 collected). No calculation code changes.
 
 ### Phase 8 acceptance
 

@@ -1,88 +1,237 @@
-# Explicit frequency units
+# 単位系と変換境界
 
-Frequency-bearing runner inputs use a neutral quantity name and a required
-paired `*_units` field. There is no default frequency unit and no warning-based
-fallback. Missing units, unknown units, booleans, arrays, and non-finite values
-raise before model or field allocation.
+この文書は開発版 `0.3.0.dev1` の公開入力、内部 canonical 単位、保存時の
+provenance を説明する。通常シミュレーションで各キーが必要になる条件は
+[PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)、時間格子の意味は
+[TIME_PROPAGATION.md](TIME_PROPAGATION.md) を参照する。
 
-## Supported frequency representations
+## 1. 基本方針
 
-| Representation | Units | Does the value contain `2*pi`? |
+物理量の境界は次の順序を守る。
+
+```text
+caller value + required unit
+  -> frozen validation boundary
+  -> documented canonical unitへ1回だけ変換
+  -> unit文字列を見ない数値kernel
+```
+
+- normal simulation の scalar physical input は value/unit pair を要求する。
+- `phase_rad`、`field_dt_fs` のように名前自体が単位を固定する内部・専用引数は、
+  その名前が unit contract である。
+- 個数、量子数、enum、bool、規格化済み Jones vector などの無次元値に unit は付けない。
+- 未知の unit、unit の欠落、boolean、array を scalar として渡すこと、非有限値は
+  allocation または伝播前にエラーにする。
+- unit を推測せず、未知の表記を値の変更なしで通す fallback も行わない。
+
+## 2. 何を保存するか
+
+normal simulation の入力 mapping と結果の parameter JSON には、caller が指定した
+値と unit label を変更せず保存する。再現性のための provenance はこの組が権威である。
+
+計算側では同じ mapping から frozen schema を作り、必要な canonical 値を1回だけ
+生成する。schema によっては元の `value`/`unit` も保持するが、数値 kernel が読むのは
+`angular_rad_per_fs`、`femtoseconds`、`dipole_c_m` のように単位を名前に含む属性で
+ある。元の mapping を canonical 値で上書きしないため、stale unit label との二重変換を
+防ぐ。
+
+直接構築する `ScalarField` と `CartesianField` は、引数名
+`samples_v_per_m` / `*_component_v_per_m` が canonical unit を固定する。この境界へ
+別単位の配列を渡してはいけない。変換が必要なら、unit を受け取る field/config
+boundary で先に変換する。
+
+## 3. Canonical 単位一覧
+
+| 量 | 入力境界の代表 | 内部 canonical |
 |---|---|---|
-| ordinary frequency | `Hz`, `kHz`, `MHz`, `GHz`, `THz`, `PHz` | no |
-| wavenumber | `cm^-1`, `cm-1`, `wavenumber` | no |
-| angular frequency | `rad/s`, `rad/ps`, `rad/fs` | yes |
+| 時間 | value + time unit | `fs` |
+| 普通周波数・波数・角周波数 | value + frequency unit | `rad/fs` |
+| Hamiltonian energy | energy/frequency unit | `J` または明示的な `rad/fs` view |
+| 双極子 moment | value + dipole unit | `C*m` |
+| 電場 sample / peak amplitude | direct field unit、限定された境界では intensity | `V/m` |
+| GDD | value + GDD unit | `fs^2` |
+| TOD | value + TOD unit | `fs^3` |
+| local-control gain | value + gain unit | `(V/m)^2 fs` |
+| standard-Krotov penalty | value + penalty unit | `1 / ((V/m)^2 fs)` |
+| spectroscopy temperature | value + exact `K` label | `K` |
+| spectroscopy pressure | value + exact `Pa` label | `Pa` |
+| spectroscopy optical length | value + exact `m` label | `m` |
+| spectroscopy coherence time | value + exact `ps` label | `ps` |
+| spectroscopy molecular mass | value + exact `kg` label | kg per molecule |
+| spectroscopy grid/resolution | array/scalar + exact `cm^-1` label | formulasの固定波数境界 |
 
-All accepted representations are normalized exactly once to internal angular
-frequency in `rad/fs` by the immutable `core.units.Frequency` boundary. FFT
-consumers request an explicit ordinary-frequency view in cycles/fs. Numerical
-model and propagation kernels do not inspect user unit strings.
+伝播準備は Hamiltonian を `J`、dipole を `C*m`、field を `V/m`、time を `fs`
+として構造検証した後、既存の dimensional または nondimensional 数値表現へ投影する。
 
-## Model parameters
+## 4. 対応 unit spelling
 
-LinMol requires:
+unit spelling は case-sensitive である。ここにない同義語を推測しない。
+
+### Frequency
+
+| 表現 | 対応 unit | 入力値に $2\pi$ を含むか |
+|---|---|---|
+| ordinary frequency | `Hz`, `kHz`, `MHz`, `GHz`, `THz`, `PHz` | 含まない |
+| wavenumber | `cm^-1`, `cm-1`, `wavenumber` | 含まない |
+| angular frequency | `rad/s`, `rad/ps`, `rad/fs` | 含む |
+
+### Energy
+
+`J`, `eV`, `meV`, `keV`, `Ry`, `Ha`, `kJ/mol`, `kcal/mol` に加え、
+上の frequency/wavenumber 表現のうち `rad/s`, `GHz`, `MHz`, `kHz`, `Hz` を
+除く `rad/fs`, `rad/ps`, `PHz`, `THz`, `cm^-1`, `cm-1`, `wavenumber` を
+Hamiltonian energy boundary が受け付ける。
+
+### Time and dispersion
+
+- time: `fs`, `ps`, `ns`, `μs`, `us`, `ms`, `s`, `atomic`
+- GDD: `fs^2`, `ps^2`, `ns^2`, `μs^2`, `us^2`, `ms^2`, `s^2`
+- TOD: `fs^3`, `ps^3`, `ns^3`, `μs^3`, `us^3`, `ms^3`, `s^3`
+
+GDD/TOD はそれぞれ value と unit を同時に渡す。両方を省略した場合だけ exact zero
+modifier であり、片方だけの指定はエラーになる。
+
+### Dipole
+
+`C*m`, `C·m`, `Cm`, `D`, `Debye`, `ea0`, `e*a0`, `atomic`,
+`rad/fs/(V/m)`, `rad*PHz/(V/m)` を受け付け、`C*m` へ変換する。
+
+### Direct electric-field amplitude
+
+`V/m`, `V/nm`, `V/Å`, `V/A`, `kV/m`, `kV/cm`, `MV/m`, `MV/cm`,
+`GV/m`, `TV/m`, `atomic` を受け付け、`V/m` へ変換する。
+
+### Cycle-averaged intensity
+
+`W/cm^2`, `W/cm2`, `W/m^2`, `W/m2`, `MW/cm^2`, `MW/cm2`,
+`GW/cm^2`, `GW/cm2`, `TW/cm^2`, `TW/cm2` を受け付ける境界では、
+
+$$
+E_{\mathrm{peak}}=\sqrt{2I\mu_0c}
+$$
+
+により peak `V/m` へ変換する。cm² の prefix conversion もこの境界で行う。
+
+## 5. 周波数と $2\pi$
+
+ordinary frequency $\nu$、wavenumber $\tilde\nu$、angular frequency $\omega$ は
+
+$$
+\omega=2\pi\nu=2\pi c\tilde\nu
+$$
+
+で結ばれる。`THz`、`PHz`、`cm^-1` の入力値へ $2\pi$ を入れない。
+`rad/fs` などの angular unit を選んだ場合だけ値自体に $2\pi$ が含まれる。
+
+次の3つは同じ周波数を表す。
 
 ```python
-vibrational_frequency = 2349.1
-vibrational_frequency_units = "cm^-1"
-anharmonic_shift = 12.3
-anharmonic_shift_units = "cm^-1"
-rotational_constant = 0.39021
-rotational_constant_units = "cm^-1"
-vibration_rotation_coupling = 0.0032
-vibration_rotation_coupling_units = "cm^-1"
+Frequency(100.0, "THz")
+Frequency(0.1, "PHz")
+Frequency(2 * np.pi * 0.1, "rad/fs")
 ```
 
-VibLadder requires the first two value/unit pairs. TwoLevel instead requires
-`energy_gap` and `energy_gap_units`; that field accepts the frequency and energy
-units supported by the converter. A Morse potential requires a nonzero
-`anharmonic_shift` after conversion.
+`Frequency` は caller の `value` と `unit` を保持し、数値消費者には
+`angular_rad_per_fs` を渡す。FFT consumer は明示的に `cycles_per_fs` view を使う。
+carrier phase は angular frequency、FFT bin は ordinary frequency を使うため、同じ
+canonical object からそれぞれを得て二重に $2\pi$ を掛けない。
 
-The old runner names `omega_rad_phz`, `delta_omega_rad_phz`, `B_rad_phz`, and
-`alpha_rad_phz` are removed. Supplying an old value or old `_units` key raises a
-migration error. Low-level basis constructors may still use angular-frequency
-argument names; those are direct numerical APIs, not runner configuration.
+TwoLevel の `energy_gap` は energy unit または frequency unit を受け付ける。
+LinMol、VibLadder、SymTop の vibrational/rotational/anharmonic parameter は
+frequency unit を要求する。
 
-## Generated carrier
+## 6. 電場入力ごとの unit 制約
 
-```python
-carrier_frequency = 2349.1
-carrier_frequency_units = "cm^-1"
-```
+| 入力経路 | intensity label | 規則 |
+|---|---|---|
+| normal generated pulse `amplitude/amplitude_units` | 許可 | cycle-averaged intensity または direct peak amplitudeを `V/m` へ変換 |
+| low-level `ElectricField.add_dispersed_Efield` | 不可 | `amplitude_units` は direct amplitude のみ |
+| arbitrary signed `ElectricField.add_arbitrary_Efield` | 不可 | `field_units` は direct amplitude、shape は既存 field と一致 |
+| typed `ScalarField` / `CartesianField` | 不可 | constructor argument はすでに canonical `V/m` |
+| GRAPE / legacy sampled field | 不可 | direct unit、実数、有限、exact grid match |
+| standard Krotov sampled/generated control | 不可 | direct unit、interval count/grid を変換しない |
+| local seed field | 不可 | direct unit、正の amplitude、正の segment count |
 
-The pulse phase receives the canonical angular value. Sinusoidal FFT modulation
-receives its explicitly converted cycles/fs center because FFT bins are ordinary
-frequency. The separate legacy `carrier_freq_sin_mod` coefficient has not been
-renamed: its dimensional meaning is unresolved and must not be inferred.
+符号付き sample から cycle-averaged intensity を一意に復元できないため、array 入力へ
+intensity label を認めない。入力を absolute value 化、clip、resample して修復しない。
 
-## Equivalent inputs
+## 7. Model と operator
 
-These values describe the same ordinary frequency, within printed precision:
+normal model は次を value/unit pair として要求する。
 
-```python
-vibrational_frequency = 100.0
-vibrational_frequency_units = "THz"
+- 全 model: `dipole_scale/dipole_scale_units`
+- TwoLevel: `energy_gap/energy_gap_units`
+- VibLadder: `vibrational_frequency` と `anharmonic_shift` の各 unit
+- LinMol: VibLadder の2組に `rotational_constant` と
+  `vibration_rotation_coupling` の各 unitを追加
+- SymTop: vibrational/anharmonic、parallel/perpendicular の rotational constant
+  と vibration-rotation coupling の全 unit
 
-# or
-vibrational_frequency = 0.1
-vibrational_frequency_units = "PHz"
+Morse potential は canonical anharmonic shift が zero ならエラーになる。Morse level
+count は変換済み vibrational frequency と anharmonic shift から model instance ごとに
+導出し、固定値や global state を使わない。
 
-# or the angular value
-vibrational_frequency = 2 * np.pi * 0.1
-vibrational_frequency_units = "rad/fs"
-```
+`Hamiltonian` object は行列と現在の `J` または `rad/fs` label を保持し、変換には
+権威ある `CONSTANTS.HBAR` を使う。dipole object は SI accessor
+`get_mu_*_SI()` を提供する。伝播 validator は raw attribute や unit-less array へ
+fallback しない。
 
-The first two values do not contain `2*pi`; the last one does.
+## 8. Optimization
 
-## Other quantities
+local control の `gain` は正の field-squared-time であり、`gain_units` が必須である。
 
-The legacy `ParameterProcessor` still converts supported time, electric-field,
-dipole, dispersion, and area parameters where that API is used. It deliberately
-does not pre-convert the new model or carrier frequency fields. This prevents a
-canonical number from being paired with a stale input-unit label and converted
-twice. Unknown units raise rather than leaving a value unchanged.
+- `(V/m)^2 fs`
+- `(MV/m)^2 fs`
+- `(GV/m)^2 fs`
+- `(TV/m)^2 fs`
 
-For a complete current runner configuration, copy
-`examples/params_template.py`. The focused unit and equivalence contracts live
-in `tests/unit/test_unit_conversions.py`, `tests/test_simulation_models.py`, and
-`tests/physics/test_linear_molecule_reference.py`.
+standard Krotov の `lambda_a` は正の inverse-field-squared-time penalty であり、
+`lambda_a_units` が必須である。
+
+- `1 / ((V/m)^2 fs)`
+- `1 / ((MV/m)^2 fs)`
+- `1 / ((GV/m)^2 fs)`
+- `1 / ((TV/m)^2 fs)`
+
+gain が大きいほど local update の電場変更を強める一方、standard-Krotov penalty が
+大きいほど更新を抑える。同じ数値を相互に流用してはいけない。
+
+GRAPE と `legacy_batch_overlap` の `lambda_a`、`learning_rate`、収束 tolerance は、
+離散 objective 固有の normalization を持つ Class-D quantity であり、standard Krotov
+の penalty unit を割り当てない。local の `c_abs_min`、`drive_abs_min`、
+`shape_floor` も物理次元が未確定である。これらを推論で改名・変換しない。
+
+`total_fs`、`field_dt_fs`、`control_dt_fs`、`segment_size_fs`、`times_fs`、
+`field_max_v_per_m` は名前に unit を固定した optimizer 専用境界である。特に local
+optimizer の奇数長 grid、端点、index、slice、RK4 prefix は unit 整理のために変更しない。
+
+## 9. Spectroscopy
+
+`ExperimentalConditions` は以下の値/unit pair を全て要求し、現状は表記変換をせず
+exact label のみ受け付ける。
+
+- `temperature/temperature_units="K"`
+- `pressure/pressure_units="Pa"`
+- `optical_length/optical_length_units="m"`
+- `coherence_time/coherence_time_units="ps"`
+- `molecular_mass/molecular_mass_units="kg"`（1 molecule あたり）
+
+公開 spectrum grid は `wavenumber_units="cm^-1"` が必須である。device function を
+有効にする場合だけ、正の `device_resolution` と
+`device_resolution_units="cm^-1"` を組で要求する。無効時にこの組を渡すことも
+エラーになる。
+
+## 10. エラーと変換の禁止事項
+
+- unit の欠落、unknown spelling、物理量と不整合な unit はエラー。
+- caller mapping の値と unit label は書き換えない。
+- 1つの値を複数 boundary で再変換しない。
+- signed field に intensity を使わない。
+- ordinary frequency と angular frequency を名前だけで取り違えない。
+- 非対応 unit から canonical 値を推測しない。
+- user data を規格化、対称化、clip、resample して unit error を隠さない。
+- backend や algorithm を変更して unit incompatibility を回避しない。
+
+実装がこの文書と食い違う場合は、値・式を推測して合わせず、
+[PHYSICS_CONTRACTS.md](refactoring/PHYSICS_CONTRACTS.md) と
+[DECISIONS.md](refactoring/DECISIONS.md) を確認する。

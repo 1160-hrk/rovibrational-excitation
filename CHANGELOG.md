@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Cartesian-product, result-path, dry-run, and resume-provenance behavior.
 - The time-propagation guide now documents only implemented RK4/split paths,
   exact timing/output semantics, capability failures, and CUDA limitations.
+- The unit guide now fixes caller provenance, canonical conversion, supported
+  spellings, frequency 2π, field/intensity, optimizer, and spectroscopy rules.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no
