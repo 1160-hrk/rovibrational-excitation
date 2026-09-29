@@ -4114,6 +4114,33 @@ runtime output contract, not historical source material.
 Implementation commit: this checkpoint.
 
 
+### D-116: Spectral broadening and device convolution have one dedicated owner
+
+Status: Implemented on 2026-09-29 as P7.4-b2 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership extraction only. No formula, threshold, grid, boundary mode,
+normalization, public method, exception, or numerical result changes.
+
+Uniform-grid validation, complex Gaussian filtering, transition-specific
+Doppler broadening, and Gaussian/sinc/sinc-squared device convolution move to
+`spectroscopy.broadening`. `AbsorbanceCalculator` retains its existing method
+names as thin delegates, including the public `apply_device_function` route.
+The moved implementation preserves the exact `reflect` Gaussian boundary,
+Doppler width, sinc sample grid, discrete kernel normalization, and `same`
+convolution. The new owner depends only on NumPy, SciPy, authoritative core
+constants, and the spectroscopy unit-label validator.
+
+The D-113 direct convolution references remain the scientific authority.
+Architecture contracts reject SciPy filtering or Boltzmann ownership in the
+calculator monolith and reject upper-layer dependencies in the new module. The
+focused ownership/reference suite passes 47 tests. The full suite passes 1410
+tests with 10 optional-GPU skips (1420 collected), branch coverage remains 80%,
+and strict mypy covers 74 modules.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

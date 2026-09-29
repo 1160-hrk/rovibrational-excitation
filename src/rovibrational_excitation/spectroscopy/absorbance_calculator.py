@@ -10,12 +10,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
-from scipy import ndimage
 
 from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.dipole import DipoleOperator
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
+from rovibrational_excitation.spectroscopy import broadening
 from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
@@ -25,7 +25,6 @@ from rovibrational_excitation.spectroscopy.conditions import (
 H_DIRAC = CONSTANTS.HBAR
 C = CONSTANTS.C
 EPS = CONSTANTS.EPSILON0
-KB = CONSTANTS.BOLTZMANN
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,21 +321,7 @@ class AbsorbanceCalculator:
 
     @staticmethod
     def _uniform_grid_spacing(grid: np.ndarray, *, name: str) -> float:
-        values = np.asarray(grid, dtype=float)
-        if values.ndim != 1 or values.size < 2:
-            raise ValueError(f"{name} must contain at least two points")
-        if not np.all(np.isfinite(values)):
-            raise ValueError(f"{name} must contain only finite values")
-        differences = np.diff(values)
-        if np.any(differences == 0.0) or not (
-            np.all(differences > 0.0) or np.all(differences < 0.0)
-        ):
-            raise ValueError(f"{name} must be strictly monotonic")
-        reference = differences[0]
-        tolerance = np.finfo(float).eps * max(1.0, np.max(np.abs(values))) * 16.0
-        if not np.allclose(differences, reference, rtol=1.0e-12, atol=tolerance):
-            raise ValueError(f"{name} must be uniformly spaced")
-        return abs(float(reference))
+        return broadening.uniform_grid_spacing(grid, name=name)
 
     def _estimate_2d_bytes(self, wavenumber: np.ndarray) -> int:
         n_frequency = len(wavenumber)
@@ -719,17 +704,7 @@ class AbsorbanceCalculator:
         response: np.ndarray,
         sigma_pixels: float,
     ) -> np.ndarray:
-        response_real = ndimage.gaussian_filter1d(
-            response.real,
-            sigma_pixels,
-            mode="reflect",
-        )
-        response_imag = ndimage.gaussian_filter1d(
-            response.imag,
-            sigma_pixels,
-            mode="reflect",
-        )
-        return response_real + 1j * response_imag
+        return broadening.filter_complex_gaussian(response, sigma_pixels)
 
     def _apply_doppler_broadening(
         self,
@@ -737,18 +712,12 @@ class AbsorbanceCalculator:
         response: np.ndarray,
         omega0: float,
     ) -> np.ndarray:
-        """Apply transition-specific Doppler broadening on its actual grid."""
-        if omega0 == 0.0:
-            return response
-        spacing = self._uniform_grid_spacing(omega, name="angular-frequency grid")
-        sigma_doppler = abs(omega0) * np.sqrt(
-            KB
-            * self.conditions.temperature_k
-            / (self.conditions.molecular_mass_kg * C**2)
-        )
-        return self._filter_complex_gaussian(
+        return broadening.apply_doppler_broadening(
+            omega,
             response,
-            sigma_doppler / spacing,
+            omega0,
+            temperature_k=self.conditions.temperature_k,
+            molecular_mass_kg=self.conditions.molecular_mass_kg,
         )
 
     def calculate_radiation_spectrum(
@@ -842,66 +811,15 @@ class AbsorbanceCalculator:
         resolution_units: str,
         function_type: Literal["sinc", "sinc2", "gaussian"] = "sinc2",
     ) -> np.ndarray:
-        """
-        装置関数を適用
-
-        Parameters
-        ----------
-        spectrum : np.ndarray
-            スペクトル
-        wavenumber : np.ndarray
-            波数配列 [cm^-1]
-        resolution : float
-            分解能 [cm^-1]
-        wavenumber_units : str
-            必須。現在は ``"cm^-1"`` のみを受理する。
-        resolution_units : str
-            必須。現在は ``"cm^-1"`` のみを受理する。
-        function_type : {'sinc', 'sinc2', 'gaussian'}
-            装置関数のタイプ
-
-        Returns
-        -------
-        np.ndarray
-            装置関数適用後のスペクトル
-        """
-        require_exact_units(
-            wavenumber_units,
-            name="wavenumber_units",
-            expected="cm^-1",
+        """Apply a normalized instrument response on an explicit cm^-1 grid."""
+        return broadening.apply_device_function(
+            spectrum,
+            wavenumber,
+            resolution,
+            wavenumber_units=wavenumber_units,
+            resolution_units=resolution_units,
+            function_type=function_type,
         )
-        require_exact_units(
-            resolution_units,
-            name="resolution_units",
-            expected="cm^-1",
-        )
-        if not np.isfinite(resolution) or resolution <= 0.0:
-            raise ValueError("resolution must be finite and positive")
-        if function_type not in {"sinc", "sinc2", "gaussian"}:
-            raise ValueError(f"unknown device function: {function_type}")
-
-        dw = self._uniform_grid_spacing(wavenumber, name="wavenumber")
-
-        if function_type == "gaussian":
-            # ガウシアン装置関数
-            sigma_pixels = resolution / (2 * np.sqrt(2 * np.log(2))) / dw
-            return ndimage.gaussian_filter1d(spectrum, sigma_pixels, mode="reflect")
-
-        else:
-            # Sinc または Sinc^2 装置関数
-            # FFTベースの畳み込み
-            n = len(wavenumber)
-            x_device = np.arange(-n // 2, n // 2) * dw
-
-            if function_type == "sinc":
-                device_func = np.sinc(2 * x_device / resolution)
-            else:  # sinc2
-                device_func = np.sinc(2 * x_device / resolution) ** 2
-
-            device_func /= np.sum(device_func)  # 正規化
-
-            # 畳み込み
-            return np.convolve(spectrum, device_func, mode="same")
 
 
 # ヘルパー関数

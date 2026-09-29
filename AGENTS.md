@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b1/D-114 spectroscopy conditions owner; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b2/D-116 spectroscopy broadening owner; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -518,6 +518,13 @@ unchanged. The suite has 1408 passes and 10 optional-GPU skips (1418 collected),
 branch coverage remains 80%, spectroscopy remains 94% covered, and strict
 mypy covers 73 modules.
 
+P7.4-b2/D-116 moves the unchanged uniform-grid, complex Gaussian/Doppler, and
+normalized Gaussian/sinc/sinc² device kernels to `spectroscopy.broadening`.
+Calculator method routes remain available; D-113 references and architecture
+guards freeze formulas and ownership. The suite has 1410 passes and 10
+optional-GPU skips (1420 collected), coverage remains 80%, and strict mypy
+covers 74 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -560,7 +567,8 @@ The next work is:
    bounded optimization ownership/acceptance audit. P7.4-a1/D-112 now fixes the
    analytic response and transform conventions; P7.4-a2/D-113 completes the
    remaining independent references. P7.4-b1/D-114 moves the unchanged
-   experimental-condition boundary to its dedicated owner. Continue one
+   experimental-condition boundary to its dedicated owner, and P7.4-b2/D-116
+   moves unchanged broadening/device kernels to their owner. Continue one
    calculation-neutral spectroscopy responsibility at a time. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.

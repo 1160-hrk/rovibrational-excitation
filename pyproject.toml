@@ -143,6 +143,7 @@ files = [
     "src/rovibrational_excitation/visualization/plot_electric_field_vector.py",
     "src/rovibrational_excitation/visualization/plot_population.py",
     "src/rovibrational_excitation/visualization/spectrogram.py",
+    "src/rovibrational_excitation/spectroscopy/broadening.py",
     "src/rovibrational_excitation/spectroscopy/conditions.py",
     "src/rovibrational_excitation/simulation/case.py",
     "src/rovibrational_excitation/simulation/convergence.py",

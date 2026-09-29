@@ -1949,6 +1949,14 @@ tests; the full suite passes 1408 with 10 optional-GPU skips (1418 collected),
 total coverage remains 80%, spectroscopy remains 94%, and strict mypy covers
 73 modules.
 
+P7.4-b2/D-116 moves uniform-grid validation, Gaussian filtering,
+transition-specific Doppler broadening, and normalized Gaussian/sinc/sinc²
+device convolution to `spectroscopy.broadening`. Calculator method names remain
+delegates, and every D-113 formula, boundary mode, sample grid, normalization,
+and error remains unchanged. The focused suite passes 47 tests; the full suite
+passes 1410 with 10 optional-GPU skips (1420 collected), total branch coverage
+remains 80%, and strict mypy covers 74 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;
