@@ -4141,6 +4141,29 @@ and strict mypy covers 74 modules.
 Implementation commit: this checkpoint.
 
 
+### D-117: The spectroscopy calculation report has one dedicated owner
+
+Status: Implemented on 2026-09-29 as P7.4-b3 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: immutable result-type ownership only. No report field, field order, type,
+construction point, public import, formula, branch, or numerical behavior
+changes.
+
+`SpectroscopyCalculationReport` moves byte-for-byte to
+`spectroscopy.report`. The package facade and the compatibility name in
+`absorbance_calculator` resolve that same class object, so existing imports and
+`isinstance` behavior remain intact. An architecture contract rejects a second
+class definition in the calculator monolith, and the new owner is included in
+strict mypy.
+
+The focused spectroscopy ownership/reference suite passes 48 tests. The full
+suite passes 1411 tests with 10 optional-GPU skips (1421 collected), branch
+coverage remains 80%, and strict mypy covers 75 modules. No calculation changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps

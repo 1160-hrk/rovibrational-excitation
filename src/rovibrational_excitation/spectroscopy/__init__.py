@@ -97,10 +97,10 @@ Memory-efficient calculation for large systems:
 
 from .absorbance_calculator import (
     AbsorbanceCalculator,
-    SpectroscopyCalculationReport,
     create_calculator_from_params,
 )
 from .conditions import ExperimentalConditions
+from .report import SpectroscopyCalculationReport
 
 # Define what gets imported with "from spectroscopy import *"
 __all__ = [

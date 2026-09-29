@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b2/D-116 spectroscopy broadening owner; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b3/D-117 spectroscopy report owner; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -525,6 +525,12 @@ guards freeze formulas and ownership. The suite has 1410 passes and 10
 optional-GPU skips (1420 collected), coverage remains 80%, and strict mypy
 covers 74 modules.
 
+P7.4-b3/D-117 moves the byte-identical immutable
+`SpectroscopyCalculationReport` to `spectroscopy.report`. Package and calculator
+imports retain one class identity; fields and construction are unchanged. The
+suite has 1411 passes and 10 optional-GPU skips (1421 collected), coverage
+remains 80%, and strict mypy covers 75 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -568,8 +574,9 @@ The next work is:
    analytic response and transform conventions; P7.4-a2/D-113 completes the
    remaining independent references. P7.4-b1/D-114 moves the unchanged
    experimental-condition boundary to its dedicated owner, and P7.4-b2/D-116
-   moves unchanged broadening/device kernels to their owner. Continue one
-   calculation-neutral spectroscopy responsibility at a time. Complete
+   moves unchanged broadening/device kernels to their owner. P7.4-b3/D-117 moves
+   the immutable report to its owner. Continue one calculation-neutral
+   spectroscopy responsibility at a time. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;

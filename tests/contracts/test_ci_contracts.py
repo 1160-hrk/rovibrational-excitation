@@ -111,6 +111,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/visualization/spectrogram.py",
         "src/rovibrational_excitation/spectroscopy/broadening.py",
         "src/rovibrational_excitation/spectroscopy/conditions.py",
+        "src/rovibrational_excitation/spectroscopy/report.py",
         "src/rovibrational_excitation/simulation/case.py",
         "src/rovibrational_excitation/simulation/convergence.py",
         "src/rovibrational_excitation/simulation/generated.py",

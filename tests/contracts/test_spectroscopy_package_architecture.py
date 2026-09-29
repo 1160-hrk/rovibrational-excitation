@@ -8,9 +8,11 @@ from pathlib import Path
 
 from rovibrational_excitation.spectroscopy import (
     ExperimentalConditions,
+    SpectroscopyCalculationReport,
     absorbance_calculator,
     broadening,
     conditions,
+    report,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +49,18 @@ def test_conditions_owner_depends_only_on_core_and_array_support() -> None:
         "rovibrational_excitation.visualization",
     )
     assert not {name for name in imported if name.startswith(forbidden)}, imported
+
+
+def test_calculation_report_has_one_package_owner() -> None:
+    assert SpectroscopyCalculationReport is report.SpectroscopyCalculationReport
+    assert (
+        absorbance_calculator.SpectroscopyCalculationReport
+        is SpectroscopyCalculationReport
+    )
+    assert inspect.getmodule(SpectroscopyCalculationReport) is report
+
+    monolith = (SPECTROSCOPY / "absorbance_calculator.py").read_text()
+    assert "class SpectroscopyCalculationReport" not in monolith
 
 
 def test_broadening_and_device_kernels_have_one_package_owner() -> None:

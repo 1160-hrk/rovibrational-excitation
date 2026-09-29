@@ -1957,6 +1957,13 @@ and error remains unchanged. The focused suite passes 47 tests; the full suite
 passes 1410 with 10 optional-GPU skips (1420 collected), total branch coverage
 remains 80%, and strict mypy covers 74 modules.
 
+P7.4-b3/D-117 moves the byte-identical immutable
+`SpectroscopyCalculationReport` to `spectroscopy.report`. The facade and
+calculator compatibility name share the same class object; fields, order,
+construction, and public behavior are unchanged. The focused suite passes 48
+tests; the full suite passes 1411 with 10 optional-GPU skips (1421 collected),
+coverage remains 80%, and strict mypy covers 75 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

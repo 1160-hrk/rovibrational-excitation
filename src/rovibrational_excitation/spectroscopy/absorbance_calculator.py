@@ -6,7 +6,6 @@
 @core/の標準オブジェクト（Basis, Hamiltonian, DipoleMatrix）と統合。
 """
 
-from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -20,26 +19,14 @@ from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
 )
+from rovibrational_excitation.spectroscopy.report import (
+    SpectroscopyCalculationReport,
+)
 
 # Short aliases refer to the authoritative constants layer; no local values.
 H_DIRAC = CONSTANTS.HBAR
 C = CONSTANTS.C
 EPS = CONSTANTS.EPSILON0
-
-
-@dataclass(frozen=True, slots=True)
-class SpectroscopyCalculationReport:
-    """Observable record of the numerical spectroscopy path used."""
-
-    requested_method: str
-    executed_method: str
-    estimated_2d_bytes: int
-    memory_budget_bytes: int | None
-    relative_threshold: float | None
-    discarded_commutator_l2_fraction: float
-    phase_matching: str
-    discarded_density_l2_fraction: float
-    device_function_applied: bool
 
 
 class AbsorbanceCalculator:
