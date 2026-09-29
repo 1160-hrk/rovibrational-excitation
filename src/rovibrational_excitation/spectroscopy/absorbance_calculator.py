@@ -14,7 +14,7 @@ from rovibrational_excitation.core.basis import BasisBase
 from rovibrational_excitation.core.dipole import DipoleOperator
 from rovibrational_excitation.core.operators import Hamiltonian
 from rovibrational_excitation.core.units.constants import CONSTANTS
-from rovibrational_excitation.spectroscopy import broadening, observables
+from rovibrational_excitation.spectroscopy import broadening, observables, transform
 from rovibrational_excitation.spectroscopy.conditions import (
     ExperimentalConditions,
     require_exact_units,
@@ -736,16 +736,13 @@ class AbsorbanceCalculator:
         wavenumber_array = np.asarray(wavenumber, dtype=float)
         omega = 2 * np.pi * C * 1e2 * wavenumber_array
 
-        resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
-
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            # 放射の場合は順序が逆
-            resp_lin_per_mole += -(
-                self.mu_det[j, i]
-                * rho_array[i, j]
-                / (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
+        resp_lin_per_mole = transform.radiation_response(
+            rho_array,
+            omega,
+            self.ind_nonzero,
+            self.mu_det,
+            self.omega_vj_vpjp_mat,
+        )
 
         return self._response_to_absorbance(omega, resp_lin_per_mole)
 

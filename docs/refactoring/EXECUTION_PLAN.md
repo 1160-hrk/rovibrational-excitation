@@ -1971,6 +1971,13 @@ fixed by D-113. The focused suite passes 50 tests; the full suite passes 1413
 with 10 optional-GPU skips (1423 collected), coverage remains 80%, and strict
 mypy covers 76 modules.
 
+P7.4-b5/D-119 moves the unchanged post-probe radiation/PFID response loop to
+`spectroscopy.transform`. Validation, frequency conversion, observable
+conversion, and public methods remain in the calculator; D-112 freezes the
+sign, phase, indices, and denominator. The focused suite passes 52 tests; the
+full suite passes 1415 with 10 optional-GPU skips (1425 collected), coverage
+remains 80%, and strict mypy covers 77 modules.
+
 ### Phase 7 acceptance
 
 - runner modules are individually testable;

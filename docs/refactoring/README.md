@@ -59,7 +59,7 @@ physics changes are detected by tests.
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 76 named modules |
+| Strict mypy scope | 77 named modules |
 | Spectroscopy coverage | 94% |
 | `simulation/runner.py` coverage | 69% |
 | RK4 Schrödinger coverage report | 20% |
@@ -367,6 +367,12 @@ P7.4-b4/D-118 moves the unchanged response-to-mOD conversion to
 the square-root, constants, and weak-response behavior. The focused suite passes
 50 tests; the full suite passes 1413 with 10 optional-GPU skips (1423
 collected), coverage remains 80%, and strict mypy covers 76 modules.
+
+P7.4-b5/D-119 moves the unchanged radiation/PFID response loop to
+`spectroscopy.transform`. D-112 fixes its sign, phase, indices, and denominator;
+public methods and conversion boundaries remain unchanged. The focused suite
+passes 52 tests; the full suite passes 1415 with 10 optional-GPU skips (1425
+collected), coverage remains 80%, and strict mypy covers 77 modules.
 
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset early.
 Local release preparation is read-only by default and never commits, tags,

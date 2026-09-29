@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-29
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P7.4-b4/D-118 spectroscopy observable owner; P8.0-b/D-115 archive consolidation
+Verified checkpoints: P7.4-b5/D-119 spectroscopy transform owner; P8.0-b/D-115 archive consolidation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -537,6 +537,12 @@ D-113 references freeze the expression and weak-response behavior. The suite
 has 1413 passes and 10 optional-GPU skips (1423 collected), coverage remains
 80%, and strict mypy covers 76 modules.
 
+P7.4-b5/D-119 moves the unchanged radiation/PFID response loop to
+`spectroscopy.transform`. D-112 remains authoritative for sign, phase, indices,
+and denominator. Public methods and conversions are unchanged. The suite has
+1415 passes and 10 optional-GPU skips (1425 collected), coverage remains 80%,
+and strict mypy covers 77 modules.
+
 P8.0-a/D-105 completes the pre-tag repository-tooling safety subset without
 changing calculation behavior. Local release preparation is explicit and
 read-only by default; it never commits, tags, pushes, or publishes. The release
@@ -582,7 +588,8 @@ The next work is:
    experimental-condition boundary to its dedicated owner, and P7.4-b2/D-116
    moves unchanged broadening/device kernels to their owner. P7.4-b3/D-117 moves
    the immutable report to its owner, and P7.4-b4/D-118 moves absorbance
-   conversion to its owner. Continue one calculation-neutral spectroscopy
+   conversion to its owner, and P7.4-b5/D-119 moves radiation/PFID response to
+   its transform owner. Continue one calculation-neutral spectroscopy
    responsibility at a time. Complete
    source/environment/generated-array provenance remains separate and must not
    be overstated. Do not silently accept unversioned files.

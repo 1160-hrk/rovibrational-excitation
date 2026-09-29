@@ -4189,6 +4189,32 @@ modules. No calculation changes.
 Implementation commit: this checkpoint.
 
 
+### D-119: Radiation and PFID frequency response have one transform owner
+
+Status: Implemented on 2026-09-29 as P7.4-b5 under the user’s standing
+authorization for calculation-neutral refactoring.
+
+Scope: ownership extraction only. No coherence selection, transition order,
+dipole index order, denominator, sign, phase, damping, frequency conversion,
+PFID alias behavior, public method, or numerical result changes.
+
+The existing post-probe radiation response loop moves to
+`spectroscopy.transform.radiation_response`. The calculator retains validation,
+cm^-1-to-rad/s conversion, observable conversion, and both public radiation and
+PFID methods; PFID continues to call the radiation method exactly once. The
+moved kernel retains `mu_det[j,i] * rho[i,j]`, the original complex Bohr
+frequency index, leading minus sign, and accumulation order. D-112’s independent
+single-coherence reference remains the scientific authority.
+
+Architecture contracts reject a second radiation loop and upper-layer imports
+in the transform owner. The focused ownership/reference suite passes 52 tests.
+The full suite passes 1415 tests with 10 optional-GPU skips (1425 collected),
+branch coverage remains 80%, and strict mypy covers 77 modules. No calculation
+changes.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-001: Trajectory endpoint when stride does not divide steps
