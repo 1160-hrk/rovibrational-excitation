@@ -43,7 +43,7 @@ the count difference never promotes generated or archived artifacts.
 | docs/UNIT_SYSTEM.md | D-137 rebuilds the guide around retained caller provenance, one canonical conversion, exact supported spellings, the 2π convention, field/intensity boundaries, optimizer dimensions, and spectroscopy labels. Converter parity and key boundary distinctions are tested. | Keep synchronized with `core.units` and never assign units to unresolved Class-D optimizer quantities by inference. |
 | docs/DOCKER_SETUP.md | D-138 removes the image-level wildcard/tokenless/root Jupyter configuration, installs from `pyproject.toml` extras, and rebuilds the guide from the actual Dockerfile, Dev Container JSON, and launcher. Static, JSON, shell, link, and safety contracts pass. | Run a clean image build and VS Code attach where Docker is available; this environment has no Docker CLI/daemon. |
 | docs/VERSION_MANAGEMENT.md | Rewritten for the final-only, CPU-plus-real-GPU, no-automatic-push release contract. | Recheck once on the final clean release commit before creating a tag. |
-| docs/CODECOV_SETUP.md | Still describes upload behavior that the current workflow does not perform. | Decide whether to restore Codecov upload or remove the badge/documentation claims. |
+| removed docs/CODECOV_SETUP.md | D-139 removes the setup guide because no workflow uploads to Codecov and no public badge remains. | Do not recreate an external-service claim without a required, tested upload job. |
 | docs/CARTESIAN_SPLIT_OPERATOR.md | Records the scientific split contract and explicitly states real-GPU parity is unverified. | Preserve equations; recheck source paths after backend acceptance. |
 
 CHANGELOG.md contains a development checkpoint, not a final 0.3.0 release.
@@ -65,7 +65,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 |---|---|---|
 | .github/workflows/ci.yml | Runs Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, 47% branch coverage, and wheel import. required rejects failed/skipped jobs. | GPU tests may skip; normal CI is not real-GPU evidence. Markdown links/code fences and workflow semantics are not actionlint-gated yet. |
 | .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; builds and clean-installs distributions; publishes PyPI before creating the GitHub Release. | The workflow is intentionally blocked until a [self-hosted, linux, x64, gpu] runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
-| codecov.yml | Configures informational Codecov statuses. | No workflow uploads coverage to Codecov; badges/docs must not imply current Codecov evidence. |
+| removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
 | examples/archives/v0_2/optimization_configs/*.yaml | Parse as YAML but are explicitly unsupported v0.2 archives. | Do not promote without migration and an executable reference run. |
 
@@ -77,8 +77,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    job or substitute skipped CPU tests for its evidence.
 3. D-130 finalizes the root and D-132 rewrites both public READMEs with
    executable examples. Rebuild docs/README.md next from audited current guides.
-4. Migrate remaining public guides and snippets, and add automated local-link,
-   supported-snippet, YAML, and actionlint checks.
+4. Public guide migration and Codecov disposition are complete. Add the
+   repository-wide local-link/YAML checks and run actionlint when available.
 5. On the final clean commit, repeat build/clean install, all active examples,
    release dry-run, real-GPU workflow, and external publication configuration
    checks before the final 0.3.0 tag.

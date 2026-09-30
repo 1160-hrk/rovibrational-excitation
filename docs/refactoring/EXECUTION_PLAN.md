@@ -2086,7 +2086,7 @@ Tasks:
 - rewrite README and Japanese README against the actual API — completed by P8.2-a/D-132;
 - close the Markdown/YAML/workflow findings in
   `DOCUMENTATION_WORKFLOW_AUDIT.md`, including executable public snippets,
-  truthful badges, Codecov wiring, and release gating before any tag;
+  truthful badges, one explicit coverage authority, and release gating before any tag;
 - execute documentation code snippets;
 - update every supported example — completed early under D-044 with three
   typed smoke examples;
@@ -2172,6 +2172,14 @@ Static safety, JSON, shell syntax, link, and repository contracts pass; a clean
 image build remains an explicit external check because Docker is unavailable
 in this environment. The full suite has 1486 passes and 10 optional-GPU skips
 (1496 collected). No calculation behavior changes.
+
+P8.3-b/D-139 removes `codecov.yml` and `docs/CODECOV_SETUP.md` because no
+workflow uploads to that service and no public badge remains. The existing CI
+coverage job remains the sole authority: it enforces 47% branch coverage,
+writes the GitHub summary, and retains report/XML artifacts. Contracts prevent
+unwired Codecov files or public evidence claims from returning. The full suite
+has 1488 passes and 10 optional-GPU skips (1498 collected). No calculation or
+CI execution behavior changes.
 
 ### Phase 8 acceptance
 

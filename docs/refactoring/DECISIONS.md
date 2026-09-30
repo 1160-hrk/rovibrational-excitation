@@ -4770,6 +4770,36 @@ suite has 1486 passes and 10 optional-GPU skips (1496 collected).
 Implementation commit: this checkpoint.
 
 
+### D-139: Repository coverage has one local CI authority
+
+Status: Implemented on 2026-09-30 as P8.3-b.
+
+Scope: unused coverage-service configuration, false setup documentation, and
+repository contracts. No test selection, coverage measurement, threshold,
+workflow execution, package, or calculation behavior changes.
+
+The repository had `codecov.yml` and a setup guide claiming an automatic
+Codecov upload through a deleted `tests.yml` workflow. The active CI has no
+Codecov action and the public READMEs have no Codecov badge. Keeping these files
+made an external status appear configured when it was not.
+
+The unused configuration and guide are deleted. Git history remains the
+recovery path if an external service is intentionally introduced later. The
+existing `coverage` job is the sole current authority: branch measurement uses
+a temporary data file, `coverage report --fail-under=47` is required, the
+summary is written to GitHub Actions, and report/XML files are uploaded as a
+GitHub artifact. There is no network upload and no silently non-blocking
+service status.
+
+A new contract first fails on the stale files, then passes after their removal.
+It rejects Codecov references in the active workflow and public READMEs while
+checking the exact threshold, temporary data file, XML path, and artifact
+upload. Existing CI and README contracts pass unchanged. The full suite has
+1488 passes and 10 optional-GPU skips (1498 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

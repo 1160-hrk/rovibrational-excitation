@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1486 passed, 10 skipped (1496 collected) |
+| Pytest | 1488 passed, 10 skipped (1498 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -516,6 +516,13 @@ JSON, shell syntax, link, and repository contracts pass. Docker is unavailable
 here, so clean image build and VS Code attach remain external release checks.
 The suite has 1486 passes and 10 optional-GPU skips (1496 collected); no
 calculation behavior changed.
+
+P8.3-b/D-139 removes the unused Codecov config and false setup guide. GitHub
+Actions still enforces the same 47% branch threshold and uploads report/XML
+artifacts; no external coverage upload or badge is claimed. Two contracts make
+that single authority and absence of stale service files explicit. The suite
+has 1488 passes and 10 optional-GPU skips (1498 collected). No calculation or
+CI execution behavior changed.
 
 P6.2-c
 implements D-069:

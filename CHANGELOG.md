@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   spellings, frequency 2π, field/intensity, optimizer, and spectroscopy rules.
 - The development image no longer writes tokenless, wildcard-bind Jupyter
   configuration and installs project dependencies from `pyproject.toml`.
+- Removed unwired Codecov configuration and setup claims; branch coverage is
+  enforced locally in CI and retained as report/XML artifacts.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

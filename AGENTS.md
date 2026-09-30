@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.3-a/D-138 safe dev container; P8.2-f/D-137 unit guide
+Verified checkpoints: P8.3-b/D-139 coverage authority; P8.3-a/D-138 safe dev container
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1486 passed, 10 GPU tests skipped (1496 collected)
+1488 passed, 10 GPU tests skipped (1498 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -698,8 +698,9 @@ The next work is:
    not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    D-105 corrects the release workflow and repository tooling before any tag.
-   Root README migration, Codecov disposition, actionlint, actual real-GPU and
-   PyPI evidence, and the final version bump remain open Phase 8 gates.
+   Root README and Codecov disposition are complete. Actionlint, actual real-GPU
+   and PyPI evidence, migration notes, and the final version bump remain open
+   Phase 8 gates.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.
