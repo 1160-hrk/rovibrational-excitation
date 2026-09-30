@@ -6,6 +6,7 @@ import ast
 import inspect
 from pathlib import Path
 
+import rovibrational_excitation.spectroscopy as spectroscopy
 from rovibrational_excitation.spectroscopy import (
     CartesianAnalyzerProjection,
     ComplexResponseSpectrum,
@@ -254,3 +255,12 @@ def test_broadening_owner_has_no_upper_layer_dependencies() -> None:
         "rovibrational_excitation.visualization",
     )
     assert not {name for name in imported if name.startswith(forbidden)}, imported
+
+
+def test_spectroscopy_package_has_no_competing_distribution_metadata() -> None:
+    source = (SPECTROSCOPY / "__init__.py").read_text()
+
+    for name in ("__version__", "__author__", "__email__"):
+        assert name not in spectroscopy.__dict__
+        assert name not in source
+    assert "contact@example.com" not in source

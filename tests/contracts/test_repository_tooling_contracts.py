@@ -15,6 +15,7 @@ RELEASE_SCRIPT = ROOT / "scripts" / "release.py"
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
 INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
+TEST_GUIDE = ROOT / "tests" / "README.md"
 
 
 def _load_release_module():
@@ -136,3 +137,32 @@ def test_example_index_and_template_are_checked_by_ci_smoke() -> None:
     assert "rglob" not in index_source
     assert 'glob("example_*.py")' in index_source
     assert "params_template.py" in smoke_source
+
+
+def test_pyproject_is_the_only_dependency_manifest() -> None:
+    assert not (ROOT / "requirements.txt").exists()
+    assert not (ROOT / "requirements-dev.txt").exists()
+
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    assert "[project]" in pyproject
+    assert "[project.optional-dependencies]" in pyproject
+
+
+def test_test_guide_uses_current_installation_and_ci_commands() -> None:
+    text = TEST_GUIDE.read_text()
+
+    assert 'pip install -e ".[dev,io,plot]"' in text
+    assert "coverage run --data-file=/tmp/rve-coverage" in text
+    assert "pytest -m gpu" in text
+    assert ".github/workflows/ci.yml" in text
+    for stale in (
+        "63%",
+        "requirements.txt",
+        "requirements-dev.txt",
+        "python run_tests.py",
+        "actions/checkout@v2",
+        "python-version: 3.9",
+        "NUMBA_DISABLE_JIT",
+        'pytest -k "not cupy"',
+    ):
+        assert stale not in text

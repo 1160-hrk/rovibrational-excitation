@@ -23,7 +23,6 @@ from .projection import CartesianAnalyzerProjection, CartesianProjection
 from .report import SpectroscopyCalculationReport
 from .result import ComplexResponseSpectrum
 
-# Define what gets imported with "from spectroscopy import *"
 __all__ = [
     "AbsorbanceCalculator",
     "CartesianAnalyzerProjection",
@@ -33,30 +32,3 @@ __all__ = [
     "SpectroscopyCalculationReport",
     "create_calculator_from_params",
 ]
-
-
-# Version information
-__version__ = "1.0.0"
-__author__ = "Rovibrational Excitation Team"
-__email__ = "contact@example.com"
-
-# Module-level documentation
-if __doc__ is None:
-    __doc__ = ""
-
-__doc__ += f"""
-
-Available Components
---------------------
-AbsorbanceCalculator : {AbsorbanceCalculator.__doc__.split(".")[0] if AbsorbanceCalculator.__doc__ else "Main calculator class"}
-ExperimentalConditions : {ExperimentalConditions.__doc__.split(".")[0] if ExperimentalConditions.__doc__ else "Experimental parameters dataclass"}
-
-Optional Components
--------------------
-"""
-
-
-__doc__ += f"""
-
-Module Version: {__version__}
-"""

@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1497 passed, 10 skipped (1507 collected) |
+| Pytest | 1500 passed, 10 skipped (1510 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -537,6 +537,12 @@ overlap from standard Krotov, rejects inferred conversion of ambiguous legacy
 modulation, and requires new schema-v1 runs instead of implicit disk upgrades.
 Five contracts verify the guide and its public links. The suite has 1497 passes
 and 10 optional-GPU skips (1507 collected); no implementation changed.
+
+P8.4-b/D-142 makes `pyproject.toml` the sole dependency manifest, removes false
+spectroscopy subpackage version/contact metadata, and replaces the obsolete
+test guide with current commands, markers, evidence rules, and links. Three
+contracts guard these authorities. The suite has 1500 passes and 10 optional-GPU
+skips (1510 collected); no calculation behavior changed.
 
 P6.2-c
 implements D-069:

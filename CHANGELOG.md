@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repository-wide Markdown links, code fences, and YAML syntax are checked by
   contracts; the required CI quality job runs pinned, checksum-verified
   actionlint.
+- `pyproject.toml` is now the only dependency manifest; stale duplicate
+  requirements files and unrelated spectroscopy version/contact metadata were
+  removed, and the test guide matches the actual CI policy.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

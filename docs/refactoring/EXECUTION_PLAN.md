@@ -2198,6 +2198,14 @@ Five executable contracts protect those claims. The full suite has 1497 passes
 and 10 optional-GPU skips (1507 collected). No implementation or calculation
 behavior changes.
 
+P8.4-b/D-142 removes two unused dependency manifests and false spectroscopy
+subpackage metadata, leaving `pyproject.toml` and installed distribution
+metadata as the single authorities. It rewrites the stale test guide around the
+actual layout, markers, CI commands, coverage path, and GPU evidence policy.
+Three contracts protect the cleanup. The full suite has 1500 passes and 10
+optional-GPU skips (1510 collected). Spectroscopy exports and all calculations
+are unchanged.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

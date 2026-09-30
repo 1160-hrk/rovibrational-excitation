@@ -4874,6 +4874,44 @@ final clean release rehearsal, and the `0.3.0` version transition remain open.
 Implementation commit: this checkpoint.
 
 
+### D-142: Distribution metadata and dependencies have one authority
+
+Status: Implemented on 2026-09-30 as P8.4-b.
+
+Scope: packaging metadata, dependency manifests, spectroscopy package metadata,
+and the test guide. No physical formula, numerical kernel, configuration schema,
+calculation result, or supported package export changes.
+
+`requirements.txt` and `requirements-dev.txt` duplicated and contradicted
+`pyproject.toml`: they included undeclared unrelated utilities, used an unpinned
+Ruff range, and were not consumed by CI, the Docker image, build metadata, or
+current documentation. Both files are removed. Runtime dependencies and the
+`gpu`, `io`, `plot`, and `dev` groups now have one authority in `pyproject.toml`.
+The implemented HDF5 cache and Matplotlib routes retain their `io` and `plot`
+extras.
+
+The spectroscopy package also published an unrelated hard-coded `1.0.0`, a
+team author, and `contact@example.com`, then appended those values dynamically
+to its module docstring. None was in `spectroscopy.__all__` or consumed in the
+repository. Those false subpackage attributes and dynamic prose are removed;
+the distribution root obtains its sole version from installed project metadata.
+The supported spectroscopy facade objects and all calculation imports are
+unchanged.
+
+`tests/README.md` is rebuilt from the current pytest layout and CI. It now uses
+the editable pyproject extras, temporary coverage data, registered markers,
+real-GPU evidence rule, current quality commands, and the accepted hierarchy of
+contract versus independent-physics tests. Stale 63%/Python 3.9/Actions v2,
+removed runner, ad-hoc dependency, and JIT-disabling advice is gone.
+
+Three new contracts first failed on the duplicate manifests, stale guide, and
+false spectroscopy metadata, then pass after cleanup. The full suite has 1500
+passes and 10 optional-GPU skips (1510 collected). Focused tests, touched-file
+Ruff/format, repository content checks, and diff checks pass.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

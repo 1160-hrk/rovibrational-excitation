@@ -1,361 +1,140 @@
-# Rovibrational Excitation テストスイート
+# テストスイート
 
-このディレクトリには、rovibrational-excitation パッケージの包括的なテストスイートが含まれています。
+このディレクトリは rovibrational-excitation の自動検証を所有します。正しさの根拠は
+通常の unit test だけでなく、独立した物理参照、公開契約、workflow 統合、性能基準に
+分かれています。リポジトリ root から実行してください。
 
-## Refactor status
+依存関係と pytest 設定の唯一の authority は [`pyproject.toml`](../pyproject.toml) です。
+追加の依存 manifest や独自の test runner は使いません。
 
-The completed P1.2 collection contains 505 tests: 495 pass and 10 GPU tests
-skip when CUDA is unavailable. Historical metrics and XFAIL descriptions in
-`TEST_CATALOG.md`, `TEST_STATUS_REPORT.md`, and `XFAIL_FIXES_REPORT.md` are
-retained only as migration evidence; they are not current status.
+## 環境
 
-The test tree is being migrated incrementally:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e ".[dev,io,plot]"
+```
 
-~~~text
+CUDA test を実行する専用環境では、対応する CUDA version を確認した上で `gpu` extra を
+追加します。CPU 上で skip された GPU test は実 CUDA の検証根拠ではありません。
+
+## ディレクトリ
+
+```text
 tests/
-├── unit/          # isolated conversion and component behavior
-├── contracts/     # API, validation, time, backend, and capability contracts
-├── physics/       # independently derived references and invariants
-├── integration/   # cross-component workflows
-└── performance/   # non-blocking runtime and memory measurements
-~~~
+├── contracts/     # API、validation、failure policy、architecture、文書/workflow
+├── physics/       # 解析解・独立実装・保存量・数値参照
+├── integration/   # 複数 component を通る workflow
+├── performance/   # correctness を伴う非 blocking benchmark/reference
+├── unit/          # 小さい独立 component と unit conversion
+└── test_*.py      # 移動前から残る収集対象の component/regression test
+```
 
-Modules directly under `tests/` remain collected during the transition. A file
-moves only when its ownership is unambiguous; structural moves do not rewrite
-numerical checks.
+ルート直下の test を機械的に移動しません。ownership が明確になり、import と数値結果を
+固定する test がある場合だけ、別 commit で移動します。
 
-### Markers
+## 標準コマンド
 
-| Marker | Meaning | Selection policy |
+完全な CPU suite:
+
+```bash
+pytest -q
+```
+
+物理参照と公開契約だけを確認する場合:
+
+```bash
+pytest -q tests/physics tests/contracts
+```
+
+Branch coverage は repository 内に `.coverage` を残さず測定します。
+
+```bash
+coverage run --data-file=/tmp/rve-coverage \
+  --source=src/rovibrational_excitation --branch -m pytest -q
+coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
+```
+
+Active source/test/example/tooling の品質 gate:
+
+```bash
+ruff check --no-fix src tests examples benchmarks scripts
+ruff format --check src tests examples benchmarks scripts
+mypy
+python scripts/smoke_examples.py
+python examples/tools/build_index.py --check
+```
+
+CI の完全な job 構成と Python 3.10–3.13 matrix は
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) が authority です。
+
+## marker
+
+| marker | 意味 | 使用法 |
 |---|---|---|
-| `physics` | trusted analytic result, scientific reference, or invariant | included |
-| `gpu` | requires real CuPy/CUDA execution | select on a GPU runner |
-| `performance` | runtime or memory measurement; not a correctness gate | run explicitly or in the full baseline; Phase 1 excludes it from ordinary CI |
-| `slow` | long deterministic correctness test | opt in as needed |
-
-Useful commands:
-
-~~~bash
-pytest
-pytest -m physics
-pytest -m gpu
-pytest -m "not performance and not gpu"
-pytest --collect-only
-~~~
-
-### Uncollected and legacy test-script dispositions
-
-These files are outside normal `testpaths = ["tests"]`, disabled, empty, or
-manual scripts. Their disposition is explicit so no scientific intent is lost.
-
-| Path | Finding | Disposition |
-|---|---|---|
-| `/test_basis_validation.py` | useful abstract-basis and Hamiltonian contracts run in `unit/test_basis_primitives.py`; model checks overlap collected tests | removed in P1.2-A after explicit approval |
-| `/test_new_api.py` | import-time print demo; conversion and override behavior overlap collected tests; contained self-deletion | removed without execution in P1.2-A after explicit approval |
-| `tests/test_splitop_advanced.py.disabled` | old API; silent Hermitian repair contradicts D-019; remaining intents are collected | removed in P1.2-A; CUDA parity remains explicitly unverified |
-| `tests/test_rk4_detailed.py` | empty | removed in P1.2-A |
-| `tests/test_rk4_schrodinger_detailed.py` | empty | removed in P1.2-A |
-| `tests/run_tests.py` | redundant subprocess wrapper around pytest | removed in P1.2-B |
-| `validation/core/test_nondimensional_timestep_twolevel.py` | invalid timestep comparison; valid time and convergence intent is collected in physics tests | removed in P1.2-B |
-| `validation/dipole/test_unit_management.py` | print-based obsolete constructors overlapping collected conversion/dipole tests | removed in P1.2-B |
-| `validation/test_object_oriented_migration.py` | imported nonexistent `ParameterConverter`; conversion checks overlap collected tests; compatibility premise contradicts D-001 | removed in P1.2-A after explicit approval |
-
-The remaining `validation/check_*.py` and debug scripts were removed in
-P1.2-B after their formulas and reference intent were compared with collected
-physics, contract, integration, and performance tests. See
-`docs/refactoring/VALIDATION_INVENTORY.md` for the evidence.
-
-P1.2-A completed on 2026-08-05. `pytest --collect-only -q` collected 459
-tests without warnings or a hidden root suite. The migrated/overlapping focused
-set passed 112 tests with one GPU skip, and the full suite passed 449 tests
-with 10 GPU skips.
-
-P0.2 validation retained all 369 collected tests. The 89 moved tests passed
-from their new paths, the full suite passed 360 tests with 9 GPU skips, and the
-`gpu` and `performance` marker selections each contain exactly 9 tests.
-
-## 現在のテストカバレッジ
-
-**全体カバレッジ: 63%** (1504行中944行がテスト済み)
-
-### モジュール別カバレッジ詳細
-
-#### 🟢 高カバレッジ (80%以上)
-| モジュール | カバレッジ | ステータス |
-|-----------|-----------|-----------|
-| LinMolBasis | 100% | ✅ 完全テスト済み |
-| TwoLevelBasis | 100% | ✅ 完全テスト済み |
-| VibLadderBasis | 100% | ✅ 完全テスト済み |
-| Harmonic Vibration | 100% | ✅ 完全テスト済み |
-| Morse Vibration | 100% | ✅ 完全テスト済み |
-| States | 98% | ✅ ほぼ完全 |
-| VibLadder Dipole | 96% | ✅ 良好 |
-| __init__.py | 87% | ✅ 良好 |
-| TwoLevel Dipole | 86% | ✅ 良好 |
-| Propagator | 83% | ✅ 良好 |
-
-#### 🟡 中程度カバレッジ (50-79%)
-| モジュール | カバレッジ | 主な未テスト領域 |
-|-----------|-----------|-----------------|
-| Hamiltonian | 67% | 非推奨機能 |
-| Simulation Runner | 62% | 高度なバッチ機能 |
-| Cache | 54% | HDF5保存・読み込み、高度な機能 |
-| ElectricField | 53% | 分散補正、複雑変調機能 |
-| LinMol Dipole | 52% | CuPyバックエンド、スパース行列 |
-| LinMol Builder | 50% | GPU機能、エラーハンドリング |
-
-#### 🔴 低カバレッジ (50%未満)
-| モジュール | カバレッジ | 優先度 |
-|-----------|-----------|-------|
-| J Rotation Dipole | 45% | 🟡 中 |
-| Split-Op Schrödinger | 38% | 🔴 高 |
-| RK4 Schrödinger | 34% | 🔴 高 |
-| JM Rotation Dipole | 29% | 🟡 中 |
-| RK4 LVNE | 25% | 🔴 高 |
-
-### テストカバレッジの改善目標
-
-#### フェーズ3A: Simulation Runner (22% → 60%+)
-- 最高優先度 - エンドツーエンドワークフロー
-- シミュレーション設定、実行、結果解析
-
-#### フェーズ3B: Low-Level Propagators (25-38% → 60%+)
-- RK4 LVNE、RK4 Schrödinger、Split-Operator
-- Numba/CuPy バックエンドテスト
-
-#### フェーズ3C: Electric Field Advanced Features (53% → 70%+)
-- 分散補正 (GDD/TOD)
-- 複雑な変調機能
-- 時間依存偏光
-
-#### フェーズ3D: Dipole System Extensions (29-45% → 70%+)
-- 回転双極子の高度な機能
-- 振動双極子の物理的妥当性
-- 選択則とコヒーレンス
+| `physics` | analytic result、独立 reference、物理 invariant | `pytest -m physics` |
+| `gpu` | 実 CuPy/CUDA device が必要 | real-GPU runner で `pytest -m gpu` |
+| `performance` | runtime/memory reference。通常の全 suite にも含まれる | `pytest -m performance` |
+| `slow` | 長い deterministic correctness test | 必要なら `pytest -m "not slow"` で除外 |
 
-### カバレッジ測定方法
+Marker は [`pyproject.toml`](../pyproject.toml) に登録され、unknown marker はエラーです。
+CUDA release evidence は通常 CI とは別の self-hosted GPU job が所有します。
 
-```bash
-# カバレッジ付きテスト実行
-cd tests/
-coverage run -m pytest
-coverage report --show-missing
+## test の役割
 
-# HTML レポート生成
-coverage html
-# htmlcov/index.html をブラウザで開く
+### `contracts/`
 
-# 特定モジュールのカバレッジ
-coverage report --include="*/propagator.py"
-```
+公開 signature、必須 key/unit、unsupported combination の明示 error、依存方向、disk
+schema、documentation/workflow wiring を固定します。契約 test は物理式の独立 oracle の
+代わりではありません。
 
-### 注意事項
+### `physics/`
 
-- **Numba JITコンパイル**: `@njit` 装飾された関数は測定困難
-- **CuPy GPU コード**: GPU実行部分は環境依存でカバレッジ測定制限あり
-- **スパース行列**: scipy.sparse対応部分は条件付きテスト
+本番実装をコピーせず、可能な限り解析式・直接展開・独立実装から期待値を作ります。
+Hamiltonian、dipole、selection rule、RK4/split、optimizer、spectroscopy の式や符号を
+変更する場合は、先にここへ reference を追加します。
 
-## テストファイル一覧
+### `integration/`
 
-### 基底クラステスト
-- `test_basis.py` - LinMolBasis クラスの拡張テスト
-- `test_basis_twolevel.py` - TwoLevelBasis クラスのテスト
-- `test_basis_viblad.py` - VibLadderBasis クラスのテスト
+model construction から伝播・最適化・保存まで、単体境界をまたぐ挙動を確認します。
+小さい deterministic system を使い、failure を再現可能に保ちます。
 
-### コア機能テスト
-- `test_electric_field.py` - ElectricField クラスと関連関数のテスト
-- `test_states.py` - StateVector と DensityMatrix クラスのテスト
-- `test_hamiltonian.py` - ハミルトニアン生成関数のテスト（非推奨機能）
+### `performance/`
 
-### 伝播アルゴリズムテスト
-- `test_propagator.py` - 高レベル伝播関数のテスト
-- `test_rk4_schrodinger.py` - RK4 Schrodinger伝播のテスト
-- `test_rk4_lvne.py` - RK4 Liouville-von Neumann伝播のテスト
-- `test_splitop_schrodinger.py` - Split-Operator伝播のテスト
+性能比較には固定 protocol と committed JSON artifact を使います。短い単発 timing を
+correctness や高速化の根拠にしません。基準は
+[`benchmarks/README.md`](../benchmarks/README.md) を参照してください。
 
-### 統合・パフォーマンステスト
-- `integration/test_integration.py` - 複数モジュール間の統合テスト
-- `test_runner.py` - シミュレーション実行システムのテスト
+## 追加・変更時の規則
 
-### 実行ツール
-- `run_tests.py` - テスト実行用スクリプト
+1. 変更前の挙動と authority を特定する。
+2. 数値または物理ロジックなら、production code と独立した期待値を先に追加する。
+3. 正常系だけでなく、unsupported input が fallback せず失敗することも確認する。
+4. random input を使う場合は seed と tolerance の由来を明記する。
+5. GPU test は `gpu` marker を付け、CPU skip を pass の証拠として扱わない。
+6. temporary output は pytest の `tmp_path` または `/tmp` を使い、repository に保存しない。
+7. focused test の後に完全 suite、Ruff、format、`git diff --check` を実行する。
+8. public contract、phase status、物理判断を変えた場合は同じ commit で文書を更新する。
 
-## テスト実行方法
+式、符号、threshold、normalization、axis、time step の意味が既存の決定記録と test から
+確定できない場合は、推測して test を新仕様に合わせず user に確認します。詳細は
+[physics contracts](../docs/refactoring/PHYSICS_CONTRACTS.md) と
+[decision log](../docs/refactoring/DECISIONS.md) を参照してください。
 
-### 1. 全テスト実行
+## 既知の環境差
 
-```bash
-# Pytestを使用
-cd tests/
-python -m pytest -v
+- CuPy/CUDA がない環境では `gpu` test が skip されます。
+- Numba の初回 JIT compile は timing から分離します。
+- plot test は non-interactive backend を使います。一部の空 series では Matplotlib の
+  legend warning が出ますが、error への変換や broad warning suppression はしません。
+- coverage percentage は code と test の増減で変わるため、古い表をこの文書へ複製しません。
+  現在の測定値と必須 floor は root [`AGENTS.md`](../AGENTS.md) に記録します。
 
-# 実行スクリプトを使用
-python run_tests.py
-```
+## 履歴資料
 
-### 2. 特定のテストファイル実行
-
-```bash
-# 特定ファイル
-python -m pytest test_basis.py -v
-
-# 実行スクリプト使用
-python run_tests.py basis
-```
-
-### 3. 特定のテスト関数実行
-
-```bash
-python -m pytest test_basis.py::test_linmol_initialization_parameters -v
-```
-
-### 4. パフォーマンステスト実行
-
-```bash
-# 通常のテストのみ（高速）
-python -m pytest -v -m "not slow"
-
-# すべて（低速テスト含む）
-python -m pytest -v
-```
-
-## テストカテゴリ
-
-### 基本機能テスト
-- クラスの初期化とメソッド
-- エラーハンドリング
-- 境界条件
-
-### 数値精度テスト
-- ノルム保存
-- エネルギー保存
-- エルミート性
-
-### 物理的妥当性テスト
-- ポピュレーションダイナミクス
-- コヒーレンス
-- 量子力学的性質
-
-### 統合テスト
-- モジュール間連携
-- エンドツーエンドワークフロー
-- バックエンド一貫性
-
-### パフォーマンステスト
-- 大規模システム
-- 長時間伝播
-- メモリ効率
-
-## 依存関係
-
-テスト実行に必要なパッケージ：
-
-```bash
-pip install pytest numpy scipy numba
-```
-
-オプション（CuPyテスト用）：
-```bash
-pip install cupy
-```
-
-## テスト設定
-
-### pytest.ini の設定例
-
-```ini
-[tool:pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-markers =
-    slow: マークされたテストは実行時間が長い
-addopts = -v --tb=short
-```
-
-### カスタムマーカー
-
-- `@pytest.mark.slow` - 実行時間の長いテスト
-- `@pytest.mark.skipif` - 条件付きスキップ
-
-## トラブルシューティング
-
-### よくある問題
-
-1. **ImportError**: パッケージが見つからない
-   ```bash
-   # src ディレクトリを Python パスに追加
-   export PYTHONPATH=$PYTHONPATH:../src
-   ```
-
-2. **Numbaのコンパイルエラー**
-   ```bash
-   # キャッシュクリア
-   export NUMBA_DISABLE_JIT=1
-   ```
-
-3. **CuPy関連エラー**
-   ```bash
-   # CuPyテストをスキップ
-   python -m pytest -k "not cupy"
-   ```
-
-### パフォーマンス問題
-
-- 大規模テストがメモリ不足で失敗する場合は、システムスペックを確認
-- 長時間テストは `-m "not slow"` でスキップ可能
-
-## テスト結果の解釈
-
-### 成功例
-```
-test_basis.py::test_linmol_basic ✓ PASSED
-test_propagator.py::test_schrodinger_propagation ✓ PASSED
-```
-
-### 失敗例
-```
-test_basis.py::test_invalid_state ✗ FAILED
-AssertionError: Expected ValueError not raised
-```
-
-## 継続的インテグレーション
-
-GitHub Actionsでの自動テスト実行設定例：
-
-```yaml
-name: Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest
-    - name: Run tests
-      run: |
-        cd tests
-        python -m pytest -v -m "not slow"
-```
-
-## 貢献ガイドライン
-
-新しいテストを追加する際は：
-
-1. 適切なファイルに配置
-2. わかりやすいテスト名を使用
-3. ドキュメント文字列で説明
-4. 境界条件とエラーケースを含める
-5. 実行時間を考慮（長時間テストは`@pytest.mark.slow`）
-
-## サポート
-
-テストに関する質問や問題は、GitHubのIssueで報告してください。 
+[`TEST_CATALOG.md`](TEST_CATALOG.md)、[`TEST_STATUS_REPORT.md`](TEST_STATUS_REPORT.md)、
+[`XFAIL_FIXES_REPORT.md`](XFAIL_FIXES_REPORT.md) の古い件数や XFAIL 記録は当時の移行資料です。
+現在の test 数、coverage、capability の証拠として使いません。削除済み standalone runner や
+validation script の disposition は
+[`VALIDATION_INVENTORY.md`](../docs/refactoring/VALIDATION_INVENTORY.md) にあります。

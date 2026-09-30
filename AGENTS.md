@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.4-a/D-141 migration contract; P8.3-c/D-140 repository validation
+Verified checkpoints: P8.4-b/D-142 metadata authority; P8.4-a/D-141 migration contract
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1497 passed, 10 GPU tests skipped (1507 collected)
+1500 passed, 10 GPU tests skipped (1510 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -263,6 +263,12 @@ guide. It maps current owners and schemas while refusing inferred legacy
 modulation, Krotov-layout conversion, and unversioned disk upgrades. The suite
 has 1497 passes and 10 optional-GPU skips (1507 collected); no implementation
 or calculation behavior changed.
+
+P8.4-b/D-142 removes duplicate dependency manifests and false spectroscopy
+subpackage metadata, making `pyproject.toml` and installed distribution metadata
+the sole authorities. The test guide now matches current CI, markers, and
+evidence policy. The suite has 1500 passes and 10 optional-GPU skips (1510
+collected); no calculation behavior changed.
 
 ## Current next work
 
