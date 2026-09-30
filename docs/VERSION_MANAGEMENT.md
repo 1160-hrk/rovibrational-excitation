@@ -51,7 +51,8 @@ applyは次を順に行います。
 - CHANGELOGが対象版を説明している。
 - worktreeがcleanで、通常CIのrequired jobが成功している。
 - self-hosted GPU runnerに labels
-  [self-hosted, linux, x64, gpu] が設定されている。
+  [self-hosted, linux, x64, gpu] が設定され、Node 24 Actionsに必要なrunner
+  version 2.327.1以上である。
 - `.github/workflows/cuda-validation.yml` をrelease候補commitに対して手動実行し、
   schema-v1の `status: pass` artifactをレビューしている。
 - 通常CIの `container-smoke` が同じcommitで成功し、VS Code Dev Containersの
@@ -84,8 +85,9 @@ git push origin v0.3.0
 8. PyPI公開。
 9. PyPI成功後、CUDA証拠JSONを添付したGitHub Release作成。
 
-GPU jobはself-hosted GPU runner専用です。runnerがない場合にskipやCPU fallback
-はせず、releaseは待機または失敗します。通常CPU CIでのGPU skipはリリース
+GPU jobはself-hosted GPU runner専用です。runnerがない、またはversionが2.327.1
+未満の場合にskipやCPU fallbackはせず、releaseは待機または失敗します。通常CPU
+CIでのGPU skipはリリース
 証拠にはなりません。タグ前の同じ検証はActions画面または次で明示実行します。
 
 ~~~bash

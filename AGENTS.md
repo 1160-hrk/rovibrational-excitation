@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-a/D-147 executable container gate; P5.5-c/D-146 real-CUDA evidence harness
+Verified checkpoints: P8.5-b/D-148 immutable workflow actions; P8.5-a/D-147 executable container gate
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -185,14 +185,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.5-a:
+Current local CPU baseline after P8.5-b:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1523 passed, 16 GPU tests skipped (1539 collected)
+1524 passed, 16 GPU tests skipped (1540 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -305,6 +305,13 @@ release CI. A minimal build context, non-root unmounted-image import, and
 token-authenticated Jupyter API with a read-only checkout are contract-tested.
 The suite has 1523 passes and 16 optional-GPU skips (1539 collected). Docker is
 unavailable locally, so hosted execution and manual VS Code attach remain.
+
+
+P8.5-b/D-148 pins every external Action across normal, CUDA, and release
+workflows to one reviewed 40-character release commit. A repository contract
+rejects mutable refs and unknown Actions. Current Node 24 releases require the
+self-hosted GPU runner to be version 2.327.1 or newer. The suite has 1524 passes
+and 16 optional-GPU skips (1540 collected); hosted execution remains external.
 
 ## Current next work
 
@@ -754,7 +761,8 @@ The next work is:
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
-   and checksum-verified actionlint are complete. Actual real-GPU evidence,
+   checksum-verified actionlint, and immutable external Action refs are complete.
+   Actual real-GPU evidence,
    hosted container-smoke success, manual VS Code attach/Ports verification,
    PyPI readiness, and the final version bump remain open Phase 8 gates. The
    explicit breaking-change migration note is complete under D-141.

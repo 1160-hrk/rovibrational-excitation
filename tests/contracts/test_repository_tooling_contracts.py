@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -11,12 +12,31 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 RELEASE_SCRIPT = ROOT / "scripts" / "release.py"
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 CUDA_WORKFLOW = ROOT / ".github" / "workflows" / "cuda-validation.yml"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
 INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
 TEST_GUIDE = ROOT / "tests" / "README.md"
+CHECKOUT_ACTION = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+SETUP_PYTHON_ACTION = "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
+UPLOAD_ARTIFACT_ACTION = (
+    "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+)
+DOWNLOAD_ARTIFACT_ACTION = (
+    "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
+)
+PYPI_PUBLISH_ACTION = (
+    "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
+)
+PINNED_ACTIONS = {
+    CHECKOUT_ACTION,
+    SETUP_PYTHON_ACTION,
+    UPLOAD_ARTIFACT_ACTION,
+    DOWNLOAD_ARTIFACT_ACTION,
+    PYPI_PUBLISH_ACTION,
+}
 
 
 def _load_release_module():
@@ -37,6 +57,22 @@ def _cuda_workflow() -> dict:
 
 def _commands(job: dict) -> str:
     return "\n".join(step.get("run", "") for step in job["steps"])
+
+
+def test_every_external_workflow_action_is_an_exact_reviewed_commit() -> None:
+    used: set[str] = set()
+    for path in (CI_WORKFLOW, CUDA_WORKFLOW, RELEASE_WORKFLOW):
+        workflow = yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+        used.update(
+            step["uses"]
+            for job in workflow["jobs"].values()
+            for step in job["steps"]
+            if "uses" in step
+        )
+
+    assert used == PINNED_ACTIONS
+    for action in used:
+        assert re.fullmatch(r"[^@]+@[0-9a-f]{40}", action)
 
 
 def test_release_version_transition_accepts_dev_to_matching_final() -> None:
@@ -103,7 +139,7 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     gpu_artifacts = [
         step
         for step in jobs["gpu-validation"]["steps"]
-        if step.get("uses") == "actions/upload-artifact@v4"
+        if step.get("uses") == UPLOAD_ARTIFACT_ACTION
     ]
     assert len(gpu_artifacts) == 1
     assert gpu_artifacts[0]["if"] == "always()"
@@ -126,7 +162,7 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     ]
     release_steps = jobs["create-release"]["steps"]
     assert any(
-        step.get("uses") == "actions/download-artifact@v4"
+        step.get("uses") == DOWNLOAD_ARTIFACT_ACTION
         and step.get("with", {}).get("name") == "real-cuda-evidence"
         for step in release_steps
     )
@@ -146,9 +182,7 @@ def test_manual_cuda_workflow_records_pre_tag_evidence() -> None:
     assert "benchmarks/run_cuda_evidence.py" in commands
 
     artifacts = [
-        step
-        for step in job["steps"]
-        if step.get("uses") == "actions/upload-artifact@v4"
+        step for step in job["steps"] if step.get("uses") == UPLOAD_ARTIFACT_ACTION
     ]
     assert len(artifacts) == 1
     assert artifacts[0]["if"] == "always()"

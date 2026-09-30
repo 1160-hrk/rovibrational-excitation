@@ -37,7 +37,10 @@ def test_coverage_has_one_local_ci_authority_and_no_unwired_codecov_files() -> N
         for step in coverage["steps"]
         if step.get("name") == "Upload coverage report"
     )
-    assert artifact["uses"] == "actions/upload-artifact@v4"
+    assert (
+        artifact["uses"]
+        == "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+    )
     assert "/tmp/coverage-report.txt" in artifact["with"]["path"]
     assert "/tmp/coverage.xml" in artifact["with"]["path"]
 

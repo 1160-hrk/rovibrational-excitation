@@ -5080,6 +5080,37 @@ collected.
 Implementation commit: this checkpoint.
 
 
+### D-148: External workflow actions use reviewed immutable release commits
+
+Status: Implemented on 2026-09-30 as P8.5-b.
+
+Scope: The normal CI, manual CUDA, and final-tag workflows. No package source,
+configuration schema, physical formula, numerical path, or simulation result
+changes.
+
+Every external `uses:` entry is pinned to one reviewed 40-character commit:
+`actions/checkout` v7.0.1, `actions/setup-python` v7.0.0,
+`actions/upload-artifact` v7.0.1, `actions/download-artifact` v8.0.1, and
+`pypa/gh-action-pypi-publish` v1.14.2. Human-readable release comments remain
+beside the immutable identifiers. The PyPI release is an annotated tag, so the
+workflow uses its peeled commit rather than the tag-object identifier.
+
+One repository contract parses all three workflows, collects every external
+action, requires an exact approved set, and rejects any ref that is not a
+lowercase 40-character hexadecimal commit. This prevents a later mutable major,
+branch, or release-channel tag from silently replacing reviewed workflow code.
+The selected GitHub Actions use the current Node 24 generation. The self-hosted
+GPU runner must therefore be version 2.327.1 or newer; this is an explicit
+release-infrastructure prerequisite rather than an automatic fallback.
+
+Focused contracts and checksum-verified actionlint pass locally. Actual hosted
+and self-hosted executions remain external evidence and must not be inferred
+from syntax or commit verification alone. The complete local suite has 1524
+passes and 16 optional-GPU skips out of 1540 collected.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

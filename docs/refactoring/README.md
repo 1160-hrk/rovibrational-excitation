@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1523 passed, 16 skipped (1539 collected) |
+| Pytest | 1524 passed, 16 skipped (1540 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -576,6 +576,12 @@ package behavior. Its minimal context builds the image, verifies non-root
 unmounted-image import, and exercises token-authenticated Jupyter through a
 read-only checkout. The suite has 1523 passes and 16 optional-GPU skips (1539
 collected). Docker execution and manual VS Code attach remain external.
+
+P8.5-b/D-148 pins every external Action in normal CI, manual CUDA validation,
+and final-tag publication to an approved 40-character release commit. The
+contract rejects mutable tags and unreviewed Actions. The suite has 1524 passes
+and 16 optional-GPU skips (1540 collected). Current hosted execution and the
+minimum self-hosted runner remain external prerequisites.
 
 P6.2-c
 implements D-069:

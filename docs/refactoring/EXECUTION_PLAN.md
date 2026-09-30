@@ -2253,6 +2253,14 @@ workflow, and actionlint checks pass, but Docker is unavailable here. Phase 8
 still requires a successful hosted-runner result plus the manual VS Code
 attach/Ports check; no calculation behavior changes.
 
+
+P8.5-b/D-148 replaces every mutable external Action ref in normal CI, manual
+CUDA validation, and final-tag publication with a reviewed exact release
+commit. A single contract requires the complete five-action allowlist and a
+40-character commit for every `uses:` entry. Current Node 24 action releases
+require self-hosted runner 2.327.1 or newer; real hosted/self-hosted execution
+remains external evidence. No calculation behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

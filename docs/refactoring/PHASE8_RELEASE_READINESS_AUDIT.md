@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-09-30
-Local code checkpoint: P8.5-a/D-147 candidate
+Local code checkpoint: P8.5-b/D-148 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,15 +14,15 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-147 candidate contains only the reviewed P8.5-a unit | Pass |
-| Complete CPU suite | 1523 passed, 16 optional-GPU skipped; 1539 collected | Pass |
+| Clean source checkpoint | D-148 candidate contains only the reviewed P8.5-b unit | Pass |
+| Complete CPU suite | 1524 passed, 16 optional-GPU skipped; 1540 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 315 files formatted | Pass |
 | Strict mypy scope | 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
-| Workflow semantics | checksum-verified actionlint v1.7.12 on all three workflows | Pass |
+| Workflow semantics | checksum-verified actionlint v1.7.12; every external Action is an approved exact commit | Pass |
 | Container gate wiring | minimal build context, shell syntax, required normal/release jobs | Pass locally; Docker execution external |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
@@ -81,7 +81,9 @@ inferred from static validation.
 ### 3. Publication infrastructure
 
 The protected `pypi` environment, `PYPI_API_TOKEN`, availability of the target
-version on PyPI, and online self-hosted GPU runner must be confirmed in GitHub.
+version on PyPI, and online self-hosted GPU runner at version 2.327.1 or newer
+must be confirmed in GitHub. D-148 fixes every external Action to a reviewed
+immutable commit but does not prove execution on that infrastructure.
 No local command in this audit publishes, tags, pushes, or creates a release.
 
 ### 4. Final version transition
