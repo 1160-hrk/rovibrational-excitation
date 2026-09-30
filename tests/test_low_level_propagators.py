@@ -393,7 +393,8 @@ class TestSplitOperatorDetailed:
             backend="cupy",
         )
 
-        np.testing.assert_allclose(traj_numpy, traj_cupy, atol=1e-12)
+        assert isinstance(traj_cupy, cp.ndarray)
+        np.testing.assert_allclose(traj_numpy, cp.asnumpy(traj_cupy), atol=1e-12)
 
 
 # =============================================================================

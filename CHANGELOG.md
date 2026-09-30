@@ -45,9 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A Phase 8 readiness audit records passing local CPU, coverage, quality,
   documentation, build/Twine, isolated-wheel, CLI, and payload checks while
   keeping real CUDA, container, publication, and final-version gates explicit.
-- CuPy RK4 now uses the CPU-consistent `H0 - mu E` four-stage graph, honors
-  trajectory/stride/renormalization, and returns device-native arrays; real-GPU
-  parity and performance evidence remain required.
+- CuPy RK4 now uses the CPU-consistent `H0 - mu E` four-stage graph, and
+  CuPy split preserves its static Cartesian, rotating Cartesian, and
+  helicity-projected formulae in a separate device-native owner. Both honor
+  trajectory/stride/renormalization and require real-GPU evidence.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

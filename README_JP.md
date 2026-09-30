@@ -19,10 +19,10 @@
 物理参照、branch coverage、対応例、型検査、wheel の clean install を実行します。
 詳細は [CI workflow](.github/workflows/ci.yml) を参照してください。
 
-実 CUDA での実行は未検証です。低レベル RK4 は CPU と同じ計算グラフを使い、
-device-native な CuPy 配列を返す実装になりましたが、実 GPU での parity と性能の
-検証が必須です。split-operator の CuPy 経路には device-to-host round trip が
-残っています。CuPy を要求して NumPy へ暗黙 fallback することはありません。
+実 CUDA での実行は未検証です。低レベル RK4 と split-operator は配列を
+device 上に保持し、backend-native な CuPy 配列を返します。ただしCPU上の計算
+グラフテストは CUDA の証拠ではなく、実GPUでの parity、norm、shape、転送、性能
+検証が必須です。CuPy を要求して NumPy へ暗黙 fallback することはありません。
 
 ## 対応する物理モデル
 
@@ -205,8 +205,8 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-現在の local checkpoint は CPU 1500 tests pass、optional GPU 10 tests skip、
-実測 branch coverage 80% です。skip された GPU test は CUDA の検証根拠ではありません。
+現在の local checkpoint は CPU 1514 tests pass、optional GPU 16 tests skip、
+実測 branch coverage 81% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント
 

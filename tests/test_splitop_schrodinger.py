@@ -69,42 +69,28 @@ def test_splitop_schrodinger_cupy():
     traj = splitop_schrodinger(
         H0, mu_x, mu_y, field_x, field_y, psi0, dt, return_traj=True, backend="cupy"
     )
+    assert isinstance(traj, cp.ndarray)
     assert len(traj.shape) == 2
-    for i in range(traj.shape[0]):
-        norm = np.linalg.norm(traj[i])
-        np.testing.assert_allclose(norm, 1.0, atol=1e-12)
+    norms = cp.asnumpy(cp.linalg.norm(traj, axis=1))
+    np.testing.assert_allclose(norms, np.ones(traj.shape[0]), atol=1e-12)
 
 
-def test_splitop_schrodinger_backend_error():
+def test_splitop_schrodinger_backend_error(monkeypatch):
     H0, mu_x, mu_y, field_x, field_y, psi0, dt = make_simple_case()
-    # CuPy未インストール時にcupy指定でエラー
-    import importlib
+    from rovibrational_excitation.dynamics.algorithms.split_operator import (
+        schrodinger_cupy as cupy_module,
+    )
 
-    sys_modules_backup = sys.modules.copy()
-    if "cupy" in sys.modules:
-        del sys.modules["cupy"]
-    importlib.reload(
-        __import__(
-            "rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger",
-            fromlist=["splitop_schrodinger"],
+    monkeypatch.setattr(cupy_module, "cp", None)
+    with pytest.raises(RuntimeError, match="CuPy is not installed"):
+        splitop_schrodinger(
+            H0,
+            mu_x,
+            mu_y,
+            field_x,
+            field_y,
+            psi0,
+            dt,
+            return_traj=True,
+            backend="cupy",
         )
-    )
-    from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
-        splitop_schrodinger as splitop_reload,
-    )
-
-    try:
-        with pytest.raises(RuntimeError):
-            splitop_reload(
-                H0,
-                mu_x,
-                mu_y,
-                field_x,
-                field_y,
-                psi0,
-                dt,
-                return_traj=True,
-                backend="cupy",
-            )
-    finally:
-        sys.modules = sys_modules_backup

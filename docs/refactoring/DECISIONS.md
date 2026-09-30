@@ -4979,6 +4979,38 @@ remain blocked on split-operator device residency and actual CUDA evidence.
 Implementation commit: this checkpoint.
 
 
+### D-145: Every CuPy split mode keeps arrays on device
+
+Status: Implemented on 2026-09-30 as P5.5-b under D-071.
+
+Scope: CuPy split-operator ownership and backend transfers. NumPy calculations,
+physical formulae, tolerance factor, polarization convention, field indices,
+stride, and renormalization rules are unchanged.
+
+The former mixed module converted CuPy operators and fields to NumPy during
+setup, copied the prepared eigensystem back to the device, and converted every
+trajectory/final result to NumPy before the typed result boundary copied it to
+the device again. D-145 moves static Cartesian, M-rotated Cartesian, and
+helicity-projected CuPy setup and propagation to
+`split_operator/schrodinger_cupy.py`. Operators, fields, eigensystems, states,
+and outputs remain CuPy arrays, and neither the wrapper nor device owner calls
+`.get()` or `cp.asnumpy`.
+
+The existing scalar synchronization points are retained where Python must make
+the exact zero-amplitude branch or preserve validation and renormalization
+error behavior. Removing those branches by unconditional matrix operations
+would change zero-field roundoff and is not part of this structural unit.
+
+A NumPy-backed CuPy double compares all three modes against the established
+NumPy implementations. Three real-GPU cases require CuPy identity, complex128
+dtype, shape, norm, and numerical parity. The complete local suite has 1514
+passes and 16 optional-GPU skips out of 1530 collected; strict mypy covers 84
+modules. These skips are not CUDA evidence. Phase 5 remains open until the real
+GPU workflow records parity, transfers, timings, and hardware/software identity.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

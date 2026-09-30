@@ -523,8 +523,8 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
         E_scalar: np.ndarray | None,
         magnetic_quantum_numbers: np.ndarray | None,
         split_interaction: Literal["cartesian", "helicity_projected"],
-    ) -> np.ndarray:
-        """Run split-operator propagation algorithm."""
+    ) -> Any:
+        """Run split propagation and preserve its selected backend."""
         from .algorithms.split_operator.schrodinger import splitop_schrodinger
 
         backend_typed = self.backend

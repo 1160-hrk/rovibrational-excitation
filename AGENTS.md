@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-a/D-144 device-native CuPy RK4; P8.4-c/D-143 local release rehearsal
+Verified checkpoints: P5.5-b/D-145 device-native CuPy split; P5.5-a/D-144 device-native CuPy RK4
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -185,14 +185,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.1-a:
+Current local CPU baseline after P5.5-b:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1500 passed, 10 GPU tests skipped (1510 collected)
+1514 passed, 16 GPU tests skipped (1530 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -243,11 +243,11 @@ Measured at `613ce93`:
 - Current active source, tests, examples, benchmarks, and scripts: 0 format
   failures and 0 Ruff findings; historical `examples/archives/` is excluded by
   D-044.
-- Current branch coverage: 80%; the initial mandatory CI floor is 47%.
+- Current branch coverage: 81%; the initial mandatory CI floor is 47%.
 - Optimization modules: 72-100% measured coverage.
 - Spectroscopy monolith: 94% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
-- Public READMEs report the measured 80% checkpoint separately from the mandatory 47% CI floor.
+- Public READMEs report the measured 81% checkpoint separately from the mandatory 47% CI floor.
 
 Targets are defined phase-by-phase in
 `docs/refactoring/EXECUTION_PLAN.md`. Coverage must never decrease from the
@@ -285,6 +285,13 @@ contracts pass; three real-GPU cases are collected but skipped here. The suite
 has 1506 passes and 13 optional-GPU skips (1519 collected). Split device
 residency and all actual CUDA evidence remain open.
 
+P5.5-b/D-145 moves static Cartesian, rotating Cartesian, and
+helicity-projected split to a separate device-native CuPy owner. No formula,
+tolerance, field index, phase, stride, or renormalization changes. CPU-backed
+graph comparisons pass; the suite has 1514 passes and 16 optional-GPU skips
+(1530 collected), and strict mypy covers 84 modules. Source residency is
+complete; real-CUDA parity, transfer, timing, and hardware evidence remain.
+
 ## Current next work
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
@@ -300,9 +307,9 @@ separates validated Liouville preparation from the unchanged dense NumPy/Numba
 kernel. P5.1-c reuses only its exactly shared right/next-left endpoint
 Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
 P5.4-a verifies every CPU Phase 5 acceptance row. P5.5-a/D-144 corrects CuPy
-RK4 to the CPU graph and makes its arrays device-native. Phase 5 remains open
-because split still round-trips through host memory and no real CUDA evidence
-has been recorded.
+RK4 to the CPU graph, and P5.5-b/D-145 makes all split modes device-native.
+Phase 5 remains open because no real CUDA parity, transfer, or performance
+evidence has been recorded.
 P6.1-a characterizes the complete TwoLevel projection before its ownership
 move. P6.1-b resolves O-013 under D-064: `CONSTANTS.HBAR` is the sole derived
 authority and all conversion paths share it. P6.1-c implements D-065: basis,
@@ -742,9 +749,9 @@ The next work is:
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and unrelated persistence behavior.
-3. Keep Phase 5 open until split no longer performs its
-   `device -> host -> device` round trip and a real CUDA job verifies both RK4
-   and split. Do not treat skipped tests as evidence.
+3. Keep Phase 5 open until a real CUDA job verifies RK4 and all three split
+   modes, including backend identity, parity, transfers, and timings. Do not
+   treat source inspection, CPU doubles, or skipped tests as CUDA evidence.
 4. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.

@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-09-30
-Local code checkpoint: `c57f11f`
+Local code checkpoint: P5.5-b/D-145 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,12 +14,12 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | `git status --short` after D-142 | Pass |
-| Complete CPU suite | 1500 passed, 10 optional-GPU skipped; 1510 collected | Pass |
-| Branch coverage | `coverage ... --branch`; total 80%, required floor 47% | Pass |
+| Clean source checkpoint | D-145 candidate contains only the reviewed P5.5-b unit | Pass |
+| Complete CPU suite | 1514 passed, 16 optional-GPU skipped; 1530 collected | Pass |
+| Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
-| Active-scope format | 309 files formatted | Pass |
-| Strict mypy scope | 82 named modules | Pass |
+| Active-scope format | 313 files formatted | Pass |
+| Strict mypy scope | 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 on both workflows | Pass |
@@ -28,7 +28,7 @@ reported as complete v0.3 release acceptance.
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
 | Isolated wheel import | temporary venv outside checkout imports the wheel from site-packages and reports `0.3.0.dev1` | Pass |
 | Console entry points | installed `rve-simulate --help` and `rve-optimize --help` | Pass |
-| Wheel payload | 153 entries; no tests, archived examples, or removed dependency manifests | Pass |
+| Wheel payload | 155 entries, including both CuPy owners; no tests, archived examples, or removed dependency manifests | Pass |
 
 The isolated wheel check used `--no-deps` with system site packages so it proves
 wheel installation, import origin, metadata version, and entry-point creation.
@@ -43,23 +43,21 @@ checkout and publishes only artifacts built in that run.
 
 ### 1. Device-native CUDA implementation and real-GPU evidence
 
-Phase 5 is still open. D-144 gives RK4 a CPU-consistent, device-native
-CuPy implementation and source contracts forbid `.get()`/`cp.asnumpy` in that
-owner. The split-operator setup and outputs still use `cp.asnumpy`, so its typed
-result can still incur a second host-to-device copy.
+Phase 5 is still open. D-144 and D-145 give RK4 and all three split modes
+separate device-native CuPy owners. Source contracts forbid `.get()` and
+`cp.asnumpy` before the explicit host boundary. CPU-backed doubles verify the
+calculation graphs but cannot verify CUDA execution or performance.
 
-Thirteen GPU tests are collected but skipped locally. The release workflow
-requires a real `[self-hosted, linux, x64, gpu]` runner. Before release:
+Sixteen GPU tests are collected but skipped locally. The release workflow
+requires a real `[self-hosted, linux, x64, gpu]` runner and already executes the
+trusted TwoLevel case plus every `gpu`-marked test. Before release:
 
-1. separate/repair the split CuPy path without changing its formulas, precision,
-   time indices, interaction modes, or renormalization;
-2. require split low-level and typed outputs to remain CuPy arrays;
-3. forbid `.get()`/`cp.asnumpy` before explicit `PropagationResult.to_numpy()`
-   or persistence/analysis boundaries;
-4. exercise RK4 final/trajectory plus static Cartesian, rotating Cartesian, and
+1. exercise RK4 final/trajectory plus static Cartesian, rotating Cartesian, and
    helicity-projected split paths on a real GPU;
-5. record NumPy/CuPy parity, norm, shape, transfer count, and timing evidence;
-6. make those checks mandatory in the real-GPU release job.
+2. record NumPy/CuPy parity, norm, shape, dtype, backend identity, actual transfer
+   behavior, and timing evidence;
+3. archive hardware/software identity and benchmark results;
+4. rerun all CPU, build, wheel, documentation, and release gates at that commit.
 
 This work must not be accepted from source inspection or CPU skips alone.
 
@@ -95,6 +93,6 @@ runs local gates, and never commits/tags/pushes/publishes. After it passes:
 
 Local CPU, documentation, packaging, and dry-run preparation are complete at
 this checkpoint. The project is close to a version transition, but it is not a
-release candidate while split-operator still fails the CUDA device-native
-contract and both CUDA algorithms lack real-hardware evidence. The version
-remains `0.3.0.dev1` and no tag or publication is authorized by this audit.
+release candidate while both CUDA algorithms lack real-hardware numerical,
+transfer, and performance evidence. The version remains `0.3.0.dev1` and no tag
+or publication is authorized by this audit.

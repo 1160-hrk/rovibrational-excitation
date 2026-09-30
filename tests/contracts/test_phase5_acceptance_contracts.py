@@ -135,3 +135,27 @@ def test_cupy_rk4_has_a_separate_device_native_owner() -> None:
     assert ".get(" not in kernel_source
     assert "cp.asnumpy" not in kernel_source
     assert "H0 - field_x * mu_x - field_y * mu_y" in kernel_source
+
+
+def test_cupy_split_has_a_separate_device_native_owner() -> None:
+    root = Path(__file__).resolve().parents[2]
+    wrapper_path = (
+        root
+        / "src"
+        / "rovibrational_excitation"
+        / "dynamics"
+        / "algorithms"
+        / "split_operator"
+        / "schrodinger.py"
+    )
+    kernel_path = wrapper_path.with_name("schrodinger_cupy.py")
+
+    wrapper_source = wrapper_path.read_text()
+    kernel_source = kernel_path.read_text()
+
+    assert "from .schrodinger_cupy import splitop_schrodinger_cupy" in wrapper_source
+    assert "def _splitop_static_cupy" not in wrapper_source
+    assert "def _splitop_rotating_xy_cupy" not in wrapper_source
+    assert "cp.asnumpy" not in wrapper_source
+    assert "cp.asnumpy" not in kernel_source
+    assert ".get(" not in kernel_source

@@ -21,11 +21,11 @@ the complete CPU suite, physics references, branch coverage, supported
 examples, type checks, and clean-wheel imports; see the
 [CI workflow](.github/workflows/ci.yml).
 
-Real-CUDA execution is not yet verified. The low-level RK4 implementation
-now follows the CPU RK4 graph and returns device-native CuPy arrays, but this
-source-level result still needs mandatory real-GPU parity and performance
-evidence. The split-operator CuPy path still includes device-to-host round
-trips. A requested CuPy backend never silently falls back to NumPy.
+Real-CUDA execution is not yet verified. The low-level RK4 and split-operator
+implementations now keep their arrays on device and return backend-native CuPy
+arrays. CPU-backed graph tests are not CUDA evidence: mandatory real-GPU parity,
+norm, shape, transfer, and performance checks remain. A requested CuPy backend
+never silently falls back to NumPy.
 
 ## Supported physical models
 
@@ -218,8 +218,8 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-The current local checkpoint is 1500 passing CPU tests with 10 optional-GPU
-skips and 80% measured branch coverage. A skipped GPU test is not CUDA
+The current local checkpoint is 1514 passing CPU tests with 16 optional-GPU
+skips and 81% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 
 ## Documentation

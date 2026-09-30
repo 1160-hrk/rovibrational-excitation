@@ -106,10 +106,9 @@ reference field や測定規約を推測せず、非対応操作はエラーに�
 
 ## CPU/CUDA 状態
 
-検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy RK4 は CPU と
-同じ計算グラフを使う device-native 実装ですが、split CuPy 経路には host round
-trip が残ります。NumPy への暗黙 fallback はなく、skip された GPU test は実 GPU
-の検証根拠ではありません。
+検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy RK4 と split は
+device-nativeな配列実装ですが、実GPUでのparity・転送・性能証拠がまだありません。
+NumPyへの暗黙fallbackはなく、skipされたGPU testは実GPUの検証根拠ではありません。
 
 ## 開発者・Codex 向け
 

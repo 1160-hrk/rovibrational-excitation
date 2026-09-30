@@ -1191,8 +1191,8 @@ encode it in `PropagationResult`. Eliminate repeated transfer.
 Policy status: decided by D-026/D-039 and CPU/device-like boundary behavior
 accepted by D-062. `PropagationResult` retains an existing device state and
 converts only through explicit `to_numpy()`. P5.5-a/D-144 makes CuPy RK4 return
-device-native arrays; the split adapters still return through host memory, so
-the repeated-transfer acceptance row is not complete.
+device-native arrays, and P5.5-b/D-145 does the same for all three split modes.
+Real-GPU transfer and numerical evidence remains before acceptance.
 
 ### Phase 5 acceptance
 
@@ -1219,6 +1219,15 @@ GPU cases are collected for backend identity, shape, dtype, norm, and parity.
 The full CPU suite has 1506 passes and 13 optional-GPU skips (1519 collected).
 No CUDA speed claim is made. Split device residency and all real-GPU evidence
 remain open.
+
+P5.5-b/D-145 moves the unchanged static Cartesian, rotating Cartesian, and
+helicity-projected CuPy split calculations to a separate device-native owner.
+The shared tolerance factor, Hermiticity/covariance checks, midpoint indices,
+zero-amplitude branch, phases, stride, and renormalization rules are preserved.
+CPU-backed graph comparisons pass for all modes; three real-GPU identity/parity
+cases are collected. The full suite has 1514 passes and 16 optional-GPU skips
+(1530 collected), and strict mypy covers 84 modules. Source-level residency is
+complete; actual CUDA transfer/timing evidence remains mandatory.
 
 ## 9. Phase 6 — model consolidation
 

@@ -491,9 +491,9 @@ output-buffer experiment is not part of the architecture.
 
 D-062 verifies the NumPy side of this target. D-144 gives CuPy RK4 the direct
 `device calculation -> backend-native PropagationResult` path and removes its
-incorrect RawKernel. The split helpers still return through host memory; that
-`device -> host -> device` adapter remains recorded debt, not an accepted layer.
-Real-GPU evidence is still required for both implementations.
+incorrect RawKernel. D-145 gives static Cartesian, rotating Cartesian, and
+helicity-projected split the same direct path. Real-GPU numerical, transfer,
+and performance evidence is still required for both algorithms.
 
 ## 7. Units and scaling ownership
 

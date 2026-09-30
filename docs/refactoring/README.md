@@ -54,19 +54,19 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1500 passed, 10 skipped (1510 collected) |
-| Measured branch coverage | 80% |
+| Pytest | 1514 passed, 16 skipped (1530 collected) |
+| Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
 | Files failing format (same active scope) | 0 |
 | Historical `examples/archives/` | Explicitly excluded by D-044 |
 | Optimization module coverage | 72-100% |
-| Strict mypy scope | 82 named modules |
+| Strict mypy scope | 84 named modules |
 | Spectroscopy coverage | 94% |
-| `simulation/runner.py` coverage | 69% |
-| RK4 Schrödinger coverage report | 20% |
+| `simulation/runner.py` coverage | 94% |
+| RK4 Schrödinger coverage | CPU wrapper 19%; CuPy owner 97% via CPU-backed graph tests |
 
-These rows were last verified locally on 2026-09-29. On 2026-09-16, D-071
+These rows were last verified locally on 2026-09-30. On 2026-09-16, D-071
 through D-073 make device-native CUDA plus a real-GPU run mandatory for v0.3,
 define independent optimization/spectroscopy reference construction, and fix
 the exact minimal typed root API. P6.3-c implements D-075: `LinMolParameters`
@@ -558,6 +558,12 @@ sign, stages, trajectory, stride, and renormalization; three real-GPU parity
 cases are collected. The suite has 1506 passes and 13 optional-GPU skips (1519
 collected). Split device residency and all real-CUDA evidence remain open.
 
+P5.5-b/D-145 moves all three split CuPy modes to a device-native owner without
+changing formulas, thresholds, phases, stride, or renormalization. CPU-backed
+mode comparisons pass and three real-GPU cases are collected. The suite has
+1514 passes and 16 optional-GPU skips (1530 collected); strict mypy covers 84
+modules. Only real-CUDA transfer, parity, and performance evidence remains.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -595,9 +601,9 @@ all CPU-verifiable Phase 5 rows now have executable evidence. NumPy CSR split
 is exactly equal to dense spectral execution, prepared split kernels exactly
 match public results, and an existing device state crosses result finalization
 by identity. The dead missing-Numba fallback is removed because Numba is a
-required dependency. Phase 5 remains open: D-144 makes CuPy RK4
-device-native, but split still round-trips through host memory and all real
-CUDA parity/performance evidence remains unverified.
+required dependency. D-144 and D-145 make CuPy RK4 and split source paths
+device-native. Phase 5 remains open only because real CUDA parity, transfer,
+and performance evidence is still unverified.
 P5.1-c implements D-061:
 the dense Liouville RK4 kernel reuses the exactly shared right/next-left
 endpoint Hamiltonian. Multiple dimensions and both output modes are bitwise

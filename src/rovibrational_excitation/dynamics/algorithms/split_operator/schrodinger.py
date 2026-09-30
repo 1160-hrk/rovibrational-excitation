@@ -21,22 +21,14 @@ code.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import scipy.sparse
 from numba import njit
 
 from ....core.validation import validate_wavefunction_problem
-
-# ---------------------------------------------------------------------------
-# Optional back‑ends ----------------------------------------------------------
-# ---------------------------------------------------------------------------
-
-try:
-    import cupy as cp  # type: ignore
-except ImportError:  # CuPy が無い環境でも読み込めるように動作
-    cp = None  # noqa: N816
+from .schrodinger_cupy import splitop_schrodinger_cupy
 
 __all__ = ["build_helicity_projected_interaction", "splitop_schrodinger"]
 
@@ -149,12 +141,12 @@ def _propagate_rotating_xy_numpy(
     return psi.reshape((1, dim))
 
 
-def _as_numpy_dense(matrix) -> np.ndarray:
+def _as_numpy_dense(matrix: Any) -> np.ndarray:
     """Return a dense NumPy complex matrix from a supported backend."""
     if scipy.sparse.issparse(matrix):
         matrix = matrix.toarray()
-    elif cp is not None and isinstance(matrix, cp.ndarray):
-        matrix = cp.asnumpy(matrix)
+    elif hasattr(matrix, "__cuda_array_interface__"):
+        raise TypeError("NumPy split helpers do not accept device arrays")
     return np.asarray(matrix, dtype=np.complex128)
 
 
@@ -260,9 +252,9 @@ def _validate_xy_rotation_covariance(
 # ---------------------------------------------------------------------------
 
 
-def _as_numpy_field(field) -> np.ndarray:
-    if cp is not None and isinstance(field, cp.ndarray):
-        field = cp.asnumpy(field)
+def _as_numpy_field(field: Any) -> np.ndarray:
+    if hasattr(field, "__cuda_array_interface__"):
+        raise TypeError("backend='numpy' does not accept device field arrays")
     return np.asarray(field, dtype=np.float64)
 
 
@@ -284,7 +276,7 @@ def splitop_schrodinger(
     backend: Literal["numpy", "cupy"] = "numpy",
     sparse: bool = False,
     renorm: bool = False,
-) -> np.ndarray:
+) -> Any:
     """Propagate with a static or M-rotated spectral split operator.
 
     Cartesian mode uses the real field components and therefore represents the
@@ -299,18 +291,16 @@ def splitop_schrodinger(
         raise ValueError("interaction_mode must be 'cartesian' or 'helicity_projected'")
     del sparse
 
-    ex = _as_numpy_field(field_x)
-    ey = _as_numpy_field(field_y)
     if interaction_mode == "helicity_projected":
         if polarization is None or scalar_field is None:
             raise ValueError(
                 "helicity_projected requires polarization and scalar_field"
             )
-        active_field = _as_numpy_field(scalar_field)
-        fields_to_validate = (active_field,)
+        active_field = scalar_field
+        fields_to_validate = (scalar_field,)
     else:
-        active_field = ex
-        fields_to_validate = (ex, ey)
+        active_field = field_x
+        fields_to_validate = (field_x, field_y)
 
     validate_wavefunction_problem(
         H0,
@@ -323,6 +313,31 @@ def splitop_schrodinger(
         require_diagonal_h0=True,
         require_odd_field=True,
     )
+
+    if backend == "cupy":
+        return splitop_schrodinger_cupy(
+            H0,
+            mu_x,
+            mu_y,
+            field_x,
+            field_y,
+            psi,
+            dt,
+            return_traj=return_traj,
+            sample_stride=sample_stride,
+            interaction_mode=interaction_mode,
+            magnetic_quantum_numbers=magnetic_quantum_numbers,
+            polarization=polarization,
+            scalar_field=scalar_field,
+            renorm=renorm,
+            roundoff_factor=_HERMITICITY_ROUNDOFF_FACTOR,
+        )
+
+    ex = _as_numpy_field(field_x)
+    ey = _as_numpy_field(field_y)
+    if interaction_mode == "helicity_projected":
+        assert scalar_field is not None
+        active_field = _as_numpy_field(scalar_field)
 
     h0_dense = _as_numpy_dense(H0)
     diag_h0_complex = np.diag(h0_dense) if h0_dense.ndim == 2 else h0_dense
@@ -369,35 +384,6 @@ def splitop_schrodinger(
             ey_mid = ey[1 : 2 * steps + 1 : 2]
             rotating = True
 
-    if backend == "cupy":
-        if cp is None:
-            raise RuntimeError(
-                "backend='cupy' was requested but CuPy is not installed."
-            )
-        if rotating:
-            return _splitop_rotating_xy_cupy(
-                diag_h0,
-                mux,
-                m_values,
-                ex_mid,
-                ey_mid,
-                psi_numpy,
-                dt,
-                return_traj,
-                sample_stride,
-                renorm,
-            )
-        return _splitop_static_cupy(
-            diag_h0,
-            interaction,
-            scalar_mid,
-            psi_numpy,
-            dt,
-            return_traj,
-            sample_stride,
-            renorm,
-        )
-
     if rotating:
         eigvals, eigenvectors = np.linalg.eigh(mux)
         return _propagate_rotating_xy_numpy(
@@ -428,106 +414,3 @@ def splitop_schrodinger(
         sample_stride,
         renorm,
     )
-
-
-# ---------------------------------------------------------------------------
-# CuPy back-end
-# ---------------------------------------------------------------------------
-
-
-def _splitop_static_cupy(
-    diag_h0: np.ndarray,
-    interaction: np.ndarray,
-    scalar_mid: np.ndarray,
-    psi: np.ndarray,
-    dt: float,
-    return_traj: bool,
-    sample_stride: int,
-    renorm: bool,
-) -> np.ndarray:
-    """GPU implementation for a static interaction operator."""
-    assert cp is not None
-    h0_cp = cp.asarray(diag_h0)
-    interaction_cp = cp.asarray(interaction)
-    field_cp = cp.asarray(scalar_mid)
-    psi_cp = cp.asarray(psi)
-    exp_half = cp.exp(-1j * h0_cp * dt / 2.0)
-    eigvals, eigenvectors = cp.linalg.eigh(interaction_cp)
-    eigenvectors_h = eigenvectors.conj().T
-
-    steps = field_cp.size
-    n_samples = steps // sample_stride + 1 if return_traj else 1
-    trajectory = cp.empty((n_samples, psi_cp.size), dtype=cp.complex128)
-    trajectory[0] = psi_cp
-    sample_index = 1
-
-    for step in range(steps):
-        psi_cp *= exp_half
-        phase = cp.exp(-1j * dt * field_cp[step] * eigvals)
-        psi_cp = eigenvectors @ (phase * (eigenvectors_h @ psi_cp))
-        psi_cp *= exp_half
-        if renorm:
-            norm = cp.sqrt((psi_cp.conj() @ psi_cp).real)
-            if float(norm.item()) > 0.0:
-                psi_cp *= 1.0 / norm
-        if return_traj and (step + 1) % sample_stride == 0:
-            trajectory[sample_index] = psi_cp
-            sample_index += 1
-
-    if return_traj:
-        return cp.asnumpy(trajectory)
-    return cp.asnumpy(psi_cp).reshape(1, -1)
-
-
-def _splitop_rotating_xy_cupy(
-    diag_h0: np.ndarray,
-    mu_x: np.ndarray,
-    magnetic_quantum_numbers: np.ndarray,
-    ex_mid: np.ndarray,
-    ey_mid: np.ndarray,
-    psi: np.ndarray,
-    dt: float,
-    return_traj: bool,
-    sample_stride: int,
-    renorm: bool,
-) -> np.ndarray:
-    """GPU implementation for an M-rotated Cartesian xy interaction."""
-    assert cp is not None
-    h0_cp = cp.asarray(diag_h0)
-    mu_x_cp = cp.asarray(mu_x)
-    m_cp = cp.asarray(magnetic_quantum_numbers)
-    ex_cp = cp.asarray(ex_mid)
-    ey_cp = cp.asarray(ey_mid)
-    psi_cp = cp.asarray(psi)
-    exp_half = cp.exp(-1j * h0_cp * dt / 2.0)
-    eigvals, eigenvectors = cp.linalg.eigh(mu_x_cp)
-    eigenvectors_h = eigenvectors.conj().T
-
-    steps = ex_cp.size
-    n_samples = steps // sample_stride + 1 if return_traj else 1
-    trajectory = cp.empty((n_samples, psi_cp.size), dtype=cp.complex128)
-    trajectory[0] = psi_cp
-    sample_index = 1
-
-    for step in range(steps):
-        psi_cp *= exp_half
-        amplitude = cp.hypot(ex_cp[step], ey_cp[step])
-        if float(amplitude.item()) != 0.0:
-            angle = cp.arctan2(ey_cp[step], ex_cp[step])
-            rotation = cp.exp(1j * m_cp * angle)
-            psi_cp *= rotation.conj()
-            phase = cp.exp(1j * dt * amplitude * eigvals)
-            psi_cp = eigenvectors @ (phase * (eigenvectors_h @ psi_cp))
-            psi_cp *= rotation
-        psi_cp *= exp_half
-        if renorm:
-            norm = cp.sqrt((psi_cp.conj() @ psi_cp).real)
-            if float(norm.item()) > 0.0:
-                psi_cp *= 1.0 / norm
-        if return_traj and (step + 1) % sample_stride == 0:
-            trajectory[sample_index] = psi_cp
-            sample_index += 1
-
-    if return_traj:
-        return cp.asnumpy(trajectory)
-    return cp.asnumpy(psi_cp).reshape(1, -1)
