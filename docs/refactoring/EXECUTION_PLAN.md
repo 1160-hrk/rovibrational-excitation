@@ -2261,6 +2261,13 @@ commit. A single contract requires the complete five-action allowlist and a
 require self-hosted runner 2.327.1 or newer; real hosted/self-hosted execution
 remains external evidence. No calculation behavior changes.
 
+
+P8.5-c/D-149 replaces the long-lived PyPI API-token input with fail-closed OIDC
+Trusted Publishing. Only the isolated publish job receives `id-token: write`;
+it cannot build or check out source and has no password or fallback. The exact
+PyPI publisher identity and protected `pypi` environment remain external
+release prerequisites. No package or calculation behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

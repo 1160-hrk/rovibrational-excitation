@@ -154,7 +154,16 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
         "gpu-validation",
         "container-validation",
     }
-    assert jobs["publish-pypi"]["needs"] == ["verify-version", "build-and-test"]
+    publish = jobs["publish-pypi"]
+    assert publish["needs"] == ["verify-version", "build-and-test"]
+    assert publish["permissions"] == {"id-token": "write"}
+    assert publish["environment"]["name"] == "pypi"
+    publish_action = next(
+        step for step in publish["steps"] if step.get("uses") == PYPI_PUBLISH_ACTION
+    )
+    assert "with" not in publish_action
+    assert "PYPI_API_TOKEN" not in RELEASE_WORKFLOW.read_text()
+    assert "secrets." not in RELEASE_WORKFLOW.read_text()
     assert jobs["create-release"]["needs"] == [
         "verify-version",
         "build-and-test",

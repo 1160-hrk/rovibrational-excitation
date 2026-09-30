@@ -5111,6 +5111,35 @@ passes and 16 optional-GPU skips out of 1540 collected.
 Implementation commit: this checkpoint.
 
 
+### D-149: PyPI publication uses fail-closed OIDC Trusted Publishing
+
+Status: Implemented on 2026-09-30 as P8.5-c.
+
+Scope: Final-tag PyPI authentication and release documentation only. No package
+source, build content, configuration schema, physical formula, numerical path,
+or simulation result changes.
+
+The already isolated `publish-pypi` job now owns only `id-token: write`; no
+workflow-global OIDC permission exists. It downloads the distribution artifact
+built by the preceding unprivileged job and invokes the D-148-pinned PyPA
+action without username, password, API-token secret, checkout, or build step.
+There is no token fallback: a missing or mismatched publisher fails before
+GitHub Release creation.
+
+The required PyPI Trusted Publisher identity is owner `1160-hrk`, repository
+`rovibrational-excitation`, workflow `release.yml`, and GitHub environment
+`pypi`. The protected environment and exact PyPI-side registration remain
+external release prerequisites. The contract requires the job-scoped OIDC
+permission, named environment, no action inputs, and no secret references in
+the release workflow. Immutable action commits from D-148 remain required.
+
+Focused contracts and actionlint pass. The complete local suite remains 1524
+passes and 16 optional-GPU skips out of 1540 collected. Local syntax cannot
+prove an OIDC exchange or publication, so no external success is claimed.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

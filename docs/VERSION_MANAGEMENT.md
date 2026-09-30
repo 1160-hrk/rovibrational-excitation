@@ -57,7 +57,10 @@ applyは次を順に行います。
   schema-v1の `status: pass` artifactをレビューしている。
 - 通常CIの `container-smoke` が同じcommitで成功し、VS Code Dev Containersの
   attachとPorts viewを手動確認している。
-- PyPI environmentとPYPI_API_TOKENが設定されている。
+- GitHubのprotected environment `pypi`を設定し、PyPI Trusted Publisherに
+  owner `1160-hrk`、repository `rovibrational-excitation`、workflow
+  `release.yml`、environment `pypi`を完全一致で登録している。API token secretは
+  使用しない。
 - 対象版の成果物がPyPIにまだ存在しない。
 
 ローカルでレビュー済みのversion commitをpushした後、明示的にannotated tagを
@@ -119,9 +122,10 @@ GPU gateを削除したりskip扱いにして公開してはいけません。
 
 ### PyPI公開が失敗した
 
-GitHub Releaseはまだ作成されません。PyPI environment、token、既存versionを
-確認します。同じversionが既に公開済みなら再アップロードせず、新しいversionを
-用意します。
+GitHub Releaseはまだ作成されません。protected environment、PyPI Trusted
+Publisherのowner/repository/workflow/environment完全一致、OIDC permission、既存
+versionを確認します。API token fallbackは追加しません。同じversionが既に公開済み
+なら再アップロードせず、新しいversionを用意します。
 
 ## バージョン確認
 
@@ -137,6 +141,7 @@ git tag -l
 - [CHANGELOG.md](../CHANGELOG.md)
 - [pyproject.toml](../pyproject.toml)
 - [release workflow](../.github/workflows/release.yml)
+- [PyPI OIDC configuration](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-pypi)
 - [manual real-CUDA workflow](../.github/workflows/cuda-validation.yml)
 - [real-CUDA evidence recorder](../benchmarks/run_cuda_evidence.py)
 - [container smoke](../scripts/smoke_container.sh)

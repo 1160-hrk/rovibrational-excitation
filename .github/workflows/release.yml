@@ -139,9 +139,11 @@ jobs:
           retention-days: 30
 
   publish-pypi:
-    name: Publish to PyPI
+    name: Publish to PyPI with Trusted Publishing
     runs-on: ubuntu-latest
     needs: [verify-version, build-and-test]
+    permissions:
+      id-token: write
     environment:
       name: pypi
       url: https://pypi.org/project/rovibrational-excitation/
@@ -151,8 +153,6 @@ jobs:
           name: python-package-distributions
           path: dist/
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
 
   create-release:
     name: Create GitHub release after PyPI publication

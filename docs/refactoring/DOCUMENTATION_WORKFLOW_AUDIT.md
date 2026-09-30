@@ -74,7 +74,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 |---|---|---|
 | .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12, Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147 container smoke. `required` rejects failed/skipped container and other jobs. D-148 pins every external Action to an approved commit. | GPU tests may skip; normal CI is not real-GPU evidence. A queued/unrun container job is not container evidence. |
 | .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation runs the trusted parity case, every GPU-marked test, and the schema-v1 evidence recorder; it retains success or diagnostic JSON for 90 days. D-148 pins every external Action. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer. A CPU skip, queued job, or status=error artifact is not acceptance evidence. |
-| .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action, including the peeled PyPI publish commit. | The workflow is blocked until GPU, Docker, and PyPI infrastructure pass. Structural contracts do not substitute for those external executions. |
+| .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. | The workflow is blocked until GPU, Docker, protected environment, and exact PyPI Trusted Publisher infrastructure pass. Structural contracts do not substitute for those external executions. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | removed requirements.txt, requirements-dev.txt | D-142 removes dependency manifests that diverged from the build metadata. `pyproject.toml` now solely owns runtime, optional, and development dependencies. | Add dependencies only to the appropriate pyproject group and its tested installation route. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
@@ -96,5 +96,6 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    manual and tag-time CUDA evidence collection without claiming a local GPU
    result. Before the final `0.3.0` tag, obtain an accepted real-hardware
    artifact, require the D-147 hosted container smoke and manually verify VS
-   Code attach/Ports, verify publication configuration, then repeat the
-   final-version gates from a clean commit.
+   Code attach/Ports, configure the exact D-149 PyPI Trusted Publisher and
+   protected environment, then repeat the final-version gates from a clean
+   commit.

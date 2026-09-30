@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context, non-root package import, and authenticated Jupyter API check
 - Normal, CUDA, and release workflows pin every external Action to a reviewed
   immutable release commit
+- PyPI publication uses isolated, job-scoped OIDC Trusted Publishing with no
+  long-lived API-token input or fallback
 - Explicit dry-run/apply release preparation script (`scripts/release.py`)
 - CI smoke coverage for the supported parameter template and example index
 
@@ -177,7 +179,8 @@ real-GPU run remain required before `0.3.0`.
 2. Validate the transition with `python scripts/release.py X.Y.Z --dry-run`.
 3. From a clean worktree, run `python scripts/release.py X.Y.Z --apply`.
 4. Review and commit the version change explicitly.
-5. Confirm the real-GPU runner and protected PyPI environment are available.
+5. Confirm the real-GPU runner, protected PyPI environment, and exact Trusted
+   Publisher identity are available.
 6. Create and push the annotated `vX.Y.Z` tag explicitly; GitHub Actions
    publishes only after every CPU, CUDA, build, and clean-wheel gate passes.
 

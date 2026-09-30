@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-b/D-148 immutable workflow actions; P8.5-a/D-147 executable container gate
+Verified checkpoints: P8.5-c/D-149 OIDC PyPI publication; P8.5-b/D-148 immutable workflow actions
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -312,6 +312,14 @@ workflows to one reviewed 40-character release commit. A repository contract
 rejects mutable refs and unknown Actions. Current Node 24 releases require the
 self-hosted GPU runner to be version 2.327.1 or newer. The suite has 1524 passes
 and 16 optional-GPU skips (1540 collected); hosted execution remains external.
+
+
+P8.5-c/D-149 removes long-lived PyPI credentials from the final-tag workflow.
+Only the isolated publish job receives `id-token: write`, downloads the already
+built artifact, and calls the pinned publisher with no secret input or fallback.
+The exact `1160-hrk/rovibrational-excitation`, `release.yml`, `pypi` Trusted
+Publisher registration remains external. The suite remains 1524 passes and 16
+optional-GPU skips (1540 collected).
 
 ## Current next work
 
@@ -764,7 +772,8 @@ The next work is:
    checksum-verified actionlint, and immutable external Action refs are complete.
    Actual real-GPU evidence,
    hosted container-smoke success, manual VS Code attach/Ports verification,
-   PyPI readiness, and the final version bump remain open Phase 8 gates. The
+   exact PyPI Trusted Publisher/protected-environment setup, and the final
+   version bump remain open Phase 8 gates. The
    explicit breaking-change migration note is complete under D-141.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate

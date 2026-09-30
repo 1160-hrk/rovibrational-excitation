@@ -583,6 +583,12 @@ contract rejects mutable tags and unreviewed Actions. The suite has 1524 passes
 and 16 optional-GPU skips (1540 collected). Current hosted execution and the
 minimum self-hosted runner remain external prerequisites.
 
+P8.5-c/D-149 moves final PyPI authentication to fail-closed OIDC Trusted
+Publishing. Only the isolated publish job has `id-token: write`; the workflow
+contains no API-token secret or fallback. The suite remains 1524 passes and 16
+optional-GPU skips (1540 collected). The exact protected environment and
+PyPI-side publisher registration remain external prerequisites.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
