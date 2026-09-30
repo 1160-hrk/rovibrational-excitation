@@ -36,7 +36,7 @@ python -m rovibrational_excitation.cli.simulate \
 | [RESULT_STORAGE.md](RESULT_STORAGE.md) | result/checkpoint schema v1、atomic generation、strict loader | 現行契約 |
 | [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) | 厳密 Cartesian split と helicity-projected 近似の原理 | 現行の物理契約 |
 | [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) | final tag、CPU/実 GPU gate、明示的な release 操作 | 現行 release 契約 |
-| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Dev Container と Jupyter の安全な起動 | release 前に環境全体を再検証予定 |
+| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Dev Container と認証付き localhost Jupyter | 現行安全契約。clean image build は外部未検証 |
 | [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) | 通常 simulation parameter と generated/external field | 現行 schema 契約 |
 | [SWEEP_SPECIFICATION.md](SWEEP_SPECIFICATION.md) | ordered Cartesian-product sweep と resume provenance | 現行契約 |
 | [TIME_PROPAGATION.md](TIME_PROPAGATION.md) | 時間格子、RK4/split、状態・backend 対応 | 現行の数値契約 |

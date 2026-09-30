@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-29
+Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.2-f/D-137 unit guide; P8.2-e/D-136 propagation guide
+Verified checkpoints: P8.3-a/D-138 safe dev container; P8.2-f/D-137 unit guide
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1481 passed, 10 GPU tests skipped (1491 collected)
+1486 passed, 10 GPU tests skipped (1496 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the

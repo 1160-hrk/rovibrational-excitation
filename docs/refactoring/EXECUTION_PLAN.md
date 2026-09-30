@@ -2164,6 +2164,15 @@ dimensions, and exact spectroscopy labels. Unresolved Class-D optimizer values
 remain unmodified. The full suite has 1481 passes and 10 optional-GPU skips
 (1491 collected). No calculation code changes.
 
+P8.3-a/D-138 removes the Docker image's persistent wildcard-bind, tokenless,
+root-enabled Jupyter configuration and makes `pyproject.toml` extras the
+container dependency authority. The rewritten guide matches the Dockerfile,
+Dev Container JSON, safe launcher, supported examples, and real commands.
+Static safety, JSON, shell syntax, link, and repository contracts pass; a clean
+image build remains an explicit external check because Docker is unavailable
+in this environment. The full suite has 1486 passes and 10 optional-GPU skips
+(1496 collected). No calculation behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

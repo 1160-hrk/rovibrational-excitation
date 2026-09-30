@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact timing/output semantics, capability failures, and CUDA limitations.
 - The unit guide now fixes caller provenance, canonical conversion, supported
   spellings, frequency 2π, field/intensity, optimizer, and spectroscopy rules.
+- The development image no longer writes tokenless, wildcard-bind Jupyter
+  configuration and installs project dependencies from `pyproject.toml`.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

@@ -1,6 +1,6 @@
 # Documentation, YAML, and GitHub workflow audit
 
-Verified: 2026-09-29
+Verified: 2026-09-30
 Scope: all repository Markdown, YAML/YML, and .github/workflows files.
 Disposition: **Inventory complete; public READMEs and release safety corrected, broader docs/workflow migration remains open.**
 
@@ -41,7 +41,7 @@ the count difference never promotes generated or archived artifacts.
 | docs/SWEEP_SPECIFICATION.md | D-135 records exact singleton scalarization, insertion-ordered Cartesian products, fixed list keys, paths, and resume provenance; guide/help/link contracts pass. | Keep order and checkpoint identity synchronized with `simulation.sweep`. |
 | docs/TIME_PROPAGATION.md | D-136 replaces the aspirational method survey with the implemented typed time-grid, RK4/split, state-path, output, capability, and CUDA contracts. CPU capability/failure rows and key claims are tested. | Keep synchronized with `TimeGrid`, `PropagationOptions`, capability validation, and backend acceptance. |
 | docs/UNIT_SYSTEM.md | D-137 rebuilds the guide around retained caller provenance, one canonical conversion, exact supported spellings, the 2π convention, field/intensity boundaries, optimizer dimensions, and spectroscopy labels. Converter parity and key boundary distinctions are tested. | Keep synchronized with `core.units` and never assign units to unresolved Class-D optimizer quantities by inference. |
-| docs/DOCKER_SETUP.md | D-105 corrects Jupyter authentication, active example, quality, coverage, build, and publication commands. The rest of the container guide still needs final Phase 8 verification. | Recheck the complete Dev Container/Makefile flow in a clean checkout. |
+| docs/DOCKER_SETUP.md | D-138 removes the image-level wildcard/tokenless/root Jupyter configuration, installs from `pyproject.toml` extras, and rebuilds the guide from the actual Dockerfile, Dev Container JSON, and launcher. Static, JSON, shell, link, and safety contracts pass. | Run a clean image build and VS Code attach where Docker is available; this environment has no Docker CLI/daemon. |
 | docs/VERSION_MANAGEMENT.md | Rewritten for the final-only, CPU-plus-real-GPU, no-automatic-push release contract. | Recheck once on the final clean release commit before creating a tag. |
 | docs/CODECOV_SETUP.md | Still describes upload behavior that the current workflow does not perform. | Decide whether to restore Codecov upload or remove the badge/documentation claims. |
 | docs/CARTESIAN_SPLIT_OPERATOR.md | Records the scientific split contract and explicitly states real-GPU parity is unverified. | Preserve equations; recheck source paths after backend acceptance. |

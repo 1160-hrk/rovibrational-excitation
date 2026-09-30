@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-28
+Last verified: 2026-09-30
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1481 passed, 10 skipped (1491 collected) |
+| Pytest | 1486 passed, 10 skipped (1496 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -508,6 +508,14 @@ views, 2π semantics, direct-field versus intensity acceptance, optimizer units,
 spectroscopy exact labels, and unresolved Class-D quantities without inference.
 The suite has 1481 passes and 10 optional-GPU skips (1491 collected). No
 calculation code changes.
+
+P8.3-a/D-138 removes the development image's persistent tokenless/wildcard
+Jupyter configuration, installs from `pyproject.toml` extras, and rebuilds the
+container guide around the actual Dev Container and launcher. Static safety,
+JSON, shell syntax, link, and repository contracts pass. Docker is unavailable
+here, so clean image build and VS Code attach remain external release checks.
+The suite has 1486 passes and 10 optional-GPU skips (1496 collected); no
+calculation behavior changed.
 
 P6.2-c
 implements D-069:

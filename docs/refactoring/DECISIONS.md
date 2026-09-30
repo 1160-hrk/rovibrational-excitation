@@ -4731,6 +4731,45 @@ collected).
 Implementation commit: this checkpoint.
 
 
+### D-138: The development image must not override Jupyter security
+
+Status: Implemented on 2026-09-30 as P8.3-a.
+
+Scope: development Dockerfile, Dev Container documentation, and repository
+tooling contracts. No library import, simulation, optimization, spectroscopy,
+persistence, or numerical behavior changes.
+
+D-105 made `scripts/start_jupyter.sh` localhost-only and left authentication
+and XSRF to Jupyter. The broader Phase 8 audit found that the Dockerfile still
+wrote a user configuration with `0.0.0.0`, an empty token, and
+`allow_root=True`. That persistent configuration contradicted both the launcher
+and the guide. The guide also advertised nonexistent Makefile commands and
+unsafe token/root settings, and treated the requirements files as the current
+container dependency authority.
+
+The image no longer creates any Jupyter configuration. The launcher remains the
+only repository-owned startup boundary: localhost and port 8888 by default,
+repository root, no browser, standard authentication and XSRF. An explicit
+`RVE_JUPYTER_HOST=0.0.0.0` changes only the bind address and emits a warning; it
+does not disable security.
+
+The Dockerfile installs the package from `pyproject.toml` with
+`.[dev,io,plot]` plus Jupyter/ipykernel, keeps the non-root `devuser`, and
+contains valid single-backslash Docker continuations. The guide now documents
+only the actual Dev Container, commands, supported examples, and security
+boundary. It explicitly discourages broad recursive ownership changes.
+
+Five new contracts reject persistent Jupyter security overrides, parse the Dev
+Container JSON, check non-root user/port wiring, run `bash -n` on the launcher,
+freeze the current guide, and resolve its local links. Existing repository
+tooling and documentation-index contracts pass. Docker CLI/daemon is not
+available in this environment, so a clean image build and VS Code attach remain
+an explicit external release check rather than claimed evidence. The full
+suite has 1486 passes and 10 optional-GPU skips (1496 collected).
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
