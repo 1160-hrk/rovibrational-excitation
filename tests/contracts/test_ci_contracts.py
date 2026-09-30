@@ -68,6 +68,19 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert "pip install dist/*.whl" in build
     assert "import rovibrational_excitation" in build
 
+    assert _commands(jobs["container-smoke"]).strip() == "scripts/smoke_container.sh"
+    assert set(jobs["required"]["needs"]) == {
+        "quality",
+        "test",
+        "physics",
+        "coverage",
+        "build",
+        "container-smoke",
+    }
+    required = _commands(jobs["required"])
+    assert "CONTAINER_RESULT" in required
+    assert "= success" in required
+
 
 def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
     workflow = _workflow()

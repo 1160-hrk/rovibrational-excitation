@@ -72,6 +72,26 @@ RVE_JUPYTER_HOST=0.0.0.0 ./scripts/start_jupyter.sh
 この指定でも認証と XSRF は無効にならない。`0.0.0.0` を使う場合は Docker/host
 firewall の公開範囲と token 管理を利用者が確認する。
 
+## Container smoke
+
+Docker daemon を利用できる clean checkout では、次の1コマンドで image と runtime
+境界を検証する。
+
+```bash
+scripts/smoke_container.sh
+```
+
+この script は image を `--pull` 付きでbuildし、image単体から `devuser`、
+`/workspace`、package import、Jupyter executableを確認する。続いてrepositoryを
+read-only bind mountし、Jupyterだけが使用する一時notebooks mountを分離して、
+非root processを起動する。localhostの一時portから既知のtest token付き
+`/api/contents` が成功し、tokenなしrequestがHTTP 200にならないことを確認する。
+Docker CLIまたはdaemonがなければskipせず失敗する。
+
+通常CIの `container-smoke` jobとtag releaseの `container-validation` jobは同じ
+scriptを実行する。これによりDockerfileとlauncherの別々の再実装をworkflow内に
+持たない。VS Code UIのattach操作とPorts view自体は自動化対象外である。
+
 ## 開発コマンド
 
 repository root で実行する。
@@ -153,10 +173,12 @@ repository 全体へ再帰的な `chown` や permission 緩和を安易に行わ
 
 ## 検証状態
 
-この checkpoint では Dockerfile の安全既定、Dev Container JSON、launcher の shell
-syntax と repository test contracts を検証している。この実行環境には Docker CLI/
-daemon がないため、clean image build と VS Code attach は未検証である。release 前に
-clean checkout 上で実行し、未実行を成功扱いしない。
+この checkpoint では Dockerfile の安全既定、Dev Container JSON、launcher と
+container smokeのshell syntax、repository test contracts、通常/release workflow
+wiringを検証している。この実行環境には Docker CLI/daemon がないため、ここでは
+clean image build とHTTP smokeを実行していない。GitHubの `container-smoke` 成功を
+実行証拠とし、VS Code attachとPorts viewはrelease前に人が確認する。未実行やqueued
+jobを成功扱いしない。
 
 - [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
 - [Jupyter Server security](https://jupyter-server.readthedocs.io/en/latest/operators/security.html)

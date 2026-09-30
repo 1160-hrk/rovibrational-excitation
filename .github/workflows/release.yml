@@ -95,10 +95,20 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  container-validation:
+    name: Development container smoke
+    runs-on: ubuntu-latest
+    needs: verify-version
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and exercise development container
+        run: scripts/smoke_container.sh
+
   build-and-test:
     name: Build and clean-wheel verification
     runs-on: ubuntu-latest
-    needs: [verify-version, cpu-release-gates, gpu-validation]
+    needs: [verify-version, cpu-release-gates, gpu-validation, container-validation]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

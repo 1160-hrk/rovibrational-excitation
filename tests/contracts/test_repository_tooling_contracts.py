@@ -109,10 +109,14 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     assert gpu_artifacts[0]["if"] == "always()"
     assert gpu_artifacts[0]["with"]["name"] == "real-cuda-evidence"
     assert gpu_artifacts[0]["with"]["if-no-files-found"] == "error"
+    assert (
+        _commands(jobs["container-validation"]).strip() == "scripts/smoke_container.sh"
+    )
     assert set(jobs["build-and-test"]["needs"]) == {
         "verify-version",
         "cpu-release-gates",
         "gpu-validation",
+        "container-validation",
     }
     assert jobs["publish-pypi"]["needs"] == ["verify-version", "build-and-test"]
     assert jobs["create-release"]["needs"] == [

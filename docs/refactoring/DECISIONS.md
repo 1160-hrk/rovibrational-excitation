@@ -5045,6 +5045,41 @@ accepted report exists until the workflow runs on actual hardware.
 Implementation commit: this checkpoint.
 
 
+### D-147: Container acceptance uses one executable smoke boundary
+
+Status: Implemented on 2026-09-30 as P8.5-a.
+
+Scope: Docker build context, development-container runtime validation, and
+normal/release workflow gates. No package calculation or public simulation
+behavior changes.
+
+`.dockerignore` now sends only `pyproject.toml`, `README.md`, and `src/`
+to the build daemon and excludes generated Python caches and egg metadata
+inside that allowlist. `scripts/smoke_container.sh` is the single executable
+container acceptance boundary. It requires a working Docker daemon, builds with
+`--pull`, and has no skip or success path when Docker is unavailable.
+
+The smoke first runs the built image without the checkout mount and requires a
+non-root `devuser`, `/workspace`, package import from outside the workdir,
+and a Jupyter executable. It then mounts the checkout read-only, gives only the
+notebooks path a temporary writable mount, launches Jupyter as the image user
+on a dynamically published localhost port with a known test-only token, and
+requires an authenticated `/api/contents` response. The same endpoint must
+not return HTTP 200 without authentication. The exact temporary container,
+image, and directory are cleaned on exit.
+
+Normal CI has a required `container-smoke` job, and the final-tag workflow has
+a required `container-validation` job before distribution build/publication.
+Both call the same script. Static shell, documentation, workflow, and
+actionlint contracts pass locally. Docker is unavailable in this environment,
+so an actual successful build/HTTP run and the VS Code UI attach/Ports check
+remain external evidence; absence or a queued/skipped job is not acceptance.
+The complete local suite has 1523 passes and 16 optional-GPU skips out of 1539
+collected.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

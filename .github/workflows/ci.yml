@@ -177,10 +177,19 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  container-smoke:
+    name: Development container smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and exercise development container
+        run: scripts/smoke_container.sh
+
   required:
     name: Required CI gates
     if: always()
-    needs: [quality, test, physics, coverage, build]
+    needs: [quality, test, physics, coverage, build, container-smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Reject failed, skipped, or cancelled gates
@@ -190,9 +199,11 @@ jobs:
           PHYSICS_RESULT: ${{ needs.physics.result }}
           COVERAGE_RESULT: ${{ needs.coverage.result }}
           BUILD_RESULT: ${{ needs.build.result }}
+          CONTAINER_RESULT: ${{ needs.container-smoke.result }}
         run: |
           test "$QUALITY_RESULT" = success
           test "$TEST_RESULT" = success
           test "$PHYSICS_RESULT" = success
           test "$COVERAGE_RESULT" = success
           test "$BUILD_RESULT" = success
+          test "$CONTAINER_RESULT" = success

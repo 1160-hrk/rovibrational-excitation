@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-c/D-146 real-CUDA evidence harness; P5.5-b/D-145 device-native CuPy split
+Verified checkpoints: P8.5-a/D-147 executable container gate; P5.5-c/D-146 real-CUDA evidence harness
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -185,14 +185,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P5.5-c:
+Current local CPU baseline after P8.5-a:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1521 passed, 16 GPU tests skipped (1537 collected)
+1523 passed, 16 GPU tests skipped (1539 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -299,6 +299,12 @@ backend/dtype/shape/norm, transfer volumes, synchronized timing, environment,
 and source identity in schema-v1 JSON. Timing is not a pass gate. The suite has
 1521 passes and 16 optional-GPU skips (1537 collected); actual CUDA evidence
 remains unverified.
+
+P8.5-a/D-147 adds one hard-failing container smoke to required normal and
+release CI. A minimal build context, non-root unmounted-image import, and
+token-authenticated Jupyter API with a read-only checkout are contract-tested.
+The suite has 1523 passes and 16 optional-GPU skips (1539 collected). Docker is
+unavailable locally, so hosted execution and manual VS Code attach remain.
 
 ## Current next work
 
@@ -748,9 +754,10 @@ The next work is:
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
-   and checksum-verified actionlint are complete. Actual real-GPU and PyPI
-   evidence and the final version bump remain open Phase 8 gates. The explicit
-   breaking-change migration note is complete under D-141.
+   and checksum-verified actionlint are complete. Actual real-GPU evidence,
+   hosted container-smoke success, manual VS Code attach/Ports verification,
+   PyPI readiness, and the final version bump remain open Phase 8 gates. The
+   explicit breaking-change migration note is complete under D-141.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.
@@ -761,23 +768,27 @@ The next work is:
    schema-v1 artifact for RK4 and all three split modes. Do not treat source
    inspection, CPU doubles, skipped tests, queued jobs, or status=error
    diagnostics as CUDA evidence.
-4. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
+4. Keep the release blocked until D-147 passes on a hosted Docker runner and
+   the VS Code Dev Containers attach and Ports view are checked manually. Local
+   shell/content contracts and an explicit no-Docker failure are not runtime
+   container evidence.
+5. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.
-5. Keep CuPy density propagation unsupported.
-6. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
+6. Keep CuPy density propagation unsupported.
+7. Do not touch the Class-D `c_abs_min`, `drive_abs_min`, `shape_floor`,
    `learning_rate`, `lambda_a`, or convergence tolerances without the user-defined
    dimensions and independent references.
-7. No recorded model-to-upper-layer reverse imports remain; preserve the
+8. No recorded model-to-upper-layer reverse imports remain; preserve the
    architecture test that rejects their reintroduction.
-8. Preserve the characterized visualization debts and fix them only in a
+9. Preserve the characterized visualization debts and fix them only in a
    separate behavior commit.
-9. Defer persistence schema versioning and checkpoint-manager redesign to its
+10. Defer persistence schema versioning and checkpoint-manager redesign to its
    separately tested persistence/API phase.
-10. Preserve private optimization adapters, especially
+11. Preserve private optimization adapters, especially
    `LocalOptimizerLegacyGridV1`. All optimization references now pass; obtain
    the remaining spectroscopy references before its Phase 7 decomposition.
-11. Preserve the D-044/D-115 support boundary: active examples, benchmarks,
+12. Preserve the D-044/D-115 support boundary: active examples, benchmarks,
    scripts, and exactly three current configs remain executable and tested;
    versioned archives remain historical until individually migrated and
    smoke-tested. Do not promote ignored runtime/generated artifacts.

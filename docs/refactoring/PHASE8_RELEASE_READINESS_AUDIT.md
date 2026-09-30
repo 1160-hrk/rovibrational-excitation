@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-09-30
-Local code checkpoint: P5.5-c/D-146 candidate
+Local code checkpoint: P8.5-a/D-147 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,8 +14,8 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-146 candidate contains only the reviewed P5.5-c unit | Pass |
-| Complete CPU suite | 1521 passed, 16 optional-GPU skipped; 1537 collected | Pass |
+| Clean source checkpoint | D-147 candidate contains only the reviewed P8.5-a unit | Pass |
+| Complete CPU suite | 1523 passed, 16 optional-GPU skipped; 1539 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 315 files formatted | Pass |
@@ -23,6 +23,7 @@ reported as complete v0.3 release acceptance.
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 on all three workflows | Pass |
+| Container gate wiring | minimal build context, shell syntax, required normal/release jobs | Pass locally; Docker execution external |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -62,12 +63,20 @@ commit. The tag workflow repeats the recorder, retains the artifact for 90
 days, and attaches it to the GitHub Release. Source inspection, CPU skips,
 queued jobs, and diagnostic `status: error` reports are not acceptance.
 
-### 2. Development-container build
+### 2. Development-container execution
 
-Static Dockerfile, Dev Container JSON, shell, security, and documentation
-contracts pass. Docker CLI/daemon is unavailable here, so a clean image build,
-non-root attach, authenticated localhost Jupyter launch, and port forwarding
-remain unverified.
+D-147 supplies one hard-failing smoke script to both required normal-CI and
+final-tag jobs. It builds the minimal-context image, verifies its non-root
+package/Jupyter environment without a checkout mount, then verifies an
+authenticated Jupyter API over a dynamically published localhost port with a
+read-only checkout and isolated writable notebooks mount. Unauthenticated HTTP
+200 is rejected.
+
+Shell, content, workflow, and actionlint contracts pass, and Docker absence
+fails rather than skips. Docker CLI/daemon is unavailable here, so an actual
+hosted-runner build/HTTP result is still pending. VS Code Dev Containers UI
+attach and its Ports view also remain an explicit manual check; neither is
+inferred from static validation.
 
 ### 3. Publication infrastructure
 
@@ -77,9 +86,10 @@ No local command in this audit publishes, tags, pushes, or creates a release.
 
 ### 4. Final version transition
 
-Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA and external
-release prerequisites are ready. That command changes only `pyproject.toml`,
-runs local gates, and never commits/tags/pushes/publishes. After it passes:
+Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA, hosted
+container smoke, manual Dev Containers UI, and external publication
+prerequisites are ready. That command changes only `pyproject.toml`, runs local
+gates, and never commits/tags/pushes/publishes. After it passes:
 
 1. update the changelog from an Unreleased development record to the reviewed
    final `0.3.0` release date;
@@ -87,13 +97,14 @@ runs local gates, and never commits/tags/pushes/publishes. After it passes:
 3. commit the version/changelog change explicitly;
 4. push the commit and confirm normal required CI;
 5. create and push the annotated `v0.3.0` tag explicitly;
-6. require the tag workflow to pass CPU, real CUDA, build, clean-wheel, and PyPI
-   gates before GitHub Release creation.
+6. require the tag workflow to pass CPU, real CUDA, container, build,
+   clean-wheel, and PyPI gates before GitHub Release creation.
 
 ## Release decision
 
 Local CPU, documentation, packaging, and dry-run preparation are complete at
 this checkpoint. The project is close to a version transition, but it is not a
-release candidate while both CUDA algorithms lack real-hardware numerical,
-transfer, and performance evidence. The version remains `0.3.0.dev1` and no tag
-or publication is authorized by this audit.
+release candidate while the supported CUDA paths lack real-hardware numerical,
+transfer, and performance evidence and the container gate lacks hosted
+execution. The version remains `0.3.0.dev1` and no tag or publication is
+authorized by this audit.

@@ -9,8 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCKERFILE = ROOT / "Dockerfile"
+DOCKERIGNORE = ROOT / ".dockerignore"
 DEVCONTAINER = ROOT / ".devcontainer" / "devcontainer.json"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
+CONTAINER_SMOKE = ROOT / "scripts" / "smoke_container.sh"
 GUIDE = ROOT / "docs" / "DOCKER_SETUP.md"
 LOCAL_LINK = re.compile(r"\[[^]]+\]\((?P<target>[^)]+)\)")
 
@@ -34,6 +36,25 @@ def test_dockerfile_has_no_persistent_jupyter_security_override() -> None:
         'python -m pip install --no-cache-dir -e ".[dev,io,plot]" jupyter ipykernel'
         in source
     )
+
+
+def test_docker_build_context_contains_only_declared_package_inputs() -> None:
+    active_lines = [
+        line
+        for raw_line in DOCKERIGNORE.read_text().splitlines()
+        if (line := raw_line.strip()) and not line.startswith("#")
+    ]
+
+    assert active_lines == [
+        "*",
+        "!pyproject.toml",
+        "!README.md",
+        "!src/",
+        "!src/**",
+        "**/__pycache__/",
+        "**/*.pyc",
+        "**/*.egg-info/",
+    ]
 
 
 def test_devcontainer_uses_repository_dockerfile_nonroot_user_and_forwarded_port() -> (
@@ -65,13 +86,40 @@ def test_jupyter_launcher_is_valid_shell_and_keeps_security_owned_by_jupyter() -
         assert forbidden not in source
 
 
+def test_container_smoke_builds_and_checks_nonroot_authenticated_jupyter() -> None:
+    completed = subprocess.run(
+        ["bash", "-n", str(CONTAINER_SMOKE)],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    source = CONTAINER_SMOKE.read_text()
+    for required in (
+        "docker info",
+        "docker build",
+        "id -u",
+        "python -c",
+        "Authorization: token",
+        "docker port",
+        "unauthenticated HTTP",
+    ):
+        assert required in source
+    for forbidden in ("exit 0 #", "SKIP", "fallback"):
+        assert forbidden not in source
+
+
 def test_container_guide_matches_current_commands_and_discloses_unrun_build() -> None:
     text = GUIDE.read_text()
 
     assert "`.[dev,io,plot]`".replace("`", chr(96)) in text
     assert "`127.0.0.1`".replace("`", chr(96)) in text
     assert "認証と XSRF は無効にならない" in text
-    assert "Docker CLI/\ndaemon がないため" in text
+    assert "Docker CLI/daemon がないため" in text
+    assert "scripts/smoke_container.sh" in text
+    assert "container-smoke" in text
     for forbidden in (
         "make build",
         "make clean",

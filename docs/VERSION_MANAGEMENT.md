@@ -54,6 +54,8 @@ applyは次を順に行います。
   [self-hosted, linux, x64, gpu] が設定されている。
 - `.github/workflows/cuda-validation.yml` をrelease候補commitに対して手動実行し、
   schema-v1の `status: pass` artifactをレビューしている。
+- 通常CIの `container-smoke` が同じcommitで成功し、VS Code Dev Containersの
+  attachとPorts viewを手動確認している。
 - PyPI environmentとPYPI_API_TOKENが設定されている。
 - 対象版の成果物がPyPIにまだ存在しない。
 
@@ -77,9 +79,10 @@ git push origin v0.3.0
 3. 実CUDA deviceの存在確認。
 4. trustedなNumPy/CuPy parity referenceと全gpu marker test。
 5. 5経路の数値・backend・転送量・同期済み時間を記録するschema-v1 CUDA証拠。
-6. sdist/wheel build、Twine検査、clean wheel install/import。
-7. PyPI公開。
-8. PyPI成功後、CUDA証拠JSONを添付したGitHub Release作成。
+6. clean build、非root package import、認証付きJupyter HTTPを行うcontainer検証。
+7. sdist/wheel build、Twine検査、clean wheel install/import。
+8. PyPI公開。
+9. PyPI成功後、CUDA証拠JSONを添付したGitHub Release作成。
 
 GPU jobはself-hosted GPU runner専用です。runnerがない場合にskipやCPU fallback
 はせず、releaseは待機または失敗します。通常CPU CIでのGPU skipはリリース
@@ -134,6 +137,7 @@ git tag -l
 - [release workflow](../.github/workflows/release.yml)
 - [manual real-CUDA workflow](../.github/workflows/cuda-validation.yml)
 - [real-CUDA evidence recorder](../benchmarks/run_cuda_evidence.py)
+- [container smoke](../scripts/smoke_container.sh)
 - [local release preparation](../scripts/release.py)
 - [documentation/workflow audit](refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md)
 - [Phase 8 release-readiness audit](refactoring/PHASE8_RELEASE_READINESS_AUDIT.md)

@@ -2244,6 +2244,15 @@ remains blocked on device-native CUDA plus real-GPU evidence, an actual
 container build/attach, protected publication setup, and the explicit final
 version/changelog transition. No source or calculation behavior changes.
 
+P8.5-a/D-147 adds one hard-failing development-container smoke script and makes
+it a required normal-CI and final-tag job. The build context is an explicit
+package-input allowlist. The runtime checks the unmounted image as non-root,
+then an authenticated Jupyter API through a read-only checkout and isolated
+writable notebooks mount; unauthenticated HTTP 200 is rejected. Local static,
+workflow, and actionlint checks pass, but Docker is unavailable here. Phase 8
+still requires a successful hosted-runner result plus the manual VS Code
+attach/Ports check; no calculation behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

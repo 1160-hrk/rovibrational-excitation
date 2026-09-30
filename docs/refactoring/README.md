@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1521 passed, 16 skipped (1537 collected) |
+| Pytest | 1523 passed, 16 skipped (1539 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -570,6 +570,12 @@ all three split modes, checks both device and host input routes against NumPy,
 and records synchronized timing without a speed gate. The suite has 1521 passes
 and 16 optional-GPU skips (1537 collected). Phase 5 remains open because no
 actual-hardware report has been accepted locally.
+
+P8.5-a/D-147 adds one required normal/release container smoke without changing
+package behavior. Its minimal context builds the image, verifies non-root
+unmounted-image import, and exercises token-authenticated Jupyter through a
+read-only checkout. The suite has 1523 passes and 16 optional-GPU skips (1539
+collected). Docker execution and manual VS Code attach remain external.
 
 P6.2-c
 implements D-069:
