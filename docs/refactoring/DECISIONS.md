@@ -5140,6 +5140,34 @@ prove an OIDC exchange or publication, so no external success is claimed.
 Implementation commit: this checkpoint.
 
 
+### D-150: Local release completion is an explicit non-acceptance handoff
+
+Status: Implemented on 2026-09-30 as P8.5-d.
+
+Scope: `scripts/release.py` post-apply messaging and release documentation only.
+No gate command, file mutation, package source, physical formula, numerical
+path, or simulation result changes.
+
+A successful local `--apply` previously told the user to commit
+`pyproject.toml` and create the matching tag, then mentioned only CPU and GPU.
+That message was stale after the changelog, real-CUDA artifact, hosted container,
+manual Dev Containers UI, and OIDC publication contracts became mandatory. It
+could encourage tagging before release acceptance.
+
+The tool now states first that local preparation is not release acceptance. It
+requires review and explicit commit of both `pyproject.toml` and `CHANGELOG.md`,
+and says not to tag until required CI, accepted real-CUDA evidence, hosted
+container smoke, manual Dev Containers UI checks, and exact PyPI Trusted
+Publisher setup all pass. It still performs no commit, tag, push, publication,
+or external-state mutation. Dry-run output and every apply gate are unchanged.
+A source contract prevents these handoff conditions from silently disappearing.
+
+The complete local suite remains 1524 passes and 16 optional-GPU skips out of
+1540 collected. No external gate is reported as passed.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

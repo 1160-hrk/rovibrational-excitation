@@ -179,11 +179,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             raise
 
-        print("release preparation passed")
+        print("local release preparation passed; this is not release acceptance")
+        print("Review pyproject.toml, update CHANGELOG.md, and commit both explicitly.")
         print(
-            "Review and commit pyproject.toml, then create/push the matching tag explicitly."
+            "Do not tag until required CI, accepted real-CUDA evidence, hosted "
+            "container smoke, manual Dev Containers UI checks, and the exact "
+            "PyPI Trusted Publisher setup all pass."
         )
-        print("The tag workflow repeats CPU gates and requires a real-GPU runner.")
         return 0
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"release preparation failed: {exc}", file=sys.stderr)

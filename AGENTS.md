@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-c/D-149 OIDC PyPI publication; P8.5-b/D-148 immutable workflow actions
+Verified checkpoints: P8.5-d/D-150 truthful release handoff; P8.5-c/D-149 OIDC PyPI publication
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -320,6 +320,13 @@ built artifact, and calls the pinned publisher with no secret input or fallback.
 The exact `1160-hrk/rovibrational-excitation`, `release.yml`, `pypi` Trusted
 Publisher registration remains external. The suite remains 1524 passes and 16
 optional-GPU skips (1540 collected).
+
+
+P8.5-d/D-150 makes local apply success an explicit non-acceptance handoff. It
+requires version/changelog review and names required CI, accepted real-CUDA,
+hosted container, manual Dev Containers UI, and exact Trusted Publisher gates
+before tagging. Commands and mutations are unchanged. The suite remains 1524
+passes and 16 optional-GPU skips (1540 collected).
 
 ## Current next work
 

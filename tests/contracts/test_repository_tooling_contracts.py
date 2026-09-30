@@ -118,6 +118,11 @@ def test_local_release_tool_never_commits_tags_or_pushes() -> None:
     assert "--apply" in source
     assert "pytest" in source
     assert "twine" in source
+    assert "not release acceptance" in source
+    assert "CHANGELOG.md" in source
+    assert "real-CUDA evidence" in source
+    assert "container smoke" in source
+    assert "PyPI Trusted Publisher" in source
 
 
 def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> None:

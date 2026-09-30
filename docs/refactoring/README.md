@@ -589,6 +589,11 @@ contains no API-token secret or fallback. The suite remains 1524 passes and 16
 optional-GPU skips (1540 collected). The exact protected environment and
 PyPI-side publisher registration remain external prerequisites.
 
+P8.5-d/D-150 corrects the local release tool handoff without changing any gate
+or mutation. Successful apply now says it is not release acceptance, requires
+both version and changelog review, and names every external pre-tag blocker. The
+suite remains 1524 passes and 16 optional-GPU skips (1540 collected).
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -2268,6 +2268,12 @@ it cannot build or check out source and has no password or fallback. The exact
 PyPI publisher identity and protected `pypi` environment remain external
 release prerequisites. No package or calculation behavior changes.
 
+
+P8.5-d/D-150 makes successful local release preparation an explicit
+non-acceptance handoff. It names the required changelog commit and all external
+pre-tag gates instead of suggesting immediate tag creation. Commands, mutations,
+and calculation behavior are unchanged.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

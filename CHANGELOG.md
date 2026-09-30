@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyPI publication uses isolated, job-scoped OIDC Trusted Publishing with no
   long-lived API-token input or fallback
 - Explicit dry-run/apply release preparation script (`scripts/release.py`)
+  whose successful apply is a non-acceptance handoff and never suggests tagging
+  before the external release gates pass
 - CI smoke coverage for the supported parameter template and example index
 
 ### 🔧 Changed

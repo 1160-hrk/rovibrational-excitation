@@ -42,8 +42,10 @@ applyは次を順に行います。
 5. sdist/wheelをbuildし、Twineで検証する。
 6. 失敗時はpyproject.tomlを元の内容へ戻す。
 
-成功してもcommitやtagは作りません。差分とCHANGELOGをレビューし、
-通常のGit操作としてバージョン変更をcommitしてください。
+成功してもrelease受入完了ではなく、commitやtagも作りません。完了表示は
+pyproject.tomlとCHANGELOGの明示的レビュー・commitに加え、通常CI、accepted
+real-CUDA evidence、hosted container smoke、Dev Containers UI、PyPI Trusted
+Publisherの全条件をtag前に要求します。
 
 ## タグを作成する前の条件
 

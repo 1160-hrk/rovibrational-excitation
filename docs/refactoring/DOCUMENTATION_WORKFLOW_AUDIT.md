@@ -98,4 +98,5 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    artifact, require the D-147 hosted container smoke and manually verify VS
    Code attach/Ports, configure the exact D-149 PyPI Trusted Publisher and
    protected environment, then repeat the final-version gates from a clean
-   commit.
+   commit. D-150 makes the local apply command print this as a non-acceptance
+   handoff rather than suggesting immediate tag creation.

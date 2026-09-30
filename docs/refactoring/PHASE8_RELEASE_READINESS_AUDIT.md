@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-09-30
-Local code checkpoint: P8.5-c/D-149 candidate
+Local code checkpoint: P8.5-d/D-150 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,7 +14,7 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-149 candidate contains only the reviewed P8.5-c unit | Pass |
+| Clean source checkpoint | D-150 candidate contains only the reviewed P8.5-d unit | Pass |
 | Complete CPU suite | 1524 passed, 16 optional-GPU skipped; 1540 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
@@ -94,7 +94,9 @@ No local command in this audit publishes, tags, pushes, or creates a release.
 Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA, hosted
 container smoke, manual Dev Containers UI, and external publication
 prerequisites are ready. That command changes only `pyproject.toml`, runs local
-gates, and never commits/tags/pushes/publishes. After it passes:
+gates, and never commits/tags/pushes/publishes. Its success message explicitly
+states that this is not release acceptance and repeats the external blockers.
+After it passes:
 
 1. update the changelog from an Unreleased development record to the reviewed
    final `0.3.0` release date;
