@@ -2189,6 +2189,15 @@ self-hosted `gpu` runner label. Both workflows pass the same version locally.
 The full suite has 1492 passes and 10 optional-GPU skips (1502 collected). No
 package, configuration schema, calculation, or result behavior changes.
 
+P8.4-a/D-141 publishes the breaking v0.2-to-v0.3 migration guide and links it
+from every public documentation entry point and the release guide. It records
+exact owner/key migrations, separates legacy batch overlap from standard
+Krotov, refuses a guessed conversion for unresolved legacy modulation, and
+requires new versioned runs instead of implicit result/checkpoint upgrades.
+Five executable contracts protect those claims. The full suite has 1497 passes
+and 10 optional-GPU skips (1507 collected). No implementation or calculation
+behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

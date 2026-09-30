@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   persistence boundaries.
 - The documentation index now distinguishes verified current contracts from
   guides still undergoing v0.3 migration audit.
+- A v0.2-to-v0.3 migration guide now covers moved imports, required units,
+  field/time-grid contracts, distinct optimizer layouts, spectroscopy, and
+  strict result/checkpoint handling without inferred conversions.
 - The normal-simulation parameter reference now follows the strict generated,
   sampled-field, model, unit, and execution schemas.
 - The sweep guide now documents exact singleton, insertion-order,

@@ -33,6 +33,7 @@ python -m rovibrational_excitation.cli.simulate \
 
 | 文書 | 内容 | 状態 |
 |---|---|---|
+| [MIGRATION_V0_3.md](MIGRATION_V0_3.md) | v0.2 の import・設定・最適化・保存形式からの明示的移行 | 現行移行契約 |
 | [RESULT_STORAGE.md](RESULT_STORAGE.md) | result/checkpoint schema v1、atomic generation、strict loader | 現行契約 |
 | [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) | 厳密 Cartesian split と helicity-projected 近似の原理 | 現行の物理契約 |
 | [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) | final tag、CPU/実 GPU gate、明示的な release 操作 | 現行 release 契約 |

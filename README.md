@@ -218,13 +218,14 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-The current local checkpoint is 1488 passing CPU tests with 10 optional-GPU
+The current local checkpoint is 1497 passing CPU tests with 10 optional-GPU
 skips and 80% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [v0.3 migration guide](docs/MIGRATION_V0_3.md)
 - [Parameter reference](docs/PARAMETER_REFERENCE.md)
 - [Time propagation](docs/TIME_PROPAGATION.md)
 - [Unit system](docs/UNIT_SYSTEM.md)

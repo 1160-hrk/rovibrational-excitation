@@ -1,9 +1,9 @@
 # API and entry-point inventory
 
-Last verified: 2026-09-29
+Last verified: 2026-09-30
 Scope: Phase 0 task P0.1
 Original inventory baseline: `613ce93`
-Latest API checkpoint: D-132 documents the exact executable v0.3 surface
+Latest API checkpoint: D-141 publishes the explicit v0.2-to-v0.3 migration contract
 
 This document freezes the entry points that exist before the v0.3 package
 migration. It is an inventory, not a promise of backward compatibility.
@@ -22,6 +22,10 @@ behavior are understood.
 
 The exact target root namespace accepted under D-073 is implemented by D-130.
 The old root migration surface no longer exists.
+D-141 publishes `docs/MIGRATION_V0_3.md` from this inventory and the strict
+runtime validators. It maps supported owner paths and explicitly distinguishes
+normal-input renames from changes that cannot be translated mechanically,
+including legacy modulation, standard Krotov, and historical persistence.
 
 P6.1-a changes no import path, export, signature, or runtime implementation.
 It adds behavior guards before the planned TwoLevel ownership move. The

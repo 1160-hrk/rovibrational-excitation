@@ -43,6 +43,7 @@ the count difference never promotes generated or archived artifacts.
 | Files | Current finding | Required disposition |
 |---|---|---|
 | README.md, README_JP.md | D-132 rewrites both from the exact D-073 root and supported examples. Marked quickstarts execute, local links resolve, stale APIs/evidence are rejected, and SymTop/CUDA/analyzer limits are explicit. | Keep both languages contract-synchronized; update measured counts only from complete local gates. |
+| docs/MIGRATION_V0_3.md | D-141 maps v0.2 imports, normal inputs, optimizer layouts, spectroscopy, and disk data to explicit v0.3 boundaries. It forbids guessed legacy modulation conversion, Krotov-layout conflation, and implicit result/checkpoint upgrades. | Keep mappings synchronized with runtime migration errors; add no inferred physical meaning. |
 | docs/README.md | D-133 replaces the stale examples/recommendations with a current route and verification-status index; local links and forbidden old advice are contract-tested. | Keep migration-audit labels until each remaining public guide is independently corrected. |
 | docs/PARAMETER_REFERENCE.md | D-134 rebuilds the guide from strict model/generated validators and the executable template; required keys, removed-name rejection, links, CLI, and CUDA disclosure are contract-tested. | Keep synchronized with schema changes; do not duplicate sweep or optimizer schemas. |
 | docs/SWEEP_SPECIFICATION.md | D-135 records exact singleton scalarization, insertion-ordered Cartesian products, fixed list keys, paths, and resume provenance; guide/help/link contracts pass. | Keep order and checkpoint identity synchronized with `simulation.sweep`. |
@@ -84,8 +85,9 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    job or substitute skipped CPU tests for its evidence.
 3. D-130 finalizes the root and D-132 rewrites both public READMEs with
    executable examples. Rebuild docs/README.md next from audited current guides.
-4. Public guide migration and Codecov disposition are complete. Add the
-   repository-wide local-link/YAML checks and run actionlint when available.
+4. Public guide migration, Codecov disposition, repository-wide Markdown/YAML
+   checks, actionlint gating, and the breaking-change migration note are complete
+   under D-132 through D-141.
 5. On the final clean commit, repeat build/clean install, all active examples,
    release dry-run, real-GPU workflow, and external publication configuration
    checks before the final 0.3.0 tag.

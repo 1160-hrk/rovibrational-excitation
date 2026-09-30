@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1492 passed, 10 skipped (1502 collected) |
+| Pytest | 1497 passed, 10 skipped (1507 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -530,6 +530,13 @@ code fences, and YAML/YML syntax. The required quality job runs pinned,
 checksum-verified actionlint v1.7.12, with only the release runner's `gpu` label
 declared as custom. Both workflows pass locally. The suite has 1492 passes and
 10 optional-GPU skips (1502 collected); no calculation behavior changed.
+
+P8.4-a/D-141 publishes the explicit v0.2-to-v0.3 migration contract. It maps
+current owners and strict input replacements, distinguishes the old batch
+overlap from standard Krotov, rejects inferred conversion of ambiguous legacy
+modulation, and requires new schema-v1 runs instead of implicit disk upgrades.
+Five contracts verify the guide and its public links. The suite has 1497 passes
+and 10 optional-GPU skips (1507 collected); no implementation changed.
 
 P6.2-c
 implements D-069:

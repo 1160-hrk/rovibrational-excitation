@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.3-c/D-140 repository validation; P8.3-b/D-139 coverage authority
+Verified checkpoints: P8.4-a/D-141 migration contract; P8.3-c/D-140 repository validation
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1492 passed, 10 GPU tests skipped (1502 collected)
+1497 passed, 10 GPU tests skipped (1507 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -246,7 +246,7 @@ Measured at `613ce93`:
 - Optimization modules: 72-100% measured coverage.
 - Spectroscopy monolith: 94% measured coverage.
 - RK4 Schrödinger implementation: 20% measured line/branch coverage.
-- README claims 63% coverage and contains removed APIs; it is not authoritative.
+- Public READMEs report the measured 80% checkpoint separately from the mandatory 47% CI floor.
 
 Targets are defined phase-by-phase in
 `docs/refactoring/EXECUTION_PLAN.md`. Coverage must never decrease from the
@@ -257,6 +257,12 @@ job and adds repository-wide contracts for Markdown local links/code fences and
 YAML syntax, including historical archives. Both workflows pass actionlint
 v1.7.12 locally. The suite has 1492 passes and 10 optional-GPU skips (1502
 collected); no calculation behavior changed.
+
+P8.4-a/D-141 publishes and contract-tests the explicit v0.2-to-v0.3 migration
+guide. It maps current owners and schemas while refusing inferred legacy
+modulation, Krotov-layout conversion, and unversioned disk upgrades. The suite
+has 1497 passes and 10 optional-GPU skips (1507 collected); no implementation
+or calculation behavior changed.
 
 ## Current next work
 
@@ -706,8 +712,8 @@ The next work is:
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
    and checksum-verified actionlint are complete. Actual real-GPU and PyPI
-   evidence, migration notes, and the final version bump remain open Phase 8
-   gates.
+   evidence and the final version bump remain open Phase 8 gates. The explicit
+   breaking-change migration note is complete under D-141.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.

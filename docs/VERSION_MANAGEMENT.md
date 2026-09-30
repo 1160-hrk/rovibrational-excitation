@@ -117,6 +117,7 @@ git tag -l
 
 ## 関連ファイル
 
+- [v0.3 migration guide](MIGRATION_V0_3.md)
 - [CHANGELOG.md](../CHANGELOG.md)
 - [pyproject.toml](../pyproject.toml)
 - [release workflow](../.github/workflows/release.yml)

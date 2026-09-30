@@ -4836,6 +4836,44 @@ final version transition remain separate release gates.
 Implementation commit: this checkpoint.
 
 
+### D-141: v0.3 migration is explicit and never guesses physical meaning
+
+Status: Implemented on 2026-09-30 as P8.4-a.
+
+Scope: public migration documentation and documentation contracts. No import,
+configuration, physical formula, optimizer, persistence, or numerical behavior
+changes.
+
+The repository now publishes `docs/MIGRATION_V0_3.md` as the explicit path from
+v0.2 material to the intentionally incompatible v0.3 interface. It is linked
+from both public READMEs, the documentation index, and the release guide. Five
+contracts require those entry points, verify the documented replacement owners,
+keep removed root names absent, and freeze the most important normal,
+optimization, and historical-data warnings.
+
+The guide maps the accepted `use_M` representations and unambiguous neutral
+value/unit replacements, but does not turn all old names into blind string
+substitutions. In particular, the dimensionally unresolved old
+`carrier_freq_sin_mod` value has no one-to-one conversion: users reconstruct the
+accepted sinusoidal modulation from its explicit delay-based formula. Likewise,
+the former batch-overlap algorithm maps to `legacy_batch_overlap` only when its
+old numerical layout is intended; standard `krotov` uses separate interval
+controls and must not receive resampled legacy fields.
+
+The guide directs users to start from current examples, preserve old inputs and
+outputs read-only, verify grids/operators/observables, and create a new v0.3
+run. Unversioned results and checkpoints are not guessed, upgraded, repaired,
+or overwritten. No general automatic historical-data migration tool is
+claimed.
+
+The full suite has 1497 passes and 10 optional-GPU skips (1507 collected).
+Focused migration/readme/index/content contracts pass. No calculation or API
+implementation changed. Real CUDA, Docker build/attach, PyPI configuration,
+final clean release rehearsal, and the `0.3.0` version transition remain open.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

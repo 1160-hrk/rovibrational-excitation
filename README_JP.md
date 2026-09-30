@@ -205,12 +205,13 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-現在の local checkpoint は CPU 1488 tests pass、optional GPU 10 tests skip、
+現在の local checkpoint は CPU 1497 tests pass、optional GPU 10 tests skip、
 実測 branch coverage 80% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント
 
 - [ドキュメント索引](docs/README.md)
+- [v0.3 移行ガイド](docs/MIGRATION_V0_3.md)
 - [parameter reference](docs/PARAMETER_REFERENCE.md)
 - [時間発展](docs/TIME_PROPAGATION.md)
 - [単位系](docs/UNIT_SYSTEM.md)
