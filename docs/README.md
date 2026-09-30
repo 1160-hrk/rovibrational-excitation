@@ -106,9 +106,10 @@ reference field や測定規約を推測せず、非対応操作はエラーに�
 
 ## CPU/CUDA 状態
 
-検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy を要求した場合に
-NumPy へ暗黙 fallback はしませんが、現在の低レベル GPU 経路には host round trip
-が残ります。skip された GPU test は実 GPU の検証根拠ではありません。
+検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy RK4 は CPU と
+同じ計算グラフを使う device-native 実装ですが、split CuPy 経路には host round
+trip が残ります。NumPy への暗黙 fallback はなく、skip された GPU test は実 GPU
+の検証根拠ではありません。
 
 ## 開発者・Codex 向け
 

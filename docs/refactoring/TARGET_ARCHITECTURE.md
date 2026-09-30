@@ -489,11 +489,11 @@ Remaining stage intermediates may be replaced only in a separately benchmarked
 unit that assesses any numerical drift; the slower sub-ulp-different
 output-buffer experiment is not part of the architecture.
 
-D-062 verifies the NumPy side of this target. The typed result boundary already
-preserves an existing device array, but current CuPy RK4 and split helpers
-return through host memory. The target is still one direct
-`device kernel -> backend-native PropagationResult` path; the current
-`device -> host -> device` adapter is recorded debt, not an accepted layer.
+D-062 verifies the NumPy side of this target. D-144 gives CuPy RK4 the direct
+`device calculation -> backend-native PropagationResult` path and removes its
+incorrect RawKernel. The split helpers still return through host memory; that
+`device -> host -> device` adapter remains recorded debt, not an accepted layer.
+Real-GPU evidence is still required for both implementations.
 
 ## 7. Units and scaling ownership
 

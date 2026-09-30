@@ -120,6 +120,7 @@ def test_mypy_is_mandatory_only_for_named_typed_modules():
         "src/rovibrational_excitation/dynamics/capabilities.py",
         "src/rovibrational_excitation/dynamics/factory.py",
         "src/rovibrational_excitation/dynamics/algorithms/rk4/liouville_numpy.py",
+        "src/rovibrational_excitation/dynamics/algorithms/rk4/schrodinger_cupy.py",
         "src/rovibrational_excitation/dynamics/liouville.py",
         "src/rovibrational_excitation/dynamics/mixed_state.py",
         "src/rovibrational_excitation/dynamics/options.py",

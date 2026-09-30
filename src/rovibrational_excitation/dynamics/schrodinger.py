@@ -485,8 +485,8 @@ class SchrodingerPropagator(PropagatorBase[PureState]):
         stride: int,
         sparse: bool,
         renorm: bool,
-    ) -> np.ndarray:
-        """Run RK4 propagation algorithm."""
+    ) -> Any:
+        """Run RK4 propagation algorithm and preserve its selected backend."""
         from .algorithms.rk4.schrodinger import rk4_schrodinger
 
         backend_typed = self.backend

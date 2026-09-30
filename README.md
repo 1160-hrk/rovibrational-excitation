@@ -21,11 +21,11 @@ the complete CPU suite, physics references, branch coverage, supported
 examples, type checks, and clean-wheel imports; see the
 [CI workflow](.github/workflows/ci.yml).
 
-Real-CUDA execution is not yet verified. CuPy paths exist, but the current
-low-level RK4 and split-operator implementations still include device-to-host
-round trips. A requested CuPy backend never silently falls back to NumPy.
-CUDA is not considered release-ready until the mandatory real-GPU workflow
-passes.
+Real-CUDA execution is not yet verified. The low-level RK4 implementation
+now follows the CPU RK4 graph and returns device-native CuPy arrays, but this
+source-level result still needs mandatory real-GPU parity and performance
+evidence. The split-operator CuPy path still includes device-to-host round
+trips. A requested CuPy backend never silently falls back to NumPy.
 
 ## Supported physical models
 

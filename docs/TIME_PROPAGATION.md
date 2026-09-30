@@ -172,9 +172,11 @@ tolerance を明示し、最大絶対差を比較する。solver が刻みを自
 ## 10. CUDA の扱い
 
 CuPy を要求して利用できない場合は即座にエラーにし、NumPy へ fallback しない。
-現時点の低レベル Schrödinger RK4/split CuPy 経路には host round trip が残り、
-実 CUDA runner による数値・backend identity の release evidence は未取得である。
-CPU 上で GPU test が skip されたことは CUDA 対応の検証根拠ではない。
+低レベル Schrödinger RK4 は CPU と同じ `H0 - mu E` の4段計算、trajectory、
+stride、step ごとの renormalization を CuPy 上で実行し、CuPy 配列を直接返す。
+split CuPy 経路にはまだ host round trip が残る。RK4 を含め、実 CUDA runner による
+数値・backend identity・性能の release evidence は未取得である。CPU 上で
+GPU test が skip されたことは CUDA 対応の検証根拠ではない。
 
 ## 11. 参照先
 

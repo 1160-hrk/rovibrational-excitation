@@ -1190,9 +1190,9 @@ encode it in `PropagationResult`. Eliminate repeated transfer.
 
 Policy status: decided by D-026/D-039 and CPU/device-like boundary behavior
 accepted by D-062. `PropagationResult` retains an existing device state and
-converts only through explicit `to_numpy()`. Actual CuPy RK4 and split
-adapters still return through host memory, so the repeated-transfer acceptance
-row is not complete.
+converts only through explicit `to_numpy()`. P5.5-a/D-144 makes CuPy RK4 return
+device-native arrays; the split adapters still return through host memory, so
+the repeated-transfer acceptance row is not complete.
 
 ### Phase 5 acceptance
 
@@ -1209,6 +1209,16 @@ parity, backend-native low-level CuPy output, and removal of repeated
 device/host transfer. D-071 makes these mandatory v0.3 release gates. They do
 not block independent Phase 6 CPU model consolidation, but v0.3.0 cannot be
 tagged until the device-native implementation passes on a GPU-equipped runner.
+
+P5.5-a/D-144 replaces the user-approved incorrect fused CuPy RK4 kernel with
+a separate dense CuPy implementation of the CPU graph. It uses `H0 - mu E`,
+the exact left/mid/mid/right stages, the standard RK4 update, trajectory/stride,
+and per-step renormalization, and returns CuPy arrays without `.get()` or
+`cp.asnumpy`. A NumPy-backed CuPy double verifies the graph on CPU; three real
+GPU cases are collected for backend identity, shape, dtype, norm, and parity.
+The full CPU suite has 1506 passes and 13 optional-GPU skips (1519 collected).
+No CUDA speed claim is made. Split device residency and all real-GPU evidence
+remain open.
 
 ## 9. Phase 6 — model consolidation
 

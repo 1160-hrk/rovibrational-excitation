@@ -130,11 +130,11 @@ def test_cupy_final_only_keeps_low_level_row_shape(monkeypatch):
     """CPU and GPU low-level final-only results both have shape (1, dim)."""
     expected = np.array([[0.25 + 0.1j, 0.75 - 0.2j]])
 
-    def fake_gpu(*args):
-        del args
+    def fake_gpu(*args, **kwargs):
+        del args, kwargs
         return expected.copy()
 
-    monkeypatch.setattr(rk4_module, "_rk4_gpu", fake_gpu)
+    monkeypatch.setattr(rk4_module, "rk4_schrodinger_cupy", fake_gpu)
     result = rk4_module.rk4_schrodinger(
         np.diag([0.0, 1.0]),
         np.zeros((2, 2)),

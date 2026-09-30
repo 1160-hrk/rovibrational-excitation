@@ -182,8 +182,9 @@ class TestRK4CuPyBackend:
             H0, mu_x, mu_y, E_field, E_field, psi0, dt, backend="cupy"
         )
 
-        # 結果の一致確認
-        np.testing.assert_allclose(result_numpy, result_cupy, atol=1e-10)
+        # 結果の一致確認（ホスト変換はテスト境界でのみ明示する）
+        assert isinstance(result_cupy, cp.ndarray)
+        np.testing.assert_allclose(result_numpy, cp.asnumpy(result_cupy), atol=1e-10)
 
     def test_cupy_large_system(self):
         """CuPy大規模システム"""
@@ -206,16 +207,19 @@ class TestRK4CuPyBackend:
         )
 
         # 基本的な物理検証
-        norm = np.linalg.norm(result[0])
+        assert isinstance(result, cp.ndarray)
+        norm = cp.linalg.norm(result[-1]).item()
         np.testing.assert_allclose(norm, 1.0, atol=1e-6)
 
     def test_cupy_error_when_unavailable(self):
         """CuPy利用不可時のエラー"""
         # CuPyを一時的に無効化
-        import rovibrational_excitation.dynamics.algorithms.rk4.schrodinger as rk4_mod
+        from rovibrational_excitation.dynamics.algorithms.rk4 import (
+            schrodinger_cupy as cupy_mod,
+        )
 
-        original_cp = rk4_mod.cp
-        rk4_mod.cp = None
+        original_cp = cupy_mod.cp
+        cupy_mod.cp = None
 
         try:
             H0 = np.diag([0.0, 1.0])
@@ -232,7 +236,7 @@ class TestRK4CuPyBackend:
                 )
         finally:
             # 元に戻す
-            rk4_mod.cp = original_cp
+            cupy_mod.cp = original_cp
 
 
 class TestRK4LVNEComprehensive:

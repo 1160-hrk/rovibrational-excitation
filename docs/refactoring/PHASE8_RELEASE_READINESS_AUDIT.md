@@ -43,22 +43,19 @@ checkout and publishes only artifacts built in that run.
 
 ### 1. Device-native CUDA implementation and real-GPU evidence
 
-Phase 5 is still open. Current low-level CuPy routes violate the accepted
-backend-transfer contract:
+Phase 5 is still open. D-144 gives RK4 a CPU-consistent, device-native
+CuPy implementation and source contracts forbid `.get()`/`cp.asnumpy` in that
+owner. The split-operator setup and outputs still use `cp.asnumpy`, so its typed
+result can still incur a second host-to-device copy.
 
-- RK4 returns through `.get()`;
-- split-operator setup and outputs use `cp.asnumpy`;
-- the typed result boundary can therefore perform a second host-to-device copy.
+Thirteen GPU tests are collected but skipped locally. The release workflow
+requires a real `[self-hosted, linux, x64, gpu]` runner. Before release:
 
-Ten GPU tests are collected but skipped locally. The release workflow requires a
-real `[self-hosted, linux, x64, gpu]` runner, but its current parity selection
-alone does not prove the absence of hidden host transfers. Before release:
-
-1. separate/repair the CuPy kernels without changing formulas, precision,
+1. separate/repair the split CuPy path without changing its formulas, precision,
    time indices, interaction modes, or renormalization;
-2. require low-level and typed outputs to remain CuPy arrays;
-3. add a contract that forbids `.get()`/`cp.asnumpy` before explicit
-   `PropagationResult.to_numpy()` or persistence/analysis boundaries;
+2. require split low-level and typed outputs to remain CuPy arrays;
+3. forbid `.get()`/`cp.asnumpy` before explicit `PropagationResult.to_numpy()`
+   or persistence/analysis boundaries;
 4. exercise RK4 final/trajectory plus static Cartesian, rotating Cartesian, and
    helicity-projected split paths on a real GPU;
 5. record NumPy/CuPy parity, norm, shape, transfer count, and timing evidence;
@@ -98,6 +95,6 @@ runs local gates, and never commits/tags/pushes/publishes. After it passes:
 
 Local CPU, documentation, packaging, and dry-run preparation are complete at
 this checkpoint. The project is close to a version transition, but it is not a
-release candidate while the accepted CUDA device-native contract fails in
-source and lacks real-hardware evidence. The version remains `0.3.0.dev1` and no
-tag or publication is authorized by this audit.
+release candidate while split-operator still fails the CUDA device-native
+contract and both CUDA algorithms lack real-hardware evidence. The version
+remains `0.3.0.dev1` and no tag or publication is authorized by this audit.

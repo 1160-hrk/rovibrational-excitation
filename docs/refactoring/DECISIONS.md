@@ -4946,6 +4946,39 @@ tag, push, PyPI publication, and GitHub Release remain unperformed.
 Implementation commit: this checkpoint.
 
 
+### D-144: CuPy RK4 is corrected to the CPU graph and returns device arrays
+
+Status: Accepted by the user and implemented on 2026-09-30 as P5.5-a.
+
+Scope: dense CuPy pure-state RK4 calculation and backend boundary. NumPy dense,
+NumPy CSR, Liouville, split operator, time grids, units, and model formulae are
+unchanged.
+
+The former fused RawKernel did not implement the authoritative RK4 calculation.
+It formed `H0 + mu_x*Ex + mu_y*Ey` instead of `H0 - mu_x*Ex - mu_y*Ey`; its
+working buffer already contained `psi + dt*k3` when the weighted RK4 increment
+was added, so `dt*k3` entered a second time; and it ignored `return_traj`,
+`stride`, and `renorm`. It always returned one host row through `.get()`.
+These discrepancies could not be repaired without changing CUDA numerical
+results, so the user explicitly approved matching the CPU calculation.
+
+The RawKernel is replaced by `rk4/schrodinger_cupy.py`, which applies the same
+left/mid/mid/right fields, `H0 - mu E` derivative, standard four-stage update,
+trajectory/stride writes, and per-step renormalization as the dense CPU path.
+Operators, fields, stages, and returned arrays stay in CuPy; only the scalar
+renormalization validity check synchronizes to preserve the existing explicit
+error behavior. There is no `.get()` or `cp.asnumpy` in the new owner.
+
+A NumPy-backed CuPy double independently exercises all options without CUDA.
+Three real-GPU tests additionally require CuPy identity, complex128 dtype,
+shape, norm, and CPU parity, but are skipped in this environment and are not
+acceptance evidence. The complete CPU run has 1506 passes and 13 optional-GPU
+skips out of 1519 collected. No performance claim is made. Phase 5 and v0.3.0
+remain blocked on split-operator device residency and actual CUDA evidence.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

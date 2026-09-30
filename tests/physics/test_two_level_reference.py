@@ -236,5 +236,10 @@ def test_numpy_and_cupy_final_state_agree():
         return_traj=False,
     )
 
+    import cupy as cp
+
+    assert isinstance(cupy_final, cp.ndarray)
     assert cupy_final.shape == numpy_final.shape == (2,)
-    np.testing.assert_allclose(cupy_final, numpy_final, rtol=2.0e-12, atol=2.0e-13)
+    np.testing.assert_allclose(
+        cp.asnumpy(cupy_final), numpy_final, rtol=2.0e-12, atol=2.0e-13
+    )

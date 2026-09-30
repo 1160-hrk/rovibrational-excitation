@@ -19,10 +19,10 @@
 物理参照、branch coverage、対応例、型検査、wheel の clean install を実行します。
 詳細は [CI workflow](.github/workflows/ci.yml) を参照してください。
 
-実 CUDA での実行は未検証です。CuPy 経路は存在しますが、現在の低レベル
-RK4/split-operator には device-to-host round trip が残っています。CuPy を要求した
-場合に NumPy へ暗黙 fallback することはありません。必須の実 GPU workflow が
-通るまでは CUDA を release-ready と扱いません。
+実 CUDA での実行は未検証です。低レベル RK4 は CPU と同じ計算グラフを使い、
+device-native な CuPy 配列を返す実装になりましたが、実 GPU での parity と性能の
+検証が必須です。split-operator の CuPy 経路には device-to-host round trip が
+残っています。CuPy を要求して NumPy へ暗黙 fallback することはありません。
 
 ## 対応する物理モデル
 

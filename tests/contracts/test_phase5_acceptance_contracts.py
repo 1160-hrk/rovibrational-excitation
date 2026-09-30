@@ -112,3 +112,26 @@ def test_split_operator_imports_required_numba_without_hidden_fallback() -> None
     assert len(direct_numba_imports) == 1
     assert "_HAS_NUMBA" not in source
     assert "Dummy decorator" not in source
+
+
+def test_cupy_rk4_has_a_separate_device_native_owner() -> None:
+    root = Path(__file__).resolve().parents[2]
+    wrapper_path = (
+        root
+        / "src"
+        / "rovibrational_excitation"
+        / "dynamics"
+        / "algorithms"
+        / "rk4"
+        / "schrodinger.py"
+    )
+    kernel_path = wrapper_path.with_name("schrodinger_cupy.py")
+
+    wrapper_source = wrapper_path.read_text()
+    kernel_source = kernel_path.read_text()
+
+    assert "_KERNEL_SRC_TEMPLATE" not in wrapper_source
+    assert "from .schrodinger_cupy import rk4_schrodinger_cupy" in wrapper_source
+    assert ".get(" not in kernel_source
+    assert "cp.asnumpy" not in kernel_source
+    assert "H0 - field_x * mu_x - field_y * mu_y" in kernel_source

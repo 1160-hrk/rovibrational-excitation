@@ -190,7 +190,10 @@ class TestRK4SchrodingerDetailed:
             H0, mu_x, mu_y, Ex, Ey, psi0, dt=0.1, return_traj=False, backend="cupy"
         )
 
-        np.testing.assert_allclose(result_numpy[0], result_cupy[0], atol=1e-12)
+        assert isinstance(result_cupy, cp.ndarray)
+        np.testing.assert_allclose(
+            result_numpy[0], cp.asnumpy(result_cupy[0]), atol=1e-12
+        )
 
     def test_renormalization_option(self):
         """再正規化オプションの効果"""

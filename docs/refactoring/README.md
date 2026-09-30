@@ -552,6 +552,12 @@ keeps v0.3.0 blocked on device-native CUDA plus real-GPU evidence, an actual
 container build/attach, publication infrastructure, and the final explicit
 version transition. No source or calculation behavior changed.
 
+P5.5-a/D-144 replaces the incorrect fused CuPy RK4 kernel with a separate
+CPU-consistent device-native implementation. CPU-backed graph tests cover
+sign, stages, trajectory, stride, and renormalization; three real-GPU parity
+cases are collected. The suite has 1506 passes and 13 optional-GPU skips (1519
+collected). Split device residency and all real-CUDA evidence remain open.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -589,8 +595,9 @@ all CPU-verifiable Phase 5 rows now have executable evidence. NumPy CSR split
 is exactly equal to dense spectral execution, prepared split kernels exactly
 match public results, and an existing device state crosses result finalization
 by identity. The dead missing-Numba fallback is removed because Numba is a
-required dependency. Phase 5 remains open: current CuPy RK4 and split helpers
-round-trip through host memory, and real CUDA parity is unverified.
+required dependency. Phase 5 remains open: D-144 makes CuPy RK4
+device-native, but split still round-trips through host memory and all real
+CUDA parity/performance evidence remains unverified.
 P5.1-c implements D-061:
 the dense Liouville RK4 kernel reuses the exactly shared right/next-left
 endpoint Hamiltonian. Multiple dimensions and both output modes are bitwise

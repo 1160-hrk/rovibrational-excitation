@@ -47,9 +47,9 @@ parameter file は Python module として実行されます。信頼できな�
 | `renorm` | `bool` | step ごとの wavefunction 規格化を選択 |
 
 CuPy と CSR の組合せは非対応です。density/Liouville は NumPy dense RK4 のみです。
-SymTop は NumPy RK4 のみです。実 CUDA は未検証で、GPU 経路には host round trip が
-残ります。`backend="cupy"` を要求して利用不能な場合、NumPy へ fallback せず
-エラーになります。
+SymTop は NumPy RK4 のみです。実 CUDA は未検証です。CuPy RK4 は device-native
+実装ですが、split CuPy 経路には host round trip が残ります。`backend="cupy"` を
+要求して利用不能な場合、NumPy へ fallback せずエラーになります。
 
 ### optional workflow key
 

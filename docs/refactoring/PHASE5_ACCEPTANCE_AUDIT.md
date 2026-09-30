@@ -1,13 +1,13 @@
 # Phase 5 numerical-engine acceptance audit
 
-Last verified: 2026-09-16
-Checkpoint: P5.4-a / D-062 acceptance evidence; D-071 CUDA release scope
+Last verified: 2026-09-30
+Checkpoint: P5.5-a / D-144 device-native CuPy RK4; split and real CUDA pending
 
 ## Scope
 
 This audit compares the current implementation and executable tests with every
-Phase 5 acceptance row. It does not authorize a physics change or treat a
-skipped CUDA test as evidence.
+Phase 5 acceptance row. CPU-backed doubles can verify dispatch and calculation
+graphs, but they are not CUDA numerical or performance evidence.
 
 ## P5.1 RK4
 
@@ -19,8 +19,14 @@ skipped CUDA test as evidence.
 | Liouville endpoint reuse preserves the old loop | Verified exactly | D-061; final and trajectory `np.array_equal` comparisons |
 | Field left/mid/right indices and `-mu E` agree | Verified | solver physics and density contracts |
 | NumPy performance is measured | Verified | Numba CSR and Liouville endpoint-reuse artifacts |
-| CuPy RK4 remains device-native internally | Not satisfied | `_rk4_gpu` calls `.get()` before the typed result boundary |
-| Real CUDA parity | Not verified | ten GPU tests are collected but skipped here |
+| CuPy RK4 graph matches CPU and remains device-native | Implemented; real GPU pending | D-144; `test_cuda_rk4_contracts.py` |
+| Real CUDA parity and performance | Not verified | three new GPU cases plus existing GPU suite skip here |
+
+D-144 removes the former fused RawKernel. That kernel used `H0 + mu E`, added
+its `dt*k3` stage a second time during the final update, ignored trajectory,
+stride, and renormalization, and returned through `.get()`. The replacement
+uses the same dense RK4 graph as CPU and returns its CuPy allocation directly.
+No GPU speed claim is made without measurement on actual hardware.
 
 ## P5.2 split operator
 
@@ -36,28 +42,28 @@ skipped CUDA test as evidence.
 | Cartesian converges to RK4 at two step sizes | Verified | coarse/fine ratio 3.987 |
 | Public, spectral-setup, and inner-loop timing are separate | Verified | `split-polarization-v0.3.json` and its report contracts |
 | NumPy/CuPy numerical parity and shapes | Collected, not verified here | CUDA tests skip without hardware |
-| CuPy result remains device-native internally | Not satisfied | both split CuPy helpers call `cp.asnumpy` |
+| CuPy result remains device-native internally | Not satisfied | split helpers still call `cp.asnumpy` |
 
-The direct NumPy/Numba dependency is now honest. Numba is a required project
-dependency, so the dead import-time dummy-decorator fallback was removed.
-Missing Numba now raises the ordinary dependency error instead of silently
-changing execution mode.
+The direct NumPy/Numba dependency is honest. Numba is a required project
+dependency, so missing Numba raises the ordinary dependency error rather than
+silently changing execution mode.
 
 ## P5.3 backend transfer policy
 
-D-026 and D-039 already decide the public policy:
+D-026 and D-039 decide the public policy:
 
 1. `PropagationResult.state` belongs to the selected backend.
 2. An existing device state passes through finalization by identity.
 3. Host conversion occurs only through explicit `PropagationResult.to_numpy()`.
 4. Persistence and host-only analysis call that boundary explicitly.
 
-The typed boundary satisfies these rules and has executable device-like
-contracts. The current CuPy numerical adapters do not: RK4 performs
-`device -> host` with `.get()`, split performs it with `cp.asnumpy`, and
-`finalize_propagation_result` must then perform `host -> device` to honor the
-public result type. This repeated transfer is observable source debt, not a
-different public contract.
+The typed boundary and CuPy RK4 now satisfy this source-level policy. RK4
+operators, fields, stages, trajectories, and final states stay in CuPy arrays.
+With `renorm=True`, a scalar validity check synchronizes so the existing error
+contract can be preserved; no state or trajectory array is copied to the host.
+
+Split setup and return still use `cp.asnumpy`, after which result finalization
+can copy the state back to the device. That repeated transfer remains open.
 
 ## Phase 5 acceptance disposition
 
@@ -68,29 +74,25 @@ different public contract.
 | No silent algorithm/backend/storage fallback | Pass |
 | NumPy performance and trajectory memory are documented | Pass |
 | Existing device state is retained by the result boundary | Pass |
-| Real CUDA RK4 and split parity | Pending real GPU |
-| No repeated transfer on CuPy execution | Fail until CUDA migration |
+| CuPy RK4 source graph and device-native return | Implemented, real GPU pending |
+| Real CUDA RK4 and split parity/performance | Pending real GPU |
+| No repeated transfer on all CuPy execution | Fail until split migration |
 
-Phase 5 must remain **in progress**. CPU work is accepted; CUDA closure is not.
-Under D-071, CUDA is an explicit v0.3 supported target rather than a deferred
-extension. The external hardware blocker does not prevent independently tested
-Phase 6 CPU model consolidation, but Phase 5 must not be marked complete and
-the final v0.3.0 tag must not be created before the required real-GPU run.
+Phase 5 remains **in progress**. The final v0.3.0 tag requires both removal of
+the split-operator host round trip and successful real-GPU evidence.
 
-## Required CUDA closure unit
+## Remaining CUDA closure work
 
-Implementation may proceed without local CUDA, but closure requires a real GPU:
+1. separate split CuPy execution from the mixed CPU module;
+2. keep split preparation, fields, trajectories, and final states on device;
+3. prohibit `.get()` and `cp.asnumpy` before an explicit host boundary;
+4. run RK4 final/trajectory and static Cartesian, rotating Cartesian, and
+   helicity-projected split cases on real CUDA;
+5. verify CPU/GPU parity, norm, shape, dtype, backend identity, and transfer
+   counts;
+6. benchmark setup, propagation, and end-to-end execution before making a GPU
+   performance claim;
+7. rerun the complete CPU suite after each separation unit.
 
-1. separate Schrödinger RK4 and split CuPy kernels from mixed CPU modules;
-2. keep prepared operators, fields, trajectories, and final states on device;
-3. return CuPy arrays directly from low-level GPU functions;
-4. prohibit `.get()` and `cp.asnumpy` before an explicit host boundary;
-5. test static Cartesian, rotating Cartesian, and helicity-projected split;
-6. test trajectory and final-only shape, norm, numerical CPU/GPU parity, and
-   backend-native result identity;
-7. benchmark transfer count, setup, propagation, and end-to-end execution;
-8. rerun the complete CPU suite to ensure the CUDA separation changes no NumPy
-   calculation.
-
-No new formula, tolerance, precision, polarization convention, or
-renormalization rule is permitted in that unit.
+Further work may not change formula, precision, polarization, tolerance, or
+renormalization semantics without a separate approved decision.

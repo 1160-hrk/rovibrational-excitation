@@ -808,10 +808,11 @@ Additional constraints:
   saved-time axis exactly once.
 - Dipole helper `_xp` raises when requested CuPy is unavailable; it never
   substitutes NumPy.
-- D-062 verifies every CPU row. The current CuPy RK4 and split adapters still
-  cross host memory before `PropagationResult` restores device ownership.
-  This violates the Phase 5 no-repeated-transfer target and remains explicitly
-  unverified until a real CUDA job can test a backend-native replacement.
+- D-062 verifies every CPU row. D-144 replaces the incorrect CuPy RK4
+  RawKernel with the CPU-consistent `H0 - mu E` four-stage graph and returns
+  device-native trajectory/final arrays. The split adapter still crosses host
+  memory, and every CuPy calculation remains unverified until a real CUDA job
+  supplies numerical and performance evidence.
 - D-071 makes device-native CuPy RK4 and split operator part of the supported
   v0.3 target. Collected or source-inspection-only GPU tests are not numerical
   evidence. The v0.3.0 tag requires a successful real-GPU run of both paths;
