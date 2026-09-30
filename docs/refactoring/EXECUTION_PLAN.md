@@ -2181,6 +2181,14 @@ unwired Codecov files or public evidence claims from returning. The full suite
 has 1488 passes and 10 optional-GPU skips (1498 collected). No calculation or
 CI execution behavior changes.
 
+P8.3-c/D-140 makes repository content and workflow validation mandatory. All
+current and archived Markdown local links and code fences plus all YAML/YML
+syntax are contract-tested. The required quality job runs checksum-verified,
+pinned actionlint v1.7.12; its configuration declares only the intentional
+self-hosted `gpu` runner label. Both workflows pass the same version locally.
+The full suite has 1492 passes and 10 optional-GPU skips (1502 collected). No
+package, configuration schema, calculation, or result behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

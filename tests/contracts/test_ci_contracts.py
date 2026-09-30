@@ -13,6 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 ROOT = Path(__file__).resolve().parents[2]
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+ACTIONLINT_CONFIG = ROOT / ".github" / "actionlint.yaml"
 
 
 def _workflow() -> dict:
@@ -66,6 +67,35 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert "twine check" in build
     assert "pip install dist/*.whl" in build
     assert "import rovibrational_excitation" in build
+
+
+def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
+    workflow = _workflow()
+    quality_job = workflow["jobs"]["quality"]
+    install_step = next(
+        step
+        for step in quality_job["steps"]
+        if step.get("name") == "Install actionlint"
+    )
+    lint_step = next(
+        step
+        for step in quality_job["steps"]
+        if step.get("name") == "Lint GitHub Actions workflows"
+    )
+
+    assert install_step["env"] == {
+        "ACTIONLINT_VERSION": "1.7.12",
+        "ACTIONLINT_SHA256": (
+            "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        ),
+    }
+    install_command = install_step["run"]
+    assert "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" in install_command
+    assert "sha256sum -c -" in install_command
+    assert lint_step["run"] == "/tmp/actionlint -no-color"
+
+    actionlint_config = yaml.load(ACTIONLINT_CONFIG.read_text(), Loader=yaml.BaseLoader)
+    assert actionlint_config == {"self-hosted-runner": {"labels": ["gpu"]}}
 
 
 def test_v03_checkpoint_version_is_development_or_final():

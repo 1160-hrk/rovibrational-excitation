@@ -29,6 +29,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          curl -fsSLo /tmp/actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+      - name: Lint GitHub Actions workflows
+        run: /tmp/actionlint -no-color
       - name: Ruff lint
         run: ruff check --no-fix src tests examples benchmarks scripts
       - name: Ruff format

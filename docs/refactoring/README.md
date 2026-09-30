@@ -53,7 +53,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1488 passed, 10 skipped (1498 collected) |
+| Pytest | 1492 passed, 10 skipped (1502 collected) |
 | Measured branch coverage | 80% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -523,6 +523,13 @@ artifacts; no external coverage upload or badge is claimed. Two contracts make
 that single authority and absence of stale service files explicit. The suite
 has 1488 passes and 10 optional-GPU skips (1498 collected). No calculation or
 CI execution behavior changed.
+
+P8.3-c/D-140 turns the clean documentation/workflow audit into mandatory
+gates. Repository contracts cover current and archived Markdown local links,
+code fences, and YAML/YML syntax. The required quality job runs pinned,
+checksum-verified actionlint v1.7.12, with only the release runner's `gpu` label
+declared as custom. Both workflows pass locally. The suite has 1492 passes and
+10 optional-GPU skips (1502 collected); no calculation behavior changed.
 
 P6.2-c
 implements D-069:

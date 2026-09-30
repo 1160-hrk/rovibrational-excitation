@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.3-b/D-139 coverage authority; P8.3-a/D-138 safe dev container
+Verified checkpoints: P8.3-c/D-140 repository validation; P8.3-b/D-139 coverage authority
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 
@@ -191,7 +191,7 @@ pytest -q
 ~~~
 
 ~~~text
-1488 passed, 10 GPU tests skipped (1498 collected)
+1492 passed, 10 GPU tests skipped (1502 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -251,6 +251,12 @@ Measured at `613ce93`:
 Targets are defined phase-by-phase in
 `docs/refactoring/EXECUTION_PLAN.md`. Coverage must never decrease from the
 recorded baseline for a phase.
+
+P8.3-c/D-140 requires pinned, checksum-verified actionlint in the CI quality
+job and adds repository-wide contracts for Markdown local links/code fences and
+YAML syntax, including historical archives. Both workflows pass actionlint
+v1.7.12 locally. The suite has 1492 passes and 10 optional-GPU skips (1502
+collected); no calculation behavior changed.
 
 ## Current next work
 
@@ -698,9 +704,10 @@ The next work is:
    not silently accept unversioned files.
    `DOCUMENTATION_WORKFLOW_AUDIT.md` inventories all Markdown/YAML/workflows;
    D-105 corrects the release workflow and repository tooling before any tag.
-   Root README and Codecov disposition are complete. Actionlint, actual real-GPU
-   and PyPI evidence, migration notes, and the final version bump remain open
-   Phase 8 gates.
+   Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
+   and checksum-verified actionlint are complete. Actual real-GPU and PyPI
+   evidence, migration notes, and the final version bump remain open Phase 8
+   gates.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
    this with final v0.3.0 release.

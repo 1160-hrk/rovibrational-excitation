@@ -2,7 +2,7 @@
 
 Verified: 2026-09-30
 Scope: all repository Markdown, YAML/YML, and .github/workflows files.
-Disposition: **Inventory complete; public READMEs and release safety corrected, broader docs/workflow migration remains open.**
+Disposition: **Public guides and mechanical repository-content/workflow gates are current; final external release evidence remains open.**
 
 This is a content and wiring audit, not a new physics specification. The
 authoritative calculation contracts remain PHYSICS_CONTRACTS.md and
@@ -11,15 +11,22 @@ sign, model parameter, or time step.
 
 ## Mechanical checks
 
-- Inventoried 40 Markdown and 21 YAML/YML files at the original audit
-  checkpoint, including historical optimization YAML under examples/archives.
-- Parsed all YAML/YML files without a syntax error. PyYAML's YAML 1.1 parser
-  reads the GitHub Actions on key as boolean True; this is a parser quirk, not
-  validation of GitHub Actions semantics. Neither actionlint nor yamllint is
-  installed here.
-- Checked local targets of conventional Markdown links: no missing relative
-  targets at the recorded acceptance checkpoints. This does not execute every
-  code fence, inspect badges, or prove that linked APIs still exist.
+- The original audit inventoried 40 Markdown and 21 YAML/YML files,
+  including historical optimization YAML under `examples/archives/`.
+  P8.3-c rechecks the current 48 Markdown and 19 YAML/YML files.
+- A repository contract parses every current and archived YAML/YML file with
+  PyYAML's `BaseLoader`, so the GitHub Actions `on` key is not coerced by YAML
+  1.1 boolean rules. This is syntax coverage; actionlint separately validates
+  workflow semantics.
+- Repository contracts inspect rendered Markdown outside fenced code blocks,
+  require every conventional local link target to exist, and reject unclosed
+  backtick or tilde fences. They do not prove that an externally linked API or
+  an unmarked prose snippet remains current.
+- Official actionlint v1.7.12 passes both workflows locally. CI downloads the
+  pinned Linux amd64 release archive, verifies its published SHA-256 before
+  extraction, and runs actionlint as part of the required `quality` job.
+  `.github/actionlint.yaml` declares only the intentional `gpu` label used by
+  the self-hosted release runner.
 - Loaded the three supported configs/*.yaml documents and passed each through
   validate_optimization_config without starting an optimization. Archived v0.2
   YAML documents remain unsupported historical evidence.
@@ -63,7 +70,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| .github/workflows/ci.yml | Runs Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, 47% branch coverage, and wheel import. required rejects failed/skipped jobs. | GPU tests may skip; normal CI is not real-GPU evidence. Markdown links/code fences and workflow semantics are not actionlint-gated yet. |
+| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12, Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, repository-wide Markdown/YAML contracts, 47% branch coverage, and wheel import. `required` rejects failed/skipped jobs. | GPU tests may skip; normal CI is not real-GPU evidence. Keep the actionlint version and release checksum updated together. |
 | .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; builds and clean-installs distributions; publishes PyPI before creating the GitHub Release. | The workflow is intentionally blocked until a [self-hosted, linux, x64, gpu] runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |

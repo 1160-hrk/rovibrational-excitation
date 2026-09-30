@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration and installs project dependencies from `pyproject.toml`.
 - Removed unwired Codecov configuration and setup claims; branch coverage is
   enforced locally in CI and retained as report/XML artifacts.
+- Repository-wide Markdown links, code fences, and YAML syntax are checked by
+  contracts; the required CI quality job runs pinned, checksum-verified
+  actionlint.
 - Release preparation never commits, tags, pushes, publishes, or prompts
   implicitly; publication remains an explicit GitHub release workflow action.
 - Jupyter binds to localhost with standard authentication by default and no

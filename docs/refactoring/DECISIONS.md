@@ -4800,6 +4800,42 @@ upload. Existing CI and README contracts pass unchanged. The full suite has
 Implementation commit: this checkpoint.
 
 
+### D-140: Repository content and workflow syntax are mandatory CI contracts
+
+Status: Implemented on 2026-09-30 as P8.3-c.
+
+Scope: Markdown/YAML integrity and GitHub Actions static validation. No package,
+configuration schema, physical formula, numerical path, or simulation result
+changes.
+
+The documentation audit previously relied on one-off link and YAML checks, and
+workflow semantics had no actionlint gate. This allowed later edits to regress
+relative links, fenced blocks, YAML syntax, or Actions expressions without a
+repository-owned failure.
+
+All current and archived Markdown is now checked outside code fences for
+resolvable conventional local links, and every backtick/tilde code fence must
+close. Every repository YAML/YML file is parsed with PyYAML `BaseLoader`, which
+avoids coercing the Actions `on` key through YAML 1.1 boolean rules. Generated,
+cache, build, distribution, environment, coverage, and result directories are
+excluded; historical tracked archives are intentionally included.
+
+The required CI `quality` job downloads actionlint v1.7.12 for Linux amd64,
+verifies the published archive SHA-256 before extracting it, and runs it with
+no color output. `.github/actionlint.yaml` recognizes only the intentional
+`gpu` label on the self-hosted release runner; it does not suppress any rule.
+The checksum-verified v1.7.12 Linux arm64 binary also passes both workflows in
+this environment. Contract tests pin the version, checksum verification,
+command, and custom label so the lint gate cannot silently disappear.
+
+The full suite has 1492 passes and 10 optional-GPU skips (1502 collected).
+Actionlint, focused contracts, Ruff lint/format, and diff checks pass. Real CUDA,
+Docker image construction, protected PyPI publication, migration notes, and the
+final version transition remain separate release gates.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
