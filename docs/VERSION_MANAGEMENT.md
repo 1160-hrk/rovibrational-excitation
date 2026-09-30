@@ -123,3 +123,4 @@ git tag -l
 - [release workflow](../.github/workflows/release.yml)
 - [local release preparation](../scripts/release.py)
 - [documentation/workflow audit](refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md)
+- [Phase 8 release-readiness audit](refactoring/PHASE8_RELEASE_READINESS_AUDIT.md)

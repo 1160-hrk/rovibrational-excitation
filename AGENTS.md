@@ -2,9 +2,10 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.4-b/D-142 metadata authority; P8.4-a/D-141 migration contract
+Verified checkpoints: P8.4-c/D-143 local release rehearsal; P8.4-b/D-142 metadata authority
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
+Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
 
 ## Purpose
 
@@ -269,6 +270,12 @@ subpackage metadata, making `pyproject.toml` and installed distribution metadata
 the sole authorities. The test guide now matches current CI, markers, and
 evidence policy. The suite has 1500 passes and 10 optional-GPU skips (1510
 collected); no calculation behavior changed.
+
+P8.4-c/D-143 verifies all available local release gates, including 80% branch
+coverage, build/Twine, isolated wheel import/CLI, and payload inspection. Final
+`0.3.0` remains blocked on the accepted device-native CUDA implementation and
+real-GPU evidence, Docker build/attach, publication configuration, and the final
+explicit version transition. No source or calculation behavior changed.
 
 ## Current next work
 

@@ -2206,6 +2206,13 @@ Three contracts protect the cleanup. The full suite has 1500 passes and 10
 optional-GPU skips (1510 collected). Spectroscopy exports and all calculations
 are unchanged.
 
+P8.4-c/D-143 completes the local release rehearsal and records it in a dedicated
+readiness audit. CPU/coverage/quality, examples, actionlint, dry-run transition,
+build/Twine, isolated wheel import/CLI, and payload checks pass. Final v0.3.0
+remains blocked on device-native CUDA plus real-GPU evidence, an actual
+container build/attach, protected publication setup, and the explicit final
+version/changelog transition. No source or calculation behavior changes.
+
 ### Phase 8 acceptance
 
 - documented examples execute;

@@ -90,6 +90,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 4. Public guide migration, Codecov disposition, repository-wide Markdown/YAML
    checks, actionlint gating, and the breaking-change migration note are complete
    under D-132 through D-141.
-5. On the final clean commit, repeat build/clean install, all active examples,
-   release dry-run, real-GPU workflow, and external publication configuration
-   checks before the final 0.3.0 tag.
+5. D-143 records the passing local CPU/coverage/quality/example/actionlint,
+   release dry-run, build/Twine, and isolated-wheel checks. Before the final
+   `0.3.0` tag, close device-native CUDA on real hardware, run the clean
+   container build/attach, verify publication configuration, then repeat the
+   final-version gates from a clean commit.

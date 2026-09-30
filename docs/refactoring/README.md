@@ -30,6 +30,7 @@ tests, and the decision log.
 | `PHASE7_OPTIMIZATION_ACCEPTANCE_AUDIT.md` | P7.3 ownership, reference, fallback, typing, coverage, and explicit-exclusion evidence | Any P7.3 completion or optimizer capability claim |
 | `PHASE7_SPECTROSCOPY_REFERENCES.md` | Independent P7.4 response, transform, broadening, and observable oracles | Every P7.4 spectroscopy formula or decomposition decision |
 | `PHASE7_SPECTROSCOPY_ACCEPTANCE_AUDIT.md` | P7.4 owner, reference, fallback, and remaining constructor-debt evidence | Any P7.4 acceptance or spectroscopy public-constructor change |
+| `PHASE8_RELEASE_READINESS_AUDIT.md` | Local release evidence, external blockers, and exact final transition sequence | Any release gate, CUDA closure, container validation, publication readiness, or version change |
 | root `AGENTS.md` | Mandatory operating instructions and document routing | When workflow or required checks change |
 
 ## Mission
@@ -543,6 +544,13 @@ spectroscopy subpackage version/contact metadata, and replaces the obsolete
 test guide with current commands, markers, evidence rules, and links. Three
 contracts guard these authorities. The suite has 1500 passes and 10 optional-GPU
 skips (1510 collected); no calculation behavior changed.
+
+P8.4-c/D-143 records the complete local release rehearsal: CPU/coverage/quality,
+examples, actionlint, read-only version transition, build/Twine, isolated wheel
+import, entry points, and clean payload all pass. The release-readiness audit
+keeps v0.3.0 blocked on device-native CUDA plus real-GPU evidence, an actual
+container build/attach, publication infrastructure, and the final explicit
+version transition. No source or calculation behavior changed.
 
 P6.2-c
 implements D-069:

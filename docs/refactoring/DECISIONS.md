@@ -4912,6 +4912,40 @@ Ruff/format, repository content checks, and diff checks pass.
 Implementation commit: this checkpoint.
 
 
+### D-143: Local release rehearsal passes but CUDA still blocks v0.3.0
+
+Status: Recorded on 2026-09-30 as P8.4-c; final release remains blocked.
+
+Scope: release evidence and readiness documentation. No source, package version,
+calculation, workflow, tag, push, or publication change.
+
+At clean checkpoint `c57f11f`, the full CPU suite passes 1500 tests with 10
+optional-GPU skips (1510 collected), branch coverage is 80%, active-scope Ruff
+and format pass, strict mypy covers 82 modules, supported examples/template and
+the generated index pass, and actionlint v1.7.12 accepts both workflows.
+
+The read-only release tool accepts `0.3.0.dev1 -> 0.3.0`. Build produces the
+development sdist/wheel and Twine accepts them. A temporary environment outside
+the checkout imports the installed wheel from site-packages, reports
+`0.3.0.dev1`, and exposes both console scripts. The 153-entry wheel contains no
+tests, historical archives, or removed requirements manifests. The isolated
+check intentionally used current system dependencies and `--no-deps`; clean
+network dependency resolution remains the CI build job's responsibility.
+
+This evidence does not authorize a tag. Phase 5 still fails the accepted
+backend-transfer row: RK4 calls `.get()` and split routes call `cp.asnumpy`
+before the explicit host boundary. CPU skips cannot verify CUDA, and the
+existing real-GPU job must gain device-native/transfer assertions in addition
+to numerical parity. Docker build/attach and protected PyPI configuration are
+also external checks unavailable here.
+
+`docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md` is now the exact checklist.
+The package remains `0.3.0.dev1`; `--apply`, final changelog conversion, commit,
+tag, push, PyPI publication, and GitHub Release remain unperformed.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
