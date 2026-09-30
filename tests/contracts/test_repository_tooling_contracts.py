@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 RELEASE_SCRIPT = ROOT / "scripts" / "release.py"
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
+CUDA_WORKFLOW = ROOT / ".github" / "workflows" / "cuda-validation.yml"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
 INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
 TEST_GUIDE = ROOT / "tests" / "README.md"
@@ -28,6 +29,10 @@ def _load_release_module():
 
 def _workflow() -> dict:
     return yaml.load(RELEASE_WORKFLOW.read_text(), Loader=yaml.BaseLoader)
+
+
+def _cuda_workflow() -> dict:
+    return yaml.load(CUDA_WORKFLOW.read_text(), Loader=yaml.BaseLoader)
 
 
 def _commands(job: dict) -> str:
@@ -94,6 +99,16 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     assert jobs["gpu-validation"]["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
     assert "getDeviceCount" in gpu
     assert "test_numpy_and_cupy_final_state_agree" in gpu
+    assert "benchmarks/run_cuda_evidence.py" in gpu
+    gpu_artifacts = [
+        step
+        for step in jobs["gpu-validation"]["steps"]
+        if step.get("uses") == "actions/upload-artifact@v4"
+    ]
+    assert len(gpu_artifacts) == 1
+    assert gpu_artifacts[0]["if"] == "always()"
+    assert gpu_artifacts[0]["with"]["name"] == "real-cuda-evidence"
+    assert gpu_artifacts[0]["with"]["if-no-files-found"] == "error"
     assert set(jobs["build-and-test"]["needs"]) == {
         "verify-version",
         "cpu-release-gates",
@@ -105,6 +120,36 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
         "build-and-test",
         "publish-pypi",
     ]
+    release_steps = jobs["create-release"]["steps"]
+    assert any(
+        step.get("uses") == "actions/download-artifact@v4"
+        and step.get("with", {}).get("name") == "real-cuda-evidence"
+        for step in release_steps
+    )
+    assert "cuda-evidence/*.json" in _commands(jobs["create-release"])
+
+
+def test_manual_cuda_workflow_records_pre_tag_evidence() -> None:
+    workflow = _cuda_workflow()
+    assert set(workflow["on"]) == {"workflow_dispatch"}
+    assert workflow["permissions"] == {"contents": "read"}
+
+    job = workflow["jobs"]["cuda-validation"]
+    commands = _commands(job)
+    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    assert "getDeviceCount" in commands
+    assert "pytest -q -m gpu" in commands
+    assert "benchmarks/run_cuda_evidence.py" in commands
+
+    artifacts = [
+        step
+        for step in job["steps"]
+        if step.get("uses") == "actions/upload-artifact@v4"
+    ]
+    assert len(artifacts) == 1
+    assert artifacts[0]["if"] == "always()"
+    assert artifacts[0]["with"]["if-no-files-found"] == "error"
+    assert artifacts[0]["with"]["retention-days"] == "90"
 
 
 def test_jupyter_launcher_has_safe_local_authenticated_defaults() -> None:

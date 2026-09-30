@@ -1,6 +1,6 @@
 # バージョン管理とリリース
 
-Last verified: 2026-09-25
+Last verified: 2026-09-30
 
 ## 原則
 
@@ -52,6 +52,8 @@ applyは次を順に行います。
 - worktreeがcleanで、通常CIのrequired jobが成功している。
 - self-hosted GPU runnerに labels
   [self-hosted, linux, x64, gpu] が設定されている。
+- `.github/workflows/cuda-validation.yml` をrelease候補commitに対して手動実行し、
+  schema-v1の `status: pass` artifactをレビューしている。
 - PyPI environmentとPYPI_API_TOKENが設定されている。
 - 対象版の成果物がPyPIにまだ存在しない。
 
@@ -74,13 +76,22 @@ git push origin v0.3.0
 2. Ruff、mypy、全CPUテスト、supported example/template smoke。
 3. 実CUDA deviceの存在確認。
 4. trustedなNumPy/CuPy parity referenceと全gpu marker test。
-5. sdist/wheel build、Twine検査、clean wheel install/import。
-6. PyPI公開。
-7. PyPI成功後のGitHub Release作成。
+5. 5経路の数値・backend・転送量・同期済み時間を記録するschema-v1 CUDA証拠。
+6. sdist/wheel build、Twine検査、clean wheel install/import。
+7. PyPI公開。
+8. PyPI成功後、CUDA証拠JSONを添付したGitHub Release作成。
 
 GPU jobはself-hosted GPU runner専用です。runnerがない場合にskipやCPU fallback
 はせず、releaseは待機または失敗します。通常CPU CIでのGPU skipはリリース
-証拠にはなりません。
+証拠にはなりません。タグ前の同じ検証はActions画面または次で明示実行します。
+
+~~~bash
+gh workflow run cuda-validation.yml --ref refactor/v0.3
+~~~
+
+生成された `real-cuda-evidence-<commit>` artifactのsource commit、device、
+`status`、全5 caseを確認します。タグworkflowは同じレコーダーを再実行する
+ため、事前artifactだけで公開gateを省略することはありません。
 
 ## 失敗時
 
@@ -121,6 +132,8 @@ git tag -l
 - [CHANGELOG.md](../CHANGELOG.md)
 - [pyproject.toml](../pyproject.toml)
 - [release workflow](../.github/workflows/release.yml)
+- [manual real-CUDA workflow](../.github/workflows/cuda-validation.yml)
+- [real-CUDA evidence recorder](../benchmarks/run_cuda_evidence.py)
 - [local release preparation](../scripts/release.py)
 - [documentation/workflow audit](refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md)
 - [Phase 8 release-readiness audit](refactoring/PHASE8_RELEASE_READINESS_AUDIT.md)

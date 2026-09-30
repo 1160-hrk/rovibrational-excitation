@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1514 passed, 16 skipped (1530 collected) |
+| Pytest | 1521 passed, 16 skipped (1537 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -564,6 +564,13 @@ mode comparisons pass and three real-GPU cases are collected. The suite has
 1514 passes and 16 optional-GPU skips (1530 collected); strict mypy covers 84
 modules. Only real-CUDA transfer, parity, and performance evidence remains.
 
+P5.5-c/D-146 adds a strict schema-v1 real-CUDA evidence recorder plus manual
+pre-tag and mandatory tag-time workflows. It covers RK4 final/trajectory and
+all three split modes, checks both device and host input routes against NumPy,
+and records synchronized timing without a speed gate. The suite has 1521 passes
+and 16 optional-GPU skips (1537 collected). Phase 5 remains open because no
+actual-hardware report has been accepted locally.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -602,8 +609,8 @@ is exactly equal to dense spectral execution, prepared split kernels exactly
 match public results, and an existing device state crosses result finalization
 by identity. The dead missing-Numba fallback is removed because Numba is a
 required dependency. D-144 and D-145 make CuPy RK4 and split source paths
-device-native. Phase 5 remains open only because real CUDA parity, transfer,
-and performance evidence is still unverified.
+device-native, and D-146 fixes the evidence schema and workflows. Phase 5
+remains open only because an accepted actual-CUDA report has not been produced.
 P5.1-c implements D-061:
 the dense Liouville RK4 kernel reuses the exactly shared right/next-left
 endpoint Hamiltonian. Multiple dimensions and both output modes are bitwise

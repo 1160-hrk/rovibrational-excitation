@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🚀 Added
 - Final-version consistency checks between pyproject.toml and Git tags
 - Release workflow with complete CPU gates and mandatory real-CUDA evidence
+- Manual pre-tag CUDA workflow and schema-v1 parity/backend/transfer/timing
+  evidence recorder; accepted JSON is retained and attached to final releases
 - Explicit dry-run/apply release preparation script (`scripts/release.py`)
 - CI smoke coverage for the supported parameter template and example index
 

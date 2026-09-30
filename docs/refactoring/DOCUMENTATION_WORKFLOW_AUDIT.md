@@ -22,11 +22,11 @@ sign, model parameter, or time step.
   require every conventional local link target to exist, and reject unclosed
   backtick or tilde fences. They do not prove that an externally linked API or
   an unmarked prose snippet remains current.
-- Official actionlint v1.7.12 passes both workflows locally. CI downloads the
+- Official actionlint v1.7.12 passes all three workflows locally. CI downloads the
   pinned Linux amd64 release archive, verifies its published SHA-256 before
   extraction, and runs actionlint as part of the required `quality` job.
   `.github/actionlint.yaml` declares only the intentional `gpu` label used by
-  the self-hosted release runner.
+  the self-hosted CUDA runners.
 - Loaded the three supported configs/*.yaml documents and passed each through
   validate_optimization_config without starting an optimization. Archived v0.2
   YAML documents remain unsupported historical evidence.
@@ -73,7 +73,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 | File | Verified behavior | Risk / next action |
 |---|---|---|
 | .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12, Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, repository-wide Markdown/YAML contracts, 47% branch coverage, and wheel import. `required` rejects failed/skipped jobs. | GPU tests may skip; normal CI is not real-GPU evidence. Keep the actionlint version and release checksum updated together. |
-| .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; builds and clean-installs distributions; publishes PyPI before creating the GitHub Release. | The workflow is intentionally blocked until a [self-hosted, linux, x64, gpu] runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
+| .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation runs the trusted parity case, every GPU-marked test, and the schema-v1 evidence recorder; it retains success or diagnostic JSON for 90 days. | It requires a [self-hosted, linux, x64, gpu] runner. A CPU skip, queued job, or status=error artifact is not acceptance evidence. |
+| .github/workflows/release.yml | Rejects non-final tags; requires full CPU gates and a self-hosted real-CUDA job; repeats and retains the evidence recorder, builds and clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. | The workflow is intentionally blocked until the runner and PyPI environment/token exist. It has structural contract tests but has not been executed against those external systems here. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | removed requirements.txt, requirements-dev.txt | D-142 removes dependency manifests that diverged from the build metadata. `pyproject.toml` now solely owns runtime, optional, and development dependencies. | Add dependencies only to the appropriate pyproject group and its tested installation route. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
@@ -91,7 +92,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    checks, actionlint gating, and the breaking-change migration note are complete
    under D-132 through D-141.
 5. D-143 records the passing local CPU/coverage/quality/example/actionlint,
-   release dry-run, build/Twine, and isolated-wheel checks. Before the final
-   `0.3.0` tag, close device-native CUDA on real hardware, run the clean
-   container build/attach, verify publication configuration, then repeat the
-   final-version gates from a clean commit.
+   release dry-run, build/Twine, and isolated-wheel checks. D-146 adds strict
+   manual and tag-time CUDA evidence collection without claiming a local GPU
+   result. Before the final `0.3.0` tag, obtain an accepted real-hardware
+   artifact, run the clean container build/attach, verify publication
+   configuration, then repeat the final-version gates from a clean commit.

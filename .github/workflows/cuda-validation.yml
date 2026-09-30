@@ -1,0 +1,45 @@
+name: Real CUDA validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cuda-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cuda-validation:
+    name: Real CUDA evidence
+    runs-on: [self-hosted, linux, x64, gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install package with CUDA dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,gpu]"
+      - name: Require a real CUDA device
+        run: |
+          python -c "import cupy as cp; count = cp.cuda.runtime.getDeviceCount(); assert count > 0, \"no CUDA device\"; print(cp.cuda.runtime.getDeviceProperties(0)[\"name\"])"
+      - name: Run trusted NumPy/CuPy parity reference
+        run: pytest -q tests/physics/test_two_level_reference.py::test_numpy_and_cupy_final_state_agree
+      - name: Run all GPU-marked tests
+        run: pytest -q -m gpu
+      - name: Record synchronized real-CUDA evidence
+        run: python benchmarks/run_cuda_evidence.py --output /tmp/rve-real-cuda-evidence.json
+      - name: Upload real-CUDA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cuda-evidence-${{ github.sha }}
+          path: /tmp/rve-real-cuda-evidence.json
+          if-no-files-found: error
+          retention-days: 90

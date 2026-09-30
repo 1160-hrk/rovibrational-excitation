@@ -2,7 +2,7 @@
 
 Last verified: 2026-09-30
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-b/D-145 device-native CuPy split; P5.5-a/D-144 device-native CuPy RK4
+Verified checkpoints: P5.5-c/D-146 real-CUDA evidence harness; P5.5-b/D-145 device-native CuPy split
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -185,14 +185,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P5.5-b:
+Current local CPU baseline after P5.5-c:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1514 passed, 16 GPU tests skipped (1530 collected)
+1521 passed, 16 GPU tests skipped (1537 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -292,6 +292,14 @@ graph comparisons pass; the suite has 1514 passes and 16 optional-GPU skips
 (1530 collected), and strict mypy covers 84 modules. Source residency is
 complete; real-CUDA parity, transfer, timing, and hardware evidence remain.
 
+P5.5-c/D-146 adds a strict real-CUDA evidence recorder and manual/tag-time
+self-hosted workflows without changing calculations. Five required cases cover
+RK4 final/trajectory and all split modes, with device and host input parity,
+backend/dtype/shape/norm, transfer volumes, synchronized timing, environment,
+and source identity in schema-v1 JSON. Timing is not a pass gate. The suite has
+1521 passes and 16 optional-GPU skips (1537 collected); actual CUDA evidence
+remains unverified.
+
 ## Current next work
 
 Phase 0, Phase 1, and Phase 2 are complete. D-039 remains the verified typed
@@ -307,9 +315,9 @@ separates validated Liouville preparation from the unchanged dense NumPy/Numba
 kernel. P5.1-c reuses only its exactly shared right/next-left endpoint
 Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
 P5.4-a verifies every CPU Phase 5 acceptance row. P5.5-a/D-144 corrects CuPy
-RK4 to the CPU graph, and P5.5-b/D-145 makes all split modes device-native.
-Phase 5 remains open because no real CUDA parity, transfer, or performance
-evidence has been recorded.
+RK4 to the CPU graph, P5.5-b/D-145 makes all split modes device-native, and
+P5.5-c/D-146 fixes the hard-failing evidence schema and workflows. Phase 5
+remains open because no accepted real-CUDA artifact has been recorded.
 P6.1-a characterizes the complete TwoLevel projection before its ownership
 move. P6.1-b resolves O-013 under D-064: `CONSTANTS.HBAR` is the sole derived
 authority and all conversion paths share it. P6.1-c implements D-065: basis,
@@ -749,9 +757,10 @@ The next work is:
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and unrelated persistence behavior.
-3. Keep Phase 5 open until a real CUDA job verifies RK4 and all three split
-   modes, including backend identity, parity, transfers, and timings. Do not
-   treat source inspection, CPU doubles, or skipped tests as CUDA evidence.
+3. Keep Phase 5 open until the D-146 manual workflow produces an accepted
+   schema-v1 artifact for RK4 and all three split modes. Do not treat source
+   inspection, CPU doubles, skipped tests, queued jobs, or status=error
+   diagnostics as CUDA evidence.
 4. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.

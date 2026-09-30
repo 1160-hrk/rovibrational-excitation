@@ -84,6 +84,16 @@ jobs:
         run: pytest -q tests/physics/test_two_level_reference.py::test_numpy_and_cupy_final_state_agree
       - name: Run all GPU-marked tests
         run: pytest -q -m gpu
+      - name: Record synchronized real-CUDA evidence
+        run: python benchmarks/run_cuda_evidence.py --output /tmp/rve-real-cuda-evidence.json
+      - name: Upload real-CUDA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cuda-evidence
+          path: /tmp/rve-real-cuda-evidence.json
+          if-no-files-found: error
+          retention-days: 90
 
   build-and-test:
     name: Build and clean-wheel verification
@@ -146,11 +156,15 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: real-cuda-evidence
+          path: cuda-evidence/
       - name: Create release with verified artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/* \
+          gh release create "${GITHUB_REF_NAME}" dist/* cuda-evidence/*.json \
             --verify-tag \
             --generate-notes \
             --title "Release ${GITHUB_REF_NAME}"

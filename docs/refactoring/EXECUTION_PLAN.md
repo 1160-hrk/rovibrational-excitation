@@ -1170,8 +1170,9 @@ construction through tests, not through runtime abstraction inside hot loops.
 CPU status: accepted under D-062 on 2026-09-13. All rows below execute on
 NumPy, including exact CSR-to-dense-spectral parity. The benchmark now
 separates public end-to-end, spectral setup, and prepared inner propagation;
-prepared and public final states are exactly equal. CuPy parity and
-backend-native low-level output remain pending a real CUDA job.
+prepared and public final states are exactly equal. CuPy source paths are
+device-native; numerical, transfer, and timing evidence remains pending a real
+CUDA job.
 
 - require diagonal `H0` explicitly;
 - sample both Cartesian field components at propagation midpoints;
@@ -1204,11 +1205,12 @@ Real-GPU transfer and numerical evidence remains before acceptance.
 - memory use is documented for trajectories.
 
 P5.4-a records the row-by-row disposition in
-`PHASE5_ACCEPTANCE_AUDIT.md`. Phase 5 remains in progress only for real-CUDA
-parity, backend-native low-level CuPy output, and removal of repeated
-device/host transfer. D-071 makes these mandatory v0.3 release gates. They do
-not block independent Phase 6 CPU model consolidation, but v0.3.0 cannot be
-tagged until the device-native implementation passes on a GPU-equipped runner.
+`PHASE5_ACCEPTANCE_AUDIT.md`. D-144 and D-145 complete source-level
+device-native ownership. Phase 5 remains in progress only for an accepted
+real-CUDA parity, backend, transfer, and timing artifact. D-071 makes this a
+mandatory v0.3 release gate. It does not block independent Phase 6 CPU model
+consolidation, but v0.3.0 cannot be tagged until the implementation passes on a
+GPU-equipped runner.
 
 P5.5-a/D-144 replaces the user-approved incorrect fused CuPy RK4 kernel with
 a separate dense CuPy implementation of the CPU graph. It uses `H0 - mu E`,
@@ -1228,6 +1230,16 @@ CPU-backed graph comparisons pass for all modes; three real-GPU identity/parity
 cases are collected. The full suite has 1514 passes and 16 optional-GPU skips
 (1530 collected), and strict mypy covers 84 modules. Source-level residency is
 complete; actual CUDA transfer/timing evidence remains mandatory.
+
+P5.5-c/D-146 adds a hard-failing real-CUDA evidence recorder and a manual
+pre-tag workflow without changing either propagator. Its schema requires RK4
+final/trajectory and all three split modes, checks host-input and device-input
+results against NumPy, and records backend, dtype, shape, error, norm,
+synchronized timing, transfer volume, software, hardware, and source identity.
+Timing has no pass threshold. The release workflow repeats and attaches the
+accepted JSON; CUDA absence writes a diagnostic artifact and fails. The local
+suite has 1521 passes and 16 optional-GPU skips (1537 collected). Phase 5 stays
+open until actual hardware produces an accepted artifact.
 
 ## 9. Phase 6 — model consolidation
 

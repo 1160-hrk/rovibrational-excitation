@@ -188,6 +188,35 @@ These timings were collected on CPython 3.12.12, Linux aarch64, NumPy 2.3.5,
 SciPy 1.17.0, and Numba 0.63.1. CUDA was not available, so GPU parity remains
 unverified.
 
+## Real-CUDA v0.3 acceptance evidence
+
+Real hardware evidence is intentionally not committed from this CPU-only
+environment. On a runner with CuPy and a visible CUDA device, run:
+
+~~~bash
+python benchmarks/run_cuda_evidence.py \
+  --output /tmp/rve-real-cuda-evidence.json
+~~~
+
+The recorder has no CPU-only success path. It runs RK4 final-state and complete
+trajectory cases plus static Cartesian, rotating Cartesian, and
+helicity-projected split cases. Both host-input and already-device-resident
+calls must return CuPy complex128 arrays matching the NumPy reference within
+the recorded bounds. The schema also records shape, norm error, explicit
+host/device byte volumes, source revision, device model, compute capability,
+CuPy/CUDA versions, and synchronized medians.
+
+Timing fields are diagnostic and impose no speed threshold. The
+`gpu_device_input_median` scope includes the public low-level validation and
+algorithm setup; it is not labelled as a pure kernel time. Explicit input and
+output copy medians are reported separately. CUDA absence or runtime failure
+writes a `status: error` diagnostic and exits nonzero; only a complete
+schema-v1 report with `status: pass` is acceptance evidence.
+
+Use the manually dispatched `Real CUDA validation` workflow before tagging.
+The release workflow repeats the run, retains its JSON artifact for 90 days,
+and attaches a successful report to the GitHub Release.
+
 ## Four-level legacy batch-overlap V=0 to V=3 reference
 
 The deterministic end-to-end optimization reference is generated with:

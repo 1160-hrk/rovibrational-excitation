@@ -109,6 +109,8 @@ reference field や測定規約を推測せず、非対応操作はエラーに�
 検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy RK4 と split は
 device-nativeな配列実装ですが、実GPUでのparity・転送・性能証拠がまだありません。
 NumPyへの暗黙fallbackはなく、skipされたGPU testは実GPUの検証根拠ではありません。
+タグ前の採取方法とschema-v1 artifactは
+[バージョン管理](VERSION_MANAGEMENT.md) に記載しています。
 
 ## 開発者・Codex 向け
 

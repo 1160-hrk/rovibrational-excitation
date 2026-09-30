@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-09-30
-Local code checkpoint: P5.5-b/D-145 candidate
+Local code checkpoint: P5.5-c/D-146 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,15 +14,15 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-145 candidate contains only the reviewed P5.5-b unit | Pass |
-| Complete CPU suite | 1514 passed, 16 optional-GPU skipped; 1530 collected | Pass |
+| Clean source checkpoint | D-146 candidate contains only the reviewed P5.5-c unit | Pass |
+| Complete CPU suite | 1521 passed, 16 optional-GPU skipped; 1537 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
-| Active-scope format | 313 files formatted | Pass |
+| Active-scope format | 315 files formatted | Pass |
 | Strict mypy scope | 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
-| Workflow semantics | checksum-verified actionlint v1.7.12 on both workflows | Pass |
+| Workflow semantics | checksum-verified actionlint v1.7.12 on all three workflows | Pass |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -48,18 +48,19 @@ separate device-native CuPy owners. Source contracts forbid `.get()` and
 `cp.asnumpy` before the explicit host boundary. CPU-backed doubles verify the
 calculation graphs but cannot verify CUDA execution or performance.
 
-Sixteen GPU tests are collected but skipped locally. The release workflow
-requires a real `[self-hosted, linux, x64, gpu]` runner and already executes the
-trusted TwoLevel case plus every `gpu`-marked test. Before release:
+Sixteen GPU tests are collected but skipped locally. D-146 adds a manual
+pre-tag workflow and a release job for the real
+`[self-hosted, linux, x64, gpu]` runner. Both run the trusted TwoLevel case,
+every `gpu`-marked test, and a hard-failing schema-v1 recorder covering RK4
+final/trajectory plus all three split modes. The report records NumPy/CuPy
+parity, norm, shape, dtype, backend identity, explicit transfer volumes,
+synchronized timing, hardware/software versions, and source identity.
 
-1. exercise RK4 final/trajectory plus static Cartesian, rotating Cartesian, and
-   helicity-projected split paths on a real GPU;
-2. record NumPy/CuPy parity, norm, shape, dtype, backend identity, actual transfer
-   behavior, and timing evidence;
-3. archive hardware/software identity and benchmark results;
-4. rerun all CPU, build, wheel, documentation, and release gates at that commit.
-
-This work must not be accepted from source inspection or CPU skips alone.
+Before release, run the manual workflow at the candidate commit, review an
+accepted `status: pass` artifact, and rerun all local gates at that exact
+commit. The tag workflow repeats the recorder, retains the artifact for 90
+days, and attaches it to the GitHub Release. Source inspection, CPU skips,
+queued jobs, and diagnostic `status: error` reports are not acceptance.
 
 ### 2. Development-container build
 

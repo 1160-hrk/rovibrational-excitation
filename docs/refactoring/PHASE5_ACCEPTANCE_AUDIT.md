@@ -1,7 +1,7 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-09-30
-Checkpoint: P5.5-b / D-145 device-native CuPy RK4 and split; real CUDA pending
+Checkpoint: P5.5-c / D-146 real-CUDA evidence harness; hardware run pending
 
 ## Scope
 
@@ -20,7 +20,7 @@ graphs, but they are not CUDA numerical or performance evidence.
 | Field left/mid/right indices and `-mu E` agree | Verified | solver physics and density contracts |
 | NumPy performance is measured | Verified | Numba CSR and Liouville endpoint-reuse artifacts |
 | CuPy RK4 graph matches CPU and remains device-native | Implemented; real GPU pending | D-144; `test_cuda_rk4_contracts.py` |
-| Real CUDA parity and performance | Not verified | three new GPU cases plus existing GPU suite skip here |
+| Real CUDA parity and performance | Harness complete; not verified | D-146; 16 GPU cases skip here |
 
 D-144 removes the former fused RawKernel. That kernel used `H0 + mu E`, added
 its `dt*k3` stage a second time during the final update, ignored trajectory,
@@ -41,7 +41,7 @@ No GPU speed claim is made without measurement on actual hardware.
 | CSR inputs execute through documented dense spectral vectors | Verified exactly | `test_phase5_acceptance_contracts.py` |
 | Cartesian converges to RK4 at two step sizes | Verified | coarse/fine ratio 3.987 |
 | Public, spectral-setup, and inner-loop timing are separate | Verified | `split-polarization-v0.3.json` and its report contracts |
-| NumPy/CuPy numerical parity and shapes | Collected, not verified here | CUDA tests skip without hardware |
+| NumPy/CuPy numerical parity and shapes | Harness complete; not verified here | D-146; CUDA tests skip without hardware |
 | CuPy split graph and result remain device-native | Implemented; real GPU pending | D-145; `test_cuda_split_contracts.py` |
 
 The direct NumPy/Numba dependency is honest. Numba is a required project
@@ -82,19 +82,21 @@ requires a Python decision; no state or trajectory array crosses to host.
 | Real CUDA RK4 and split parity/performance | Pending real GPU |
 | No array round trip before the explicit host boundary | Source-verified; real GPU pending |
 
-Phase 5 remains **in progress**. Source-level device residency is implemented,
-but the final v0.3.0 tag still requires successful real-GPU evidence.
+Phase 5 remains **in progress**. Source-level device residency and the strict
+evidence recorder are implemented, but the final v0.3.0 tag still requires an
+accepted report produced on real hardware.
 
 ## Remaining CUDA closure work
 
-1. run RK4 final/trajectory and static Cartesian, rotating Cartesian, and
-   helicity-projected split cases on real CUDA;
-2. verify CPU/GPU parity, norm, shape, dtype, backend identity, and actual
-   transfer behavior;
-3. benchmark setup, propagation, and end-to-end execution before making a GPU
-   performance claim;
-4. archive the hardware/software identity and benchmark evidence;
-5. rerun the complete CPU/release gates at the accepted CUDA checkpoint.
+D-146 fixes the required five cases, schema, numerical bounds, synchronized
+timing scopes, hardware/software/source identity, failure behavior, and
+artifact retention. Run the manual `Real CUDA validation` workflow before
+tagging. Accept Phase 5 only if its schema-v1 report has `status: pass`, then
+rerun the complete CPU/release gates at that exact commit.
+
+The tag workflow independently repeats the same test and recorder and attaches
+the accepted JSON to the GitHub Release. A queued job, skipped GPU test,
+`status: error` diagnostic, or source inspection is not acceptance evidence.
 
 Further work may not change formula, precision, polarization, tolerance, or
 renormalization semantics without a separate approved decision.

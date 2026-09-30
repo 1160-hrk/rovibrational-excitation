@@ -5011,6 +5011,40 @@ GPU workflow records parity, transfers, timings, and hardware/software identity.
 Implementation commit: this checkpoint.
 
 
+### D-146: Real-CUDA acceptance produces a versioned evidence artifact
+
+Status: Implemented on 2026-09-30 as P5.5-c under D-071.
+
+Scope: GPU acceptance tooling, timing/report schema, and GitHub workflow
+artifacts. No propagator, physical formula, tolerance, field index, or public
+simulation result changes.
+
+A real-CUDA run now executes exactly five required cases: RK4 final state, RK4
+trajectory, static Cartesian split, rotating Cartesian split, and
+helicity-projected split. Each case compares both pre-existing device inputs
+and host inputs against the established NumPy result and records CuPy identity,
+complex128 dtype, shape, maximum absolute difference, L2 difference, maximum
+norm error, synchronized medians, and explicit transfer byte volumes. Numerical
+acceptance uses fixed (2e-10) maximum-absolute and norm-error bounds. Timing is
+diagnostic only and cannot fail acceptance or support an unmeasured GPU speed
+claim.
+
+`benchmarks/run_cuda_evidence.py` requires a visible CUDA device and has no
+CPU-only success path. It writes schema-v1 JSON, emits a diagnostic
+`status=error` artifact before re-raising setup/runtime failures, and rejects
+missing cases, non-finite values, non-CuPy results, or inconsistent aggregate
+status. A manually dispatched workflow permits pre-tag evidence collection.
+The final-tag workflow repeats the same recorder, retains the JSON artifact for
+90 days, and attaches successful evidence to the GitHub Release.
+
+CPU contracts execute all five NumPy references and validate the report schema
+and workflow wiring. The complete local suite has 1521 passes and 16
+optional-GPU skips out of 1537 collected. This does not close Phase 5: no
+accepted report exists until the workflow runs on actual hardware.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
