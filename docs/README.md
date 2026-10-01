@@ -106,9 +106,10 @@ reference field や測定規約を推測せず、非対応操作はエラーに�
 
 ## CPU/CUDA 状態
 
-検証済みの本番経路は CPU です。実 CUDA は未検証です。CuPy RK4 と split は
-device-nativeな配列実装ですが、実GPUでのparity・転送・性能証拠がまだありません。
-NumPyへの暗黙fallbackはなく、skipされたGPU testは実GPUの検証根拠ではありません。
+CPU経路に加え、対応するdense純粋状態CuPy RK4とsplitは実 CUDA 数値受入れ済みです。
+cleanな`b9de848`で全15件のGPU testと5経路のschema-v1証跡が成功し、parity・
+backend identity・転送量・同期済み時間を記録しました。小規模診断は速度保証では
+ありません。NumPyへの暗黙fallbackはなく、skipだけを検証根拠にはしません。
 タグ前の採取方法とschema-v1 artifactは
 [バージョン管理](VERSION_MANAGEMENT.md) に記載しています。
 

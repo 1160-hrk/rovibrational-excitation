@@ -24,7 +24,7 @@ def test_documentation_index_has_no_removed_or_unverified_recommendations():
 
     for value in forbidden:
         assert value not in text
-    assert "実 CUDA は未検証" in text
+    assert "実 CUDA 数値受入れ" in text
     assert "移行監査中" not in text
     assert "| 現行の数値契約 |" in text
     assert "| 現行の単位契約 |" in text

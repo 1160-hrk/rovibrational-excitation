@@ -1,8 +1,8 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P5.5-g/D-158 candidate
-Hosted accepted checkpoint: P8.5-h/D-154 (`8a543b6`; run `36814615696`)
+Local code checkpoint: P5.5-h/D-159 candidate
+Hosted accepted checkpoint: P5.5-g/D-158 (`b9de848`; run `36876859856`)
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -15,8 +15,9 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-158 candidate ignores local virtualenvs while retaining strict source provenance | Pass |
-| Complete CPU suite | 1531 passed, 15 optional-GPU skipped; 1546 collected | Pass |
+| Clean source checkpoint | D-158 ignores local virtualenvs while retaining strict source provenance | Pass |
+| Real-CUDA numerical acceptance | D-159: 15 GPU tests and five schema-v1 cases pass on clean `b9de848`; committed raw report | Pass |
+| Complete CPU suite | 1532 passed, 15 optional-GPU skipped; 1547 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 307 files formatted | Pass |
@@ -46,40 +47,29 @@ checkout and publishes only artifacts built in that run.
 
 ## Blocking release gates
 
-### 1. Device-native CUDA implementation and real-GPU evidence
+### 1. Final-candidate real-CUDA workflow repetition
 
-Phase 5 is still open. D-144 and D-145 give RK4 and all three split modes
-separate device-native CuPy owners. Source contracts forbid `.get()` and
-`cp.asnumpy` before the explicit host boundary. CPU-backed doubles verify the
-calculation graphs but cannot verify CUDA execution or performance.
+Phase 5 is complete under D-159. The clean `b9de848` target-host run passed all
+15 GPU-marked tests and produced an accepted five-case schema-v1 report on an
+RTX 5070 Ti. It verifies device-native CuPy `complex128` results for RK4
+final/trajectory and all three split modes, fixed parity and norm bounds,
+transfer volumes, synchronized timings, hardware/software identity, and exact
+source provenance. The report is committed as
+`benchmarks/real-cuda-v0.3-b9de848.json` and revalidated by a contract test.
 
-Fifteen GPU tests are collected but skipped locally. D-155 makes the `gpu`
-extra install the complete CUDA 12 user-space components; a driver-only WSL2
-probe on the intended RTX 5070 Ti host now executes a basic CuPy kernel. The
-focused library parity case also passes there. D-156 repairs the manual job after
-the all-GPU command exposed a missing `plot` extra during global collection;
-manual and tag-time jobs now install `dev,io,plot,gpu`. D-157 addresses
-the resulting real-device LinMol failures: 12 GPU cases passed, three reached
-unsupported `cupy.vectorize`, and one was a misclassified CPU error test. The
-approved replacement preserves every existing dipole factor and phase in
-device array operations; CPU-reference characterization passes. The D-157
-hardware rerun passes all 15 GPU-marked tests. Its schema-v1 recorder rejected
-only because repository-root `.venv-cuda/` was unignored; D-158 adds the
-`.venv*/` ignore contract without weakening tracked or other untracked source
-detection. A clean-commit evidence rerun remains required. These are not yet
-library acceptance. D-146 adds
-a manual pre-tag workflow and a release job for the real
-`[self-hosted, linux, x64, gpu]` runner. Both run the trusted TwoLevel case,
-every `gpu`-marked test, and a hard-failing schema-v1 recorder covering RK4
-final/trajectory plus all three split modes. The report records NumPy/CuPy
-parity, norm, shape, dtype, backend identity, explicit transfer volumes,
-synchronized timing, hardware/software versions, and source identity.
+This does not eliminate the release-specific gate. D-159's documentation and
+evidence commit is newer than the tested source, and the final version/changelog
+commit will be newer again. Before tagging, dispatch `Real CUDA validation` on
+the exact final candidate using an online `[self-hosted, linux, x64, gpu]`
+runner version 2.327.1 or newer. Review its `status: pass` artifact and require
+the tag workflow to repeat the same recorder. A local artifact from a different
+commit, queued job, skip, source inspection, or `status: error` is not release
+acceptance.
 
-Before release, run the manual workflow at the candidate commit, review an
-accepted `status: pass` artifact, and rerun all local gates at that exact
-commit. The tag workflow repeats the recorder, retains the artifact for 90
-days, and attaches it to the GitHub Release. Source inspection, CPU skips,
-queued jobs, and diagnostic `status: error` reports are not acceptance.
+The accepted 32-state timings are diagnostic: GPU public-call medians were
+approximately 16-68 ms versus 0.31-0.52 ms on CPU and include validation and
+algorithm setup. No GPU speed advantage, workload crossover, or production
+performance threshold is claimed.
 
 ### 2. Development-container manual UI verification
 
@@ -136,7 +126,8 @@ bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
 module entrypoint and publishes captured command output while retaining hard
 failure. Hosted run `36814129738` accepted D-153 and every required normal-CI
 job, including the automated container smoke. The project is close to a version
-transition, but it is not a release candidate while the supported CUDA paths
-lack real-hardware numerical, transfer, and performance evidence and the manual
-Dev Containers UI and publication prerequisites remain open. The version
-remains `0.3.0.dev1` and no tag or publication is authorized by this audit.
+transition. Phase 5 now has accepted real-hardware numerical, transfer, norm,
+and timing evidence, but the exact final candidate still requires a fresh
+manual CUDA workflow, manual Dev Containers UI/Ports verification, and the
+publication prerequisites. The version remains `0.3.0.dev1` and no tag or
+publication is authorized by this audit.

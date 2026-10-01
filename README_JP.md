@@ -19,10 +19,12 @@
 物理参照、branch coverage、対応例、型検査、wheel の clean install を実行します。
 詳細は [CI workflow](.github/workflows/ci.yml) を参照してください。
 
-実 CUDA での実行は未検証です。低レベル RK4 と split-operator は配列を
-device 上に保持し、backend-native な CuPy 配列を返します。ただしCPU上の計算
-グラフテストは CUDA の証拠ではなく、実GPUでの parity、norm、shape、転送、性能
-検証が必須です。CuPy を要求して NumPy へ暗黙 fallback することはありません。
+対応する dense 純粋状態 RK4 と split-operator 経路は、実 CUDA での数値実行は受入れ済みです。
+clean な `b9de848` source commit に対し、RTX 5070 Ti 上で全15件のGPU marker testと
+5経路のschema-v1 reportが成功しました。[受入れ証跡](benchmarks/real-cuda-v0.3-b9de848.json)
+にはCuPy `complex128` のdevice結果、parity、norm、転送量、同期済み時間を記録しています。
+32状態の診断結果であり、一般的なGPU速度優位を意味しません。CuPy を要求して
+NumPy へ暗黙 fallback することはありません。
 
 ## 対応する物理モデル
 
@@ -71,8 +73,8 @@ pip install -e ".[dev,io,plot]"
 ```
 
 optional の `gpu` extra は `cupy-cuda12x[ctk]` と CUDA 12 の user-space
-runtime・header・library を入れます。互換 NVIDIA driver と実機検証は引き続き
-必要です。
+runtime・header・library を入れます。互換 NVIDIA driver は別途必要です。
+受入れ済みtarget-host証跡は上記リンクを参照してください。
 
 ## クイックスタート
 
@@ -206,7 +208,7 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-現在の local checkpoint は CPU 1514 tests pass、optional GPU 16 tests skip、
+現在の local checkpoint は CPU 1532 tests pass、optional GPU 15 tests skip、
 実測 branch coverage 81% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント

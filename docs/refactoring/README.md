@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1531 passed, 15 skipped (1546 collected) |
+| Pytest | 1532 passed, 15 skipped (1547 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -654,7 +654,15 @@ P5.5-g/D-158 records that the D-157 hardware rerun passes all 15 GPU-marked
 tests. The schema-v1 recorder rejected only the unignored repository-root
 `.venv-cuda/`. The new `.venv*/` ignore contract covers both documented
 in-tree environments without weakening dirty tracked/untracked source
-detection. The clean-commit evidence rerun remains pending.
+detection.
+
+P5.5-h/D-159 accepts the clean rerun at `b9de848`: all 15 GPU-marked tests and
+all five schema-v1 CUDA evidence cases pass on the RTX 5070 Ti. Device identity,
+CuPy/CUDA versions, backend-native `complex128` results, shapes, fixed parity
+and norm bounds, transfer volumes, and synchronized timings are committed in
+`benchmarks/real-cuda-v0.3-b9de848.json` and schema-tested. The 32-state timing
+is diagnostic and shows no GPU speed advantage. Phase 5 is complete; the exact
+final release candidate still requires manual and tag-time CUDA reruns.
 
 P6.2-c
 implements D-069:
@@ -694,8 +702,8 @@ is exactly equal to dense spectral execution, prepared split kernels exactly
 match public results, and an existing device state crosses result finalization
 by identity. The dead missing-Numba fallback is removed because Numba is a
 required dependency. D-144 and D-145 make CuPy RK4 and split source paths
-device-native, and D-146 fixes the evidence schema and workflows. Phase 5
-remains open only because an accepted actual-CUDA report has not been produced.
+device-native, and D-146 fixes the evidence schema and workflows. D-159 accepts
+the clean actual-CUDA report and completes Phase 5 without making a speed claim.
 P5.1-c implements D-061:
 the dense Liouville RK4 kernel reuses the exactly shared right/next-left
 endpoint Hamiltonian. Multiple dimensions and both output modes are bitwise
@@ -913,7 +921,7 @@ These commits are the starting point, not the final architecture.
 | 2 | Typed propagation contracts | Complete — P2.1-P2.5; one typed problem/options input and one backend-explicit endpoint-complete result |
 | 3 | Target package migration | Complete — P3.1-a through P3.2-b establish target owners, remove superseded paths, and eliminate top-level cycles |
 | 4 | Units and nondimensionalization | Complete for decided contracts — Class-D optimizer values and adaptive integration explicitly deferred |
-| 5 | Numerical dynamics engine | In progress — CPU acceptance verified by P5.4-a; backend-native CuPy execution and real-CUDA parity remain |
+| 5 | Numerical dynamics engine | Complete — CPU acceptance plus device-native RK4/split and clean real-CUDA evidence accepted by D-159 |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | Complete — P7.1 through P7.4 accepted by D-093, D-103, D-111, and D-129 |
 | 8 | Public API, documentation, and release | In progress — P8.0-a tooling and P8.0-b archive consolidation complete; root API/docs, external release evidence, and final bump remain |

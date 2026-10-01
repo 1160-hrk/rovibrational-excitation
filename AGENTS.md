@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-g/D-158 clean-source CUDA evidence environment; P8.5-h/D-154 hosted normal-CI acceptance
+Verified checkpoints: P5.5-h/D-159 accepted real-CUDA evidence; P8.5-h/D-154 hosted normal-CI acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -195,13 +195,13 @@ pytest -q
 ~~~
 
 ~~~text
-1531 passed, 15 GPU tests skipped (1546 collected)
+1532 passed, 15 GPU tests skipped (1547 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
 Numba CSR comparison is `benchmarks/numba-csr-v0.2.10.json`; exact Liouville
-endpoint reuse is `benchmarks/liouville-endpoint-reuse-v0.3.json`. CUDA
-remains unverified.
+endpoint reuse is `benchmarks/liouville-endpoint-reuse-v0.3.json`; accepted
+real-CUDA evidence is `benchmarks/real-cuda-v0.3-b9de848.json`.
 
 Use Ruff without broad automatic fixes while a worktree contains unrelated
 changes:
@@ -392,7 +392,15 @@ P5.5-g/D-158 records that all 15 GPU-marked tests pass on the target RTX 5070
 Ti. The evidence recorder rejected `ecf9a61` only because the documented
 repository-root `.venv-cuda/` was unignored. The repository now ignores
 `.venv*/` and excludes that prefix from repository-content discovery while
-leaving the strict source check unchanged. Rerun schema-v1 evidence at D-158.
+leaving the strict source check unchanged.
+
+P5.5-h/D-159 accepts the clean `b9de848` hardware rerun. All 15 GPU-marked
+tests and all five schema-v1 cases pass on the RTX 5070 Ti. The committed
+report fixes device/software/source identity, CuPy `complex128` device results,
+shapes, parity, norm, transfer bytes, and synchronized timings. The largest
+maximum-absolute difference is `1.44e-13` and norm error is `9.60e-14` under
+`2e-10` bounds. The 32-state GPU timings are slower than CPU and make no speed
+claim. Phase 5 is complete; final-candidate manual and tag-time reruns remain.
 
 ## Current next work
 
@@ -410,8 +418,8 @@ kernel. P5.1-c reuses only its exactly shared right/next-left endpoint
 Hamiltonian; all recorded outputs are bitwise equal to the retained old loop.
 P5.4-a verifies every CPU Phase 5 acceptance row. P5.5-a/D-144 corrects CuPy
 RK4 to the CPU graph, P5.5-b/D-145 makes all split modes device-native, and
-P5.5-c/D-146 fixes the hard-failing evidence schema and workflows. Phase 5
-remains open because no accepted real-CUDA artifact has been recorded.
+P5.5-c/D-146 fixes the hard-failing evidence schema and workflows, and
+P5.5-h/D-159 accepts the clean real-CUDA artifact. Phase 5 is complete.
 P6.1-a characterizes the complete TwoLevel projection before its ownership
 move. P6.1-b resolves O-013 under D-064: `CONSTANTS.HBAR` is the sole derived
 authority and all conversion paths share it. P6.1-c implements D-065: basis,
@@ -854,10 +862,12 @@ The next work is:
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and unrelated persistence behavior.
-3. Keep Phase 5 open until the D-146 manual workflow produces an accepted
-   schema-v1 artifact for RK4 and all three split modes. Do not treat source
-   inspection, CPU doubles, skipped tests, queued jobs, or status=error
-   diagnostics as CUDA evidence.
+3. Phase 5 is complete under D-159 using the accepted clean `b9de848` artifact.
+   Keep the release blocked until the D-146 manual workflow produces a fresh
+   accepted schema-v1 artifact on the exact final candidate; the tag workflow
+   must repeat it. Do not treat source inspection, CPU doubles, skipped tests,
+   queued jobs, status=error diagnostics, or a different commit as release
+   CUDA evidence.
 4. D-154 accepts D-147 on a hosted Docker runner. Keep the release blocked
    until the VS Code Dev Containers attach and Ports view are checked manually;
    the final tag workflow must also repeat the hard-failing container job.

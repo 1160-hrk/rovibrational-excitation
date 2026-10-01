@@ -65,7 +65,7 @@ fallback しない。
 | density matrix | RK4 | NumPy | dense | 対応。Liouville–von Neumann 経路 |
 | density matrix | split operator | 任意 | 任意 | 非対応・エラー |
 | density matrix | RK4 | CuPy または CSR | 任意 | 非対応・エラー |
-| pure state / incoherent ensemble | RK4 / split operator | CuPy | dense | API は存在するが実 CUDA は未検証 |
+| pure state / incoherent ensemble | RK4 / split operator | CuPy | dense | 実 CUDA 数値受入れ済み（D-159） |
 | 任意 | 任意 | CuPy | CSR | 非対応・エラー |
 
 Production SymTop はさらに狭く、NumPy dense/CSR RK4 のみを受け付ける。
@@ -175,9 +175,11 @@ CuPy を要求して利用できない場合は即座にエラーにし、NumPy 
 低レベル Schrödinger RK4 は CPU と同じ `H0 - mu E` の4段計算を、split は
 固定Cartesian・M回転Cartesian・helicity-projected の既存式をCuPy上で実行する。
 どちらも trajectory、stride、renormalization を保持してCuPy配列を直接返し、状態・
-trajectory配列をhostへ移さない。分岐と既存エラーを守るscalar同期は残る。実 CUDA
-runnerによる数値・backend identity・転送・性能のrelease evidenceは未取得である。
-GPU test が skip されたことは CUDA 対応の検証根拠ではない。
+trajectory配列をhostへ移さない。分岐と既存エラーを守るscalar同期は残る。実 CUDA 数値受入れでは、
+RTX 5070 Ti上のcleanな`b9de848`で全15件のGPU testと5経路のschema-v1証跡が成功し、
+backend identity・転送量・同期済み時間を記録した。32状態の時間は速度保証ではない。
+最終release候補ではself-hosted workflowを再実行する。GPU test がskipされたことだけを
+CUDA対応の検証根拠にはしない。
 
 ## 11. 参照先
 

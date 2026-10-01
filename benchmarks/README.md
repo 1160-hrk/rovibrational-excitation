@@ -190,8 +190,19 @@ unverified.
 
 ## Real-CUDA v0.3 acceptance evidence
 
-Real hardware evidence is intentionally not committed from this CPU-only
-environment. On a runner with CuPy and a visible CUDA device, run:
+[`real-cuda-v0.3-b9de848.json`](real-cuda-v0.3-b9de848.json) is the accepted
+clean-source hardware report for commit `b9de848cf3fa8322e5f685f60191857e528531d4`.
+It was recorded on an RTX 5070 Ti with CuPy 14.2.0, CUDA runtime 12.9, and driver
+13.1 after all 15 GPU-marked tests passed. All five required cases passed the
+fixed `2e-10` maximum-absolute and norm-error bounds; the largest observed
+values were about `1.44e-13` and `9.60e-14`, respectively.
+
+The recorded 32-state public-call timings are diagnostics, not a speed claim.
+They include validation and algorithm setup and were slower on GPU than CPU for
+this small workload. No size crossover or equal-accuracy production benchmark
+has been measured.
+
+To record a new candidate on a runner with CuPy and a visible CUDA device, run:
 
 ~~~bash
 python benchmarks/run_cuda_evidence.py \

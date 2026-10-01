@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "artifact": "real-cuda-v0.3",
+  "created_utc": "2026-10-01T14:34:17.233840+00:00",
+  "status": "pass",
+  "source": {
+    "commit": "b9de848cf3fa8322e5f685f60191857e528531d4",
+    "worktree_dirty": false
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "numpy": "2.5.3",
+    "cupy": "14.2.0",
+    "device_count": 1,
+    "device_id": 0,
+    "device_name": "NVIDIA GeForce RTX 5070 Ti",
+    "compute_capability": "12.0",
+    "cuda_runtime_version": 12090,
+    "cuda_driver_version": 13010
+  },
+  "methodology": {
+    "synchronization": "CUDA stream synchronized around every timed sample",
+    "warmup_runs": 1,
+    "timed_repeats": 5,
+    "dimension": 32,
+    "propagation_steps": 200,
+    "propagation_dt": 0.002,
+    "gpu_device_input_median": "public low-level call with pre-existing device arrays; includes validation and algorithm setup",
+    "gpu_host_input_median": "public low-level call from host arrays through device-native result",
+    "explicit_transfer_medians": "isolated cp.asarray input copies and one explicit cp.asnumpy result copy",
+    "performance_policy": "record only; no speed threshold or GPU speed claim"
+  },
+  "cases": [
+    {
+      "name": "rk4_final",
+      "algorithm": "rk4",
+      "interaction_mode": null,
+      "return_trajectory": false,
+      "backend": "cupy",
+      "dtype": "complex128",
+      "shape": [
+        1,
+        32
+      ],
+      "device_result": true,
+      "metrics": {
+        "max_abs_difference": 2.797157557069881e-17,
+        "l2_difference": 4.378244108969851e-17,
+        "maximum_norm_error": 0.0
+      },
+      "tolerances": {
+        "max_abs_difference": 2e-10,
+        "maximum_norm_error": 2e-10
+      },
+      "timing_ms": {
+        "cpu_reference_median": 0.336234,
+        "gpu_device_input_median": 65.617905,
+        "gpu_host_input_median": 65.94659,
+        "explicit_input_copy_median": 0.087477,
+        "explicit_output_copy_median": 0.031281
+      },
+      "transfer_bytes": {
+        "host_to_device_inputs": 56080,
+        "device_to_host_result": 512
+      },
+      "passed": true
+    },
+    {
+      "name": "rk4_trajectory",
+      "algorithm": "rk4",
+      "interaction_mode": null,
+      "return_trajectory": true,
+      "backend": "cupy",
+      "dtype": "complex128",
+      "shape": [
+        201,
+        32
+      ],
+      "device_result": true,
+      "metrics": {
+        "max_abs_difference": 2.797157557069881e-17,
+        "l2_difference": 4.108362038369773e-16,
+        "maximum_norm_error": 2.220446049250313e-16
+      },
+      "tolerances": {
+        "max_abs_difference": 2e-10,
+        "maximum_norm_error": 2e-10
+      },
+      "timing_ms": {
+        "cpu_reference_median": 0.311881,
+        "gpu_device_input_median": 67.536973,
+        "gpu_host_input_median": 67.881048,
+        "explicit_input_copy_median": 0.082643,
+        "explicit_output_copy_median": 0.029921
+      },
+      "transfer_bytes": {
+        "host_to_device_inputs": 56080,
+        "device_to_host_result": 102912
+      },
+      "passed": true
+    },
+    {
+      "name": "split_static_cartesian",
+      "algorithm": "split",
+      "interaction_mode": "cartesian",
+      "return_trajectory": false,
+      "backend": "cupy",
+      "dtype": "complex128",
+      "shape": [
+        1,
+        32
+      ],
+      "device_result": true,
+      "metrics": {
+        "max_abs_difference": 1.0736745410454433e-13,
+        "l2_difference": 2.915202711842827e-13,
+        "maximum_norm_error": 9.592326932761353e-14
+      },
+      "tolerances": {
+        "max_abs_difference": 2e-10,
+        "maximum_norm_error": 2e-10
+      },
+      "timing_ms": {
+        "cpu_reference_median": 0.382072,
+        "gpu_device_input_median": 16.624613,
+        "gpu_host_input_median": 15.455803,
+        "explicit_input_copy_median": 0.100554,
+        "explicit_output_copy_median": 0.030925
+      },
+      "transfer_bytes": {
+        "host_to_device_inputs": 56080,
+        "device_to_host_result": 512
+      },
+      "passed": true
+    },
+    {
+      "name": "split_rotating_cartesian",
+      "algorithm": "split",
+      "interaction_mode": "cartesian",
+      "return_trajectory": false,
+      "backend": "cupy",
+      "dtype": "complex128",
+      "shape": [
+        1,
+        32
+      ],
+      "device_result": true,
+      "metrics": {
+        "max_abs_difference": 9.799208859977222e-14,
+        "l2_difference": 2.7091392680903875e-13,
+        "maximum_norm_error": 1.554312234475219e-14
+      },
+      "tolerances": {
+        "max_abs_difference": 2e-10,
+        "maximum_norm_error": 2e-10
+      },
+      "timing_ms": {
+        "cpu_reference_median": 0.52488,
+        "gpu_device_input_median": 48.411223,
+        "gpu_host_input_median": 46.885042,
+        "explicit_input_copy_median": 0.108485,
+        "explicit_output_copy_median": 0.031216
+      },
+      "transfer_bytes": {
+        "host_to_device_inputs": 56336,
+        "device_to_host_result": 512
+      },
+      "passed": true
+    },
+    {
+      "name": "split_helicity_projected",
+      "algorithm": "split",
+      "interaction_mode": "helicity_projected",
+      "return_trajectory": false,
+      "backend": "cupy",
+      "dtype": "complex128",
+      "shape": [
+        1,
+        32
+      ],
+      "device_result": true,
+      "metrics": {
+        "max_abs_difference": 1.4376699353313202e-13,
+        "l2_difference": 3.7965874941215843e-13,
+        "maximum_norm_error": 1.2212453270876722e-14
+      },
+      "tolerances": {
+        "max_abs_difference": 2e-10,
+        "maximum_norm_error": 2e-10
+      },
+      "timing_ms": {
+        "cpu_reference_median": 0.365605,
+        "gpu_device_input_median": 16.153457,
+        "gpu_host_input_median": 15.782219,
+        "explicit_input_copy_median": 0.113093,
+        "explicit_output_copy_median": 0.025476
+      },
+      "transfer_bytes": {
+        "host_to_device_inputs": 59320,
+        "device_to_host_result": 512
+      },
+      "passed": true
+    }
+  ],
+  "acceptance": {
+    "all_cases_passed": true,
+    "required_cases": [
+      "rk4_final",
+      "rk4_trajectory",
+      "split_static_cartesian",
+      "split_rotating_cartesian",
+      "split_helicity_projected"
+    ],
+    "speed_is_not_an_acceptance_gate": true
+  }
+}

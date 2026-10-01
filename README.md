@@ -21,11 +21,13 @@ the complete CPU suite, physics references, branch coverage, supported
 examples, type checks, and clean-wheel imports; see the
 [CI workflow](.github/workflows/ci.yml).
 
-Real-CUDA execution is not yet verified. The low-level RK4 and split-operator
-implementations now keep their arrays on device and return backend-native CuPy
-arrays. CPU-backed graph tests are not CUDA evidence: mandatory real-GPU parity,
-norm, shape, transfer, and performance checks remain. A requested CuPy backend
-never silently falls back to NumPy.
+Real-CUDA execution is numerically accepted for the supported dense pure-state
+RK4 and split-operator routes. On the clean `b9de848` source commit, all 15
+GPU-marked tests and the five-case schema-v1 report passed on an RTX 5070 Ti;
+see the [accepted evidence](benchmarks/real-cuda-v0.3-b9de848.json). Results stayed
+as CuPy `complex128` arrays and met the fixed parity and norm bounds. This
+32-state diagnostic does not establish a general GPU speed advantage. A requested
+CuPy backend never silently falls back to NumPy.
 
 ## Supported physical models
 
@@ -78,7 +80,8 @@ pip install -e ".[dev,io,plot]"
 
 The optional `gpu` extra installs `cupy-cuda12x[ctk]`, including the CUDA 12
 user-space runtime, headers, and libraries needed on a driver-only host. It
-still requires a compatible NVIDIA driver and real-device validation.
+still requires a compatible NVIDIA driver; the accepted target-host evidence is
+linked above.
 
 ## Quick start
 
@@ -219,7 +222,7 @@ ruff format --check src tests examples benchmarks scripts
 python -m mypy --no-incremental
 ```
 
-The current local checkpoint is 1531 passing CPU tests with 15 optional-GPU
+The current local checkpoint is 1532 passing CPU tests with 15 optional-GPU
 skips and 81% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 

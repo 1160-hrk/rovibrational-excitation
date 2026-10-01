@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import math
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "benchmarks" / "run_cuda_evidence.py"
+ACCEPTED_REPORT = ROOT / "benchmarks" / "real-cuda-v0.3-b9de848.json"
 
 
 def _load_module():
@@ -99,6 +101,21 @@ def test_cuda_evidence_schema_accepts_only_complete_real_device_report() -> None
 
     module.validate_report_schema(report)
     module.require_accepted_report(report)
+
+
+def test_committed_real_cuda_report_is_accepted_and_source_bound() -> None:
+    module = _load_module()
+    report = json.loads(ACCEPTED_REPORT.read_text())
+
+    module.validate_report_schema(report)
+    module.require_accepted_report(report)
+
+    assert report["source"] == {
+        "commit": "b9de848cf3fa8322e5f685f60191857e528531d4",
+        "worktree_dirty": False,
+    }
+    assert report["environment"]["device_name"] == "NVIDIA GeForce RTX 5070 Ti"
+    assert report["acceptance"]["required_cases"] == list(module.REQUIRED_CASES)
 
 
 def test_cuda_evidence_schema_rejects_missing_case_and_nonfinite_timing() -> None:

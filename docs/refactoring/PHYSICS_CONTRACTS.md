@@ -665,8 +665,8 @@ polarization, and dense/CSR comparisons use `2e-14`; density equivalence uses
 equivalence uses `2e-15`; and nondimensional population equivalence uses the
 largest absolute tolerance, `2e-12`.
 
-The CuPy comparison uses `rtol=2e-12`, `atol=2e-13`, is marked `gpu`, and must
-execute on real CUDA hardware before CuPy parity is considered verified.
+The CuPy comparison uses `rtol=2e-12`, `atol=2e-13`, is marked `gpu`, and
+executed successfully on the D-159 real-CUDA acceptance host.
 
 P6.1-a added the ownership-migration reference in
 `tests/contracts/test_twolevel_model_consolidation.py`. It freezes the exact
@@ -784,8 +784,8 @@ only inside private numerical/optimizer migration boundaries.
 
 | State path | Algorithm | NumPy dense | NumPy sparse | CuPy dense | CuPy sparse |
 |---|---|---:|---:|---:|---:|
-| Pure state | RK4 | Yes | Yes | Implemented but real-CUDA parity/transfer closure pending | No |
-| Pure state | Split operator | Yes | Accepted | Implemented but real-CUDA parity/transfer closure pending | No |
+| Pure state | RK4 | Yes | Yes | Accepted on real CUDA (D-159) | No |
+| Pure state | Split operator | Yes | Accepted | Accepted on real CUDA (D-159) | No |
 | Incoherent pure-state ensemble | Delegates to selected pure solver | Same as pure solver | Same as pure solver | Same as pure solver | No |
 | Explicit density matrix | Liouville RK4 | Yes | No | No | No |
 
@@ -816,9 +816,9 @@ Additional constraints:
 - D-062 verifies every CPU row. D-144 replaces the incorrect CuPy RK4
   RawKernel with the CPU-consistent `H0 - mu E` four-stage graph. D-145 moves
   all three existing split modes to a device-native owner without changing
-  their formulas or thresholds. Both return CuPy trajectory/final arrays, but
-  remain unverified until a real CUDA job supplies numerical, transfer, and
-  performance evidence.
+  their formulas or thresholds. D-159 accepts their real-CUDA numerical,
+  backend, transfer, norm, and synchronized timing evidence on the clean
+  `b9de848` commit. The small diagnostic supplies no general speed claim.
 - D-071 makes device-native CuPy RK4 and split operator part of the supported
   v0.3 target. Collected or source-inspection-only GPU tests are not numerical
   evidence. The v0.3.0 tag requires a successful real-GPU run of both paths;
@@ -842,8 +842,8 @@ The tolerance covers accumulated floating-point ordering differences between
 dense fastmath and strict CSR row reductions. It is not an operator-element
 cutoff; the propagation layer applies no approximate sparsification.
 
-A skipped CuPy test does not establish correctness. Keep capability wording
-conditional until tested in a CUDA CI job.
+A skipped CuPy test does not establish correctness. D-159 capability wording is
+based on an accepted real-device report, not on skips or CPU-backed doubles.
 
 Current anchors:
 

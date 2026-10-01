@@ -40,7 +40,7 @@ def test_parameter_reference_rejects_removed_names_and_old_cli():
         assert key not in combined
     assert "python -m rovibrational_excitation.simulation.runner" not in combined
     assert "python -m rovibrational_excitation.cli.simulate" in combined
-    assert "実 CUDA は未検証" in combined
+    assert "実 CUDA 数値受入れ" in combined
 
 
 def test_parameter_reference_links_resolve():

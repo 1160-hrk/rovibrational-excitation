@@ -626,14 +626,14 @@ P6.5-a freezes model-component projection. P6.5-b/D-082 moves the unchanged
 shared model/coupling contracts to `core.model`; the dynamics facade keeps
 object identity. The two recorded reverse imports are eliminated and the
 model-layer architecture test now requires zero higher-layer imports. Phase 6
-remains open only for its explicit acceptance audit; real CUDA is a separate
-Phase 5 release gate.
+remains open only for its explicit acceptance audit. Real CUDA was tracked
+separately by Phase 5 and is accepted under D-159; final release repeats it.
 
 P6.6-a freezes the last misplaced model class. P6.6-b/D-083 moves the unchanged
 `FixedMLinMolBasis` to `models.linear_molecule.basis`. The D-017 M-average
 workflow remains in simulation and imports that owner; it defines no model
-class or formula. Phase 6 model consolidation is complete. Real CUDA evidence
-remains required independently by Phase 5.
+class or formula. Phase 6 model consolidation is complete. D-159 independently
+accepts the Phase 5 real-CUDA evidence without changing model ownership.
 
 Derived values such as Morse `N` are properties or construction-local values,
 not global configuration.

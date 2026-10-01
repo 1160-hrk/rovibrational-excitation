@@ -69,6 +69,11 @@ def test_public_readme_local_links_resolve(readme: Path):
     assert missing == []
 
 
-def test_public_readmes_state_unverified_cuda_without_claiming_release_evidence():
-    assert "Real-CUDA execution is not yet verified" in README_PATHS[0].read_text()
-    assert "実 CUDA での実行は未検証" in README_PATHS[1].read_text()
+def test_public_readmes_record_real_cuda_acceptance_without_speed_claim():
+    english = README_PATHS[0].read_text()
+    japanese = README_PATHS[1].read_text()
+
+    assert "Real-CUDA execution is numerically accepted" in english
+    assert "実 CUDA での数値実行は受入れ済み" in japanese
+    assert "does not establish a general GPU speed advantage" in english
+    assert "一般的なGPU速度優位を意味しません" in japanese

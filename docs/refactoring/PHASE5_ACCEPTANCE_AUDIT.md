@@ -1,13 +1,14 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-10-01
-Checkpoint: P5.5-g / D-158 clean-source CUDA evidence environment; evidence rerun pending
+Checkpoint: P5.5-h / D-159 accepted real-CUDA evidence; Phase 5 complete
 
 ## Scope
 
 This audit compares the current implementation and executable tests with every
-Phase 5 acceptance row. CPU-backed doubles can verify dispatch and calculation
-graphs, but they are not CUDA numerical or performance evidence.
+Phase 5 acceptance row. CPU-backed doubles verify dispatch and calculation graphs;
+D-159 separately supplies accepted numerical, backend, transfer, norm, and synchronized
+timing evidence from real CUDA hardware.
 
 D-155 verifies the environment boundary on the intended WSL2 host: plain
 `cupy-cuda12x` enumerated the real device but lacked CUDA user-space runtime,
@@ -26,8 +27,8 @@ recorder.
 | Liouville endpoint reuse preserves the old loop | Verified exactly | D-061; final and trajectory `np.array_equal` comparisons |
 | Field left/mid/right indices and `-mu E` agree | Verified | solver physics and density contracts |
 | NumPy performance is measured | Verified | Numba CSR and Liouville endpoint-reuse artifacts |
-| CuPy RK4 graph matches CPU and remains device-native | Implemented; real GPU pending | D-144; `test_cuda_rk4_contracts.py` |
-| Real CUDA parity and performance | Harness complete; not verified | D-146; 15 GPU cases skip here |
+| CuPy RK4 graph matches CPU and remains device-native | Verified on real GPU | D-144; D-159; accepted schema-v1 artifact |
+| Real CUDA parity and diagnostic timing | Verified | D-159; `real-cuda-v0.3-b9de848.json` |
 
 D-144 removes the former fused RawKernel. That kernel used `H0 + mu E`, added
 its `dt*k3` stage a second time during the final update, ignored trajectory,
@@ -48,8 +49,8 @@ No GPU speed claim is made without measurement on actual hardware.
 | CSR inputs execute through documented dense spectral vectors | Verified exactly | `test_phase5_acceptance_contracts.py` |
 | Cartesian converges to RK4 at two step sizes | Verified | coarse/fine ratio 3.987 |
 | Public, spectral-setup, and inner-loop timing are separate | Verified | `split-polarization-v0.3.json` and its report contracts |
-| NumPy/CuPy numerical parity and shapes | Harness complete; not verified here | D-146; CUDA tests skip without hardware |
-| CuPy split graph and result remain device-native | Implemented; real GPU pending | D-145; `test_cuda_split_contracts.py` |
+| NumPy/CuPy numerical parity and shapes | Verified on real GPU | D-159; all three split evidence cases pass |
+| CuPy split graph and result remain device-native | Verified on real GPU | D-145; D-159; device-result checks |
 
 The direct NumPy/Numba dependency is honest. Numba is a required project
 dependency, so missing Numba raises the ordinary dependency error rather than
@@ -84,36 +85,41 @@ requires a Python decision; no state or trajectory array crosses to host.
 | No silent algorithm/backend/storage fallback | Pass |
 | NumPy performance and trajectory memory are documented | Pass |
 | Existing device state is retained by the result boundary | Pass |
-| CuPy RK4 source graph and device-native return | Implemented, real GPU pending |
-| CuPy split source graph and device-native return | Implemented, real GPU pending |
-| Real CUDA RK4 and split parity/performance | Pending real GPU |
-| No array round trip before the explicit host boundary | Source-verified; real GPU pending |
+| CuPy RK4 source graph and device-native return | Pass |
+| CuPy split source graph and device-native return | Pass |
+| Real CUDA RK4 and split parity/backend/norm | Pass |
+| Real CUDA transfer and synchronized diagnostic timing | Pass |
+| No array round trip before the explicit host boundary | Pass |
 
-Phase 5 remains **in progress**. Source-level device residency and the strict
-evidence recorder are implemented, but the final v0.3.0 tag still requires an
-accepted report produced on real hardware.
+Phase 5 is **complete** under D-159. The accepted report binds the result to the
+clean `b9de848cf3fa8322e5f685f60191857e528531d4` source commit and records all
+five required cases as CuPy `complex128` device results. This phase completion
+does not authorize a tag: the final release candidate must repeat the manual
+self-hosted CUDA workflow at its own exact commit.
 
-## Remaining CUDA closure work
+## Accepted real-CUDA evidence and release repetition
 
-D-146 fixes the required five cases, schema, numerical bounds, synchronized
-timing scopes, hardware/software/source identity, failure behavior, and
-artifact retention. D-155 makes the pyproject `gpu` extra provision the
-complete CUDA 12 user-space environment. D-156 additionally makes the manual
-workflow install `dev,io,plot,gpu`, matching the tag-time job so global pytest
-collection has every optional dependency. D-157 then replaces the real-device
-LinMol failure at unsupported `cupy.vectorize` with the approved,
-formula-preserving device-array implementation; all six axis/potential
-combinations match the existing CPU reference at `2e-15`. D-158 records that
-all 15 GPU-marked tests then pass on the target RTX 5070 Ti. Its first evidence
-run correctly rejected the unignored in-tree `.venv-cuda/` as dirty source;
-`.venv*/` is now ignored without changing the strict provenance check. Run the
-manual `Real CUDA validation` workflow before tagging. Accept Phase 5 only if
-its schema-v1 report has `status: pass`, then
-rerun the complete CPU/release gates at that exact commit.
+D-159 records the clean D-158 rerun on an RTX 5070 Ti. All 15 GPU-marked tests
+passed. The schema-v1 recorder reported `status: pass`, `worktree_dirty: false`,
+CuPy 14.2.0, CUDA runtime 12.9, driver 13.1, and compute capability 12.0. RK4
+final/trajectory and static Cartesian, rotating Cartesian, and
+helicity-projected split all returned CuPy `complex128` device arrays. The
+largest maximum-absolute difference was `1.4376699353313202e-13`; the largest
+norm error was `9.592326932761353e-14`, both below the fixed `2e-10` bounds.
 
-The tag workflow independently repeats the same test and recorder and attaches
-the accepted JSON to the GitHub Release. A queued job, skipped GPU test,
-`status: error` diagnostic, or source inspection is not acceptance evidence.
+The synchronized 32-state public-call medians were about 16-68 ms on GPU and
+0.31-0.52 ms on CPU. They include validation and algorithm setup. They are
+retained as honest diagnostics and demonstrate no speed advantage at this
+size; no size crossover or equal-accuracy production benchmark is inferred.
+
+The accepted report is committed as
+`benchmarks/real-cuda-v0.3-b9de848.json` and its schema and source binding are
+executable contracts. Before tagging, rerun the manual `Real CUDA validation`
+workflow on the exact final candidate commit. The tag workflow independently
+repeats the same test and recorder and attaches its accepted JSON to the GitHub
+Release. A queued job, skipped GPU test, `status: error` diagnostic, source
+inspection, or an artifact from a different source commit is not release
+acceptance evidence.
 
 Further work may not change formula, precision, polarization, tolerance, or
 renormalization semantics without a separate approved decision.

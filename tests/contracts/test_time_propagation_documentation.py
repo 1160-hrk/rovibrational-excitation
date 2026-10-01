@@ -138,10 +138,11 @@ def test_guide_distinguishes_exact_cartesian_and_explicit_approximation() -> Non
     assert "実空間 FFT split、4次 Suzuki split、adaptive split は実装していない" in text
 
 
-def test_guide_does_not_claim_unverified_cuda_or_silent_repair() -> None:
+def test_guide_records_cuda_acceptance_without_silent_repair() -> None:
     text = _guide()
 
-    assert "実 CUDA は未検証" in text
+    assert "実 CUDA 数値受入れ" in text
     assert "NumPy へ fallback しない" in text
     assert "入力を規格化・対称化・clip しない" in text
-    assert "GPU test が skip されたことは CUDA 対応の検証根拠ではない" in text
+    assert "GPU test がskipされたことだけを" in text
+    assert "CUDA対応の検証根拠にはしない" in text

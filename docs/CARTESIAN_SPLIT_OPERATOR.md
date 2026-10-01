@@ -476,8 +476,10 @@ $D(\phi)=e^{iM\phi}$ と、それが表す $\mu_\phi$ は $2\pi$ 周期である
 
 ### GPUでも同じ原理か
 
-CPU と CuPy 経路は同じ M 位相回転と相互作用指数を実装している。ただし現在の
-検証環境には CUDA 実機がなく、GPU 数値一致と性能は未検証である。
+CPU と CuPy 経路は同じ M 位相回転と相互作用指数を実装している。D-159の
+実 CUDA 数値受入れでは、RTX 5070 Ti上でstatic Cartesian、rotating Cartesian、
+helicity-projectedの全経路がNumPy参照との固定誤差境界を満たした。記録した32状態の
+時間は診断値であり、一般的なGPU速度優位を保証しない。
 
 ## 17. 実装・テスト・ベンチマーク
 

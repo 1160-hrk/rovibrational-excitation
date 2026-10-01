@@ -1171,8 +1171,8 @@ CPU status: accepted under D-062 on 2026-09-13. All rows below execute on
 NumPy, including exact CSR-to-dense-spectral parity. The benchmark now
 separates public end-to-end, spectral setup, and prepared inner propagation;
 prepared and public final states are exactly equal. CuPy source paths are
-device-native; numerical, transfer, and timing evidence remains pending a real
-CUDA job.
+device-native; D-159 accepts their real-CUDA numerical, transfer, norm, and
+synchronized diagnostic timing evidence.
 
 - require diagonal `H0` explicitly;
 - sample both Cartesian field components at propagation midpoints;
@@ -1206,10 +1206,11 @@ Real-GPU transfer and numerical evidence remains before acceptance.
 
 P5.4-a records the row-by-row disposition in
 `PHASE5_ACCEPTANCE_AUDIT.md`. D-144 and D-145 complete source-level
-device-native ownership. Phase 5 remains in progress only for an accepted
-real-CUDA parity, backend, transfer, and timing artifact. D-071 makes this a
-mandatory v0.3 release gate. It does not block independent Phase 6 CPU model
-consolidation, but v0.3.0 cannot be tagged until the implementation passes on a
+device-native ownership. D-159 accepts the clean real-CUDA parity, backend,
+transfer, norm, and synchronized timing artifact and completes Phase 5. D-071
+keeps a repeat run on the exact final candidate as a mandatory v0.3 release
+gate. Phase 6 CPU model consolidation proceeded independently, and v0.3.0
+cannot be tagged until the implementation passes again on a
 GPU-equipped runner.
 
 P5.5-a/D-144 replaces the user-approved incorrect fused CuPy RK4 kernel with
@@ -2360,8 +2361,16 @@ tests pass on the RTX 5070 Ti. The evidence recorder correctly rejected the
 checkout because the documented repository-root `.venv-cuda/` was an
 unignored untracked directory. The repository now ignores `.venv*/`, and the
 content scanner skips the same prefix. This changes neither the strict
-`git status --porcelain` acceptance rule nor any calculation. Schema-v1
-evidence must be rerun at the clean D-158 commit.
+`git status --porcelain` acceptance rule nor any calculation.
+
+P5.5-h/D-159 accepts the clean D-158 rerun. All 15 GPU-marked tests and all
+five schema-v1 cases pass on the RTX 5070 Ti at source commit `b9de848`; every
+recorded result is a CuPy `complex128` device array, the largest
+maximum-absolute difference is `1.44e-13`, and the largest norm error is
+`9.60e-14` under fixed `2e-10` bounds. The raw report is committed and
+schema-tested. The 32-state GPU timings are slower than CPU and therefore make
+no speed claim. Phase 5 is complete; manual and tag-time CUDA workflows must
+still repeat on the exact final release commit.
 
 
 ### Phase 8 acceptance

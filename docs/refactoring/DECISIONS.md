@@ -5461,6 +5461,50 @@ collected; the added case is the virtual-environment ignore contract.
 Implementation commit: this checkpoint.
 
 
+### D-159: Clean real-CUDA evidence completes Phase 5
+
+Status: Implemented on 2026-10-01 as P5.5-h.
+
+Scope: Accepted CUDA evidence artifact, its executable schema/source contract,
+backend capability documentation, Phase 5 disposition, and release handoff. No
+package source, physical formula, tolerance, field index, backend dispatch,
+array path, or calculation result changes.
+
+The target WSL2 host reran the complete CUDA gate from clean commit
+`b9de848cf3fa8322e5f685f60191857e528531d4`. All 15 GPU-marked tests passed
+in 4.39 seconds. The schema-v1 recorder then completed with `status: pass` and
+`worktree_dirty: false` on an NVIDIA GeForce RTX 5070 Ti, CuPy 14.2.0, CUDA
+runtime 12.9, driver 13.1, and compute capability 12.0.
+
+All five required cases passed: RK4 final state, RK4 complete trajectory,
+static Cartesian split, rotating Cartesian split, and helicity-projected
+split. Every result remained a CuPy `complex128` device array with its required
+shape. The largest observed maximum-absolute difference was
+`1.4376699353313202e-13`; the largest norm error was
+`9.592326932761353e-14`. Both are below the fixed `2e-10` acceptance bounds.
+The report also records host/device byte volumes and synchronized medians.
+
+The accepted raw report is committed as
+`benchmarks/real-cuda-v0.3-b9de848.json`. A contract loads it through the same
+strict validator used by the recorder and fixes its clean source commit, device
+identity, and exact required-case declaration. This closes the real-hardware
+numerical, backend, transfer, norm, and timing requirements and completes
+Phase 5.
+
+The measured dimension is 32. GPU public-call medians were approximately
+16-68 ms while CPU medians were approximately 0.31-0.52 ms; validation and
+algorithm setup are included. Timing was never an acceptance threshold, and
+this evidence makes no GPU speed claim or inferred crossover claim.
+
+Phase 5 completion is not final release acceptance. The new documentation and
+evidence commit is not the tested source commit, and future release preparation
+may add further non-calculation changes. The manual self-hosted CUDA workflow
+must run again on the exact final release candidate, and the tag workflow must
+repeat it before publication and attach the resulting accepted JSON.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
