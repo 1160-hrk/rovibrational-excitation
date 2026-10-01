@@ -43,7 +43,7 @@ the count difference never promotes generated or archived artifacts.
 
 | Files | Current finding | Required disposition |
 |---|---|---|
-| README.md, README_JP.md | D-132 rewrites both from the exact D-073 root and supported examples. D-155 documents the CTK-complete GPU extra; D-159 links the accepted clean real-CUDA report without a speed claim. Marked quickstarts execute, local links resolve, stale APIs/evidence are rejected, and SymTop/CUDA/analyzer limits are explicit. | Keep both languages contract-synchronized; update measured counts only from complete local gates. |
+| README.md, README_JP.md | D-132 rewrites both from the exact D-073 root and supported examples. D-155 documents the CTK-complete GPU extra; D-159 links the accepted clean local report, and D-160 links the accepted `main` manual-workflow report without a speed claim. Marked quickstarts execute, local links resolve, stale APIs/evidence are rejected, and SymTop/CUDA/analyzer limits are explicit. | Keep both languages contract-synchronized; update measured counts only from complete local gates. |
 | docs/MIGRATION_V0_3.md | D-141 maps v0.2 imports, normal inputs, optimizer layouts, spectroscopy, and disk data to explicit v0.3 boundaries. It forbids guessed legacy modulation conversion, Krotov-layout conflation, and implicit result/checkpoint upgrades. | Keep mappings synchronized with runtime migration errors; add no inferred physical meaning. |
 | tests/README.md | D-142 replaces stale counts, removed runners, Python 3.9/Actions v2 examples, ad-hoc installs, and false marker advice with the actual pyproject/CI commands and evidence hierarchy. D-155 records that the GPU extra supplies CUDA 12 user-space components but not the host driver or acceptance evidence. | Keep commands synchronized with CI and avoid duplicating volatile per-module coverage tables. |
 | docs/README.md | D-133 replaces the stale examples/recommendations with a current route and verification-status index; local links and forbidden old advice are contract-tested. | Keep migration-audit labels until each remaining public guide is independently corrected. |
@@ -74,8 +74,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy through the Python 3.12 module, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151/D-153 publish failed JUnit cases, captured command output, and the failing container stage as escaped Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. Hosted run `36814129738` accepted D-153 and every required normal-CI job. | GPU tests may skip; normal CI is not real-GPU evidence. The automated container smoke is hosted-accepted, but manual Dev Containers UI/Ports verification remains. |
-| .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation installs the D-155 CTK-complete GPU extra plus the complete test-collection extras under D-156, runs the trusted parity case, every GPU-marked test (including the D-157 LinMol formula parity), and the schema-v1 evidence recorder, and retains success or diagnostic JSON for 90 days. D-148 pins every external Action; D-159 accepts the equivalent clean local hardware report. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer and must rerun at the exact final candidate. A basic CuPy probe, CPU skip, queued job, status=error artifact, or different commit is not release acceptance evidence. |
+| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy through the Python 3.12 module, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151/D-153 publish failed JUnit cases, captured command output, and the failing container stage as escaped Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. Hosted run `36887536595` accepted every required normal-CI job on the PR #11 `main` merge. | GPU tests may skip; normal CI is not real-GPU evidence. The automated container smoke is hosted-accepted, but manual Dev Containers UI/Ports verification remains. |
+| .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation installs the D-155 CTK-complete GPU extra plus the complete test-collection extras under D-156, runs the trusted parity case, every GPU-marked test (including the D-157 LinMol formula parity), and the schema-v1 evidence recorder, and retains success or diagnostic JSON for 90 days. D-148 pins every external Action; D-159 accepts the clean local hardware report, and D-160 accepts actual manual workflow run `36887643743` on merged `main` commit `4f7efaed`. Its raw artifact is committed and source-bound. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer and must rerun at the exact final candidate. A basic CuPy probe, CPU skip, queued job, status=error artifact, or different commit is not release acceptance evidence. |
 | .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. | The workflow is blocked until GPU, Docker, protected environment, and exact PyPI Trusted Publisher infrastructure pass. Structural contracts do not substitute for those external executions. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | removed requirements.txt, requirements-dev.txt | D-142 removes dependency manifests that diverged from the build metadata. `pyproject.toml` now solely owns runtime, optional, and development dependencies; D-155 makes its GPU extra CTK-complete for driver-only hosts. | Add dependencies only to the appropriate pyproject group and its tested installation route. |
@@ -96,11 +96,11 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 5. D-143 records the passing local CPU/coverage/quality/example/actionlint,
    release dry-run, build/Twine, and isolated-wheel checks. D-146 adds strict
    manual and tag-time CUDA evidence collection without claiming a local GPU
-   result. Before the final `0.3.0` tag, obtain an accepted real-hardware
-   artifact, require the D-147 hosted container smoke and manually verify VS
-   Code attach/Ports, configure the exact D-149 PyPI Trusted Publisher and
-   protected environment, then repeat the final-version gates from a clean
-   commit. D-150 makes the local apply command print this as a non-acceptance
+   result. D-159 accepts the clean implementation artifact, and D-160 accepts
+   the actual manual workflow on merged `main`. Before the final `0.3.0` tag,
+   manually verify VS Code attach/Ports, configure the exact D-149 PyPI Trusted
+   Publisher and protected environment, then repeat the real-CUDA and all other
+   final-version gates from a clean commit. D-150 makes the local apply command print this as a non-acceptance
    handoff rather than suggesting immediate tag creation. D-151 pins the
    ShellCheck implementation used by actionlint and exposes failed tests and
    container stages through public Check annotations. D-152 consumes those
@@ -108,6 +108,8 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    checkout mount portability. Hosted run `36813179835` accepted all of those
    paths except the bare mypy command. D-153 invokes mypy through the active
    Python module and exposes captured output. D-154 records hosted run
-   `36814129738`, where every required normal-CI gate passed. Retain real-CUDA,
-   manual Dev Containers UI/Ports, publication, and tag-time gates before the
-   final transition.
+   `36814129738`, where every required normal-CI gate passed. D-160 records
+   normal-CI run `36887536595` and real-CUDA run `36887643743` passing on the
+   merged `main` development commit. Retain exact-final-version CUDA, manual
+   Dev Containers UI/Ports, publication, and tag-time gates before the final
+   transition.

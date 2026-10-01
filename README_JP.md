@@ -20,9 +20,10 @@
 詳細は [CI workflow](.github/workflows/ci.yml) を参照してください。
 
 対応する dense 純粋状態 RK4 と split-operator 経路は、実 CUDA での数値実行は受入れ済みです。
-clean な `b9de848` source commit に対し、RTX 5070 Ti 上で全15件のGPU marker testと
-5経路のschema-v1 reportが成功しました。[受入れ証跡](benchmarks/real-cuda-v0.3-b9de848.json)
-にはCuPy `complex128` のdevice結果、parity、norm、転送量、同期済み時間を記録しています。
+cleanなmain merge commit `4f7efaed`に対し、RTX 5070 Ti上の手動GitHub workflowで
+全15件のGPU marker testと5経路のschema-v1 reportが成功しました。
+[受入れ証跡](benchmarks/real-cuda-v0.3-4f7efaed.json)にはCuPy `complex128` のdevice結果、
+parity、norm、転送量、同期済み時間を記録しています。
 32状態の診断結果であり、一般的なGPU速度優位を意味しません。CuPy を要求して
 NumPy へ暗黙 fallback することはありません。
 
@@ -208,7 +209,7 @@ ruff format --check src tests examples benchmarks scripts
 mypy
 ```
 
-現在の local checkpoint は CPU 1532 tests pass、optional GPU 15 tests skip、
+現在の local checkpoint は CPU 1533 tests pass、optional GPU 15 tests skip、
 実測 branch coverage 81% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント

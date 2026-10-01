@@ -22,9 +22,10 @@ examples, type checks, and clean-wheel imports; see the
 [CI workflow](.github/workflows/ci.yml).
 
 Real-CUDA execution is numerically accepted for the supported dense pure-state
-RK4 and split-operator routes. On the clean `b9de848` source commit, all 15
-GPU-marked tests and the five-case schema-v1 report passed on an RTX 5070 Ti;
-see the [accepted evidence](benchmarks/real-cuda-v0.3-b9de848.json). Results stayed
+RK4 and split-operator routes. On clean main merge commit `4f7efaed`, all 15
+GPU-marked tests and the five-case schema-v1 report passed through the manual
+GitHub workflow on an RTX 5070 Ti; see the
+[accepted evidence](benchmarks/real-cuda-v0.3-4f7efaed.json). Results stayed
 as CuPy `complex128` arrays and met the fixed parity and norm bounds. This
 32-state diagnostic does not establish a general GPU speed advantage. A requested
 CuPy backend never silently falls back to NumPy.
@@ -222,7 +223,7 @@ ruff format --check src tests examples benchmarks scripts
 python -m mypy --no-incremental
 ```
 
-The current local checkpoint is 1532 passing CPU tests with 15 optional-GPU
+The current local checkpoint is 1533 passing CPU tests with 15 optional-GPU
 skips and 81% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 
