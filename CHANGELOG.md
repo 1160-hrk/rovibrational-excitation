@@ -97,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that remain outside this checkpoint.
 
 ### 🐛 Fixed
+- Documented in-tree `.venv` and `.venv-cuda` environments no longer
+  dirty strict CUDA source evidence; tracked and other untracked changes remain
+  visible, and repository-content scans skip the same prefix.
 - LinMol CuPy dipole construction now evaluates the established x/y/z
   Hönl-London and harmonic/Morse formulae with device array operations instead
   of unsupported `cupy.vectorize`, without host fallback or result repair.

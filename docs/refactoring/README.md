@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1530 passed, 15 skipped (1545 collected) |
+| Pytest | 1531 passed, 15 skipped (1546 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -649,6 +649,12 @@ for the same Cartesian Hönl-London branches and harmonic/Morse factors instead
 of unsupported `cupy.vectorize`. All six formula combinations agree with
 the existing CPU dense reference at `2e-15`. The suite has 1530 passes and
 15 optional-GPU skips (1545 collected); real-hardware rerun remains pending.
+
+P5.5-g/D-158 records that the D-157 hardware rerun passes all 15 GPU-marked
+tests. The schema-v1 recorder rejected only the unignored repository-root
+`.venv-cuda/`. The new `.venv*/` ignore contract covers both documented
+in-tree environments without weakening dirty tracked/untracked source
+detection. The clean-commit evidence rerun remains pending.
 
 P6.2-c
 implements D-069:

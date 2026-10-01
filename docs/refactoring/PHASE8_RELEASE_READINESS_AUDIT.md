@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P5.5-f/D-157 candidate
+Local code checkpoint: P5.5-g/D-158 candidate
 Hosted accepted checkpoint: P8.5-h/D-154 (`8a543b6`; run `36814615696`)
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
@@ -15,8 +15,8 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-157 candidate changes the approved LinMol CuPy implementation, tests, and documentation | Pass |
-| Complete CPU suite | 1530 passed, 15 optional-GPU skipped; 1545 collected | Pass |
+| Clean source checkpoint | D-158 candidate ignores local virtualenvs while retaining strict source provenance | Pass |
+| Complete CPU suite | 1531 passed, 15 optional-GPU skipped; 1546 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 307 files formatted | Pass |
@@ -62,8 +62,12 @@ manual and tag-time jobs now install `dev,io,plot,gpu`. D-157 addresses
 the resulting real-device LinMol failures: 12 GPU cases passed, three reached
 unsupported `cupy.vectorize`, and one was a misclassified CPU error test. The
 approved replacement preserves every existing dipole factor and phase in
-device array operations; CPU-reference characterization passes, while a full
-hardware rerun remains required. These are not library acceptance. D-146 adds
+device array operations; CPU-reference characterization passes. The D-157
+hardware rerun passes all 15 GPU-marked tests. Its schema-v1 recorder rejected
+only because repository-root `.venv-cuda/` was unignored; D-158 adds the
+`.venv*/` ignore contract without weakening tracked or other untracked source
+detection. A clean-commit evidence rerun remains required. These are not yet
+library acceptance. D-146 adds
 a manual pre-tag workflow and a release job for the real
 `[self-hosted, linux, x64, gpu]` runner. Both run the trusted TwoLevel case,
 every `gpu`-marked test, and a hard-failing schema-v1 recorder covering RK4

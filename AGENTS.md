@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-f/D-157 device-native LinMol CuPy dipoles; P8.5-h/D-154 hosted normal-CI acceptance
+Verified checkpoints: P5.5-g/D-158 clean-source CUDA evidence environment; P8.5-h/D-154 hosted normal-CI acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -195,7 +195,7 @@ pytest -q
 ~~~
 
 ~~~text
-1530 passed, 15 GPU tests skipped (1545 collected)
+1531 passed, 15 GPU tests skipped (1546 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -387,6 +387,12 @@ with the existing Numba reference at `2e-15` for all six combinations. The
 unavailable-CuPy test is no longer incorrectly GPU-marked. The local suite has
 1530 passes and 15 optional-GPU skips (1545 collected); the hardware rerun and
 schema-v1 evidence remain pending.
+
+P5.5-g/D-158 records that all 15 GPU-marked tests pass on the target RTX 5070
+Ti. The evidence recorder rejected `ecf9a61` only because the documented
+repository-root `.venv-cuda/` was unignored. The repository now ignores
+`.venv*/` and excludes that prefix from repository-content discovery while
+leaving the strict source check unchanged. Rerun schema-v1 evidence at D-158.
 
 ## Current next work
 

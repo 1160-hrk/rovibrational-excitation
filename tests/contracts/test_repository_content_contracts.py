@@ -33,7 +33,10 @@ def _repository_files(*patterns: str) -> list[Path]:
         for pattern in patterns
         for path in ROOT.rglob(pattern)
         if path.is_file()
-        and not any(part in IGNORED_PARTS for part in path.relative_to(ROOT).parts)
+        and not any(
+            part in IGNORED_PARTS or part.startswith(".venv")
+            for part in path.relative_to(ROOT).parts
+        )
     )
 
 
@@ -65,6 +68,12 @@ def _local_target(raw_target: str) -> str | None:
     if not target or target.startswith(("#", "http://", "https://", "mailto:")):
         return None
     return unquote(target.split("#", maxsplit=1)[0]) or None
+
+
+def test_repository_ignores_local_virtual_environments():
+    """Documented in-tree virtualenv names must not dirty CUDA evidence."""
+    ignore_patterns = (ROOT / ".gitignore").read_text().splitlines()
+    assert ".venv*/" in ignore_patterns
 
 
 def test_all_markdown_code_fences_are_closed():

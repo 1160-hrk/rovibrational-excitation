@@ -16,6 +16,10 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,io,plot]"
 ```
 
+文書で使用するリポジトリ内の `.venv` と `.venv-cuda` は Git の ignore 対象です。
+したがって仮想環境自体は clean-source CUDA evidence を無効にしませんが、追跡対象の
+変更と、それ以外の ignore されていない未追跡ファイルは provenance 検査に残ります。
+
 CUDA test を実行する専用環境では `gpu` extra を追加します。この extra は
 `cupy-cuda12x[ctk]` と CUDA 12 user-space components を環境内へ導入しますが、
 互換 NVIDIA driver は別途必要です。CPU 上で skip された GPU test は実 CUDA の

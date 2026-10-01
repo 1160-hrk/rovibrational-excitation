@@ -2355,6 +2355,15 @@ passes and 15 optional-GPU skips (1545 collected); a real-GPU rerun remains
 mandatory.
 
 
+P5.5-g/D-158 follows the successful D-157 hardware rerun: all 15 GPU-marked
+tests pass on the RTX 5070 Ti. The evidence recorder correctly rejected the
+checkout because the documented repository-root `.venv-cuda/` was an
+unignored untracked directory. The repository now ignores `.venv*/`, and the
+content scanner skips the same prefix. This changes neither the strict
+`git status --porcelain` acceptance rule nor any calculation. Schema-v1
+evidence must be rerun at the clean D-158 commit.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

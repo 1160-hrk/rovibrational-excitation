@@ -1,7 +1,7 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-10-01
-Checkpoint: P5.5-f / D-157 device-native LinMol CuPy dipoles; full hardware rerun pending
+Checkpoint: P5.5-g / D-158 clean-source CUDA evidence environment; evidence rerun pending
 
 ## Scope
 
@@ -103,8 +103,11 @@ workflow install `dev,io,plot,gpu`, matching the tag-time job so global pytest
 collection has every optional dependency. D-157 then replaces the real-device
 LinMol failure at unsupported `cupy.vectorize` with the approved,
 formula-preserving device-array implementation; all six axis/potential
-combinations match the existing CPU reference at `2e-15`. Run the manual
-`Real CUDA validation` workflow before tagging. Accept Phase 5 only if
+combinations match the existing CPU reference at `2e-15`. D-158 records that
+all 15 GPU-marked tests then pass on the target RTX 5070 Ti. Its first evidence
+run correctly rejected the unignored in-tree `.venv-cuda/` as dirty source;
+`.venv*/` is now ignored without changing the strict provenance check. Run the
+manual `Real CUDA validation` workflow before tagging. Accept Phase 5 only if
 its schema-v1 report has `status: pass`, then
 rerun the complete CPU/release gates at that exact commit.
 

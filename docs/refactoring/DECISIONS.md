@@ -5427,6 +5427,40 @@ GPU-marked tests and schema-v1 evidence recorder at this commit.
 Implementation commit: this checkpoint.
 
 
+### D-158: In-tree virtual environments do not dirty CUDA source evidence
+
+Status: Implemented on 2026-10-01 as P5.5-g.
+
+Scope: Git ignore policy, repository-content test discovery, provenance
+contracts, and acceptance documentation. No package source, physical formula,
+numerical tolerance, backend path, or evidence acceptance criterion changes.
+
+The target RTX 5070 Ti host passed all 15 GPU-marked tests at D-157 commit
+`ecf9a61`. The schema-v1 recorder then correctly refused acceptance with
+`accepted CUDA evidence requires a clean source commit`. The documented CUDA
+virtual environment lives at repository-root `.venv-cuda/`, but `.gitignore`
+did not cover either that name or the documented standard `.venv/`. Therefore
+`git status --porcelain` classified the environment itself as untracked source.
+This is a provenance-environment defect, not a numerical failure. The rejected
+diagnostic is not accepted CUDA evidence, and its five case results are not
+inferred.
+
+The root ignore policy now contains `.venv*/`, covering both documented
+in-tree names. The Markdown/YAML repository scanner independently skips any
+path component beginning with `.venv` so a local environment cannot be
+traversed as repository content. An executable contract fixes the ignore
+pattern, and `git check-ignore --no-index` verifies both names. Tracked
+changes and every other non-ignored untracked file remain visible to the exact
+unchanged source-evidence check.
+
+All 15 real-GPU tests pass, but Phase 5 remains open until the schema-v1
+recorder is rerun from the clean D-158 commit and produces `status: pass`.
+The complete local suite has 1531 passes and 15 optional-GPU skips out of 1546
+collected; the added case is the virtual-environment ignore contract.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
