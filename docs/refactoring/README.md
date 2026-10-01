@@ -636,6 +636,13 @@ Workflow and wheel-metadata contracts preserve this dependency route. No
 calculation code changed; the full CPU suite remains 1527 passes and 16
 optional-GPU skips (1543 collected). Full real-GPU acceptance remains pending.
 
+P5.5-e/D-156 aligns the manual CUDA job with the release CUDA job by installing
+`dev,io,plot,gpu`. The first real TwoLevel parity case passed, but global
+collection for the all-GPU command exposed the missing `plot` dependency before
+any selected GPU test ran. The workflow contract now prevents that incomplete
+environment. No package source or calculation changed; full hardware acceptance
+remains pending.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

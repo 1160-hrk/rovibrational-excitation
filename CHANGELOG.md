@@ -97,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that remain outside this checkpoint.
 
 ### 🐛 Fixed
+- Manual real-CUDA validation now installs the same complete `dev,io,plot,gpu`
+  environment as tag-time validation, preventing optional visualization imports
+  from aborting collection before GPU-marked tests execute.
 - Minor bug fixes in propagation algorithms
 
 ## [0.3.0.dev1] - 2026-09-21

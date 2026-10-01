@@ -193,7 +193,7 @@ def test_manual_cuda_workflow_records_pre_tag_evidence() -> None:
     job = workflow["jobs"]["cuda-validation"]
     commands = _commands(job)
     assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
-    assert 'pip install -e ".[dev,gpu]"' in commands
+    assert 'pip install -e ".[dev,io,plot,gpu]"' in commands
     assert "getDeviceCount" in commands
     assert "pytest -q -m gpu" in commands
     assert "benchmarks/run_cuda_evidence.py" in commands

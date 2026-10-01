@@ -2334,6 +2334,15 @@ code changes. The full CPU suite remains 1527 passes with 16 optional-GPU skips
 mandatory on the updated commit.
 
 
+P5.5-e/D-156 repairs the manual CUDA validation environment after the real host
+passed the focused parity case but `pytest -q -m gpu` stopped during collection:
+the `dev,gpu` install omitted Matplotlib required by collected visualization
+contracts. The manual workflow now matches the tag-time job exactly with
+`dev,io,plot,gpu`. The executable workflow contract fixes that complete set. No
+package source or calculation logic changes; full GPU execution and evidence
+remain mandatory.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

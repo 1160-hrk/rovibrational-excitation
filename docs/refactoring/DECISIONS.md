@@ -5361,6 +5361,33 @@ formatting, build, Twine, wheel metadata, and diff checks pass.
 Implementation commit: this checkpoint.
 
 
+### D-156: Real-CUDA test jobs install every collection-time optional dependency
+
+Status: Implemented on 2026-10-01 as P5.5-e.
+
+Scope: Manual CUDA workflow dependency selection, its executable contract, and
+acceptance documentation. No package source, solver, physical formula, numerical
+tolerance, backend dispatch, array path, or result changes.
+
+The first real-device TwoLevel NumPy/CuPy parity test passed on the target RTX
+5070 Ti. The subsequent `pytest -q -m gpu` command stopped during global test
+collection before any selected GPU test ran because the manual CUDA workflow
+installed `dev,gpu` but collection imports visualization contract modules that
+require the separate `plot` extra. The release CUDA job already installed the
+complete `dev,io,plot,gpu` set.
+
+The manual pre-tag CUDA job now installs that same complete set. This preserves
+the broad collection semantics of the mandatory command, prevents optional
+imports from hiding GPU execution, and makes manual and tag-time validation
+environments identical. A contract fixes the exact install route.
+
+This is an environment/collection repair, not real-CUDA acceptance. Phase 5
+remains open until all 16 GPU-marked tests and the schema-v1 evidence recorder
+pass at the same clean commit.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

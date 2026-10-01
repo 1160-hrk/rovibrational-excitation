@@ -25,7 +25,7 @@ jobs:
       - name: Install package with CUDA dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,gpu]"
+          pip install -e ".[dev,io,plot,gpu]"
       - name: Require a real CUDA device
         run: |
           python -c "import cupy as cp; count = cp.cuda.runtime.getDeviceCount(); assert count > 0, \"no CUDA device\"; print(cp.cuda.runtime.getDeviceProperties(0)[\"name\"])"

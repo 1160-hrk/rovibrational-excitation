@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-d/D-155 reproducible CUDA user-space environment; P8.5-h/D-154 hosted normal-CI acceptance
+Verified checkpoints: P5.5-e/D-156 complete manual-CUDA test environment; P8.5-h/D-154 hosted normal-CI acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -369,6 +369,13 @@ authority. This changes dependency provisioning only, not any formula, array,
 tolerance, backend dispatch, or result. The full CPU suite remains 1527 passes
 with 16 optional-GPU skips (1543 collected). Library parity tests and the
 schema-v1 evidence report still require the manual real-GPU workflow.
+
+P5.5-e/D-156 changes the manual CUDA workflow install from `dev,gpu` to
+`dev,io,plot,gpu`, matching the release job. The focused real-GPU parity test
+passed; the broader command had stopped during collection solely because
+Matplotlib was absent. A workflow contract fixes the complete environment. No
+package source or numerical behavior changes; all GPU cases and evidence still
+need to pass.
 
 ## Current next work
 

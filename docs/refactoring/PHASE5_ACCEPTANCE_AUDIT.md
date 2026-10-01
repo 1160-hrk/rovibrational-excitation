@@ -1,7 +1,7 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-10-01
-Checkpoint: P5.5-d / D-155 reproducible CUDA user-space environment; full hardware run pending
+Checkpoint: P5.5-e / D-156 complete manual-CUDA test environment; full hardware run pending
 
 ## Scope
 
@@ -97,9 +97,11 @@ accepted report produced on real hardware.
 
 D-146 fixes the required five cases, schema, numerical bounds, synchronized
 timing scopes, hardware/software/source identity, failure behavior, and
-artifact retention. D-155 makes both CUDA workflows provision the same complete
-CUDA 12 user-space environment through the pyproject `gpu` extra. Run the
-manual `Real CUDA validation` workflow before tagging. Accept Phase 5 only if
+artifact retention. D-155 makes the pyproject `gpu` extra provision the
+complete CUDA 12 user-space environment. D-156 additionally makes the manual
+workflow install `dev,io,plot,gpu`, matching the tag-time job so global pytest
+collection has every optional dependency. Run the manual `Real CUDA validation`
+workflow before tagging. Accept Phase 5 only if
 its schema-v1 report has `status: pass`, then
 rerun the complete CPU/release gates at that exact commit.
 
