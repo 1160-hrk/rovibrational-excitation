@@ -76,8 +76,9 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,io,plot]"
 ```
 
-The optional `gpu` extra installs `cupy-cuda12x`; select it only for a matching
-CUDA environment and keep the unverified status above in mind.
+The optional `gpu` extra installs `cupy-cuda12x[ctk]`, including the CUDA 12
+user-space runtime, headers, and libraries needed on a driver-only host. It
+still requires a compatible NVIDIA driver and real-device validation.
 
 ## Quick start
 

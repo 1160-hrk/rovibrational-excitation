@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-h/D-154 hosted normal-CI acceptance; P8.5-g/D-153 reproducible mypy entrypoint
+Verified checkpoints: P5.5-d/D-155 reproducible CUDA user-space environment; P8.5-h/D-154 hosted normal-CI acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -359,6 +359,16 @@ quality, Python 3.10-3.13, physics, coverage, build/clean-wheel, container smoke
 and the required aggregate all succeeded. This is normal-CPU/container evidence,
 not real-CUDA, manual Dev Containers UI, tag-workflow, or publication evidence.
 No code, workflow, calculation, or test behavior changes.
+
+P5.5-d/D-155 makes the `gpu` extra install `cupy-cuda12x[ctk]`. A clean
+WSL2 driver-only probe showed that plain `cupy-cuda12x` could enumerate the
+RTX 5070 Ti but failed its first kernel for missing runtime libraries, NVRTC,
+and headers; the CTK extra supplied all required CUDA 12 user-space components
+and executed a CuPy kernel. Both CUDA workflows consume this single pyproject
+authority. This changes dependency provisioning only, not any formula, array,
+tolerance, backend dispatch, or result. The full CPU suite remains 1527 passes
+with 16 optional-GPU skips (1543 collected). Library parity tests and the
+schema-v1 evidence report still require the manual real-GPU workflow.
 
 ## Current next work
 

@@ -1,13 +1,20 @@
 # Phase 5 numerical-engine acceptance audit
 
-Last verified: 2026-09-30
-Checkpoint: P5.5-c / D-146 real-CUDA evidence harness; hardware run pending
+Last verified: 2026-10-01
+Checkpoint: P5.5-d / D-155 reproducible CUDA user-space environment; full hardware run pending
 
 ## Scope
 
 This audit compares the current implementation and executable tests with every
 Phase 5 acceptance row. CPU-backed doubles can verify dispatch and calculation
 graphs, but they are not CUDA numerical or performance evidence.
+
+D-155 verifies the environment boundary on the intended WSL2 host: plain
+`cupy-cuda12x` enumerated the real device but lacked CUDA user-space runtime,
+NVRTC, and headers; `cupy-cuda12x[ctk]` supplied CUDA 12.9 components and ran
+a basic CuPy kernel on the RTX 5070 Ti. This proves reproducible device
+bootstrap only. It does not replace the library parity tests or evidence
+recorder.
 
 ## P5.1 RK4
 
@@ -90,8 +97,10 @@ accepted report produced on real hardware.
 
 D-146 fixes the required five cases, schema, numerical bounds, synchronized
 timing scopes, hardware/software/source identity, failure behavior, and
-artifact retention. Run the manual `Real CUDA validation` workflow before
-tagging. Accept Phase 5 only if its schema-v1 report has `status: pass`, then
+artifact retention. D-155 makes both CUDA workflows provision the same complete
+CUDA 12 user-space environment through the pyproject `gpu` extra. Run the
+manual `Real CUDA validation` workflow before tagging. Accept Phase 5 only if
+its schema-v1 report has `status: pass`, then
 rerun the complete CPU/release gates at that exact commit.
 
 The tag workflow independently repeats the same test and recorder and attaches

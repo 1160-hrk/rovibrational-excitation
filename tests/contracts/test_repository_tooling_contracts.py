@@ -139,6 +139,7 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     assert "python scripts/smoke_examples.py" in cpu
     assert "python -m mypy --no-incremental" in cpu
     assert jobs["gpu-validation"]["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    assert 'pip install -e ".[dev,io,plot,gpu]"' in gpu
     assert "getDeviceCount" in gpu
     assert "test_numpy_and_cupy_final_state_agree" in gpu
     assert "benchmarks/run_cuda_evidence.py" in gpu
@@ -192,6 +193,7 @@ def test_manual_cuda_workflow_records_pre_tag_evidence() -> None:
     job = workflow["jobs"]["cuda-validation"]
     commands = _commands(job)
     assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    assert 'pip install -e ".[dev,gpu]"' in commands
     assert "getDeviceCount" in commands
     assert "pytest -q -m gpu" in commands
     assert "benchmarks/run_cuda_evidence.py" in commands

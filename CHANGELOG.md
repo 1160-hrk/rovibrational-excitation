@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Container smoke mounts the read-only clean checkout and writable notebooks
   directory as siblings, avoiding an absent nested target inside a read-only
   bind.
+- The `gpu` extra now installs `cupy-cuda12x[ctk]`, so driver-only Linux/WSL
+  runners receive the CUDA 12 runtime, headers, and user-space libraries needed
+  for CuPy kernels without installing a second NVIDIA driver.
 - `pyproject.toml` is now the only dependency manifest; stale duplicate
   requirements files and unrelated spectroscopy version/contact metadata were
   removed, and the test guide matches the actual CI policy.

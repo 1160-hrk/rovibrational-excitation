@@ -1,8 +1,8 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local documentation checkpoint: P8.5-h/D-154 candidate
-Hosted code checkpoint: P8.5-g/D-153 (`98e04fb`; run `36814129738`)
+Local code checkpoint: P5.5-d/D-155 candidate
+Hosted accepted checkpoint: P8.5-h/D-154 (`8a543b6`; run `36814615696`)
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -15,7 +15,7 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-154 candidate is evidence-only documentation over accepted D-153 code | Pass |
+| Clean source checkpoint | D-155 candidate changes only GPU dependency provisioning, contracts, and documentation | Pass |
 | Complete CPU suite | 1527 passed, 16 optional-GPU skipped; 1543 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
@@ -24,6 +24,7 @@ reported as complete v0.3 release acceptance.
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
+| GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
 | Hosted normal CI | run `36814129738`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
 | Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
 | Container gate wiring | minimal build context, shell syntax, required normal/release jobs; hosted run `36814129738` succeeded | Pass hosted; manual UI check external |
@@ -52,8 +53,11 @@ separate device-native CuPy owners. Source contracts forbid `.get()` and
 `cp.asnumpy` before the explicit host boundary. CPU-backed doubles verify the
 calculation graphs but cannot verify CUDA execution or performance.
 
-Sixteen GPU tests are collected but skipped locally. D-146 adds a manual
-pre-tag workflow and a release job for the real
+Sixteen GPU tests are collected but skipped locally. D-155 makes the `gpu`
+extra install the complete CUDA 12 user-space components; a driver-only WSL2
+probe on the intended RTX 5070 Ti host now executes a basic CuPy kernel. This is
+bootstrap evidence only, not library acceptance. D-146 adds a manual pre-tag
+workflow and a release job for the real
 `[self-hosted, linux, x64, gpu]` runner. Both run the trusted TwoLevel case,
 every `gpu`-marked test, and a hard-failing schema-v1 recorder covering RK4
 final/trajectory plus all three split modes. The report records NumPy/CuPy

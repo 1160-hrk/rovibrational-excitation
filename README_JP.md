@@ -70,8 +70,9 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,io,plot]"
 ```
 
-optional の `gpu` extra は `cupy-cuda12x` を入れます。CUDA 環境が一致する場合
-だけ選び、上記の未検証状態に注意してください。
+optional の `gpu` extra は `cupy-cuda12x[ctk]` と CUDA 12 の user-space
+runtime・header・library を入れます。互換 NVIDIA driver と実機検証は引き続き
+必要です。
 
 ## クイックスタート
 

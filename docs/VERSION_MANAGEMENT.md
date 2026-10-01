@@ -55,6 +55,9 @@ Publisherの全条件をtag前に要求します。
 - self-hosted GPU runnerに labels
   [self-hosted, linux, x64, gpu] が設定され、Node 24 Actionsに必要なrunner
   version 2.327.1以上である。
+- `gpu` extra が `cupy-cuda12x[ctk]` を介してCUDA 12 user-space runtime・
+  header・libraryを導入し、runner hostは互換NVIDIA driverだけを提供する。
+  WSL2ではLinux NVIDIA driverを追加しない。
 - `.github/workflows/cuda-validation.yml` をrelease候補commitに対して手動実行し、
   schema-v1の `status: pass` artifactをレビューしている。
 - 通常CIの `container-smoke` が同じcommitで成功し、VS Code Dev Containersの

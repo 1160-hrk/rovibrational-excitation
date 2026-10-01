@@ -16,8 +16,10 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,io,plot]"
 ```
 
-CUDA test を実行する専用環境では、対応する CUDA version を確認した上で `gpu` extra を
-追加します。CPU 上で skip された GPU test は実 CUDA の検証根拠ではありません。
+CUDA test を実行する専用環境では `gpu` extra を追加します。この extra は
+`cupy-cuda12x[ctk]` と CUDA 12 user-space components を環境内へ導入しますが、
+互換 NVIDIA driver は別途必要です。CPU 上で skip された GPU test は実 CUDA の
+検証根拠ではありません。
 
 ## ディレクトリ
 

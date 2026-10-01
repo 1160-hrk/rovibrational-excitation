@@ -39,7 +39,7 @@ dependencies = [
 rve-simulate = "rovibrational_excitation.cli.simulate:main"
 rve-optimize = "rovibrational_excitation.cli.optimize:main"
 [project.optional-dependencies]
-gpu = ["cupy-cuda12x"]
+gpu = ["cupy-cuda12x[ctk]"]
 io = ["h5py>=3.8"]
 plot = ["matplotlib>=3.7"]
 dev = [

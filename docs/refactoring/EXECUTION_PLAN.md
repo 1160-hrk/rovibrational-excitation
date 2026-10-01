@@ -2321,6 +2321,19 @@ the final version transition, and tag-time repetition remain open. No code,
 workflow, calculation, or test behavior changes.
 
 
+P5.5-d/D-155 closes the CUDA user-space bootstrap gap found on the intended
+WSL2 real-GPU host. Plain `cupy-cuda12x` imported and enumerated the RTX 5070
+Ti but could not compile its first kernel because CUDA runtime libraries,
+NVRTC, and headers were absent. Installing the official `ctk` extra supplied
+CUDA 12.9 components and executed the probe successfully. The pyproject
+`gpu` extra now owns that complete dependency as `cupy-cuda12x[ctk]`; both
+manual and tag-time workflows already install the extra and contracts fix that
+wiring. Wheel metadata carries the same requirement. No solver or calculation
+code changes. The full CPU suite remains 1527 passes with 16 optional-GPU skips
+(1543 collected); trusted parity, all GPU tests, and schema-v1 evidence remain
+mandatory on the updated commit.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

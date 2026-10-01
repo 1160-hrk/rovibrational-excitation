@@ -627,6 +627,15 @@ Python 3.10-3.13, physics, coverage, build/clean-wheel, container smoke, and the
 required aggregate all succeeded. This is not CUDA, manual Dev Containers UI,
 tag-workflow, or publication evidence. No code or calculation changed.
 
+P5.5-d/D-155 makes the pyproject `gpu` extra install
+`cupy-cuda12x[ctk]`. The target WSL2 host's compatible NVIDIA driver could
+enumerate its RTX 5070 Ti with plain CuPy, but the first kernel correctly failed
+until CUDA 12 runtime libraries, NVRTC, and headers were installed by the CTK
+extra. A basic CuPy kernel then executed with runtime 12.9 and driver 13.1.
+Workflow and wheel-metadata contracts preserve this dependency route. No
+calculation code changed; the full CPU suite remains 1527 passes and 16
+optional-GPU skips (1543 collected). Full real-GPU acceptance remains pending.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

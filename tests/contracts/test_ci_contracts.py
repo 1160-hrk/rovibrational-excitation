@@ -241,9 +241,11 @@ def test_build_metadata_uses_supported_spdx_license_and_runtime_dependencies():
     assert pyproject["build-system"]["requires"][0] == "setuptools>=77"
     assert pyproject["project"]["license"] == "MIT"
     assert "sympy" in pyproject["project"]["dependencies"]
-    dev_dependencies = pyproject["project"]["optional-dependencies"]["dev"]
+    optional_dependencies = pyproject["project"]["optional-dependencies"]
+    dev_dependencies = optional_dependencies["dev"]
     assert "ruff==0.16.2" in dev_dependencies
     assert "mypy==1.19.1" in dev_dependencies
+    assert optional_dependencies["gpu"] == ["cupy-cuda12x[ctk]"]
 
 
 def test_supported_examples_are_explicit_and_archives_are_excluded():

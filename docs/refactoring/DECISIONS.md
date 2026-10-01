@@ -5323,6 +5323,44 @@ Evidence-only documentation contracts and diff checks pass.
 Implementation commit: this checkpoint.
 
 
+### D-155: The GPU extra supplies its CUDA user-space environment
+
+Status: Implemented on 2026-10-01 as P5.5-d.
+
+Scope: Optional GPU dependency metadata, CUDA-workflow dependency contracts,
+public/release documentation, and acceptance status. No solver implementation,
+physical formula, numerical tolerance, backend dispatch, array path, or result
+changes.
+
+The intended WSL2 real-GPU host has an RTX 5070 Ti and a compatible NVIDIA
+driver reporting CUDA 13.1 support. With only `cupy-cuda12x`, CuPy 14.2.0
+imported and enumerated the device but its first `cp.arange` kernel failed:
+CUDA headers, `libcudart`, NVRTC, cuRAND, and solver/link libraries were absent.
+Installing the official `cupy-cuda12x[ctk]` extra supplied CUDA 12.9 runtime,
+headers, NVRTC, cuFFT, cuRAND, cuSOLVER, cuSPARSE, cuBLAS, and nvJitLink
+components inside the Python environment. The same probe then ran on device and
+returned the expected sum of squares, 285.
+
+The pyproject `gpu` extra now requires `cupy-cuda12x[ctk]`. This keeps the
+host boundary explicit: the host supplies one compatible NVIDIA driver, while
+the Python environment owns the matching CUDA 12 user-space components. It does
+not install a Linux NVIDIA driver. Both manual pre-tag and tag-time GPU
+workflows already install the pyproject `gpu` extra; contracts now fix those
+exact routes. Built wheel metadata preserves the CTK extra requirement.
+
+This basic real-device probe verifies environment bootstrap only. It does not
+accept RK4, split operator, parity, backend residency, transfers, norms, or
+timings. Phase 5 remains open until the updated commit passes the trusted
+reference, all 16 GPU-marked tests, and the schema-v1 evidence recorder through
+the manual workflow.
+
+The complete local CPU suite remains 1527 passed and 16 optional-GPU skipped
+out of 1543 collected. Focused dependency/workflow/README contracts, Ruff,
+formatting, build, Twine, wheel metadata, and diff checks pass.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
