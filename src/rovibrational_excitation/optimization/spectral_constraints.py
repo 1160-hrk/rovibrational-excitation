@@ -1,23 +1,204 @@
-"""
-スペクトル制約（Krotov 単調収束対応）
-====================================
+"""Historical frequency-domain filter for ``legacy_batch_overlap``.
 
-論文に準拠したスペクトル制約を、周波数領域の正則化として実装する補助関数群。
-
-- α(ω) ≥ 0 を周波数グリッド上で構築（ガウシアン帯域の合成）
-- 源項 s(t) の FFT を取り、U(ω) = S(ω) / (1+α(ω)) で更新量を解く
-
-注意:
-- 周波数グリッドは rFFT 用の半分スペクトル (N//2+1) を想定
-- 周波数単位は PHz（= cycles/fs）に統一する
+The helper constructs a nonnegative dimensionless penalty ``alpha`` on an
+rFFT grid and solves ``U[k] = S[k] / (1 + alpha[k])``.  This algebra is
+independently referenced, but it does not by itself establish monotonic
+convergence for standard Krotov control.
 """
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from math import isfinite
+from numbers import Real
+from typing import Any, Literal, cast
+
 import numpy as np
 
 from rovibrational_excitation.core.units.converters import converter
+
+SpectralMode = Literal["pass", "stop"]
+SpectralCombine = Literal["max", "sum"]
+
+_SPECTRUM_REQUIRED = {
+    "method",
+    "bands",
+    "units",
+    "mode",
+    "combine",
+    "fwhm",
+    "alpha_scale",
+}
+_SPECTRUM_OPTIONAL = {"weights"}
+
+
+@dataclass(frozen=True, slots=True)
+class LegacySpectralFilter:
+    """One historical penalty mask compiled on an exact rFFT grid."""
+
+    alpha_mask: np.ndarray
+
+    def apply(self, source: np.ndarray) -> np.ndarray:
+        return solve_update_in_frequency(source, self.alpha_mask)
+
+
+@dataclass(frozen=True, slots=True)
+class LegacySpectralConstraint:
+    """Validated configuration for the legacy batch-overlap filter only."""
+
+    bands: tuple[tuple[float, float], ...]
+    units: str
+    mode: SpectralMode
+    combine: SpectralCombine
+    fwhm: bool
+    weights: tuple[float, ...] | None
+    alpha_scale: float
+
+    def compile(self, freq_phz: np.ndarray) -> LegacySpectralFilter:
+        return LegacySpectralFilter(
+            build_alpha_mask(
+                freq_phz,
+                self.bands,
+                units=self.units,
+                mode=self.mode,
+                combine=self.combine,
+                fwhm=self.fwhm,
+                weights=self.weights,
+                alpha_scale=self.alpha_scale,
+            )
+        )
+
+
+def _names(values: set[Any]) -> str:
+    return ", ".join(
+        sorted(value if isinstance(value, str) else repr(value) for value in values)
+    )
+
+
+def _sequence(value: Any, *, label: str) -> list[Any]:
+    if isinstance(value, (str, bytes, Mapping)):
+        raise ValueError(f"{label} must be a sequence")
+    try:
+        return list(value)
+    except TypeError as exc:
+        raise ValueError(f"{label} must be a sequence") from exc
+
+
+def _finite_real(value: Any, *, label: str) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValueError(f"{label} must be a finite real number")
+    converted = float(value)
+    if not isfinite(converted):
+        raise ValueError(f"{label} must be a finite real number")
+    return converted
+
+
+def parse_legacy_spectral_constraint(value: Any) -> LegacySpectralConstraint:
+    """Validate and freeze the legacy-only spectral-constraint mapping."""
+    if not isinstance(value, Mapping):
+        raise ValueError("spectrum_constraints must be a mapping")
+    keys = set(value)
+    unknown = keys - (_SPECTRUM_REQUIRED | _SPECTRUM_OPTIONAL)
+    if unknown:
+        raise ValueError("unsupported spectrum_constraints options: " + _names(unknown))
+    missing = _SPECTRUM_REQUIRED - keys
+    if missing:
+        raise ValueError(
+            "missing required spectrum_constraints options: " + _names(missing)
+        )
+    if value["method"] != "monotonic_kernel":
+        raise ValueError("spectrum_constraints.method must be 'monotonic_kernel'")
+
+    raw_bands = _sequence(value["bands"], label="spectrum_constraints.bands")
+    if not raw_bands:
+        raise ValueError("spectrum_constraints.bands must be nonempty")
+    units = value["units"]
+    if not isinstance(units, str):
+        raise ValueError(
+            "spectrum_constraints.units must be a supported frequency unit"
+        )
+    try:
+        converter.convert_frequency(1.0, units, "PHz")
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "spectrum_constraints.units must be a supported frequency unit"
+        ) from exc
+
+    bands: list[tuple[float, float]] = []
+    for index, raw_band in enumerate(raw_bands):
+        band = _sequence(raw_band, label=f"spectrum_constraints.bands[{index}]")
+        if len(band) != 2:
+            raise ValueError(
+                f"spectrum_constraints.bands[{index}] must be [center, width]"
+            )
+        center = _finite_real(
+            band[0], label=f"spectrum_constraints.bands[{index}] center"
+        )
+        width = _finite_real(
+            band[1], label=f"spectrum_constraints.bands[{index}] width"
+        )
+        try:
+            converter.convert_frequency(center, units, "PHz")
+            converted_width = float(converter.convert_frequency(width, units, "PHz"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"invalid spectrum_constraints.bands[{index}] frequency"
+            ) from exc
+        if converted_width <= 0.0:
+            raise ValueError(
+                f"spectrum_constraints.bands[{index}] width must be positive"
+            )
+        bands.append((center, width))
+
+    mode = value["mode"]
+    if not isinstance(mode, str) or mode not in {"pass", "stop"}:
+        raise ValueError("spectrum_constraints.mode must be one of: pass, stop")
+    combine = value["combine"]
+    if not isinstance(combine, str) or combine not in {"max", "sum"}:
+        raise ValueError("spectrum_constraints.combine must be one of: max, sum")
+    fwhm = value["fwhm"]
+    if not isinstance(fwhm, bool):
+        raise ValueError("spectrum_constraints.fwhm must be a bool")
+    alpha_scale = _finite_real(
+        value["alpha_scale"], label="spectrum_constraints.alpha_scale"
+    )
+    if alpha_scale < 0.0:
+        raise ValueError("spectrum_constraints.alpha_scale must be nonnegative")
+
+    weights: tuple[float, ...] | None = None
+    if "weights" in value:
+        if combine != "sum":
+            raise ValueError(
+                "spectrum_constraints.weights is accepted only with combine='sum'"
+            )
+        if value["weights"] is not None:
+            raw_weights = _sequence(
+                value["weights"], label="spectrum_constraints.weights"
+            )
+            if len(raw_weights) != len(raw_bands):
+                raise ValueError("spectrum_constraints.weights length must match bands")
+            converted_weights: list[float] = []
+            for raw_weight in raw_weights:
+                weight = _finite_real(
+                    raw_weight, label="spectrum_constraints.weights entries"
+                )
+                if weight < 0.0:
+                    raise ValueError(
+                        "spectrum_constraints.weights entries must be nonnegative"
+                    )
+                converted_weights.append(weight)
+            weights = tuple(converted_weights)
+
+    return LegacySpectralConstraint(
+        bands=tuple(bands),
+        units=units,
+        mode=cast(SpectralMode, mode),
+        combine=cast(SpectralCombine, combine),
+        fwhm=fwhm,
+        weights=weights,
+        alpha_scale=alpha_scale,
+    )
 
 
 def _to_phz(x: float | np.ndarray, units: str) -> float | np.ndarray:
@@ -32,7 +213,7 @@ def _to_phz(x: float | np.ndarray, units: str) -> float | np.ndarray:
 
 def _fwhm_to_sigma(fwhm: float) -> float:
     """ガウシアンの FWHM を標準偏差 σ に変換。"""
-    return float(fwhm) / (2.0 * np.sqrt(2.0 * np.log(2.0)))
+    return float(float(fwhm) / (2.0 * np.sqrt(2.0 * np.log(2.0))))
 
 
 def build_alpha_mask(
@@ -107,7 +288,9 @@ def build_alpha_mask(
         else:
             wts_arr = np.asarray(list(weights), dtype=float)
             if wts_arr.size != nb:
-                raise ValueError("weights length must match bands length for combine='sum'")
+                raise ValueError(
+                    "weights length must match bands length for combine='sum'"
+                )
             wts = wts_arr
         for c, s, w in zip(centers_phz, sigmas_phz, wts):
             acc += float(w) * np.exp(-0.5 * ((freq - c) / s) ** 2)
@@ -151,18 +334,25 @@ def solve_update_in_frequency(source: np.ndarray, alpha_mask: np.ndarray) -> np.
         s = s.reshape(-1, 1)
     N = s.shape[0]
     ncomp = s.shape[1]
-    # rFFT 長の検証
+    # rFFT length and penalty-domain validation.
     n_rfft = N // 2 + 1
-    if alpha_mask.shape[0] != n_rfft:
+    raw_alpha = np.asarray(alpha_mask)
+    if np.iscomplexobj(raw_alpha) or np.issubdtype(raw_alpha.dtype, np.bool_):
+        raise ValueError("alpha_mask must be a finite nonnegative real vector")
+    try:
+        alpha = np.asarray(raw_alpha, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("alpha_mask must be a finite nonnegative real vector") from exc
+    if alpha.ndim != 1 or alpha.shape[0] != n_rfft:
         raise ValueError("alpha_mask length must be N//2+1 for rFFT")
+    if not np.all(np.isfinite(alpha)) or np.any(alpha < 0.0):
+        raise ValueError("alpha_mask must be finite and nonnegative")
 
     out = np.zeros_like(s, dtype=float)
-    denom = 1.0 + np.asarray(alpha_mask, dtype=float)
-    denom = np.maximum(denom, 1e-16)
+    denom = 1.0 + alpha
     for k in range(ncomp):
         S_hat = np.fft.rfft(s[:, k])
         U_hat = S_hat / denom
         u = np.fft.irfft(U_hat, n=N)
         out[:, k] = np.real(u)
     return out.reshape(source.shape)
-

@@ -1,0 +1,95 @@
+# Explicit fallback audit
+
+Last verified: 2026-09-29
+Scope: src/rovibrational_excitation
+Policy: D-021 in DECISIONS.md
+
+## Policy
+
+A requested physical model, numerical algorithm, backend, scale, or time grid
+must either execute exactly as requested or raise before propagation. Missing
+optional acceleration may use a slower implementation only when the numerical
+backend and equations are unchanged and the choice is observable. Batch
+failure isolation is permitted only when the failed case and traceback are
+recorded.
+
+## Resolved in the current change
+
+| Area | Previous behavior | Resolution | Contract test |
+|---|---|---|---|
+| Nondimensional scales | Zero quantities created 1 fs, 1 Debye, 1e8 V/m, or a 1000 fs cap | Explicit ZeroField/inactive scales or precise error | test_strict_nondimensional_contracts.py |
+| Time grid | auto_timestep could replace caller samples; target_accuracy could be accepted after removal | Both options are rejected at converter, solver, mixed-state, M-average, and simulation boundaries | test_strict_nondimensional_contracts.py; test_density_solver_contracts.py |
+| Public propagator kwargs | Misspelled or unsupported kwargs were silently ignored | Public methods accept no `**kwargs`; typed options, coupling, and split mode are validated before work; private array adapters remain only for optimizer migration | public propagation contract tests |
+| Dipole backend | backend='cupy' could return NumPy when CuPy was absent | RuntimeError; unknown backend names also raise | test_solver_contracts.py |
+| Energy centering | Centering could change the returned absolute wavefunction phase | Exact global phase is restored | test_strict_nondimensional_contracts.py |
+| Physical model inputs | duration and zero-valued constants could be omitted and silently defaulted | Model-specific constants, direct dipole mu0, vibrational potential type, units, and duration are required; explicit 0.0 remains valid | simulation and basis contract tests |
+| Nondimensional API | 25 exports exposed competing lambda strategies and removed heuristics | One strict conversion path plus neutral reporting; legacy modules and wrappers removed | strict nondimensional contract tests |
+| Spectroscopy policy | `optimized` silently chose paths, `sparse_threshold` was ignored, fixed response/Doppler cutoffs changed work, and requested device broadening was not applied | Explicit exact, approximate, and auto modes; required controls and execution report; grid-derived Doppler; requested device function applied | test_spectroscopy_reference.py |
+| Spectroscopy polarization | Complex detection reused ket coefficients, `xyz` ignored its third component, and malformed vectors could normalize silently | Jones-bra detection conjugates coefficients; every ordered axis contributes; dimensions, finiteness, uniqueness, and nonzero norm are required | test_spectroscopy_reference.py |
+| Spectroscopy standard measurement | A missing axis/polarization silently selected `xy` and its first axis; arbitrary analyzer response was converted as scalar mOD | D-123/D-128 use model-owned scalar standard absorption or one typed Cartesian measurement; raw axes/Jones construction is removed; analyzer measurements expose complex response only and every scalar mOD route rejects them | test_spectroscopy_measurement_contracts.py |
+| Spectroscopy pathway | `use_v_mask=True` silently kept `abs(delta_v) < 2` and missing V labels fell back to no mask | Required `pump_probe` (`V_i == V_j`) or `unfiltered`; discarded norm is reported; missing V labels raise; radiation/PFID remains unfiltered | test_spectroscopy_reference.py |
+| Spectroscopy acceptance | Decomposition could duplicate formulas, broaden dependencies, or hide failures | D-122 assigns every numerical responsibility one owner/reference and rejects broad or print-only failures; D-123 migrates the approved strict constructor contract in parity-tested units | test_phase7_spectroscopy_acceptance.py; independent spectroscopy references |
+| Typed propagation defaults | Initial state and computational mode could be selected by defaults or inferred from input | D-026 requires explicit choices; P2.4-a makes algorithm, execution, trajectory, stride, scaling, and renormalization one required object | Phase 2 contract tests |
+| Optimization time options | `dt_fs` hid the half-spaced field grid; `sample_stride` could thin states used by GRAPE/Krotov updates | D-029 requires `field_dt_fs`, exact divisibility, full internal trajectories, and output-only `output_stride`; local remains frozen under D-027 | optimization time contract and physics tests |
+| Optimization plotting | Package plotting imported an examples-only FFT helper, NumPy `tlist or time` raised before plotting, and reconstructed trajectory times could disagree with retained endpoints | Package-local FFT helper, explicit `None` selection, and returned trajectory times | package import smoke check and full optimization contracts |
+| External sampled field | Generated-field parameters could otherwise conflict with caller-owned samples, or a Cartesian waveform could be guessed into helicity data | `run_simulation_case` rejects every generation key; typed fields reject shape, finiteness, complex time-domain values, and kind mismatches; no trim/pad/interpolation/resampling/normalization occurs; helicity decomposition must be explicit | sampled-field and simulation contract tests |
+| Numerical time-step adequacy | Removed `auto_timestep`/`target_accuracy` could otherwise be reintroduced as an implicit grid change | `assess_simulation_convergence` requires two caller-selected grids, a named observable, and explicit tolerance; it reports maximum absolute difference and never refines, retries, resamples, writes, or changes either calculation | `test_simulation_convergence.py` |
+| Molecular symmetry preset | A molecule name could otherwise imply guessed constants, a generic model, or unverified nuclear-spin weights | D-052 resolves only an explicit alias to source-versioned symmetry rules; constants remain empty/required, unknown aliases raise, unsupported vibronic symmetry raises, and CH3F weights raise until signed-K symmetry adaptation | `test_molecular_symmetry_presets.py` |
+| SymTop execution | The broken legacy route could be selected by optimization, while unverified CuPy or split execution could appear available | D-053 routes normal simulation through the independent production builder for NumPy dense/CSR RK4; CuPy, split operator, coherent all-isomer input, unknown presets, and optimization raise before numerical work | `test_symmetric_top_model_contracts.py`; `test_symmetric_top_reference.py` |
+| Standalone result plotting | Three path-based plotters probed unversioned NPY filenames and printed/returned when files were absent | D-102 requires the published/direct manifest-v1 loader, exact `t_E/E` or `t_p/pop` projections, and explicit schema/shape errors with no legacy fallback | visualization and result-schema contract tests |
+| Optimization documents | Unknown options and arbitrary runner kwargs could be ignored; invalid axes fell back to `xy`; YAML output/plot policy was not authoritative; plotting exceptions were printed | D-056 closes every document/algorithm key set, requires axes, restricts GRAPE to `xy`, removes runner kwargs, defines explicit output/plot precedence, and raises top-level requested plotting failures | `test_optimization_config_contracts.py`; optimization time/reference contracts |
+| Standard versus legacy Krotov | The normalized-costate batch update was named `krotov`, so correcting it in place would silently reinterpret existing field grids, seeds, spectral constraints, and stored results | D-106 freezes that calculation as explicit `legacy_batch_overlap`; standard `krotov` requires interval time/control schemas and penalty units, and rejects legacy fields, spectral constraints, custom propagators, and plotting | `test_krotov_standard_contracts.py`; direct one-iteration and transfer references |
+| GRAPE gradient and seed | A zero field was implicit and a time-local heuristic moved away from the mathematical zero-gradient point; a custom propagator could run without a matching derivative | D-104 requires generated or sampled seed input, differentiates only the built-in normalized dense NumPy RK4 map exactly, and rejects missing seed or custom propagators instead of inventing behavior | `test_grape_gradient_reference.py`; optimization input/config/option contracts |
+| Optimization option values | Numeric/string values were coerced, duplicate axes were accepted, Local mode typos selected another branch, lookahead/weight/cost errors were suppressed, and spectral updates applied a repair floor | D-057 requires exact types/enums/distinct axes, surfaces requested Local failures, validates finite nonnegative spectral alpha, and divides directly by `1+alpha` | `test_optimization_option_contracts.py`; Local propagation contracts |
+| Local control gain | Missing gain used `1.0`; the unit was implicit; the diagnostic reciprocal used `max(gain, 1e-30)` | D-058 requires a finite positive value/unit pair, converts to `(V/m)^2 fs`, and uses the direct reciprocal only after validation | unit conversion, optimization option, configuration, and Local propagation contracts |
+| Local control initialization | Missing seed settings silently used `1000 V/m` for five trigger segments; disabling the seed could leave a known zero-control fixed point | D-059 requires explicit `seed_field` or `none`; the former has a required direct-amplitude pair/count, while the latter raises at an active initial trigger and never falls back | initialization parser, configuration, fixed-point preflight, and frozen Local propagation contracts |
+| Split Numba dependency | Import failure selected an unreported dummy decorator and pure-Python loop even though Numba is a required package dependency | D-062 imports required Numba directly; a broken installation raises instead of changing execution mode | `test_phase5_acceptance_contracts.py` |
+| Optimization acceptance | Registry, contract ownership, kernel dependencies, and exception policy could drift after decomposition | D-111 fixes exactly four algorithms, single typed owners, no upper-layer optimization imports, no broad catches, and the stored legacy artifact | `test_phase7_optimization_acceptance.py`; all independent P7.3 references |
+
+## P1: fix before API stabilization
+
+1. Resolved by D-043. `core/units/validators.py` now requires canonical
+   accessors and structural consistency and raises the original failure. The
+   context ranges, fixed 1000 fs estimate, broad exception downgrade, and raw
+   `mu_axis` fallback are deleted. Numerical adequacy remains an explicit
+   convergence report.
+2. Resolved by D-057. Local resolves eigenvalues only when lookahead is
+   requested and raises on failure or invalid shape/value. Target-weight and
+   display-cost exceptions are no longer suppressed.
+3. io/serialization.py interprets missing real or imaginary mapping
+   fields as zero. Reject unknown keys and require an unambiguous complex
+   number schema so misspellings cannot change polarization.
+
+## Resolved Phase 2 decisions
+
+D-026 requires typed production configuration to state the initial condition,
+backend, algorithm, dense/CSR storage, and renormalization policy explicitly.
+Legacy defaults remain only as characterized migration adapters and must not be
+copied into the final public typed API.
+
+## P2: cleanup and observability
+
+D-080/P6.4-e moves the dipole mixin and removes dynamics' type dependency on
+the old package. The raw-attribute fallback in
+`dynamics.utils.get_dipole_component_SI` is unchanged and now has a direct
+characterization test. Its removal would be a separate behavior change, not
+part of the ownership move.
+
+- visualization/plot_all.py still catches errors inside optional spectrum and
+  spectrogram branches. The optimization runner no longer catches the top-level
+  plot call. Optional branch failures may remain non-fatal only if returned in
+  result metadata; persistence failures must be surfaced.
+- Resolved by D-087. `simulation.safe_execution` intentionally catches isolated
+  batch-case failures, retains the exact OSError-only retry/backoff and
+  traceback file behavior, and returns a named tuple-compatible
+  `CaseRunOutcome`. Existing prints remain supplemental rather than the sole
+  failure result.
+- get_dipole_component_SI in propagation/utils.py is unused compatibility code
+  with a raw-attribute fallback. Delete it with the Phase 1 legacy cleanup.
+
+## Completion condition
+
+The audit is complete when no public option is silently ignored; every
+physics-bearing default is either accepted in a typed contract or required;
+strict validation never degrades to warnings; and optional performance
+fallbacks are observable without changing array backend or equations.

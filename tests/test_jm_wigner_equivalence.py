@@ -1,15 +1,22 @@
 import numpy as np
 import pytest
 
-from rovibrational_excitation.dipole.rot.jm import (
+from rovibrational_excitation.models.linear_molecule.rotational import (
     tdm_jm_x as tdm_x_analytic,
+)
+from rovibrational_excitation.models.linear_molecule.rotational import (
     tdm_jm_y as tdm_y_analytic,
+)
+from rovibrational_excitation.models.linear_molecule.rotational import (
     tdm_jm_z as tdm_z_analytic,
 )
-
-from rovibrational_excitation.dipole.rot.jm_wigner import (
+from tests.physics.linear_rotor_wigner import (
     tdm_jm_x_wigner as tdm_x_wigner,
+)
+from tests.physics.linear_rotor_wigner import (
     tdm_jm_y_wigner as tdm_y_wigner,
+)
+from tests.physics.linear_rotor_wigner import (
     tdm_jm_z_wigner as tdm_z_wigner,
 )
 
@@ -51,4 +58,4 @@ def test_jm_wigner_equivalence(J_max):
                     assert np.allclose(val_a, val_b, atol=tol, rtol=0), (
                         f"Mismatch in μz for J1={J1},M1={M1}→J2={J2},M2={M2}: "
                         f"analytic={val_a}, wigner={val_b}"
-                    ) 
+                    )

@@ -1,5 +1,8 @@
 # テストスイートの現状レポート
 
+> Historical pre-refactor snapshot. The current authoritative baseline is
+> `docs/refactoring/README.md`; counts and paths below are intentionally not current.
+
 ## 1. 概要
 
 - **総テスト数**: 313
@@ -33,14 +36,14 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 | `core/units/converters.py` | 63% |
 | `core/units/parameter_processor.py`| 63% |
 | `core/units/validators.py` | 61% |
-| `core/propagation/utils.py`| 69% |
+| `dynamics/utils.py`| 69% |
 
 #### 🔴 低カバレッジ (<50%)
 | モジュール | カバレッジ |
 | --- | --- |
-| `core/nondimensional/*` | 6-28% |
-| `core/propagation/algorithms/*`| 13-28% |
-| `core/propagation/liouville.py`| 20% |
+| `dynamics/scaling/*` | 6-28% |
+| `dynamics/algorithms/*`| 13-28% |
+| `dynamics/liouville.py`| 20% |
 | `core/propagator.py` | 18% |
 | `simulation/runner.py`| 55% |
 | `spectroscopy/*` | 12-71% |
@@ -49,7 +52,7 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 
 これらのテストは、より根本的な数値計算上の問題や、複雑なロジックの不整合を示唆しており、今後の修正対象となります。
 
-### `tests/test_integration.py`
+### `tests/integration/test_integration.py`
 - `test_multi_level_excitation`: `Returns NaN`
 - `test_mixed_vs_pure_states`: `AssertionError on rho comparison`
 - `test_coherent_vs_incoherent`: `Returns NaN`
@@ -61,7 +64,7 @@ APIの不整合と数値不安定性に関する主要な問題は解決され�
 - `test_trajectory_consistency`: `Nondimensionalization calculation is incorrect`
 - `test_weak_field_consistency`: `Nondimensionalization calculation is incorrect`
 
-### `tests/test_performance.py`
+### `tests/performance/test_performance.py`
 - `test_very_large_system`: `Shape mismatch in return value`
 - `test_long_time_evolution`: `Norm is not conserved in long-time evolution`
 - `test_numerical_stability_large_system`: `Energy is not conserved in large system`

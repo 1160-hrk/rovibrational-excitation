@@ -1,184 +1,187 @@
-# Docker 開発環境セットアップガイド
+# Dev Container 開発環境
 
-このドキュメントでは、`rovibrational-excitation`プロジェクトの改善されたDocker開発環境について説明します。
+このガイドは開発版 `0.3.0.dev1` の `Dockerfile` と
+`.devcontainer/devcontainer.json` に対応する。これは開発環境であり、production
+image や simulation deployment の仕様ではない。
 
-## 🎯 主な改善点
+## 構成
 
-### ✅ 解決された問題
-- **VSCodeのPython認識**: Dockerでインストールされたpython3.12との完全同期
-- **依存関係の事前インストール**: ビルド時に全パッケージをインストール
-- **Jupyterサポート**: 対話的開発のための完全なJupyter Lab環境
-- **ファイル編集権限**: すべてのファイルをDocker環境内で編集可能
-- **Build & Release**: build, twineによるパッケージング環境
+- base image: `python:3.12-slim`
+- workspace: `/workspace`
+- non-root user: `devuser`
+- Python dependency source of truth: `pyproject.toml`
+- installed extras: `dev`, `io`, `plot`
+- interactive tools: `jupyter`, `ipykernel`
+- forwarded port: 8888
 
-### 🔧 技術仕様
-- **ベースイメージ**: `python:3.12-slim`
-- **開発ユーザー**: `devuser` (sudo権限付き)
-- **Jupyterポート**: 8888 (自動転送)
-- **作業ディレクトリ**: `/workspace`
+Dockerfile は Jupyter の user/global configuration を作らない。bind address、port、
+root directory は起動スクリプトが明示し、token/password と XSRF は Jupyter の標準
+設定に任せる。
 
-## 🚀 クイックスタート
+## VS Code Dev Container
 
-### 1. VSCode Dev Container（推奨）
+前提は Docker と VS Code の Dev Containers extension である。
 
 ```bash
-# リポジトリをクローン
 git clone <repository-url>
 cd rovibrational-excitation
-
-# VSCodeで開く
 code .
-
-# VSCodeでコマンドパレット (Ctrl+Shift+P) を開き、
-# "Dev Containers: Reopen in Container" を選択
 ```
 
-## 📊 Jupyter Lab の使用
+VS Code の command palette から
+`Dev Containers: Reopen in Container` を選ぶ。設定は repository root を
+`/workspace` へ bind mount し、`devuser` と
+`/usr/local/bin/python` を使用する。
 
-### コンテナ内でJupyter起動
+image build は package 本体と `.[dev,io,plot]` を editable install する。host source
+を bind mount した後も editable path は `/workspace` を指す。requirements file は
+container dependency authority ではない。
+
+## Jupyter Lab
+
+container terminal で次を実行する。
 
 ```bash
-# スクリプトを使用（推奨）
 ./scripts/start_jupyter.sh
 ```
 
-### ブラウザでアクセス
-- URL: `http://localhost:8888`
-- トークン: 不要（開発環境用設定）
+既定値は次のとおり。
 
-### 対話的開発の例
+- bind: `127.0.0.1`
+- port: `8888`
+- root directory: repository root
+- browser auto-open: disabled
+- authentication: Jupyter standard token/password policy
+- XSRF protection: enabled
 
-```python
-# Jupyter Cellで実行
-import numpy as np
-import matplotlib.pyplot as plt
-from rovibrational_excitation.core import propagator
+terminal に表示された token 付き URL を使う。Dockerfile、Dev Container 設定、
+launcher のいずれも token/password を空にせず、wildcard CORS を設定しない。
 
-# 振動回転励起シミュレーションの例
-# examples/example_twolevel_excitation.py を参照
-```
-
-## 🛠 開発ワークフロー
-
-### コード品質チェック
+port は明示的に変更できる。
 
 ```bash
-# コード静的解析
-ruff check src/ tests/ examples/
-mypy src/
-
-# フォーマット
-black src/ tests/ examples/
-ruff check --fix src/ tests/ examples/
+RVE_JUPYTER_PORT=8890 ./scripts/start_jupyter.sh
 ```
 
-### テスト実行
+隔離済み環境で外部 bind が必要な場合だけ host を変更する。
 
 ```bash
-# 全テスト実行
-python -m pytest tests/ -v
-
-# カバレッジ付きテスト
-coverage run -m pytest tests/
-coverage html
+RVE_JUPYTER_HOST=0.0.0.0 ./scripts/start_jupyter.sh
 ```
 
-### パッケージビルド
+この指定でも認証と XSRF は無効にならない。`0.0.0.0` を使う場合は Docker/host
+firewall の公開範囲と token 管理を利用者が確認する。
+
+## Container smoke
+
+Docker daemon を利用できる clean checkout では、次の1コマンドで image と runtime
+境界を検証する。
 
 ```bash
-# ビルド
+scripts/smoke_container.sh
+```
+
+この script は image を `--pull` 付きでbuildし、image単体から `devuser`、
+`/workspace`、package import、Jupyter executableを確認する。続いてrepositoryを
+`/workspace/project` へread-only bind mountし、兄弟の
+`/workspace/notebooks` にJupyterだけが使用する一時writable mountを分離して、
+非root processを起動する。clean checkoutに空の`notebooks/`が存在しなくても
+read-only mount内にdirectoryを作らない。localhostの一時portから既知のtest token付き
+`/api/contents` が成功し、tokenなしrequestがHTTP 200にならないことを確認する。
+Docker CLIまたはdaemonがなければskipせず失敗する。
+
+通常CIの `container-smoke` jobとtag releaseの `container-validation` jobは同じ
+scriptを実行する。これによりDockerfileとlauncherの別々の再実装をworkflow内に
+持たない。VS Code UIのattach操作とPorts view自体は自動化対象外である。
+
+## 開発コマンド
+
+repository root で実行する。
+
+```bash
+pytest -q
+ruff check --no-fix src tests examples benchmarks scripts
+ruff format --check src tests examples benchmarks scripts
+mypy
+python scripts/smoke_examples.py
+python examples/tools/build_index.py --check
+```
+
+branch coverage は repository-local database を作らずに測定する。
+
+```bash
+coverage run --data-file=/tmp/rve-coverage \
+  --source=src/rovibrational_excitation --branch -m pytest -q
+coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
+```
+
+distribution の検証は次のとおり。
+
+```bash
 python -m build
-
-# 公開（テスト環境）
-twine upload --repository testpypi dist/*
-
-# 公開（本番環境）
-twine upload dist/*
+python -m twine check dist/*
 ```
 
-## 📁 ディレクトリ構造
+publish、commit、tag、push はこれらのコマンドでは行わない。final release gate は
+[VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) を参照する。
 
-```
-/workspace/
-├── src/rovibrational_excitation/  # メインソースコード
-├── examples/                      # 使用例・デモ
-├── tests/                         # テストコード
-├── docs/                          # ドキュメント
-├── results/                       # シミュレーション結果
-├── notebooks/                     # Jupyter ノートブック (新規作成)
-└── scripts/                       # 開発用スクリプト
-```
-
-## 🔧 Makefile コマンド
+## Supported examples
 
 ```bash
-make help          # 使用可能なコマンド一覧
-make build         # Dockerイメージビルド
-make clean         # Dockerリソース清理
-make jupyter       # Jupyter起動コマンド表示
-make test          # テスト実行コマンド表示
-make lint          # コード品質チェックコマンド表示
-make format        # フォーマットコマンド表示
+python examples/launcher.py --list
+python examples/launcher.py --run quickstart --quick
+python -m rovibrational_excitation.cli.simulate \
+  examples/params_template.py --no-save
 ```
 
-## 🐛 トラブルシューティング
+`examples/archives/v0_2/` は現行例ではない。結果、coverage、build、cache は runtime
+artifact であり、repository 構造の一部として作成を前提にしない。
 
-### よくある問題
+## Troubleshooting
 
-#### 1. Pythonパスの認識問題
+### Python interpreter
+
 ```bash
-# VSCode内でPythonインタープリターを確認
 which python
-# 出力: /usr/local/bin/python
-
-# VSCodeのPython設定確認
-# Ctrl+Shift+P → "Python: Select Interpreter"
-# /usr/local/bin/python を選択
+python --version
+python -c "import rovibrational_excitation; print(rovibrational_excitation.__version__)"
 ```
 
-#### 2. Jupyterポートアクセス問題
+`which python` は `/usr/local/bin/python` を示す。import に失敗する場合は container
+build log の editable-install step を確認し、Dev Container を rebuild する。
+
+### Jupyter を起動できない
+
 ```bash
-# ポート転送確認
-docker ps
-# PORTS列で "0.0.0.0:8888->8888/tcp" を確認
-
-# ファイアウォール確認（macOS）
-sudo lsof -i :8888
+bash -n scripts/start_jupyter.sh
+command -v jupyter
+./scripts/start_jupyter.sh
 ```
 
-#### 3. ファイル権限問題
-```bash
-# コンテナ内でファイル権限確認
-ls -la /workspace/
+port error の場合は `RVE_JUPYTER_PORT` を 1–65535 の整数で指定する。launcher は
+repository root を script 自身の位置から解決するため、呼出し時の current directory
+には依存しない。
 
-# 所有者変更（必要に応じて）
-sudo chown -R devuser:devuser /workspace/
-```
+### Port forwarding
 
-#### 4. パッケージインストール問題
-```bash
-# 依存関係再インストール
-pip install --no-cache-dir -r requirements-dev.txt
+VS Code の Ports view で 8888 の forwarding を確認する。Dev Container は
+`forwardPorts` を宣言するが、Jupyter 自体は既定で localhost にのみ bind する。
+外部公開が必要でない限り `RVE_JUPYTER_HOST` は変更しない。
 
-# キャッシュクリア
-pip cache purge
-```
+### File ownership
 
-## 🔒 セキュリティ注意事項
+通常は Dev Container の `remoteUser=devuser` と bind-mount UID 調整を使用する。
+repository 全体へ再帰的な `chown` や permission 緩和を安易に行わない。
 
-⚠️ **開発環境専用設定**
-- Jupyterのトークン認証を無効化
-- CORS制限を緩和
-- root権限でのJupyter実行を許可
+## 検証状態
 
-**本番環境では使用しないでください！**
+この checkpoint では Dockerfile の安全既定、Dev Container JSON、launcher と
+container smokeのshell syntax、repository test contracts、通常/release workflow
+wiringを検証している。この実行環境には Docker CLI/daemon がないため、ここでは
+clean image build とHTTP smokeを実行していない。GitHubの `container-smoke` 成功を
+実行証拠とし、VS Code attachとPorts viewはrelease前に人が確認する。未実行やqueued
+jobを成功扱いしない。
 
-## 📚 参考資料
-
-- [VSCode Dev Containers Documentation](https://code.visualstudio.com/docs/devcontainers/containers)
-- [Jupyter Lab Documentation](https://jupyterlab.readthedocs.io/)
-- [Docker Multi-stage Builds](https://docs.docker.com/develop/dev-best-practices/)
-
-## 🤝 貢献
-
-Docker環境の改善提案やバグ報告は、GitHubのIssueまでお願いします。 
+- [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+- [Jupyter Server security](https://jupyter-server.readthedocs.io/en/latest/operators/security.html)
+- [Docker build best practices](https://docs.docker.com/build/building/best-practices/)

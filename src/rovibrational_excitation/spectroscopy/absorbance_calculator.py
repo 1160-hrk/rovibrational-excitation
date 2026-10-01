@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 吸光度スペクトル計算モジュール
 
@@ -7,892 +6,1003 @@
 @core/の標準オブジェクト（Basis, Hamiltonian, DipoleMatrix）と統合。
 """
 
-from dataclasses import dataclass
-from typing import Optional, Literal, Tuple, Union
+from __future__ import annotations
+
+from typing import Literal
+
 import numpy as np
-from scipy import ndimage
-from scipy.special import wofz
 
 from rovibrational_excitation.core.basis import BasisBase
-from rovibrational_excitation.core.basis.hamiltonian import Hamiltonian
-from rovibrational_excitation.dipole.base import DipoleMatrixBase
+from rovibrational_excitation.core.dipole import DipoleOperator
+from rovibrational_excitation.core.model import CouplingMode, SystemModel
+from rovibrational_excitation.core.operators import Hamiltonian
+from rovibrational_excitation.core.units.constants import CONSTANTS
+from rovibrational_excitation.spectroscopy import (
+    broadening,
+    observables,
+    response,
+    transform,
+)
+from rovibrational_excitation.spectroscopy.conditions import (
+    ExperimentalConditions,
+    require_exact_units,
+)
+from rovibrational_excitation.spectroscopy.projection import (
+    CartesianAnalyzerProjection,
+    CartesianProjection,
+)
+from rovibrational_excitation.spectroscopy.report import (
+    SpectroscopyCalculationReport,
+)
+from rovibrational_excitation.spectroscopy.result import ComplexResponseSpectrum
 
-
-# 物理定数
-H_DIRAC = 1.055e-34  # ディラック定数 [J*s]
-EE = 1.601e-19  # 素電荷 [C]
-C = 2.998e8  # 光速 [m/s]
-EPS = 8.854e-12  # 真空の誘電率 [F/m]
-KB = 1.380649e-23  # ボルツマン定数 [J/K]
-
-
-@dataclass
-class ExperimentalConditions:
-    """実験条件のパラメータ"""
-    temperature: float = 300  # K
-    pressure: float = 3e4  # Pa
-    optical_length: float = 1e-3  # m
-    T2: float = 500  # ps (coherence relaxation time)
-    molecular_mass: float = 44e-3/6.023e23  # kg (CO2 default)
-    
-    @property
-    def number_density(self) -> float:
-        """数密度を計算 [m^-3]"""
-        return self.pressure / (KB * self.temperature)
-    
-    @property
-    def coherence_decay_rate(self) -> float:
-        """コヒーレンス減衰率 [rad/s]"""
-        return 1 / (self.T2 * 1e-12)
+# Short aliases refer to the authoritative constants layer; no local values.
+H_DIRAC = CONSTANTS.HBAR
+C = CONSTANTS.C
 
 
 class AbsorbanceCalculator:
     """
     密度行列から吸光度スペクトルを計算するクラス
-    
+
     @core/の標準オブジェクトを使用した統一インターフェース。
     x, y, z の3軸すべての双極子モーメント成分をサポート。
-    
+
     Parameters
     ----------
     basis : BasisBase
         量子基底オブジェクト
     hamiltonian : Hamiltonian
         ハミルトニアンオブジェクト（J単位推奨）
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         双極子行列オブジェクト（SI単位）
-    conditions : ExperimentalConditions, optional
-        実験条件
-    axes : str, default 'xy'
-        使用する双極子成分 ('x', 'y', 'z', 'xy', 'xz', 'yz', 'xyz'等)
-    pol_int : np.ndarray, optional
-        相互作用光の偏光ベクトル [Ex, Ey, Ez]
-    pol_det : np.ndarray, optional
-        検出光の偏光ベクトル（Noneの場合pol_intと同じ）
-    
+    conditions : ExperimentalConditions
+        Explicit experimental conditions
+    phase_matching : {'unfiltered', 'pump_probe'}
+        Probe interaction前の密度行列に適用する位相整合経路。pump_probeは
+        ``V_i == V_j`` のブロックを選ぶ。この選別は吸収計算前だけに
+        適用され、post-probeの放射/PFID密度には適用されない。
+    projection : CartesianProjection or CartesianAnalyzerProjection
+        型付き偏光測定。標準吸収は前者、アナライザー複素応答は後者。
+
     Examples
     --------
     >>> basis = LinMolBasis(V_max=2, J_max=10, use_M=True, ...)
     >>> H0 = basis.generate_H0()
     >>> dipole = LinMolDipoleMatrix(basis=basis, mu0=1.0e-30)
-    >>> calculator = AbsorbanceCalculator(basis, H0, dipole, axes='xyz')
-    >>> absorbance = calculator.calculate(rho, wavenumber)
+    >>> calculator = AbsorbanceCalculator(
+    ...     basis, H0, dipole, conditions,
+    ...     phase_matching="pump_probe",
+    ...     projection=CartesianProjection.from_jones(
+    ...         axes="xyz", interaction=np.array([1, 0, 0])
+    ...     ),
+    ... )
+    >>> absorbance = calculator.calculate(
+    ...     rho, wavenumber, method='loop', wavenumber_units='cm^-1'
+    ... )
     """
-    
+
     def __init__(
         self,
         basis: BasisBase,
         hamiltonian: Hamiltonian,
-        dipole_matrix: DipoleMatrixBase,
-        conditions: Optional[ExperimentalConditions] = None,
-        axes: str = 'xy',
-        pol_int: Optional[np.ndarray] = None,
-        pol_det: Optional[np.ndarray] = None,
-        use_v_mask: bool = True,
+        dipole_matrix: DipoleOperator,
+        conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
+        projection: CartesianProjection | CartesianAnalyzerProjection,
     ):
         self.basis = basis
         self.hamiltonian = hamiltonian
         self.dipole_matrix = dipole_matrix
-        self.conditions = conditions or ExperimentalConditions()
-        
-        # 軸の検証と設定
-        self.axes = axes.lower()
-        self._validate_axes()
-        
-        # 偏光ベクトルの設定（3次元）
-        if pol_int is None:
-            # デフォルト: x偏光
-            pol_int = np.array([1.0, 0.0])
+        self.phase_matching = phase_matching
+        if phase_matching not in {"unfiltered", "pump_probe"}:
+            raise ValueError("phase_matching must be 'unfiltered' or 'pump_probe'")
+        self.conditions = conditions
+
+        if not isinstance(
+            projection,
+            (CartesianProjection, CartesianAnalyzerProjection),
+        ):
+            raise TypeError(
+                "projection must be CartesianProjection or CartesianAnalyzerProjection"
+            )
+        self.projection = projection
+        self.axes = projection.axes_string
+        self._interaction_ket = np.array(
+            projection.interaction, dtype=np.complex128, copy=True
+        )
+        if isinstance(projection, CartesianAnalyzerProjection):
+            self._detection_ket = np.array(
+                projection.analyzer,
+                dtype=np.complex128,
+                copy=True,
+            )
+            self._measurement_kind = "analyzer_complex_response"
         else:
-            pol_int = np.asarray(pol_int)
-        
-        self.pol_int = pol_int / np.linalg.norm(pol_int)
-        self.pol_det = pol_det if pol_det is not None else self.pol_int.copy()
-        
-        self.pol_det = self.pol_det / np.linalg.norm(self.pol_det)
-        
-        self.use_v_mask = use_v_mask
-        # 計算用の内部変数を初期化
+            self._detection_ket = np.array(
+                projection.interaction,
+                dtype=np.complex128,
+                copy=True,
+            )
+            self._measurement_kind = "standard_absorption"
+
         self._setup_matrices()
         self._prepared_2d = False
-        
-    
-    def _validate_axes(self):
-        """軸指定の検証"""
-        valid_chars = set('xyz')
-        if not all(c in valid_chars for c in self.axes):
-            raise ValueError(
-                f"Invalid axes '{self.axes}'. Must contain only 'x', 'y', 'z'."
+        self._last_calculation_report: SpectroscopyCalculationReport | None = None
+        self._last_discarded_commutator_l2_fraction = 0.0
+        self._last_discarded_density_l2_fraction = 0.0
+
+    @classmethod
+    def standard_absorption(
+        cls,
+        model: SystemModel,
+        conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
+        projection: CartesianProjection | None = None,
+    ) -> AbsorbanceCalculator:
+        """Build the ordinary transmission-absorbance measurement.
+
+        Scalar models use their model-owned storage axis and accept no Jones
+        projection. Cartesian models require an explicit interaction Jones ket.
+        Detection is the analyzer bra of the same physical probe ket, so for
+        Hermitian Cartesian dipoles ``mu_det == mu_int.conj().T``.
+        """
+        if not isinstance(model, SystemModel):
+            raise TypeError("model must be a SystemModel")
+
+        if model.coupling.mode is CouplingMode.SCALAR:
+            if projection is not None:
+                raise ValueError(
+                    "Cartesian projection is not applicable to scalar coupling"
+                )
+            axis = model.coupling.scalar_axis
+            assert axis is not None
+            projection = CartesianProjection(
+                axes=(axis,),
+                interaction=np.ones(1, dtype=np.complex128),
             )
-    
+        else:
+            if not isinstance(projection, CartesianProjection):
+                raise ValueError(
+                    "CartesianProjection is required for Cartesian coupling"
+                )
+            model_axes = "".join(model.coupling.axes)
+            if projection.axes_string != model_axes:
+                raise ValueError(
+                    "projection axes must exactly match model coupling axes"
+                )
+
+        return cls(
+            basis=model.basis,
+            hamiltonian=model.hamiltonian,
+            dipole_matrix=model.dipole,
+            conditions=conditions,
+            phase_matching=phase_matching,
+            projection=projection,
+        )
+
+    @classmethod
+    def analyzer_complex_response(
+        cls,
+        model: SystemModel,
+        conditions: ExperimentalConditions,
+        *,
+        phase_matching: Literal["unfiltered", "pump_probe"],
+        projection: CartesianAnalyzerProjection,
+    ) -> AbsorbanceCalculator:
+        """Build an analyzer-projected complex-response measurement."""
+        if not isinstance(model, SystemModel):
+            raise TypeError("model must be a SystemModel")
+        if model.coupling.mode is CouplingMode.SCALAR:
+            raise ValueError("Cartesian analyzer is not applicable to scalar coupling")
+        if not isinstance(projection, CartesianAnalyzerProjection):
+            raise TypeError("projection must be a CartesianAnalyzerProjection")
+        model_axes = "".join(model.coupling.axes)
+        if projection.axes_string != model_axes:
+            raise ValueError("projection axes must exactly match model coupling axes")
+
+        return cls(
+            basis=model.basis,
+            hamiltonian=model.hamiltonian,
+            dipole_matrix=model.dipole,
+            conditions=conditions,
+            phase_matching=phase_matching,
+            projection=projection,
+        )
+
     def _setup_matrices(self):
         """内部行列の準備"""
         # ハミルトニアンからエネルギー配列を取得（J単位）
         self.energy_array = self.hamiltonian.get_eigenvalues(units="J")
         self.N_level = len(self.energy_array)
-        
+
         # 複素ボーア周波数行列 [rad/s - i*gamma]
         gamma_coh = self.conditions.coherence_decay_rate
         energy_vstack = np.tile(self.energy_array, (self.N_level, 1))
         self.omega_vj_vpjp_mat = (
-            (energy_vstack - energy_vstack.T) / H_DIRAC - 1j * gamma_coh
-        )
-        
-        # 振動準位差マスクを作成
-        if self.use_v_mask:
-            self._create_v_mask()
-        else:
-            self.rho_mask = np.ones((self.N_level, self.N_level))
-        
+            energy_vstack - energy_vstack.T
+        ) / H_DIRAC - 1j * gamma_coh
+
+        self._setup_phase_matching_mask()
+
         # 遷移双極子行列を取得
         self._setup_dipole_matrices()
-    
-    def _create_v_mask(self):
-        """振動準位差に基づくマスクを作成"""
-        # BasisがV配列を持っている場合
-        v_array = getattr(self.basis, 'V_array', None)
-        if v_array is not None:
-            v_i = v_array.reshape(-1, 1)
-            v_j = v_array.reshape(1, -1)
-            # v差が1以内の要素のみを許可
-            self.rho_mask = (np.abs(v_i - v_j) < 2).astype(float)
-        else:
-            # V配列がない場合は全要素を許可
-            self.rho_mask = np.ones((self.N_level, self.N_level))
-    
+
+    def _setup_phase_matching_mask(self) -> None:
+        """Build the selected pre-probe density-matrix pathway mask."""
+        if self.phase_matching == "unfiltered":
+            self._phase_matching_mask = np.ones(
+                (self.N_level, self.N_level),
+                dtype=bool,
+            )
+            return
+
+        v_array = getattr(self.basis, "V_array", None)
+        if v_array is None:
+            raise ValueError("phase_matching='pump_probe' requires basis.V_array")
+        try:
+            vibrational_levels = np.asarray(v_array, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "basis.V_array must contain finite vibrational quantum numbers"
+            ) from exc
+        if vibrational_levels.shape != (self.N_level,):
+            raise ValueError(f"basis.V_array must have shape ({self.N_level},)")
+        if not np.all(np.isfinite(vibrational_levels)):
+            raise ValueError(
+                "basis.V_array must contain finite vibrational quantum numbers"
+            )
+        self._phase_matching_mask = (
+            vibrational_levels[:, np.newaxis] == vibrational_levels[np.newaxis, :]
+        )
+
+    def _validate_density_matrix(self, rho: np.ndarray) -> np.ndarray:
+        """Return a finite complex density matrix with the basis shape."""
+        rho_array = np.asarray(rho, dtype=np.complex128)
+        expected_shape = (self.N_level, self.N_level)
+        if rho_array.shape != expected_shape:
+            raise ValueError(
+                f"rho must have shape {expected_shape}, got {rho_array.shape}"
+            )
+        if not np.all(np.isfinite(rho_array.real)) or not np.all(
+            np.isfinite(rho_array.imag)
+        ):
+            raise ValueError("rho must contain only finite values")
+        return rho_array
+
+    def _select_pre_probe_density(self, rho: np.ndarray) -> np.ndarray:
+        """Apply the explicit pre-probe pathway selection and record its loss."""
+        selected = np.where(self._phase_matching_mask, rho, 0.0)
+        total_norm = float(np.linalg.norm(rho))
+        discarded_norm = float(np.linalg.norm(rho[~self._phase_matching_mask]))
+        self._last_discarded_density_l2_fraction = (
+            discarded_norm / total_norm if total_norm > 0.0 else 0.0
+        )
+        return selected
+
     def _setup_dipole_matrices(self):
-        """双極子行列の設定（3次元対応）"""
-        # 各軸の双極子成分を取得
-        self.mu_components = {}
-        mu_dict = {'x':self.dipole_matrix.get_mu_x_SI(), 'y':self.dipole_matrix.get_mu_y_SI(), 'z':self.dipole_matrix.get_mu_z_SI()}
-        self.mu_components[0] = mu_dict[self.axes[0]] if self.axes[0] in mu_dict else np.zeros((self.N_level, self.N_level))
-        self.mu_components[1] = mu_dict[self.axes[1]] if len(self.axes) > 1 and self.axes[1] in mu_dict else np.zeros((self.N_level, self.N_level))
-        # print("mu_components[0]", self.mu_components[0])
-        # print("mu_components[1]", self.mu_components[1])
-        # 偏光を考慮した双極子行列
-        self.mu_int = (
-            self.mu_components[0] * self.pol_int[0] +
-            self.mu_components[1] * self.pol_int[1]
+        """Build interaction and analyzer-projected dipole operators."""
+        getters = {
+            "x": self.dipole_matrix.get_mu_x_SI,
+            "y": self.dipole_matrix.get_mu_y_SI,
+            "z": self.dipole_matrix.get_mu_z_SI,
+        }
+        self.mu_components: dict[str, np.ndarray] = {}
+        for axis in self.axes:
+            matrix = getters[axis]()
+            if not isinstance(matrix, np.ndarray):
+                matrix = matrix.toarray()
+            component = np.asarray(matrix, dtype=np.complex128)
+            expected_shape = (self.N_level, self.N_level)
+            if component.shape != expected_shape:
+                raise ValueError(
+                    f"mu_{axis} must have shape {expected_shape}, got {component.shape}"
+                )
+            self.mu_components[axis] = component
+
+        self.mu_int = np.zeros(
+            (self.N_level, self.N_level),
+            dtype=np.complex128,
         )
-        if type(self.mu_int) != np.ndarray:
-            self.mu_int = self.mu_int.toarray()
-        # print(f"mu_int sample values: {self.mu_int[np.where(self.mu_int!=0)][:5]}")
-         # 検出偏光を考慮した双極子行列
-        self.mu_det = (
-            self.mu_components[0] * self.pol_det[0] +
-            self.mu_components[1] * self.pol_det[1]
-        )
-        if type(self.mu_det) != np.ndarray:
-            self.mu_det = self.mu_det.toarray()
-        # print(f"mu_det sample values: {self.mu_det[np.where(self.mu_det!=0)][:5]}")
-        
-        # 非ゼロ遷移のインデックス
-        self.ind_nonzero = np.array(np.where(self.mu_int != 0))
-    
-    def prepare_2d_calculation(self, wavenumber: np.ndarray):
+        self.mu_det = np.zeros_like(self.mu_int)
+        for coefficient, axis in zip(self._interaction_ket, self.axes):
+            self.mu_int += coefficient * self.mu_components[axis]
+        for coefficient, axis in zip(self._detection_ket.conj(), self.axes):
+            self.mu_det += coefficient * self.mu_components[axis]
+
+        # A scale-relative roundoff threshold removes only numerical zero noise;
+        # it never compares physical SI dipoles against an absolute cutoff.
+        support_scale = float(np.max(np.abs(self.mu_det)))
+        support_threshold = np.finfo(np.float64).eps * support_scale
+        self._mu_det_support = np.abs(self.mu_det) > support_threshold
+        self.ind_nonzero = np.array(np.where(self._mu_det_support))
+
+    def prepare_2d_calculation(
+        self,
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
+    ) -> None:
         """
         2D計算用の事前準備（高速化のため）
-        
+
         Parameters
         ----------
         wavenumber : np.ndarray
             波数配列 [cm^-1]
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
         """
-        omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
-        
-        # 周波数配列を2D化
-        omega_2d = omega.reshape(-1, 1)
-        
-        # 各遷移に対する分母を事前計算
-        n_freq = len(omega)
-        n_trans = self.ind_nonzero.shape[1]
-        
-        self._omega_2d = omega_2d
-        self._one_over_denominator = np.zeros((n_freq, n_trans), dtype=np.complex128)
-        
-        for idx, trans in enumerate(self.ind_nonzero.T):
-            i, j = tuple(trans)
-            self._one_over_denominator[:, idx] = 1 / (
-                1j * (omega + self.omega_vj_vpjp_mat[i, j])
-            )
-        
+        require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
+        self._prepare_2d_calculation(wavenumber)
+
+    def _prepare_2d_calculation(self, wavenumber: np.ndarray) -> None:
+        """Prepare canonical cm^-1 input for the internal 2D calculation."""
+        self._omega_2d, self._one_over_denominator = response.prepare_2d_denominators(
+            wavenumber,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+        )
         self._prepared_2d = True
-        self._prepared_wavenumber = wavenumber
-    
+        self._prepared_wavenumber = np.array(wavenumber, copy=True)
+
+    @property
+    def last_calculation_report(self) -> SpectroscopyCalculationReport:
+        """Return the most recent completed calculation path."""
+        if self._last_calculation_report is None:
+            raise RuntimeError("no spectroscopy calculation has completed")
+        return self._last_calculation_report
+
+    @staticmethod
+    def _uniform_grid_spacing(grid: np.ndarray, *, name: str) -> float:
+        return broadening.uniform_grid_spacing(grid, name=name)
+
+    def _estimate_2d_bytes(self, wavenumber: np.ndarray) -> int:
+        n_frequency = len(wavenumber)
+        n_transition = self.ind_nonzero.shape[1]
+        # Peak includes the cached complex denominator and the temporary
+        # elementwise product simultaneously, plus frequency/transition vectors.
+        return int(
+            32 * n_frequency * n_transition + 24 * n_frequency + 16 * n_transition
+        )
+
+    def _response_entry_indices(
+        self,
+        commutator: np.ndarray,
+        relative_threshold: float | None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        i_indices, j_indices, discarded_fraction = response.select_response_entries(
+            commutator,
+            self._mu_det_support,
+            relative_threshold,
+        )
+        self._last_discarded_commutator_l2_fraction = discarded_fraction
+        return i_indices, j_indices
+
+    @staticmethod
+    def _validate_response_request(
+        *,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        wavenumber_units: str,
+        apply_doppler: bool,
+        chunk_size: int | None,
+        relative_threshold: float | None,
+        memory_budget_bytes: int | None,
+    ) -> None:
+        """Validate options shared by absorbance and complex response."""
+        require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
+        valid_methods = {
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        }
+        if method not in valid_methods:
+            raise ValueError(f"Unknown method: {method}")
+
+        chunked_methods = {"chunked", "auto", "approximate_sparse"}
+        if method in chunked_methods:
+            if (
+                not isinstance(chunk_size, int)
+                or isinstance(chunk_size, bool)
+                or chunk_size <= 0
+            ):
+                raise ValueError(
+                    "chunk_size is required and must be a positive integer for "
+                    "chunked, auto, and approximate_sparse methods"
+                )
+        elif chunk_size is not None:
+            raise ValueError(
+                "chunk_size is applicable only to chunked, auto, and "
+                "approximate_sparse methods"
+            )
+
+        if method == "approximate_sparse":
+            if relative_threshold is None:
+                raise ValueError(
+                    "relative_threshold is required for approximate_sparse"
+                )
+            if (
+                not np.isfinite(relative_threshold)
+                or relative_threshold <= 0.0
+                or relative_threshold > 1.0
+            ):
+                raise ValueError("0 < relative_threshold <= 1 is required")
+        elif relative_threshold is not None:
+            raise ValueError(
+                "relative_threshold is applicable only to approximate_sparse"
+            )
+
+        if method == "auto":
+            if (
+                not isinstance(memory_budget_bytes, int)
+                or isinstance(memory_budget_bytes, bool)
+                or memory_budget_bytes <= 0
+            ):
+                raise ValueError(
+                    "memory_budget_bytes is required and must be a positive integer "
+                    "for auto"
+                )
+        elif memory_budget_bytes is not None:
+            raise ValueError("memory_budget_bytes is applicable only to auto")
+
+        if apply_doppler and method not in {"matrix", "loop"}:
+            raise ValueError(
+                "Doppler broadening currently requires matrix or loop so every "
+                "transition uses its own Doppler width"
+            )
+
+    def _execute_response_request(
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        *,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        apply_doppler: bool,
+        require_uniform_grid: bool,
+        chunk_size: int | None,
+        relative_threshold: float | None,
+        memory_budget_bytes: int | None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, str, int]:
+        """Execute one validated molecular-response request."""
+        rho_array = self._select_pre_probe_density(self._validate_density_matrix(rho))
+        wavenumber_array = np.asarray(wavenumber, dtype=float)
+        if require_uniform_grid:
+            self._uniform_grid_spacing(wavenumber_array, name="wavenumber")
+
+        estimated_2d_bytes = self._estimate_2d_bytes(wavenumber_array)
+        if method == "auto":
+            assert memory_budget_bytes is not None
+            executed_method = (
+                "2d" if estimated_2d_bytes <= memory_budget_bytes else "chunked"
+            )
+        elif method == "approximate_sparse":
+            executed_method = "chunked"
+        else:
+            executed_method = method
+
+        self._last_discarded_commutator_l2_fraction = 0.0
+        if executed_method == "chunked":
+            assert chunk_size is not None
+            omega, molecular_response = self._calculate_chunked(
+                rho_array,
+                wavenumber_array,
+                chunk_size=chunk_size,
+                relative_threshold=relative_threshold,
+            )
+        elif executed_method == "2d":
+            omega, molecular_response = self._calculate_2d(rho_array, wavenumber_array)
+        elif executed_method == "matrix":
+            omega, molecular_response = self._calculate_matrix(
+                rho_array,
+                wavenumber_array,
+                apply_doppler,
+            )
+        else:
+            omega, molecular_response = self._calculate_loop(
+                rho_array,
+                wavenumber_array,
+                apply_doppler,
+            )
+
+        return (
+            wavenumber_array,
+            omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        )
+
+    def _record_calculation_report(
+        self,
+        *,
+        requested_method: str,
+        executed_method: str,
+        estimated_2d_bytes: int,
+        memory_budget_bytes: int | None,
+        relative_threshold: float | None,
+        device_function_applied: bool,
+    ) -> SpectroscopyCalculationReport:
+        """Create and retain the report for one completed request."""
+        report = SpectroscopyCalculationReport(
+            requested_method=requested_method,
+            executed_method=executed_method,
+            estimated_2d_bytes=estimated_2d_bytes,
+            memory_budget_bytes=memory_budget_bytes,
+            relative_threshold=relative_threshold,
+            discarded_commutator_l2_fraction=(
+                self._last_discarded_commutator_l2_fraction
+            ),
+            phase_matching=self.phase_matching,
+            discarded_density_l2_fraction=(self._last_discarded_density_l2_fraction),
+            device_function_applied=device_function_applied,
+        )
+        self._last_calculation_report = report
+        return report
+
     def calculate(
         self,
         rho: np.ndarray,
         wavenumber: np.ndarray,
-        method: Literal['matrix', 'loop', '2d', 'chunked', 'optimized'] = 'optimized',
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        *,
+        wavenumber_units: str,
         apply_doppler: bool = False,
         apply_device_function: bool = False,
-        device_resolution: float = 1.0,  # cm^-1
-        chunk_size: int = 1000,  # For chunked methods
-        sparse_threshold: float = 1e-12  # For sparse optimization
+        device_resolution: float | None = None,
+        device_resolution_units: str | None = None,
+        chunk_size: int | None = None,
+        relative_threshold: float | None = None,
+        memory_budget_bytes: int | None = None,
     ) -> np.ndarray:
+        """Calculate absorbance from a wavenumber grid explicitly in cm^-1.
+
+        ``device_resolution`` and ``device_resolution_units`` must be supplied
+        together exactly when ``apply_device_function=True``.
         """
-        吸光度スペクトルを計算
-        
-        Parameters
-        ----------
-        rho : np.ndarray
-            密度行列
-        wavenumber : np.ndarray
-            波数配列 [cm^-1]
-        method : {'matrix', 'loop', '2d', 'chunked', 'optimized'}
-            計算方法
-            - 'matrix': 行列演算（メモリ使用量大、高速）
-            - 'loop': ループ演算（メモリ効率的、低速）
-            - '2d': 2D配列を使った高速計算
-            - 'chunked': チャンク化による省メモリ計算
-            - 'optimized': 自動最適化（推奨）
-        apply_doppler : bool
-            ドップラー拡がりを適用するか
-        apply_device_function : bool
-            装置関数（sinc関数）を適用するか
-        device_resolution : float
-            装置分解能 [cm^-1]
-        chunk_size : int
-            チャンク化時のサイズ
-        sparse_threshold : float
-            疎行列の閾値
-            
-        Returns
-        -------
-        np.ndarray
-            吸光度スペクトル [mOD]
-        """
-        if method == 'optimized':
-            return self._calculate_smart_optimized(rho, wavenumber, chunk_size, sparse_threshold, apply_doppler)
-        elif method == 'chunked':
-            return self._calculate_chunked(rho, wavenumber, chunk_size, apply_doppler)
-        elif method == '2d':
-            return self._calculate_2d(rho, wavenumber, apply_doppler)
-        elif method == 'matrix':
-            return self._calculate_matrix(rho, wavenumber, apply_doppler)
-        elif method == 'loop':
-            return self._calculate_loop(rho, wavenumber, apply_doppler)
-        else:
-            raise ValueError(f"Unknown method: {method}")
-    
+        self._require_standard_absorption()
+        self._validate_response_request(
+            method=method,
+            wavenumber_units=wavenumber_units,
+            apply_doppler=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        if apply_device_function:
+            if (
+                device_resolution is None
+                or device_resolution_units is None
+                or not np.isfinite(device_resolution)
+                or device_resolution <= 0.0
+            ):
+                raise ValueError(
+                    "finite positive device_resolution and device_resolution_units "
+                    "are required when apply_device_function=True"
+                )
+            require_exact_units(
+                device_resolution_units,
+                name="device_resolution_units",
+                expected="cm^-1",
+            )
+        elif device_resolution is not None or device_resolution_units is not None:
+            raise ValueError(
+                "device_resolution and device_resolution_units are applicable only "
+                "when apply_device_function=True"
+            )
+
+        (
+            wavenumber_array,
+            omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        ) = self._execute_response_request(
+            rho,
+            wavenumber,
+            method=method,
+            apply_doppler=apply_doppler,
+            require_uniform_grid=apply_doppler or apply_device_function,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        spectrum = self._response_to_absorbance(omega, molecular_response)
+        if apply_device_function:
+            assert device_resolution is not None
+            assert device_resolution_units is not None
+            spectrum = self.apply_device_function(
+                spectrum,
+                wavenumber_array,
+                resolution=device_resolution,
+                wavenumber_units=wavenumber_units,
+                resolution_units=device_resolution_units,
+            )
+
+        self._record_calculation_report(
+            requested_method=method,
+            executed_method=executed_method,
+            estimated_2d_bytes=estimated_2d_bytes,
+            memory_budget_bytes=memory_budget_bytes,
+            relative_threshold=relative_threshold,
+            device_function_applied=apply_device_function,
+        )
+        return spectrum
+
+    def calculate_complex_response(
+        self,
+        rho: np.ndarray,
+        wavenumber: np.ndarray,
+        method: Literal[
+            "matrix",
+            "loop",
+            "2d",
+            "chunked",
+            "auto",
+            "approximate_sparse",
+        ],
+        *,
+        wavenumber_units: str,
+        apply_doppler: bool = False,
+        chunk_size: int | None = None,
+        relative_threshold: float | None = None,
+        memory_budget_bytes: int | None = None,
+    ) -> ComplexResponseSpectrum:
+        """Return the projected complex per-molecule response before mOD."""
+        self._validate_response_request(
+            method=method,
+            wavenumber_units=wavenumber_units,
+            apply_doppler=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        (
+            wavenumber_array,
+            _omega,
+            molecular_response,
+            executed_method,
+            estimated_2d_bytes,
+        ) = self._execute_response_request(
+            rho,
+            wavenumber,
+            method=method,
+            apply_doppler=apply_doppler,
+            require_uniform_grid=apply_doppler,
+            chunk_size=chunk_size,
+            relative_threshold=relative_threshold,
+            memory_budget_bytes=memory_budget_bytes,
+        )
+        report = self._record_calculation_report(
+            requested_method=method,
+            executed_method=executed_method,
+            estimated_2d_bytes=estimated_2d_bytes,
+            memory_budget_bytes=memory_budget_bytes,
+            relative_threshold=relative_threshold,
+            device_function_applied=False,
+        )
+        return ComplexResponseSpectrum(
+            wavenumber_cm_inverse=wavenumber_array,
+            molecular_response_c2_m2_per_j=molecular_response,
+            calculation_report=report,
+        )
+
     def _calculate_2d(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """2D配列を使った高速計算"""
-        # 事前準備がされていない、または波数が異なる場合は準備
-        if not self._prepared_2d or not np.array_equal(wavenumber, self._prepared_wavenumber):
-            self.prepare_2d_calculation(wavenumber)
-        
-        # マスクを適用
-        rho_masked = rho * self.rho_mask
-        
-        # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
-        
-        # 強度因子を計算
-        intensity_factors = np.zeros(self.ind_nonzero.shape[1], dtype=np.complex128)
-        for idx, trans in enumerate(self.ind_nonzero.T):
-            i, j = tuple(trans)
-            intensity_factors[idx] = (
-                -1j / H_DIRAC *
-                self.mu_det[i, j] * rho_after_int[j, i]
-            )
-        
-        # 2D演算で応答を計算
-        resp_lin_per_mole_2d = self._one_over_denominator * intensity_factors
-        resp_lin_per_mole = np.sum(resp_lin_per_mole_2d, axis=1)
-        
-        if apply_doppler:
-            # ドップラー拡がりを適用
-            resp_lin_per_mole = self._apply_doppler_broadening_full(
-                wavenumber, resp_lin_per_mole
-            )
-        
-        # 吸光度への変換
+        self, rho: np.ndarray, wavenumber: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Evaluate the cached two-dimensional response route."""
+        if not self._prepared_2d or not np.array_equal(
+            wavenumber, self._prepared_wavenumber
+        ):
+            self._prepare_2d_calculation(wavenumber)
+
+        response_sum = response.calculate_2d_response(
+            rho,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self._one_over_denominator,
+        )
         omega = self._omega_2d[:, 0]
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
-    
+        return omega, response_sum
+
     def _calculate_matrix(
-        self, 
-        rho: np.ndarray, 
-        wavenumber: np.ndarray,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """行列演算による計算"""
-        omega = 2 * np.pi * C * 1e2 * wavenumber  # rad/s
-        
-        # マスクを適用
-        rho_masked = rho * self.rho_mask
-        
-        # コミュテータ [μ_int, ρ]
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
-        
-        # 各遷移に対する応答を計算
-        responses = []
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            response = (
-                -1j / H_DIRAC * 
-                self.mu_det[i, j] * rho_after_int[j, i] /
-                (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
-            
-            if apply_doppler:
-                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
-                response = self._apply_doppler_broadening(
-                    omega, response, omega_trans
-                )
-            
-            responses.append(response)
-        
-        # 全応答の和
-        resp_lin_per_mole = np.sum(responses, axis=0)
-        
-        # 吸光度への変換
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
-    
+        self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Evaluate the exact list-and-sum response route."""
+        omega, response_sum = response.calculate_matrix_response(
+            rho,
+            wavenumber,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+            apply_doppler=apply_doppler,
+            doppler_broadener=self._apply_doppler_broadening,
+        )
+        return omega, response_sum
+
     def _calculate_loop(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """ループによる計算（メモリ効率重視）"""
-        omega = 2 * np.pi * C * 1e2 * wavenumber
-        
-        rho_masked = rho * self.rho_mask
-        rho_after_int = self.mu_int @ rho_masked - rho_masked @ self.mu_int
-        
-        resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
-        
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            response = (
-                -1j / H_DIRAC *
-                self.mu_det[i, j] * rho_after_int[j, i] /
-                (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
-            
-            if apply_doppler:
-                omega_trans = float(np.real(self.omega_vj_vpjp_mat[i, j]))
-                response = self._apply_doppler_broadening(
-                    omega, response, omega_trans
-                )
-            
-            resp_lin_per_mole += response
-        
-        return self._response_to_absorbance(omega, resp_lin_per_mole)
-    
-    def _calculate_optimized(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        chunk_size: int = 1000,
-        sparse_threshold: float = 1e-12,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """
-        Optimized calculation with automatic method selection based on memory constraints
-        """
-        # メモリ使用量を推定
-        N_level = self.N_level
-        N_freq = len(wavenumber)
-        
-        # 基本のメモリ推定（複素数配列のサイズ）
-        memory_matrix = N_level * N_level * 16  # bytes for complex128
-        memory_frequency = N_freq * N_level * N_level * 16  # for full response calculation
-        
-        # メモリ制限（4GB以下なら matrix method, それ以上なら chunked）
-        memory_limit = 4 * 1024**3  # 4GB
-        
-        if memory_frequency < memory_limit and N_level < 1000:
-            # 小さなシステム: 高速な2D method
-            return self._calculate_2d(rho, wavenumber, apply_doppler)
-        else:
-            # 大きなシステム: メモリ効率的なchunked method
-            return self._calculate_chunked(rho, wavenumber, chunk_size, apply_doppler)
-    
+        self, rho: np.ndarray, wavenumber: np.ndarray, apply_doppler: bool = False
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Evaluate the exact in-place accumulation response route."""
+        omega, response_sum = response.calculate_loop_response(
+            rho,
+            wavenumber,
+            self.mu_int,
+            self.mu_det,
+            self.ind_nonzero,
+            self.omega_vj_vpjp_mat,
+            apply_doppler=apply_doppler,
+            doppler_broadener=self._apply_doppler_broadening,
+        )
+        return omega, response_sum
+
     def _calculate_chunked(
         self,
         rho: np.ndarray,
         wavenumber: np.ndarray,
-        chunk_size: int = 1000,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """
-        Memory-efficient chunked calculation for large systems
-        """
-        from scipy.sparse import csr_matrix
-        
-        # 密度行列にマスクを適用
-        rho_masked = rho * self.rho_mask
-        
-        # 応答行列を計算（疎行列最適化）
-        mu_int_sparse = csr_matrix(self.mu_int)
-        mu_det_sparse = csr_matrix(self.mu_det)
-        rho_sparse = csr_matrix(rho_masked)
-        
-        # コミュテータ [mu_int, rho] を疎行列で計算
-        rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
-        
-        # 非ゼロ要素のインデックスを特定
-        rho1_dense = rho1_sparse.toarray()  # type: ignore
-        nonzero_mask = np.abs(rho1_dense) > 1e-15
-        i_indices, j_indices = np.where(nonzero_mask)
-        
-        if len(i_indices) == 0:
-            return np.zeros_like(wavenumber)
-        
-        # 周波数をチャンクに分割
-        response = np.zeros(len(wavenumber), dtype=complex)
-        
-        for start_idx in range(0, len(wavenumber), chunk_size):
-            end_idx = min(start_idx + chunk_size, len(wavenumber))
-            omega_chunk = 2 * np.pi * C * wavenumber[start_idx:end_idx] * 100  # cm^-1 to rad/s
-            
-            # チャンクごとに応答を計算
-            response_chunk = np.zeros(len(omega_chunk), dtype=complex)
-            
-            for idx, (i, j) in enumerate(zip(i_indices, j_indices)):
-                if i != j:  # 非対角要素のみ
-                    omega_ij = self.omega_vj_vpjp_mat[i, j]
-                    mu_det_ij = self.mu_det[j, i]  # 検出双極子
-                    rho1_ij = rho1_dense[i, j]
-                    
-                    # 応答関数: -1 / (i*(omega + omega_ij))
-                    denominator = 1j * (omega_chunk + omega_ij)
-                    kernel = -1.0 / denominator
-                    
-                    response_chunk += (1j / H_DIRAC) * mu_det_ij * rho1_ij * kernel
-            
-            response[start_idx:end_idx] = response_chunk
-        
-        # 吸光度に変換
-        omega = 2 * np.pi * C * wavenumber * 100
-        absorbance = self._response_to_absorbance(omega, response)
-        
-        if apply_doppler:
-            absorbance = self._apply_doppler_broadening_full(wavenumber, absorbance)
-        
-        return absorbance
-    
-    def _calculate_smart_optimized(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        chunk_size: int = 1000,
-        sparse_threshold: float = 1e-12,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """
-        Smart memory-optimized calculation with automatic method selection
-        """
-        N_level = self.N_level
-        N_freq = len(wavenumber)
-        
-        # メモリ使用量を推定 (最悪ケース)
-        memory_matrix_gb = (N_level * N_level * 16) / (1024**3)  # 密度行列等
-        memory_frequency_gb = (N_freq * 8) / (1024**3)  # 周波数配列
-        
-        if N_level < 500:
-            # 小さなシステム: 高速な2D method
-            print(f"Using fast 2D method (N={N_level}, matrix memory: {memory_matrix_gb:.2f} GB)")
-            return self._calculate_2d(rho, wavenumber, apply_doppler)
-        elif N_level < 1500:
-            # 中程度のシステム: loop method
-            print(f"Using memory-efficient loop method (N={N_level}, matrix memory: {memory_matrix_gb:.2f} GB)")
-            return self._calculate_loop(rho, wavenumber, apply_doppler)
-        else:
-            # 大きなシステム: 専用チャンク化手法
-            print(f"Using ultra-efficient chunked method (N={N_level}, matrix memory: {memory_matrix_gb:.2f} GB)")
-            return self._calculate_ultra_chunked(rho, wavenumber, chunk_size, apply_doppler)
-    
-    def _calculate_ultra_chunked(
-        self,
-        rho: np.ndarray,
-        wavenumber: np.ndarray,
-        chunk_size: int = 500,
-        apply_doppler: bool = False
-    ) -> np.ndarray:
-        """
-        Ultra-memory-efficient calculation for very large systems
-        """
-        # 周波数のチャンクサイズを動的に調整
-        N_level = self.N_level
-        if N_level > 2000:
-            freq_chunk_size = min(chunk_size // 2, 200)
-        elif N_level > 1000:
-            freq_chunk_size = min(chunk_size, 500)
-        else:
-            freq_chunk_size = chunk_size
-        
-        print(f"Processing {len(wavenumber)} frequencies in chunks of {freq_chunk_size}")
-        
-        # 密度行列にマスクを適用
-        rho_masked = rho * self.rho_mask
-        
-        # コミュテータを事前計算（疎行列化）
-        from scipy.sparse import csr_matrix
-        mu_int_sparse = csr_matrix(self.mu_int)
-        rho_sparse = csr_matrix(rho_masked)
-        
-        # [mu_int, rho] = mu_int * rho - rho * mu_int
-        rho1_sparse = mu_int_sparse @ rho_sparse - rho_sparse @ mu_int_sparse
-        rho1_array = rho1_sparse.toarray()  # type: ignore
-        
-        # 非ゼロ要素のインデックスを取得
-        nonzero_mask = np.abs(rho1_array) > 1e-15
-        i_indices, j_indices = np.where(nonzero_mask)
-        
-        if len(i_indices) == 0:
-            print("Warning: No non-zero transitions found!")
-            return np.zeros_like(wavenumber)
-        
-        print(f"Found {len(i_indices)} non-zero transitions out of {N_level**2} possible")
-        
-        # デバッグ: いくつかの要素を確認
-        print(f"Sample rho1 values: {rho1_array[i_indices[:5], j_indices[:5]]}")
-        print(f"Sample mu_det values: {self.mu_det[j_indices[:5], i_indices[:5]]}")
-        print(f"Sample omega_ij values: {self.omega_vj_vpjp_mat[i_indices[:5], j_indices[:5]]}")
-        
-        # 結果配列
-        response_total = np.zeros(len(wavenumber), dtype=complex)
-        
-        # 周波数をチャンクに分割して処理
-        for start_idx in range(0, len(wavenumber), freq_chunk_size):
-            end_idx = min(start_idx + freq_chunk_size, len(wavenumber))
-            wn_chunk = wavenumber[start_idx:end_idx]
-            omega_chunk = 2 * np.pi * C * wn_chunk * 100  # cm^-1 to rad/s
-            
-            response_chunk = np.zeros(len(omega_chunk), dtype=complex)
-            
-            # 遷移をバッチ処理
-            batch_size = min(100, len(i_indices))
-            for batch_start in range(0, len(i_indices), batch_size):
-                batch_end = min(batch_start + batch_size, len(i_indices))
-                
-                for idx in range(batch_start, batch_end):
-                    i, j = i_indices[idx], j_indices[idx]
-                    if i != j:  # 非対角要素のみ
-                        omega_ij = self.omega_vj_vpjp_mat[i, j]
-                        mu_det_ij = self.mu_det[j, i]
-                        rho1_ij = rho1_array[i, j]
-                        
-                        # 応答関数
-                        denominator = 1j * (omega_chunk + omega_ij)
-                        kernel = -1.0 / denominator
-                        
-                        response_chunk += (1j / H_DIRAC) * mu_det_ij * rho1_ij * kernel
-            
-            response_total[start_idx:end_idx] = response_chunk
-            
-            # 進捗表示
-            progress = (end_idx / len(wavenumber)) * 100
-            if start_idx % (freq_chunk_size * 5) == 0:
-                print(f"  Progress: {progress:.1f}%")
-        
-        # 吸光度に変換
-        omega = 2 * np.pi * C * wavenumber * 100
-        absorbance = self._response_to_absorbance(omega, response_total)
-        
-        if apply_doppler:
-            absorbance = self._apply_doppler_broadening_full(wavenumber, absorbance)
-        
-        return absorbance
-    
-    def _response_to_absorbance(
-        self, 
-        omega: np.ndarray, 
-        response: np.ndarray
-    ) -> np.ndarray:
-        """線形応答を吸光度に変換 [mOD]"""
-        dens_num = self.conditions.number_density
-        
-        result = np.sqrt(1 + response / EPS * dens_num / 3)
-        absorbance = (
-            2 * self.conditions.optical_length * omega / C *
-            result.imag  # type: ignore
+        chunk_size: int,
+        relative_threshold: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Evaluate the exact or explicitly approximate chunked route."""
+        commutator = response.sparse_commutator(self.mu_int, rho)
+        i_indices, j_indices = self._response_entry_indices(
+            commutator,
+            relative_threshold,
         )
-        
-        # mODに変換
-        absorbance *= np.log10(np.exp(1)) * 1000
-        
-        return absorbance
-    
+
+        omega, response_sum = response.calculate_chunked_response(
+            commutator,
+            wavenumber,
+            i_indices,
+            j_indices,
+            self.mu_det,
+            self.omega_vj_vpjp_mat,
+            chunk_size=chunk_size,
+        )
+        return omega, response_sum
+
+    def _response_to_absorbance(
+        self, omega: np.ndarray, response: np.ndarray
+    ) -> np.ndarray:
+        """Convert the molecular response to absorbance in mOD."""
+        return observables.response_to_absorbance(
+            omega,
+            response,
+            number_density=self.conditions.number_density,
+            optical_length_m=self.conditions.optical_length_m,
+        )
+
+    @staticmethod
+    def _filter_complex_gaussian(
+        response: np.ndarray,
+        sigma_pixels: float,
+    ) -> np.ndarray:
+        return broadening.filter_complex_gaussian(response, sigma_pixels)
+
     def _apply_doppler_broadening(
         self,
         omega: np.ndarray,
         response: np.ndarray,
-        omega0: float
+        omega0: float,
     ) -> np.ndarray:
-        """
-        単一遷移にドップラー拡がりを適用
-        
-        Parameters
-        ----------
-        omega : np.ndarray
-            角周波数配列 [rad/s]
-        response : np.ndarray
-            応答関数
-        omega0 : float
-            遷移の中心角周波数 [rad/s]
-        """
-        if omega0 <= 0:
-            return response
-        
-        # ドップラー幅（標準偏差）
-        sigma_doppler = omega0 * np.sqrt(
-            KB * self.conditions.temperature / 
-            (self.conditions.molecular_mass * C**2)
+        return broadening.apply_doppler_broadening(
+            omega,
+            response,
+            omega0,
+            temperature_k=self.conditions.temperature_k,
+            molecular_mass_kg=self.conditions.molecular_mass_kg,
         )
-        
-        if sigma_doppler < 1e-10:  # 幅が小さすぎる場合はスキップ
-            return response
-        
-        # 周波数空間でのガウシアン畳み込み
-        # 簡略化のため、ここでは単純なガウシアン乗算を行う
-        # 実際にはFFTを使った畳み込みが望ましい
-        doppler_profile = np.exp(-(omega - omega0)**2 / (2 * sigma_doppler**2))
-        doppler_profile /= np.sum(doppler_profile)  # 正規化
-        
-        # 畳み込み
-        return np.convolve(response, doppler_profile, mode='same')
-    
-    def _apply_doppler_broadening_full(
-        self,
-        wavenumber: np.ndarray,
-        response: np.ndarray
-    ) -> np.ndarray:
-        """
-        全体の応答にドップラー拡がりを適用（より正確な実装）
-        """
-        # 波数をrad/sに変換
-        omega = 2 * np.pi * C * 1e2 * wavenumber
-        
-        # 平均遷移エネルギーを推定
-        energy_diffs = []
-        for i in range(self.N_level):
-            for j in range(i+1, self.N_level):
-                diff = abs(self.energy_array[i] - self.energy_array[j])
-                if diff > 0:
-                    energy_diffs.append(diff)
-        
-        if not energy_diffs:
-            return response
-        
-        mean_omega = np.mean(energy_diffs) / H_DIRAC
-        
-        # ドップラー幅
-        sigma_doppler_wn = mean_omega / (2 * np.pi * C * 1e2) * np.sqrt(
-            KB * self.conditions.temperature / 
-            (self.conditions.molecular_mass * C**2)
-        )
-        
-        # ガウシアンフィルタを適用
-        if sigma_doppler_wn > 0.01:  # 0.01 cm^-1以上の場合のみ
-            # 波数空間でのピクセル数に変換
-            dw = wavenumber[1] - wavenumber[0] if len(wavenumber) > 1 else 1.0
-            sigma_pixels = sigma_doppler_wn / dw
-            
-            # scipy.ndimage.gaussian_filter1dを使用
-            response_real = ndimage.gaussian_filter1d(
-                response.real, sigma_pixels, mode='reflect'
+
+    def _require_standard_absorption(self) -> None:
+        if self._measurement_kind == "analyzer_complex_response":
+            raise ValueError(
+                "analyzer complex response requires a complex-response observable; "
+                "scalar mOD conversion is undefined"
             )
-            response_imag = ndimage.gaussian_filter1d(
-                response.imag, sigma_pixels, mode='reflect'
-            )
-            response = response_real + 1j * response_imag
-        
-        return response
-    
+
     def calculate_radiation_spectrum(
         self,
         rho: np.ndarray,
-        wavenumber: np.ndarray
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
     ) -> np.ndarray:
         """
         放射スペクトルを計算（例：PFID）
-        
+
         密度行列の非対角要素から直接放射を計算
-        
+
         Parameters
         ----------
         rho : np.ndarray
             密度行列（コヒーレンスを含む）
         wavenumber : np.ndarray
             波数配列 [cm^-1]
-            
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
+
         Returns
         -------
         np.ndarray
             放射スペクトル [mOD]
         """
-        omega = 2 * np.pi * C * 1e2 * wavenumber
-        
-        rho_masked = rho * self.rho_mask
-        resp_lin_per_mole = np.zeros(len(wavenumber), dtype=np.complex128)
-        
-        for trans in self.ind_nonzero.T:
-            i, j = tuple(trans)
-            # 放射の場合は順序が逆
-            resp_lin_per_mole += -(
-                self.mu_det[j, i] * rho_masked[i, j] /
-                (1j * (omega + self.omega_vj_vpjp_mat[i, j]))
-            )
-        
+        self._require_standard_absorption()
+        require_exact_units(
+            wavenumber_units,
+            name="wavenumber_units",
+            expected="cm^-1",
+        )
+        rho_array = self._validate_density_matrix(rho)
+        wavenumber_array = np.asarray(wavenumber, dtype=float)
+        omega = 2 * np.pi * C * 1e2 * wavenumber_array
+
+        resp_lin_per_mole = transform.radiation_response(
+            rho_array,
+            omega,
+            self.ind_nonzero,
+            self.mu_det,
+            self.omega_vj_vpjp_mat,
+        )
+
         return self._response_to_absorbance(omega, resp_lin_per_mole)
-    
+
     def calculate_pfid_spectrum(
         self,
         rho: np.ndarray,
-        wavenumber: np.ndarray
+        wavenumber: np.ndarray,
+        *,
+        wavenumber_units: str,
     ) -> np.ndarray:
         """
         Probe-induced free induction decay (PFID) スペクトルを計算
-        
+
         プローブパルス後の自由誘導減衰からのスペクトル
-        
+
         Parameters
         ----------
         rho : np.ndarray
             プローブ相互作用後の密度行列
         wavenumber : np.ndarray
             波数配列 [cm^-1]
-            
+        wavenumber_units : str
+            必須。現在は ``"cm^-1"`` のみを受理する。
+
         Returns
         -------
         np.ndarray
             PFIDスペクトル [mOD]
         """
         # PFIDは放射スペクトルと同じ計算
-        return self.calculate_radiation_spectrum(rho, wavenumber)
-    
+        return self.calculate_radiation_spectrum(
+            rho,
+            wavenumber,
+            wavenumber_units=wavenumber_units,
+        )
+
     def apply_device_function(
         self,
         spectrum: np.ndarray,
         wavenumber: np.ndarray,
-        resolution: float = 1.0,
-        function_type: Literal['sinc', 'sinc2', 'gaussian'] = 'sinc2'
+        resolution: float,
+        *,
+        wavenumber_units: str,
+        resolution_units: str,
+        function_type: Literal["sinc", "sinc2", "gaussian"] = "sinc2",
     ) -> np.ndarray:
-        """
-        装置関数を適用
-        
-        Parameters
-        ----------
-        spectrum : np.ndarray
-            スペクトル
-        wavenumber : np.ndarray
-            波数配列 [cm^-1]
-        resolution : float
-            分解能 [cm^-1]
-        function_type : {'sinc', 'sinc2', 'gaussian'}
-            装置関数のタイプ
-            
-        Returns
-        -------
-        np.ndarray
-            装置関数適用後のスペクトル
-        """
-        if resolution <= 0:
-            return spectrum
-        
-        dw = wavenumber[1] - wavenumber[0] if len(wavenumber) > 1 else 1.0
-        
-        if function_type == 'gaussian':
-            # ガウシアン装置関数
-            sigma_pixels = resolution / (2 * np.sqrt(2 * np.log(2))) / dw
-            return ndimage.gaussian_filter1d(spectrum, sigma_pixels, mode='reflect')
-            
-        else:
-            # Sinc または Sinc^2 装置関数
-            # FFTベースの畳み込み
-            n = len(wavenumber)
-            x_device = np.arange(-n//2, n//2) * dw
-            
-            if function_type == 'sinc':
-                device_func = np.sinc(2 * x_device / resolution)
-            else:  # sinc2
-                device_func = np.sinc(2 * x_device / resolution) ** 2
-            
-            device_func /= np.sum(device_func)  # 正規化
-            
-            # 畳み込み
-            return np.convolve(spectrum, device_func, mode='same')
+        """Apply a normalized instrument response on an explicit cm^-1 grid."""
+        return broadening.apply_device_function(
+            spectrum,
+            wavenumber,
+            resolution,
+            wavenumber_units=wavenumber_units,
+            resolution_units=resolution_units,
+            function_type=function_type,
+        )
 
 
 # ヘルパー関数
 def create_calculator_from_params(
     basis: BasisBase,
     hamiltonian: Hamiltonian,
-    dipole_matrix: DipoleMatrixBase,
-    temperature: float = 300,
-    pressure: float = 3e4,
-    optical_length: float = 1e-3,
-    T2: float = 500,
-    molecular_mass: Optional[float] = None,
-    axes: str = 'xy',
-    pol_int: Optional[np.ndarray] = None,
-    pol_det: Optional[np.ndarray] = None
+    dipole_matrix: DipoleOperator,
+    *,
+    temperature: float,
+    temperature_units: str,
+    pressure: float,
+    pressure_units: str,
+    optical_length: float,
+    optical_length_units: str,
+    coherence_time: float,
+    coherence_time_units: str,
+    molecular_mass: float,
+    molecular_mass_units: str,
+    phase_matching: Literal["unfiltered", "pump_probe"],
+    projection: CartesianProjection | CartesianAnalyzerProjection,
 ) -> AbsorbanceCalculator:
     """
     パラメータから計算機を作成するヘルパー関数
-    
+
     Parameters
     ----------
     basis : BasisBase
         量子基底
     hamiltonian : Hamiltonian
         ハミルトニアン
-    dipole_matrix : DipoleMatrixBase
+    dipole_matrix : DipoleOperator
         双極子行列
-    temperature : float
-        温度 [K]
-    pressure : float
-        圧力 [Pa]
-    optical_length : float
-        光路長 [m]
-    T2 : float
-        コヒーレンス緩和時間 [ps]
-    molecular_mass : float, optional
-        分子質量 [kg]（Noneの場合CO2のデフォルト値）
-    axes : str
-        使用する軸
-    pol_int, pol_det : np.ndarray, optional
-        偏光ベクトル
-        
+    temperature, temperature_units
+        温度と必須単位。現在は ``K`` のみ。
+    pressure, pressure_units
+        圧力と必須単位。現在は ``Pa`` のみ。
+    optical_length, optical_length_units
+        光路長と必須単位。現在は ``m`` のみ。
+    coherence_time, coherence_time_units
+        コヒーレンス緩和時間と必須単位。現在は ``ps`` のみ。
+    molecular_mass, molecular_mass_units
+        1分子あたりの質量と必須単位。現在は ``kg`` のみ。
+    phase_matching : {'unfiltered', 'pump_probe'}
+        Probe interaction前の密度行列に適用する位相整合経路
+    projection : CartesianProjection or CartesianAnalyzerProjection
+        必須の型付き偏光測定。
+
     Returns
     -------
     AbsorbanceCalculator
         初期化された計算機オブジェクト
     """
-    # 分子質量の自動推定（簡易的）
-    if molecular_mass is None:
-        # 基底の種類から推測
-        basis_name = type(basis).__name__
-        if 'CO2' in basis_name or 'co2' in basis_name.lower():
-            molecular_mass = 44e-3 / 6.023e23  # CO2
-        elif 'CO' in basis_name or 'co' in basis_name.lower():
-            molecular_mass = 28e-3 / 6.023e23  # CO
-        else:
-            molecular_mass = 44e-3 / 6.023e23  # デフォルト
-    
     conditions = ExperimentalConditions(
         temperature=temperature,
+        temperature_units=temperature_units,
         pressure=pressure,
+        pressure_units=pressure_units,
         optical_length=optical_length,
-        T2=T2,
-        molecular_mass=molecular_mass
+        optical_length_units=optical_length_units,
+        coherence_time=coherence_time,
+        coherence_time_units=coherence_time_units,
+        molecular_mass=molecular_mass,
+        molecular_mass_units=molecular_mass_units,
     )
-    
+
     return AbsorbanceCalculator(
         basis=basis,
         hamiltonian=hamiltonian,
         dipole_matrix=dipole_matrix,
         conditions=conditions,
-        axes=axes,
-        pol_int=pol_int,
-        pol_det=pol_det
+        phase_matching=phase_matching,
+        projection=projection,
     )

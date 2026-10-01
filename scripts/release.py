@@ -1,196 +1,199 @@
 #!/usr/bin/env python3
-"""
-バージョン管理とリリーススクリプト
-=================================
-pyproject.tomlのバージョン更新とGitタグ作成を一括で行います。
+"""Prepare a final package version without committing, tagging, or publishing.
 
-使用例:
-    python scripts/release.py 0.1.5 "Bug fixes and performance improvements"
-    python scripts/release.py 0.2.0 --minor "New features added"
-    python scripts/release.py 1.0.0 --major "Major release"
+The script is deliberately local and reversible. The dry-run mode validates the
+version transition without writing. The apply mode requires a clean worktree,
+updates only pyproject.toml, runs every local release gate, and restores the
+original file if a gate fails. Creating and pushing the reviewed commit/tag is
+always a separate explicit user action.
 """
+
+from __future__ import annotations
 
 import argparse
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+PYPROJECT = ROOT / "pyproject.toml"
+_ACTIVE_SCOPE = ("src", "tests", "examples", "benchmarks", "scripts")
+_CURRENT_VERSION = re.compile(
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+    r"(?P<dev>\.dev(?:0|[1-9]\d*))?$"
+)
+_FINAL_VERSION = re.compile(
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$"
+)
 
 
-def read_current_version():
-    """pyproject.tomlから現在のバージョンを読み取り"""
-    pyproject_path = Path("pyproject.toml")
-    if not pyproject_path.exists():
-        raise FileNotFoundError("pyproject.toml が見つかりません")
-
-    with open(pyproject_path, "rb") as f:
-        data = tomllib.load(f)
-
-    return data["project"]["version"]
+def read_current_version(path: Path = PYPROJECT) -> str:
+    """Read the package version from the authoritative project metadata."""
+    with path.open("rb") as stream:
+        data = tomllib.load(stream)
+    value = data["project"]["version"]
+    if not isinstance(value, str):
+        raise ValueError("project.version must be a string")
+    return value
 
 
-def update_version_in_pyproject(new_version):
-    """pyproject.tomlのバージョンを更新"""
-    pyproject_path = Path("pyproject.toml")
-
-    # ファイルを読み込み
-    with open(pyproject_path, encoding="utf-8") as f:
-        content = f.read()
-
-    # バージョン行を置換
-    pattern = r'version = "[^"]*"'
-    replacement = f'version = "{new_version}"'
-
-    new_content = re.sub(pattern, replacement, content)
-
-    # ファイルに書き戻し
-    with open(pyproject_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
-
-    print(f"✅ pyproject.toml のバージョンを {new_version} に更新しました")
-
-
-def validate_version_format(version):
-    """セマンティックバージョニング形式の検証"""
-    pattern = r"^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?$"
-    if not re.match(pattern, version):
-        raise ValueError(f"無効なバージョン形式: {version}")
-
-
-def run_git_command(cmd, capture_output=True):
-    """Gitコマンドを実行"""
-    try:
-        result = subprocess.run(
-            cmd.split(), capture_output=capture_output, text=True, check=True
-        )
-        return result.stdout.strip() if capture_output else None
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Gitコマンドエラー: {e}")
-        return None
-
-
-def check_git_status():
-    """Git作業ディレクトリの状態確認"""
-    status = run_git_command("git status --porcelain")
-    if status:
-        print("⚠️  未コミットの変更があります:")
-        print(status)
-        response = input("続行しますか？ (y/N): ")
-        if response.lower() != "y":
-            print("中止しました")
-            sys.exit(1)
-
-
-def create_git_tag(version, message):
-    """Gitタグを作成してプッシュ"""
-    tag_name = f"v{version}"
-
-    # タグ作成
-    cmd = f"git tag -a {tag_name} -m '{message}'"
-    if run_git_command(cmd, capture_output=False) is None:
-        return False
-
-    print(f"✅ タグ {tag_name} を作成しました")
-
-    # タグをプッシュ
-    if run_git_command(f"git push origin {tag_name}", capture_output=False) is None:
-        return False
-
-    print(f"✅ タグ {tag_name} をリモートにプッシュしました")
-    return True
-
-
-def get_version_increment_type(current_version, new_version):
-    """バージョンの増分タイプを判定"""
-    current_parts = [int(x) for x in current_version.split(".")]
-    new_parts = [int(x) for x in new_version.split(".")]
-
-    if new_parts[0] > current_parts[0]:
-        return "major"
-    elif new_parts[1] > current_parts[1]:
-        return "minor"
-    elif new_parts[2] > current_parts[2]:
-        return "patch"
-    else:
-        return "unknown"
-
-
-def main():
-    parser = argparse.ArgumentParser(description="バージョン管理とリリース")
-    parser.add_argument("version", help="新しいバージョン (例: 0.1.5)")
-    parser.add_argument("message", nargs="?", help="リリースメッセージ")
-    parser.add_argument(
-        "--dry-run", action="store_true", help="実際の変更を行わずに確認のみ"
+def _core(match: re.Match[str]) -> tuple[int, int, int]:
+    return (
+        int(match.group("major")),
+        int(match.group("minor")),
+        int(match.group("patch")),
     )
-    parser.add_argument("--major", action="store_true", help="メジャーリリース")
-    parser.add_argument("--minor", action="store_true", help="マイナーリリース")
-    parser.add_argument("--patch", action="store_true", help="パッチリリース")
 
-    args = parser.parse_args()
 
+def validate_release_transition(
+    current_version: str,
+    target_version: str,
+) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    """Validate a supported development/final to final release transition."""
+    current_match = _CURRENT_VERSION.fullmatch(current_version)
+    if current_match is None:
+        raise ValueError(
+            "current project version must be X.Y.Z or X.Y.Z.devN before release"
+        )
+    target_match = _FINAL_VERSION.fullmatch(target_version)
+    if target_match is None:
+        raise ValueError("release target must be a final X.Y.Z version")
+
+    current_core = _core(current_match)
+    target_core = _core(target_match)
+    current_is_development = current_match.group("dev") is not None
+    if target_core < current_core or (
+        target_core == current_core and not current_is_development
+    ):
+        raise ValueError("release target must be newer than the current final version")
+    return current_core, target_core
+
+
+def _replace_project_version(
+    source: str,
+    *,
+    current_version: str,
+    target_version: str,
+) -> str:
+    old = f'version = "{current_version}"'
+    new = f'version = "{target_version}"'
+    if source.count(old) != 1:
+        raise ValueError(
+            "pyproject.toml must contain exactly one current version entry"
+        )
+    return source.replace(old, new, 1)
+
+
+def _run(command: Sequence[str]) -> None:
+    print("$", " ".join(command), flush=True)
+    subprocess.run(command, cwd=ROOT, check=True)
+
+
+def _require_clean_worktree() -> None:
+    completed = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=normal"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    if completed.stdout.strip():
+        raise RuntimeError(
+            "release preparation requires a clean worktree; review or commit changes first"
+        )
+
+
+def _run_release_gates(target_version: str) -> None:
+    python = sys.executable
+    scope = list(_ACTIVE_SCOPE)
+    commands = [
+        [python, "-m", "ruff", "check", "--no-fix", *scope],
+        [python, "-m", "ruff", "format", "--check", *scope],
+        [python, "-m", "mypy", "--no-incremental"],
+        [python, "-m", "pytest", "-q"],
+        [python, str(ROOT / "scripts" / "smoke_examples.py")],
+        [python, "-m", "build"],
+    ]
+    for command in commands:
+        _run(command)
+
+    distributions = sorted((ROOT / "dist").glob(f"*{target_version}*"))
+    if not distributions:
+        raise RuntimeError(
+            f"build did not produce a distribution for version {target_version}"
+        )
+    _run([python, "-m", "twine", "check", *(str(path) for path in distributions)])
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Validate or prepare a final rovibrational-excitation release"
+    )
+    parser.add_argument("version", help="final release version in X.Y.Z form")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate and print the transition without writing",
+    )
+    mode.add_argument(
+        "--apply",
+        action="store_true",
+        help="update pyproject.toml and run all local release gates",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     try:
-        # 現在のバージョン取得
-        current_version = read_current_version()
-        print(f"現在のバージョン: {current_version}")
-
-        # 新バージョンの検証
-        validate_version_format(args.version)
-        print(f"新しいバージョン: {args.version}")
-
-        # バージョンタイプ判定
-        increment_type = get_version_increment_type(current_version, args.version)
-        print(f"バージョン増分タイプ: {increment_type}")
-
-        # リリースメッセージの決定
-        if args.message:
-            release_message = args.message
-        else:
-            type_messages = {
-                "major": "Major release with breaking changes",
-                "minor": "Minor release with new features",
-                "patch": "Patch release with bug fixes",
-                "unknown": "Version update",
-            }
-            release_message = type_messages.get(increment_type, "Release update")
-
-        print(f"リリースメッセージ: {release_message}")
+        current = read_current_version()
+        validate_release_transition(current, args.version)
+        print(f"release transition: {current} -> {args.version}")
 
         if args.dry_run:
-            print("\n🔍 ドライラン - 実際の変更は行いません")
-            print(f"   pyproject.toml: {current_version} → {args.version}")
-            print(f"   Git tag: v{args.version}")
-            print(f"   Message: {release_message}")
-            return
+            print(
+                "dry run: no files changed; no commit, tag, push, or publish performed"
+            )
+            return 0
 
-        # 実際の処理開始
-        print("\n🚀 リリースプロセスを開始します...")
+        _require_clean_worktree()
+        original = PYPROJECT.read_text(encoding="utf-8")
+        updated = _replace_project_version(
+            original,
+            current_version=current,
+            target_version=args.version,
+        )
+        PYPROJECT.write_text(updated, encoding="utf-8")
+        try:
+            _run_release_gates(args.version)
+        except BaseException:
+            PYPROJECT.write_text(original, encoding="utf-8")
+            print(
+                "release gates failed; restored the original pyproject.toml",
+                file=sys.stderr,
+            )
+            raise
 
-        # Git状態確認
-        check_git_status()
-
-        # pyproject.tomlのバージョン更新
-        update_version_in_pyproject(args.version)
-
-        # 変更をコミット
-        run_git_command("git add pyproject.toml", capture_output=False)
-        commit_msg = f"Bump version to {args.version}"
-        run_git_command(f"git commit -m '{commit_msg}'", capture_output=False)
-        print(f"✅ バージョン更新をコミットしました: {commit_msg}")
-
-        # タグ作成とプッシュ
-        if create_git_tag(args.version, release_message):
-            print(f"\n🎉 リリース {args.version} が完了しました！")
-            print("   GitHub Actions により自動的にリリースとPyPI公開が行われます")
-        else:
-            print("❌ タグ作成に失敗しました")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"❌ エラー: {e}")
-        sys.exit(1)
+        print("local release preparation passed; this is not release acceptance")
+        print("Review pyproject.toml, update CHANGELOG.md, and commit both explicitly.")
+        print(
+            "Do not tag until required CI, accepted real-CUDA evidence, hosted "
+            "container smoke, manual Dev Containers UI checks, and the exact "
+            "PyPI Trusted Publisher setup all pass."
+        )
+        return 0
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+        print(f"release preparation failed: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,519 @@
+"""Propagation-boundary contracts for the legacy local time layout."""
+
+from __future__ import annotations
+
+import ast
+import inspect
+from typing import Any
+
+import numpy as np
+import pytest
+
+import rovibrational_excitation.optimization.local as local_module
+from rovibrational_excitation.dynamics.utils import DIRAC_HBAR
+
+
+class _OneStateBasis:
+    basis = [(0,)]
+
+    @staticmethod
+    def size() -> int:
+        return 1
+
+    @staticmethod
+    def get_index(state: tuple[int, ...]) -> int:
+        assert tuple(state) == (0,)
+        return 0
+
+
+class _ZeroHamiltonian:
+    @staticmethod
+    def get_eigenvalues() -> np.ndarray:
+        return np.zeros(1)
+
+
+class _UnavailableEigenvalues:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def get_eigenvalues(self) -> np.ndarray:
+        self.calls += 1
+        raise RuntimeError("eigenvalues unavailable")
+
+
+class _ZeroDipole:
+    @staticmethod
+    def get_mu_x_SI() -> np.ndarray:
+        return np.zeros((1, 1))
+
+    @staticmethod
+    def get_mu_y_SI() -> np.ndarray:
+        return np.zeros((1, 1))
+
+    @staticmethod
+    def get_mu_z_SI() -> np.ndarray:
+        return np.zeros((1, 1))
+
+
+class _TwoStateBasis:
+    basis = [(0,), (1,)]
+
+    @staticmethod
+    def size() -> int:
+        return 2
+
+    @staticmethod
+    def get_index(state: tuple[int, ...]) -> int:
+        return _TwoStateBasis.basis.index(tuple(state))
+
+
+class _UnitDipole:
+    @staticmethod
+    def get_mu_x_SI() -> np.ndarray:
+        return DIRAC_HBAR * np.array([[0.0, 1.0], [1.0, 0.0]])
+
+    get_mu_y_SI = get_mu_x_SI
+
+    @staticmethod
+    def get_mu_z_SI() -> np.ndarray:
+        return np.zeros((2, 2))
+
+
+class _PropagationSpy:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, np.ndarray]] = []
+
+    def _propagate_array(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+        assert isinstance(kwargs["initial_state"], np.ndarray)
+        efield = kwargs["efield"]
+        tlist = np.array(efield.tlist, copy=True)
+        field = np.array(efield.get_Efield(), copy=True)
+        assert tlist.size % 2 == 1
+        self.calls.append({"tlist": tlist, "field": field})
+
+        stride = int(kwargs["sample_stride"])
+        propagation_steps = (tlist.size - 1) // 2
+        sampled_steps = propagation_steps // stride
+        trajectory = np.repeat(
+            np.asarray(kwargs["initial_state"])[np.newaxis, :],
+            sampled_steps + 1,
+            axis=0,
+        )
+        time = tlist[0] + np.arange(sampled_steps + 1) * 2.0 * efield.dt * stride
+        return time, trajectory
+
+
+class _StateInjectingPropagationSpy(_PropagationSpy):
+    def _propagate_array(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
+        time, trajectory = super()._propagate_array(**kwargs)
+        trajectory[-1] = np.array([1.0, 1.0j]) / np.sqrt(2.0)
+        return time, trajectory
+
+
+def _seed_initialization(
+    *, amplitude: float = 1000.0, max_segments: int = 5
+) -> dict[str, dict[str, Any]]:
+    return {
+        "initialization": {
+            "method": "seed_field",
+            "amplitude": amplitude,
+            "amplitude_units": "V/m",
+            "max_segments": max_segments,
+        }
+    }
+
+
+def test_local_optimizer_converts_gain_before_unchanged_update_formula(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _StateInjectingPropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_TwoStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_UnitDipole(),
+        states={"initial": (0,), "target": (1,)},
+        time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 2.0e-17,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(amplitude=1.0e-100, max_segments=1),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+        },
+    )
+
+    assert np.max(result.controls_v_per_m[:, 0]) == pytest.approx(10.0)
+    assert np.max(result.controls_v_per_m[:, 1]) == pytest.approx(10.0)
+    assert "running_cost" not in result.metrics
+    assert result.metrics["gain_v_per_m_squared_fs"] == pytest.approx(20.0)
+    assert result.metrics["field_fluence_proxy"] >= 0.0
+    assert result.metrics["clipped_segment_fraction"] == 0.0
+    assert result.metrics["reference_field_scale_v_per_m"] == {
+        "x": pytest.approx(20.0),
+        "y": pytest.approx(20.0),
+    }
+
+
+@pytest.mark.parametrize(
+    (
+        "time_total",
+        "expected_call_lengths",
+        "expected_full_last_time",
+        "expected_storage_length",
+        "expected_storage_last_time",
+    ),
+    [
+        (0.4, [5, 7], 0.6, 7, 0.6),
+        (0.8, [5, 5, 9], 0.8, 10, 0.9),
+    ],
+)
+def test_local_optimizer_passes_exact_legacy_odd_prefix_to_full_rk4(
+    monkeypatch: pytest.MonkeyPatch,
+    time_total: float,
+    expected_call_lengths: list[int],
+    expected_full_last_time: float,
+    expected_storage_length: int,
+    expected_storage_last_time: float,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (0,)},
+        time_cfg={"total_fs": time_total, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+        },
+    )
+
+    assert [call["tlist"].size for call in spy.calls] == expected_call_lengths
+    assert spy.calls[-1]["tlist"][-1] == pytest.approx(expected_full_last_time)
+    assert result.control_times_fs.size == expected_storage_length
+    assert result.control_times_fs[-1] == pytest.approx(expected_storage_last_time)
+
+
+def test_weights_mode_preserves_optional_target_as_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": None},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "weights",
+        },
+    )
+
+    assert result.target_index is None
+    assert result.metrics["fidelity"] == 0.0
+
+
+def test_target_mode_without_target_preserves_zero_overlap_seed_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": None},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "target",
+        },
+    )
+
+    assert result.target_index is None
+    assert result.metrics["fidelity"] == 0.0
+    assert result.metrics["seed_segments_used"] == 1
+
+
+def test_local_optimizer_rejects_removed_or_missing_time_options() -> None:
+    common = {
+        "basis": _OneStateBasis(),
+        "hamiltonian": _ZeroHamiltonian(),
+        "dipole": _ZeroDipole(),
+        "states": {"initial": (0,), "target": (0,)},
+        "params": {"segment_size_steps": None, "segment_size_fs": 0.5},
+    }
+
+    with pytest.raises(ValueError, match="dt_fs was removed.*field_dt_fs"):
+        local_module.run_local_optimization(
+            **common,
+            time_cfg={"total_fs": 0.8, "dt_fs": 0.1, "sample_stride": 1},
+        )
+    with pytest.raises(ValueError, match="missing required.*field_dt_fs"):
+        local_module.run_local_optimization(
+            **common,
+            time_cfg={"total_fs": 0.8, "sample_stride": 1},
+        )
+
+
+def test_local_optimizer_keeps_shared_boundary_on_previous_segment() -> None:
+    spy = _PropagationSpy()
+    original_propagator = local_module.SchrodingerPropagator
+    local_module.SchrodingerPropagator = lambda **_: spy  # type: ignore[misc]
+    try:
+        result = local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.8, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(),
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+            },
+        )
+    finally:
+        local_module.SchrodingerPropagator = original_propagator
+
+    expected_component = np.array([0.0, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 1e3, 0.0])
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 0], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 1], expected_component)
+    np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
+    np.testing.assert_array_equal(spy.calls[1]["field"][:, 0], expected_component[4:9])
+
+
+def test_local_optimizer_applies_seed_then_componentwise_field_limit() -> None:
+    spy = _PropagationSpy()
+    original_propagator = local_module.SchrodingerPropagator
+    local_module.SchrodingerPropagator = lambda **_: spy  # type: ignore[misc]
+    try:
+        result = local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(amplitude=40.0),
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "field_max_v_per_m": 25.0,
+            },
+        )
+    finally:
+        local_module.SchrodingerPropagator = original_propagator
+
+    expected_component = np.array([0.0, 25.0, 25.0, 25.0, 25.0, 0.0, 0.0])
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 0], expected_component)
+    np.testing.assert_array_equal(result.controls_v_per_m[:, 1], expected_component)
+    np.testing.assert_array_equal(spy.calls[0]["field"][:, 0], expected_component[:5])
+    np.testing.assert_array_equal(spy.calls[-1]["field"][:, 0], expected_component)
+    assert result.metrics["clipped_segment_fraction"] == 1.0
+    assert result.metrics["field_amplitude_max_v_per_m"] == pytest.approx(
+        np.sqrt(2.0) * 25.0
+    )
+    assert result.metrics["field_amplitude_rms_v_per_m"] == pytest.approx(
+        np.sqrt(5000.0 / 7.0)
+    )
+    assert result.metrics["reference_field_scale_v_per_m"] == {
+        "x": 0.0,
+        "y": 0.0,
+    }
+
+
+def test_local_target_mode_retains_the_explicit_target_overlap_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    result = local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=_ZeroHamiltonian(),
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (0,)},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            "initialization": {"method": "none"},
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "eval_mode": "target",
+        },
+    )
+
+    np.testing.assert_array_equal(result.controls_v_per_m, np.zeros((7, 2)))
+    assert result.metrics["initialization_method"] == "none"
+    assert result.metrics["seed_segments_used"] == 0
+
+
+@pytest.mark.parametrize(
+    ("removed_key", "migration"),
+    [
+        ("field_max", "provide field_max_v_per_m in V/m"),
+        (
+            "seed_amplitude",
+            "provide initialization.amplitude and initialization.amplitude_units",
+        ),
+        (
+            "seed_amplitude_v_per_m",
+            "provide initialization.amplitude and initialization.amplitude_units",
+        ),
+        ("seed_max_segments", "provide initialization.max_segments"),
+    ],
+)
+def test_local_optimizer_rejects_removed_field_and_seed_keys(
+    removed_key: str,
+    migration: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"{removed_key} was removed; {migration}",
+    ):
+        local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                removed_key: 1.0,
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    ("eval_mode", "message"),
+    [
+        ("weights", "initial response magnitudes.*drive_abs_min"),
+        ("target", "initial target overlap.*c_abs_min"),
+    ],
+)
+def test_none_initialization_rejects_the_initial_zero_control_fixed_point(
+    monkeypatch: pytest.MonkeyPatch,
+    eval_mode: str,
+    message: str,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    with pytest.raises(ValueError, match=message):
+        local_module.run_local_optimization(
+            basis=_TwoStateBasis(),
+            hamiltonian=_ZeroHamiltonian(),
+            dipole=_UnitDipole(),
+            states={"initial": (0,), "target": (1,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+                "initialization": {"method": "none"},
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "eval_mode": eval_mode,
+            },
+        )
+
+    assert spy.calls == []
+
+
+def test_local_optimizer_does_not_request_eigenvalues_when_lookahead_is_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    hamiltonian = _UnavailableEigenvalues()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    local_module.run_local_optimization(
+        basis=_OneStateBasis(),
+        hamiltonian=hamiltonian,
+        dipole=_ZeroDipole(),
+        states={"initial": (0,), "target": (0,)},
+        time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+        params={
+            "control_axes": "xy",
+            "gain": 1.0,
+            "gain_units": "(GV/m)^2 fs",
+            **_seed_initialization(),
+            "segment_size_steps": None,
+            "segment_size_fs": 0.5,
+            "lookahead_enable": False,
+        },
+    )
+
+    assert hamiltonian.calls == 0
+
+
+def test_local_optimizer_surfaces_unavailable_requested_lookahead(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spy = _PropagationSpy()
+    monkeypatch.setattr(local_module, "SchrodingerPropagator", lambda **_: spy)
+
+    with pytest.raises(ValueError, match="lookahead_enable requires eigenvalues"):
+        local_module.run_local_optimization(
+            basis=_OneStateBasis(),
+            hamiltonian=_UnavailableEigenvalues(),
+            dipole=_ZeroDipole(),
+            states={"initial": (0,), "target": (0,)},
+            time_cfg={"total_fs": 0.4, "field_dt_fs": 0.1, "sample_stride": 1},
+            params={
+                "control_axes": "xy",
+                "gain": 1.0,
+                "gain_units": "(GV/m)^2 fs",
+                **_seed_initialization(),
+                "segment_size_steps": None,
+                "segment_size_fs": 0.5,
+                "lookahead_enable": True,
+            },
+        )
+
+
+def test_local_optimizer_contains_no_broad_exception_suppression() -> None:
+    tree = ast.parse(inspect.getsource(local_module))
+    broad_handlers = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ExceptHandler)
+        and (
+            node.type is None
+            or (isinstance(node.type, ast.Name) and node.type.id == "Exception")
+        )
+    ]
+
+    assert broad_handlers == []

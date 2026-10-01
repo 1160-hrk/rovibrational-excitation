@@ -1,0 +1,364 @@
+"""Input and forwarding contracts for density-matrix propagators."""
+
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+
+from rovibrational_excitation.core.execution import MatrixStorage
+from rovibrational_excitation.core.states import DensityState, IncoherentEnsemble
+from rovibrational_excitation.core.validation import (
+    validate_density_matrix_properties,
+)
+from rovibrational_excitation.dynamics import (
+    Axis,
+    LiouvillePropagator,
+    MixedStatePropagator,
+)
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
+    rk4_lvne,
+    rk4_lvne_traj,
+)
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
+from rovibrational_excitation.dynamics.capabilities import PropagationAlgorithm
+from rovibrational_excitation.dynamics.options import ScalingMode
+from tests.propagation_options import propagation_options
+from tests.propagation_problem import (
+    propagation_problem,
+    scalar_propagation_problem,
+)
+
+
+def _low_level_problem(field_size=5):
+    h0 = np.diag([0.0, 1.0]).astype(np.complex128)
+    mu = np.zeros((2, 2), dtype=np.complex128)
+    fields = np.zeros(field_size)
+    rho0 = np.eye(2, dtype=np.complex128) / 2.0
+    steps = (field_size - 1) // 2
+    return h0, mu, fields, rho0, steps
+
+
+def test_lvne_rejects_malformed_density_matrix():
+    h0, mu, fields, _, steps = _low_level_problem()
+
+    with pytest.raises(ValueError, match="rho0 must have shape"):
+        rk4_lvne(h0, mu, mu, fields, fields, np.ones(2), 0.1, steps)
+
+
+def test_lvne_rejects_even_field_grid():
+    h0, mu, fields, rho0, steps = _low_level_problem(field_size=4)
+
+    with pytest.raises(ValueError, match=r"2\*n_steps \+ 1"):
+        rk4_lvne(h0, mu, mu, fields, fields, rho0, 0.1, steps)
+
+
+def test_lvne_rejects_steps_inconsistent_with_field_grid():
+    h0, mu, fields, rho0, steps = _low_level_problem()
+
+    with pytest.raises(ValueError, match="steps must be"):
+        rk4_lvne_traj(h0, mu, mu, fields, fields, rho0, 0.1, steps + 1)
+
+
+def test_liouville_advertises_only_implemented_backend():
+    solver = LiouvillePropagator(validate_units=False)
+
+    assert solver.get_supported_backends() == ["numpy"]
+    with pytest.raises(ValueError, match="only backend='numpy'"):
+        LiouvillePropagator(backend="cupy", validate_units=False)
+
+
+def test_liouville_rejects_ignored_timestep_override():
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="dt override is unsupported"):
+        solver._propagate_array(None, None, None, np.eye(2), dt=0.1)
+
+
+def test_liouville_returns_physical_time_and_forwards_coupling_options(
+    monkeypatch,
+):
+    import rovibrational_excitation.dynamics.liouville as liouville_module
+
+    captured = {}
+    h0, mu, fields, rho0, _ = _low_level_problem()
+
+    def fake_prepare(*args, **kwargs):
+        captured.update(kwargs)
+        scales = SimpleNamespace(t0=1e-15, energy_offset=0.0)
+        return h0, mu, mu, fields, fields, None, None, 0.5, scales
+
+    monkeypatch.setattr(liouville_module, "prepare_propagation_args", fake_prepare)
+    efield = SimpleNamespace(tlist=np.linspace(-1.0, 0.0, fields.size))
+
+    time, rho = LiouvillePropagator(validate_units=False)._propagate_array(
+        object(),
+        efield,
+        object(),
+        rho0,
+        return_traj=True,
+        return_time_rho=True,
+        sample_stride=1,
+        coupling_mode="scalar",
+        coupling_axis="z",
+    )
+
+    np.testing.assert_allclose(time, [-1.0, -0.5, 0.0])
+    assert rho.shape == (3, 2, 2)
+    assert captured["coupling_mode"] == "scalar"
+    assert captured["coupling_axis"] == "z"
+
+
+def test_liouville_final_state_time_is_field_endpoint(monkeypatch):
+    import rovibrational_excitation.dynamics.liouville as liouville_module
+
+    h0, mu, fields, rho0, _ = _low_level_problem()
+    monkeypatch.setattr(
+        liouville_module,
+        "prepare_propagation_args",
+        lambda *args, **kwargs: (
+            h0,
+            mu,
+            mu,
+            fields,
+            fields,
+            None,
+            None,
+            0.5,
+            1.0,
+        ),
+    )
+    efield = SimpleNamespace(tlist=np.linspace(-1.0, 0.0, fields.size))
+
+    time, rho = LiouvillePropagator(validate_units=False)._propagate_array(
+        object(),
+        efield,
+        object(),
+        rho0,
+        return_traj=False,
+        return_time_rho=True,
+    )
+
+    np.testing.assert_array_equal(time, [0.0])
+    assert rho.shape == (2, 2)
+
+
+def test_mixed_state_forwards_solver_configuration_and_returns_final_time():
+    solver = MixedStatePropagator(
+        algorithm="split_operator",
+        sparse=True,
+        validate_units=False,
+    )
+    assert solver._schrodinger_prop.algorithm == "split_operator"
+    assert solver._schrodinger_prop.sparse is True
+
+    calls = []
+
+    def fake_propagate(*args, **kwargs):
+        calls.append(kwargs)
+        return np.array([0.2]), np.asarray(args[3]), None
+
+    solver._schrodinger_prop._propagate_array = fake_propagate
+    states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
+
+    result = solver.propagate(
+        scalar_propagation_problem(states, axis=Axis.X),
+        options=propagation_options(
+            algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+            storage=MatrixStorage.CSR,
+            return_trajectory=False,
+            sample_stride=3,
+            scaling=ScalingMode.NONDIMENSIONAL,
+        ),
+        split_interaction="cartesian",
+    )
+
+    np.testing.assert_array_equal(result.times_fs, [0.2])
+    np.testing.assert_allclose(result.state, np.eye(2) / 2.0)
+    assert len(calls) == 2
+    for call in calls:
+        assert call["return_time_psi"] is True
+        assert call["return_traj"] is False
+        assert call["sample_stride"] == 1
+        assert call["_return_context"] is True
+        assert call["nondimensional"] is True
+        assert call["coupling_mode"] == "scalar"
+        assert call["coupling_axis"] == "x"
+        assert call["algorithm"] == "split_operator"
+        assert call["sparse"] is True
+
+
+@pytest.mark.parametrize("option", ["auto_timestep", "target_accuracy"])
+def test_mixed_state_rejects_removed_timestep_options(option):
+    solver = MixedStatePropagator(validate_units=False)
+    states = IncoherentEnsemble([np.array([1.0, 0.0]), np.array([0.0, 1.0])])
+
+    with pytest.raises(TypeError, match=option):
+        solver.propagate(
+            propagation_problem(states),
+            options=propagation_options(return_trajectory=True),
+            **{option: True},
+        )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"algorithm": "split_operator"}, "only algorithm='rk4'"),
+        ({"sparse": True}, "does not support sparse"),
+    ],
+)
+def test_liouville_rejects_unsupported_solver_options(kwargs, message):
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match=message):
+        solver._propagate_array(None, None, None, np.eye(2), **kwargs)
+
+
+@pytest.mark.parametrize(
+    ("constructor_kwargs", "message"),
+    [
+        ({"algorithm": "split_operator"}, "only algorithm='rk4'"),
+        ({"sparse": True}, "does not support sparse"),
+    ],
+)
+def test_mixed_state_rejects_unsupported_options_for_explicit_density(
+    constructor_kwargs,
+    message,
+):
+    solver = MixedStatePropagator(validate_units=False, **constructor_kwargs)
+    algorithm = (
+        PropagationAlgorithm.SPLIT_OPERATOR
+        if constructor_kwargs.get("algorithm") == "split_operator"
+        else PropagationAlgorithm.RK4
+    )
+    storage = (
+        MatrixStorage.CSR
+        if constructor_kwargs.get("sparse", False)
+        else MatrixStorage.DENSE
+    )
+
+    with pytest.raises(ValueError, match=message):
+        solver.propagate(
+            propagation_problem(DensityState(np.eye(2) / 2.0)),
+            options=propagation_options(
+                algorithm=algorithm,
+                storage=storage,
+                return_trajectory=False,
+            ),
+            split_interaction=(
+                "cartesian"
+                if algorithm is PropagationAlgorithm.SPLIT_OPERATOR
+                else None
+            ),
+        )
+
+
+def test_liouville_matches_schrodinger_for_a_pure_state():
+    h0 = np.diag([0.0, 0.4]).astype(np.complex128)
+    mu_x = np.array([[0.2, 1.0], [1.0, -0.1]], dtype=np.complex128)
+    mu_y = np.zeros((2, 2), dtype=np.complex128)
+    field_x = np.array([0.7, 0.9, 1.1])
+    field_y = np.zeros(3)
+    psi0 = np.array([1.0, 1.0j], dtype=np.complex128) / np.sqrt(2.0)
+    rho0 = np.outer(psi0, psi0.conj())
+    dt = 1.0e-3
+
+    psi = rk4_schrodinger(
+        h0,
+        mu_x,
+        mu_y,
+        field_x,
+        field_y,
+        psi0,
+        dt,
+        return_traj=True,
+    )[-1]
+    rho = rk4_lvne_traj(
+        h0,
+        mu_x,
+        mu_y,
+        field_x,
+        field_y,
+        rho0,
+        dt,
+        steps=1,
+    )[-1]
+
+    np.testing.assert_allclose(rho, np.outer(psi, psi.conj()), atol=1.0e-13)
+
+
+@pytest.mark.parametrize(
+    ("rho", "message"),
+    [
+        (
+            np.array([[0.5, 0.2], [0.0, 0.5]], dtype=np.complex128),
+            "Hermitian",
+        ),
+        (
+            np.diag([1.001, -0.001]).astype(np.complex128),
+            "positive semidefinite",
+        ),
+        (
+            np.array([[np.nan, 0.0], [0.0, 1.0]], dtype=np.complex128),
+            "finite",
+        ),
+    ],
+)
+def test_density_matrix_validation_rejects_nonphysical_input(rho, message):
+    with pytest.raises(ValueError, match=message):
+        validate_density_matrix_properties(rho)
+
+
+def test_density_matrix_validation_allows_roundoff_scale_negative_eigenvalue():
+    roundoff_eigenvalue = -1.0e-15
+    rho = np.diag([1.0 - roundoff_eigenvalue, roundoff_eigenvalue])
+
+    validate_density_matrix_properties(rho)
+
+
+def test_liouville_rejects_unknown_propagation_option():
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="unsupported propagation options: typo"):
+        solver._propagate_array(None, None, None, np.eye(2), typo=True)
+
+
+def test_mixed_state_rejects_unknown_propagation_option():
+    solver = MixedStatePropagator(validate_units=False)
+
+    with pytest.raises(TypeError, match="typo"):
+        solver.propagate(
+            propagation_problem(IncoherentEnsemble([np.array([1.0, 0.0])])),
+            options=propagation_options(return_trajectory=False),
+            typo=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"coupling_mode": "scalar", "coupling_axis": "x", "axes": "xy"},
+        {"coupling_mode": "cartesian", "coupling_axis": "x"},
+    ],
+)
+def test_liouville_rejects_inapplicable_coupling_options(kwargs):
+    solver = LiouvillePropagator(validate_units=False)
+
+    with pytest.raises(ValueError, match="not applicable"):
+        solver._propagate_array(None, None, None, np.eye(2), **kwargs)
+
+
+def test_mixed_state_rejects_conflicting_algorithm_override():
+    solver = MixedStatePropagator(algorithm="rk4", validate_units=False)
+
+    with pytest.raises(ValueError, match="constructor"):
+        solver.propagate(
+            propagation_problem(IncoherentEnsemble([np.array([1.0, 0.0])])),
+            options=propagation_options(
+                algorithm=PropagationAlgorithm.SPLIT_OPERATOR,
+                return_trajectory=False,
+            ),
+            split_interaction="cartesian",
+        )

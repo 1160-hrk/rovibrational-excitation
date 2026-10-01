@@ -1,0 +1,916 @@
+# Target architecture for v0.3
+
+Status: Accepted working target; Phase 6 model consolidation complete
+Last updated: 2026-09-23
+
+## 1. Design goals
+
+The architecture must make the following questions answerable from types and
+module ownership:
+
+- Which model defines this basis, Hamiltonian, and dipole?
+- Which unit is an array in when it enters a kernel?
+- Which backend owns every array in one calculation?
+- Is the coupling scalar or Cartesian?
+- Is the state pure, an incoherent ensemble, or a density matrix?
+- Which algorithm and storage modes are supported?
+- What time does each returned state represent?
+- Which layer may read configuration or write files?
+
+The design should favor explicit data flow over inheritance and broad
+`**kwargs` APIs. Hot numerical loops may remain backend-specific.
+
+## 2. Current architecture problems
+
+### 2.1 Model ownership is split
+
+A linear molecule is currently represented across:
+
+- `core/basis/linmol.py`;
+- the generic `core/operators.py` plus model-specific basis modules;
+- `dipole/linmol/builder.py`;
+- `dipole/linmol/cache.py`;
+- `models/linmol.py`;
+- factories in both `dipole` and `models`.
+
+VibLadder and LinMol still follow split variations of this pattern. SymTop has
+a production model owner alongside legacy direct paths, while TwoLevel is
+consolidated under `models/two_level`. The remaining splits make model
+capability, required parameters, and coupling semantics hard to discover.
+
+### 2.2 Propagation preparation is overloaded
+
+`dynamics/utils.py` currently handles combinations of:
+
+- backend lookup;
+- axes validation;
+- field component extraction;
+- units;
+- dense/sparse conversion;
+- scalar coupling;
+- nondimensionalization;
+- automatic timestep preparation.
+
+Preparation, policy, and numerical execution must become separate layers.
+
+### 2.3 Workflow modules own too much
+
+`simulation/runner.py` combines model construction, field construction,
+propagation setup, execution, progress reporting, multiprocessing, validation,
+checkpoint handling, and storage orchestration.
+
+`spectroscopy/absorbance_calculator.py` combines many response and spectrum
+operations in one 898-line module.
+
+### 2.4 Capabilities are represented by strings and conventions
+
+Examples:
+
+- backend strings appear on dipoles and propagators independently;
+- scalar models still use storage axes;
+- algorithm support is split between factories and runtime checks;
+- return types change according to boolean kwargs;
+- a CuPy request can still encounter helper-level NumPy fallback.
+
+These become typed contracts and explicit capability checks.
+
+## 3. Target package tree
+
+~~~text
+src/rovibrational_excitation/
+├── __init__.py
+├── core/
+│   ├── __init__.py
+│   ├── arrays.py
+│   ├── operators.py
+│   ├── model.py
+│   ├── states.py
+│   ├── time.py
+│   └── units/
+│       ├── __init__.py
+│       ├── constants.py
+│       ├── converters.py
+│       └── types.py
+├── fields/
+│   ├── __init__.py
+│   ├── field.py
+│   ├── envelopes.py
+│   └── modulation.py
+├── models/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── registry.py
+│   ├── validation.py
+│   ├── _parameter_validation.py
+│   ├── symmetry/
+│   │   ├── groups.py
+│   │   ├── policy.py
+│   │   └── presets.py
+│   ├── two_level/
+│   │   ├── model.py
+│   │   ├── basis.py
+│   │   ├── dipole.py
+│   │   └── parameters.py
+│   ├── vib_ladder/
+│   │   ├── model.py
+│   │   ├── basis.py
+│   │   ├── dipole.py
+│   │   └── morse.py
+│   ├── linear_molecule/
+│   │   ├── model.py
+│   │   ├── basis.py
+│   │   ├── dipole.py
+│   │   └── rotation.py
+│   └── symmetric_top/
+│       ├── model.py
+│       ├── basis.py
+│       └── dipole.py
+├── dynamics/
+│   ├── __init__.py
+│   ├── problem.py
+│   ├── options.py
+│   ├── result.py
+│   ├── capabilities.py
+│   ├── scaling/
+│   │   ├── scales.py
+│   │   ├── transform.py
+│   │   └── policy.py
+│   └── solvers/
+│       ├── base.py
+│       ├── rk4/
+│       │   ├── schrodinger_numpy.py
+│       │   ├── schrodinger_cupy.py
+│       │   ├── sparse.py
+│       │   └── liouville_numpy.py
+│       └── split_operator/
+│           ├── numpy.py
+│           └── cupy.py
+├── simulation/
+│   ├── config.py
+│   ├── case.py
+│   ├── execute.py
+│   ├── sweep.py
+│   └── manager.py
+├── optimization/
+│   ├── model.py
+│   ├── objective.py
+│   ├── result.py
+│   ├── local.py
+│   ├── grape.py
+│   ├── grape_rk4.py
+│   ├── krotov.py
+│   ├── krotov_initial_field.py
+│   └── spectral_constraints.py
+├── spectroscopy/
+│   ├── response.py
+│   ├── thermal.py
+│   ├── broadening.py
+│   ├── transform.py
+│   └── observables.py
+├── io/
+│   ├── schema.py
+│   ├── serialization.py
+│   ├── storage.py
+│   └── checkpoint.py
+├── visualization/
+│   └── ...
+└── cli/
+    ├── simulate.py
+    └── optimize.py
+~~~
+
+Names may be refined during Phase 3, but ownership and dependency direction are
+binding unless the decision log changes.
+
+## 4. Dependency rules
+
+Allowed dependency direction:
+
+~~~text
+core <- fields
+core <- models
+core <- dynamics
+fields <- models
+models + fields + dynamics + io <- simulation
+models + fields + dynamics <- optimization
+core + models <- spectroscopy
+simulation + optimization <- cli
+results + fields <- visualization
+~~~
+
+Rules:
+
+1. `core` imports only the standard library, NumPy/SciPy as required, and its
+   own submodules.
+2. `models` may depend on core units, states, and operators, but not on
+   simulation runners or CLI.
+3. `dynamics/solvers` may depend on core array contracts and capabilities, but
+   not on concrete model classes.
+4. `simulation` is orchestration. It may construct models and solvers but must
+   not contain physical formulas.
+5. `io` serializes typed inputs/results and owns schema versions. Numerical
+   kernels perform no I/O.
+6. `cli` only parses arguments, calls application services, and converts
+   exceptions to exit codes.
+7. `visualization` consumes results and does not participate in calculation.
+   The file-backed plotting boundary has one allowed edge from
+   `visualization.result_data` to the schema authority `io.result_schema`;
+   plotters do not import runners, writers, or storage orchestration.
+8. No lower layer imports package-root convenience exports; use direct module
+   imports to avoid cycles.
+9. Optional dependencies are imported lazily at the capability boundary.
+10. `optimization` reuses frozen model parameters and model-owned operator
+    builders. Workflow-specific state tuples, controls, and update rules remain
+    in optimization and do not leak into model construction.
+
+Architecture tests should inspect imports and reject reverse dependencies after
+Phase 3.
+
+## 5. Core typed contracts
+
+The following names are provisional but the represented information is
+required.
+
+### 5.1 TimeGrid
+
+~~~python
+@dataclass(frozen=True)
+class TimeGrid:
+    field_times_fs: NDArray[np.float64]
+    field_dt_fs: float
+    propagation_dt_fs: float
+    propagation_steps: int
+~~~
+
+Invariants:
+
+- one-dimensional, finite, strictly increasing field times;
+- at least three samples;
+- odd number of samples;
+- `propagation_dt_fs == 2 * field_dt_fs`;
+- `len(field_times_fs) == 2 * propagation_steps + 1`;
+- first and last values are the configured endpoints.
+
+The constructor should derive redundant fields and reject inconsistent input
+rather than accepting all values independently. It owns a defensive,
+read-only copy of `field_times_fs` so a frozen instance cannot be mutated
+through an external NumPy reference.
+
+`TimeGrid` is the solver-facing canonical grid. D-027 defines one explicit
+pre-solver exception: local optimization retains
+`LocalOptimizerLegacyGridV1` for control-field storage and segment indexing.
+That layout is never rebuilt or endpoint-repaired by `TimeGrid`; it exposes the
+odd prefix historically consumed by RK4 when constructing the solver input.
+The returned optimization field and cost still use the complete legacy storage
+array. GRAPE and `legacy_batch_overlap` use the D-029 canonical `TimeGrid`, explicit
+`field_dt_fs`, complete internal trajectories, and output-only
+`output_stride`. Standard Krotov is deliberately separate under D-106: it owns
+state endpoints and one piecewise-constant control per interval through
+`KrotovIntervalGrid` and `control_dt_fs`; it never converts the old odd field
+grid implicitly.
+
+D-107 gives `optimization.result` ownership of one typed in-memory optimizer
+result. Its explicit layout discriminator keeps canonical RK4 samples, Local
+legacy samples, and standard Krotov interval controls distinct. Common names
+carry explicit fs and V/m units; sampled layouts alone carry an
+`ElectricField`. The boundary retains algorithm-owned arrays by identity and
+performs no copy, resampling, normalization, time reconstruction, or layout
+conversion.
+
+D-108 gives `optimization.objective` the typed target-evaluation boundary.
+Indexed runner calculations and vector-overlap adjoint calculations implement
+one protocol without being collapsed into one arithmetic path. The accepted
+GRAPE discrete-L2 value is a separate objective type.
+
+D-109 adds distinct Local diagonal-observable and target-overlap evaluator
+results under the same owner. They return only the response data required by
+the unchanged Local orchestration; threshold, seed, clipping, grid, and
+propagation ownership stays in `local.py`.
+
+D-110 gives `optimization.spectral_constraints` ownership of the strict frozen
+legacy configuration and its exact-rFFT-grid compiled filter. Options delegate
+to this owner; `legacy_batch_overlap.py` only selects absence versus the typed
+filter and adds the resulting unchanged update. This boundary is deliberately
+not shared with standard Krotov, which continues to reject the option.
+
+
+D-111 accepts this optimization ownership graph. All optimization modules and
+the high-level runner are mandatory strict-mypy targets; executable guards fix
+the exact registry, shared owners, lower-layer dependency direction, absence of
+broad exception suppression, and stored legacy artifact consistency. The
+accepted exclusions are behavioral debts rather than hidden architecture:
+no-op GRAPE/legacy convergence checks, Class-D scalars, frozen Local behavior,
+standard-Krotov limitations, SymTop rejection, and no optimizer disk schema.
+
+D-050 gives GRAPE and `legacy_batch_overlap` one frozen initial-field ownership boundary. It selects
+generated or sampled input explicitly, converts public quantities to canonical
+fs/cycles-per-fs/V/m/fs^2/fs^3 values, and validates sampled fields against the
+same `TimeGrid`. `krotov.py` consumes only the canonical writable field copy;
+its update loop does not parse units or choose a source.
+
+D-058 gives Local control gain a frozen scalar boundary. Public callers provide
+a required value/unit pair, `core.units` converts it to `(V/m)^2 fs`, and
+the Local workflow passes only the positive canonical scalar into its unchanged
+update expressions. The legacy grid adapter and numerical loop never inspect a
+unit string.
+
+D-059 gives Local control a required initialization sum type. The
+`seed_field` branch owns a required positive direct-amplitude value/unit pair
+and positive segment count, then supplies canonical V/m to the unchanged legacy
+seed update. The `none` branch owns no field data and runs a mode-specific
+initial-response preflight before propagation. Configuration chooses the branch
+explicitly; the numerical loop never invents or silently replaces it.
+
+### 5.2 CouplingSpec
+
+~~~python
+@dataclass(frozen=True)
+class CouplingSpec:
+    mode: Literal["scalar", "cartesian"]
+    scalar_axis: Literal["x", "y", "z"] | None
+    cartesian_axes: tuple[Axis, Axis] | None
+~~~
+
+Invariants:
+
+- scalar mode has exactly one storage/operator axis;
+- Cartesian mode has exactly two field/operator axes;
+- user-facing polarization is not required for scalar physics.
+
+### 5.3 SystemModel
+
+~~~python
+@dataclass(frozen=True)
+class SystemModel:
+    name: str
+    basis: Basis
+    hamiltonian: Hamiltonian
+    dipole: DipoleOperator
+    coupling: CouplingSpec
+    metadata: Mapping[str, JSONValue]
+~~~
+
+The model owns basis/Hamiltonian/dipole consistency. Construction validates
+matrix dimensions and the state-index mapping once.
+Under D-082, the immutable coupling and `SystemModel` contracts are defined
+once in `core.model`, which both model construction and dynamics may import.
+`dynamics.problem` exposes those same objects; it does not redefine them.
+
+### 5.4 PropagationProblem
+
+~~~python
+@dataclass(frozen=True)
+class PropagationProblem:
+    model: SystemModel
+    field: ElectricField
+    time_grid: TimeGrid
+    initial_state: PureState | IncoherentEnsemble | DensityState
+~~~
+
+The state type is explicit. Do not use an arbitrary list or square-array
+heuristic in the final public API.
+
+### 5.5 ExecutionPolicy and PropagationOptions
+
+~~~python
+@dataclass(frozen=True, slots=True)
+class ExecutionPolicy:
+    backend: ArrayBackend
+    storage: MatrixStorage
+
+@dataclass(frozen=True, slots=True)
+class PropagationOptions:
+    algorithm: PropagationAlgorithm
+    execution: ExecutionPolicy
+    return_trajectory: bool
+    sample_stride: int
+    scaling: ScalingMode
+    renormalization: RenormalizationPolicy
+~~~
+
+There is one execution policy per calculation. Dipole construction and solver
+selection receive the same policy. Backend, matrix storage, and algorithm are
+required explicit choices; they are never inferred from polarization, matrix
+type, or optional dependency availability.
+
+Since P2.4-c, public solver calls accept one `PropagationProblem`, one required
+`PropagationOptions`, and only temporary result controls; they accept no loose
+Hamiltonian, field, dipole, state, coupling mode, or axes. `SystemModel.coupling`
+owns the exclusive scalar or Cartesian selection. Split calls additionally
+require the same explicit `split_interaction` used to construct the solver. The
+private array adapters still receive the characterized legacy projections, so
+this ownership change does not alter coupling or numerical semantics.
+
+Do not encode the field grid with a separate solver `dt` option. The time grid
+is the source of truth.
+
+### 5.6 PropagationResult
+
+~~~python
+@dataclass(frozen=True)
+class PropagationResult:
+    times_fs: NDArray[np.float64]
+    state: Array
+    state_kind: Literal["wavefunction", "density_matrix"]
+    trajectory: bool
+    backend: str
+    metadata: Mapping[str, JSONValue]
+~~~
+
+The return type no longer changes between raw array and tuple based on
+`return_time_*` flags. A final-state result still contains a one-element time
+array. A trajectory always includes the configured endpoint, appending it after
+the regular stride samples when necessary without altering integration.
+
+`state` remains native to the selected array backend. The explicit
+`PropagationResult.to_numpy()` method creates a host result; storage invokes
+that conversion only at the I/O boundary.
+
+Metadata should include:
+
+- package and result-schema versions;
+- model name and basis dimension;
+- algorithm/backend/storage;
+- dimensionalization scales when used;
+- time-grid summary;
+- normalization policy;
+- deterministic configuration hash.
+
+P2.5 implements this contract in `dynamics.result`. Metadata values are recursively validated as finite JSON data and frozen; unsupported values fail explicitly. The SHA-256 hash scope is named `declared_model_metadata_and_propagation_contract`: it covers declared model metadata, coupling, options, time grid, and actual same-call nondimensional scales. It intentionally excludes numerical Hamiltonian, dipole, field, and state arrays so computing provenance never triggers a hidden device-to-host transfer. Full content-addressed input provenance belongs at a future explicit persistence boundary.
+
+The Phase 2 adapter requests a complete private trajectory with `sample_stride=1`, preserving every integration step and field index. Stride one reuses that backend state array. Larger output strides thin it and append the already computed endpoint; they temporarily retain the full internal trajectory. Phase 5 should replace only this storage policy with an endpoint-complete low-level writer after characterization tests, without changing integration.
+
+Normal simulation and fixed-M averaging call `to_numpy()` explicitly where their current population and persistence code requires NumPy. Optimizers retain their private array bridge until their separately characterized time/index contracts are migrated.
+
+## 6. Backend and capability design
+
+Backend selection is separated from solver capability.
+
+~~~python
+@dataclass(frozen=True)
+class SolverCapabilities:
+    state_kinds: frozenset[StateKind]
+    algorithms: frozenset[Algorithm]
+    backends: frozenset[BackendName]
+    storage_modes: frozenset[StorageMode]
+    requires_diagonal_h0: bool
+~~~
+
+A registry lookup validates the complete combination before constructing large
+matrices.
+
+Required adapters:
+
+~~~python
+class ArrayBackend(Protocol):
+    name: str
+    def asarray(self, value, *, dtype): ...
+    def to_host(self, value) -> np.ndarray: ...
+    def is_array(self, value) -> bool: ...
+~~~
+
+Rules:
+
+- no helper silently returns NumPy for an unavailable CuPy request;
+- no repeated CPU/GPU conversion inside a propagation loop;
+- result host/device policy is explicit;
+- sparse support is a capability, not inferred from a matrix after selection;
+- solver capability tests cover every advertised combination;
+- hot CPU, sparse, and GPU loops may remain separate implementations.
+
+P5.1-b establishes this split for density propagation without moving the
+validated low-level API. `dynamics.algorithms.rk4.lvne` owns validation and
+numeric dense-array preparation; `liouville_numpy` owns only the prevalidated
+NumPy/Numba loop. The kernel has no dependency on units, model objects,
+configuration, runners, or I/O. Its inherited temporary-allocation behavior is
+not an architectural requirement. P5.1-c reuses only the bitwise-identical
+right/next-left endpoint Hamiltonian and records the modest measured benefit.
+Remaining stage intermediates may be replaced only in a separately benchmarked
+unit that assesses any numerical drift; the slower sub-ulp-different
+output-buffer experiment is not part of the architecture.
+
+D-062 verifies the NumPy side of this target. D-144 gives CuPy RK4 the direct
+`device calculation -> backend-native PropagationResult` path and removes its
+incorrect RawKernel. D-145 gives static Cartesian, rotating Cartesian, and
+helicity-projected split the same direct path. Real-GPU numerical, transfer,
+and performance evidence is still required for both algorithms.
+
+## 7. Units and scaling ownership
+
+`core/units` owns physical unit definitions and pure conversions.
+
+`dynamics/scaling` owns nondimensional transformation of a complete propagation
+problem.
+
+Model constructors accept explicit values plus unit information, produce
+validated operators, and do not perform solver policy.
+
+Numerical kernels receive only canonical or nondimensional arrays. They never
+call the converter.
+
+The target internal dimensional units are those listed in
+`PHYSICS_CONTRACTS.md`.
+
+`core.units.Frequency` is the first quantity value object. It stores the finite
+validated input value and unit for provenance and exposes canonical
+`angular_rad_per_fs`; `cycles_per_fs` is an explicit representation for FFT
+boundaries. New public configuration uses neutral names plus required unit
+fields. Unit-bearing suffixes such as `_rad_phz` are migration debt, not target
+schema names.
+
+## 8. Model ownership
+
+Each model package owns:
+
+- a frozen parameter schema;
+- basis construction and state-index mapping;
+- Hamiltonian construction;
+- dipole construction and selection rules;
+- coupling capability;
+- model-specific validation;
+- small reference fixtures/tests.
+
+Example:
+
+~~~python
+@dataclass(frozen=True)
+class VibLadderParameters:
+    v_max: int
+    vibrational_frequency: Frequency
+    anharmonic_shift: Frequency
+    potential: Literal["harmonic", "morse"]
+    dipole_scale: DipoleMoment
+~~~
+
+The first frozen schemas now exist as `LinMolParameters`,
+`VibLadderParameters`, and `TwoLevelParameters`. Public mappings are validated
+before basis or dipole allocation. Each neutral model frequency requires a
+paired `*_units`; model builders consume only canonical
+`Frequency.angular_rad_per_fs`. Existing low-level basis constructors retain
+their angular-frequency arguments until Phase 6.
+
+P6.1-a freezes the complete current TwoLevel projection before ownership
+moves. P6.1-b separately resolves O-013 through the central constant and unit
+converter. P6.1-c moves the implementation, and P6.1-d completes the target
+owner with `parameters.py`. The unused mapping and stateless-dipole wrappers
+are deleted, and the legacy generic dipole factory no longer depends on or
+constructs TwoLevel. Every P6.1-a behavioral contract and corrected conversion
+value remains unchanged. Shared strict scalar/unit conversion helpers live in
+private `_parameter_validation.py`, separate from every model schema.
+
+P6.2-a freezes the complete current VibLadder projection before ownership
+moves. P6.2-b places its basis, dipole class, transitional stateless builder,
+and production builders in `models/vib_ladder/` and removes all three former
+owners. The shared `dipole/vib` harmonic and Morse element functions do not
+move while LinMol and SymTop still import them. P6.2-c completes the owner by
+moving its frozen schema and deleting the unused mapping and stateless-dipole
+wrappers. The generic dipole factory drops VibLadder during the move because
+retaining it would create a new `dipole -> models` reverse dependency. All
+D-067 values remain unchanged.
+
+P6.3-a freezes the complete current LinMol ownership and construction
+projection before any move. Its signed basis order, parameter conversion,
+Hamiltonian, M-resolved Cartesian dipoles, coherent basis-index state input,
+dense/CSR behavior, and current builder paths are executable contracts under
+D-070. The independent physics suite continues to own selection-rule,
+M-average, Morse, and propagation references.
+
+P6.3-b completes the ownership-only move under D-074. `LinMolBasis`, the
+stateful/stateless dipole implementation, and all model builders now share
+`models/linear_molecule/`; former owner paths are absent. The generic dipole
+factory drops LinMol to preserve the dependency direction. The shared schema
+and transitional wrapper cleanup remain P6.3-c, and
+`simulation/m_average.py` remains a workflow rather than model owner.
+
+P6.3-c completes the owner under D-075. The frozen schema joins the model
+package unchanged, the unused mapping wrapper is deleted, and the stateless
+dipole implementation becomes the private `_build_mu` kernel used by the
+stateful class. Only the schema, basis, stateful dipole, and typed builders are
+exported. All D-070 values remain unchanged.
+
+P6.4-a/D-076 audits the two SymTop implementations before cleanup. The legacy
+core/dipole skeleton has no production caller, uses different ordering,
+filtering, anharmonic semantics, and transverse phases, and its dense and CSR
+dipole routes fail directly. It is therefore a deletion target; none of its
+formulae migrate into the independently referenced D-053 production owner.
+
+P6.4-b/D-077 removes that legacy basis/dipole/factory and its private `jmk`
+helper. The production `models.symmetric_top` formulas and references remain
+unchanged. Shared `dipole.base`, `dipole.rot.jm`, and `dipole.vib` remain for a
+separately characterized ownership unit.
+
+P6.4-c/D-078 moves the uniquely LinMol-owned analytic rotation kernel into
+`models.linear_molecule.rotational`, moves its independent Wigner reference
+to tests, and deletes the unused `J`-only helper. `dipole.base` remains a
+shared transition class; `dipole.vib` remains shared by LinMol/VibLadder.
+Neither is merged with the distinct production SymTop implementation.
+
+P6.4-d/D-079 moves the shared harmonic and Morse functions byte-for-byte to
+`models.vibration`. LinMol and VibLadder now import one neutral owner; SymTop
+keeps its independent formula. `dipole.base` is the remaining transitional
+shared class and needs a separate protocol/cache split.
+
+P6.4-e/D-080 moves the unchanged concrete cache/unit/persistence mixin to
+`models.dipole_base` and defines the minimal structural access protocol in
+`core.dipole`. Dynamics and spectroscopy reference only the protocol;
+production SymTop need not inherit the concrete mixin. The now code-empty
+`dipole` package shell is audited separately in P6.4-f.
+
+P6.4-f/D-081 removes that obsolete shell and root convenience import. The
+model-specific code has one owner per model, and shared vibration code stays
+neutral under `models.vibration`. Phase 6 remains open for the two exact
+`models -> dynamics.problem` edges; moving coupling/problem contracts needs
+its own characterization before dependency-direction acceptance.
+
+P6.5-a freezes model-component projection. P6.5-b/D-082 moves the unchanged
+shared model/coupling contracts to `core.model`; the dynamics facade keeps
+object identity. The two recorded reverse imports are eliminated and the
+model-layer architecture test now requires zero higher-layer imports. Phase 6
+remains open only for its explicit acceptance audit. Real CUDA was tracked
+separately by Phase 5 and is accepted under D-159; final release repeats it.
+
+P6.6-a freezes the last misplaced model class. P6.6-b/D-083 moves the unchanged
+`FixedMLinMolBasis` to `models.linear_molecule.basis`. The D-017 M-average
+workflow remains in simulation and imports that owner; it defines no model
+class or formula. Phase 6 model consolidation is complete. D-159 independently
+accepts the Phase 5 real-CUDA evidence without changing model ownership.
+
+Derived values such as Morse `N` are properties or construction-local values,
+not global configuration.
+
+A model registry maps an explicit model name to a builder. It does not inspect
+unrelated parameter names to guess the model.
+
+`models/symmetry` owns reusable geometric descriptors, rotational-state
+classification policies, and source-versioned molecule-name presets. It is
+deliberately below model builders and above no numerical kernel. A preset may
+select symmetry constraints but may not construct a Hamiltonian or provide
+physical constants. Model builders must pass an explicit state to the policy
+and apply an explicitly selected spin-isomer filter; kernels receive the
+already constructed basis and weights, never molecule names.
+
+## 9. Current-to-target mapping
+
+| Current path | Target owner | Migration note |
+|---|---|---|
+| `core/basis/base.py` | `core/states.py` and `models/base.py` | Separate generic state protocol from model basis |
+| `core/basis/states.py` | `core/states.py` | Remove model-specific assumptions |
+| `core/basis/hamiltonian.py` | `core/operators.py` | Complete in P3.1-a; implementation moved unchanged and old path removed |
+| `core/basis/linmol.py` | `models/linear_molecule/basis.py` | Complete in P6.3-b; old path removed and D-070 values preserved |
+| `core/basis/viblad.py` | `models/vib_ladder/basis.py` | Complete in P6.2-b; old path removed and D-067 values preserved |
+| `dipole/viblad/*` | `models/vib_ladder/dipole.py` | Complete in P6.2-c; old package removed and unused stateless wrapper deleted |
+| `models/vibladder.py` | `models/vib_ladder/model.py` | Complete in P6.2-c; typed builders remain and unused mapping wrapper is deleted |
+| `models/parameters.py::VibLadderParameters` | `models/vib_ladder/parameters.py` | Complete in P6.2-c; validation and unit conversion unchanged |
+| `core/basis/twolevel.py` | `models/two_level/basis.py` | Complete in P6.1-c; old path removed and D-063/D-064 values preserved |
+| `dipole/twolevel/*` | `models/two_level/dipole.py` | Implementation moved in P6.1-c; redundant stateless builder removed in P6.1-d |
+| `models/twolevel.py` | `models/two_level/model.py` | Complete in P6.1-c; registry and optimization imports moved |
+| `models/parameters.py::TwoLevelParameters` | `models/two_level/parameters.py` | Complete in P6.1-d; validation/conversion behavior unchanged |
+| `core/basis/symtop.py` | `models/symmetric_top/{basis,rotational,dipole,model}.py` | Legacy skeleton removed in P6.4-b; D-053 production owner unchanged |
+| no former shared symmetry owner | `models/symmetry/{groups,policy,presets}.py` | D-052 foundation complete; D-053 connects CH3F sector filtering to the production symmetric-top builder; linear-builder integration remains later work |
+| `core/electric_field/*` | `fields/*` | Complete in P3.1-b; bodies unchanged, `core.py` renamed `field.py`, old path removed |
+| `dipole/base.py` | `core/dipole.py` protocol plus `models/dipole_base.py` concrete mixin | Complete in P6.4-e; concrete body unchanged and both dynamics reverse imports removed |
+| `dipole/rot/jm.py` | `models/linear_molecule/rotational.py` | Complete in P6.4-c; analytic body unchanged and Wigner reference test-only |
+| `dipole/linmol/*` | `models/linear_molecule/{dipole,dipole_builder}.py` | Complete in P6.3-b; old package removed and implementations unchanged |
+| `models/linmol.py` | `models/linear_molecule/model.py` | Complete in P6.3-b; registry and optimization imports moved |
+| `models/parameters.py::LinMolParameters` | `models/linear_molecule/parameters.py` | Complete in P6.3-c; validation and unit conversion unchanged |
+| `dipole/vib/*` | `models/vibration/{harmonic,morse}.py` | Complete in P6.4-d; exact shared functions moved without SymTop substitution |
+| `simulation/models/*` | `models/*/model.py` plus `simulation/m_average.py` | Complete in P6.6-b; fixed-M basis is model-owned while D-017 block orchestration/reduction remains a simulation workflow |
+| model-selection subset of `simulation/validation.py` | `models/validation.py` | Complete in P3.2-b; predicates and messages preserved, model errors translated at the simulation boundary |
+| `core/propagation/*` | `dynamics/*` | Complete in P3.1-c; numerical kernels unchanged, old path removed |
+| `dynamics/algorithms/rk4/lvne.py` mixed boundary/kernel | `dynamics/algorithms/rk4/{lvne,liouville_numpy}.py` | P5.1-b separates validated preparation from the unchanged dense NumPy/Numba loop; final solver-package move remains later |
+| `core/nondimensional/*` | `dynamics/scaling/*` | Complete in P3.1-d; formulas and thresholds unchanged, old path removed |
+| `dynamics/algorithms/validation.py` | `core/validation.py` | Complete in P3.1-e; file is an exact rename and old path removed |
+| `simulation/timegrid.py` | `core/time.py` | Complete in P3.2-a; obsolete writable-array wrapper removed and callers use `TimeGrid.from_bounds` directly |
+| `simulation/storage.py` | `io/storage.py` | Complete in P3.1-g as a 100% exact rename; schema versioning deferred |
+| `simulation/serialization.py` | `io/serialization.py` | Complete in P3.1-g as a 100% exact rename; typed schema redesign deferred |
+| `simulation/checkpoint.py` | `io/checkpoint.py` | Complete in P3.1-g as a 100% exact rename; manager/persistence split deferred |
+| `plots/*` | `visualization/*` | Complete in P3.1-h as five 100% exact renames; old namespace removed and optional Matplotlib remains lazy |
+| `spectroscopy/absorbance_calculator.py` | `spectroscopy/{conditions,report,response,broadening,transform,observables}.py` | `conditions.py` is complete in P7.4-b1; grid/broadening/device kernels move unchanged to `broadening.py` in P7.4-b2; the immutable report moves to `report.py` in P7.4-b3; response-to-mOD conversion moves unchanged to `observables.py` in P7.4-b4; post-probe radiation/PFID response moves unchanged to `transform.py` in P7.4-b5; exact dense response kernels move unchanged to `response.py` in P7.4-b6; CSR commutator, explicit exact/approximate entry selection, and chunked accumulation join that owner in P7.4-b7 while dispatch/report policy remains in the calculator; P7.4-b8 accepts numerical ownership; P7.4-b9/D-123 adds a typed standard-absorption path, P7.4-b10/D-124 removes implicit axes/polarization, and P7.4-b11/D-125 separates complex response production from the single unchanged mOD conversion, and P7.4-b12/D-126 exposes the typed pre-mOD result and P7.4-b13/D-127 adds the Cartesian complex-only analyzer constructor and P7.4-b14/D-128 removes all raw axes/Jones construction and resolves O-014; P7.4-c/D-129 accepts the final boundary; no production thermal-state constructor exists |
+| `optimization/*.py` | typed optimization modules | Characterize objectives and gradients first |
+
+Migration uses `git mv` first, import repair second, and internal redesign only
+after movement tests pass.
+
+## 10. Public API target
+
+Under D-073, root `rovibrational_excitation.__init__` exports exactly:
+
+- `__version__`;
+- `ElectricField`;
+- `TimeGrid` and `ExecutionPolicy`;
+- `PropagationProblem`, `PropagationOptions`, and `PropagationResult`;
+- `run_simulation_case`.
+
+Low-level kernels, cache implementations, converter internals, and runner
+helpers must require submodule imports. Model, optimization, spectroscopy,
+advanced field, and low-level core names remain public only through their
+explicit subpackages. Root loading does not import optional heavy subpackages.
+
+## 11. Configuration and result schemas
+
+Simulation configuration becomes a typed schema with:
+
+- explicit schema version;
+- strict unknown-key rejection;
+- model-discriminated parameter section;
+- field-discriminated parameter section;
+- explicit initial-state kind;
+- one execution policy;
+- serialization-safe values.
+
+D-041 requires two mutually exclusive field construction routes at the typed
+case boundary:
+
+- a fully explicit generated-field specification; or
+- an externally sampled scalar or Cartesian field supplied by the Python API
+  with an exact canonical `TimeGrid` match.
+
+Scalar fields serve TwoLevel, VibLadder, and LinMol M averaging. Cartesian
+fields serve M-resolved LinMol. The concrete boundary is
+`fields/sampled.py::{ScalarField, CartesianField}`; each makes a defensive
+read-only copy of real V/m samples and owns the canonical `TimeGrid`. Generated
+pulses are projected into these types only after the existing generator has
+produced its exact arrays. Python injection enters through
+`simulation.runner.run_simulation_case`.
+Both routes now converge at `simulation.case.SimulationCase` after samples are
+fixed and before model matrices are allocated. The frozen case owns the model
+parameter schema, immutable initial-state indices, sampled field and canonical
+time grid, representation/axes, and propagation controls. Model construction
+receives the frozen schema directly and does not inspect the original simulation
+mapping.
+
+P7.1-a/D-084 gives generated-field sampling the single internal owner
+`simulation.field_preparation`. `runner` remains the caller; waveform formulas,
+canonical units, polarization semantics, modulation, and sampled-field types
+are unchanged. This is the first extraction from one-case orchestration.
+
+P7.1-c/D-085 gives existing unversioned result payload assembly and writing the
+single application owner `simulation.result_persistence`. It consumes computed
+arrays and lower-layer IO serialization; it contains no propagation or model
+formula. The runner decides whether saving is enabled. P7.2 still owns any
+future schema versioning or persistence redesign.
+
+P7.1-e/D-086 gives one-case preparation and propagation the internal application
+owner `simulation.execution`. `prepare_simulation_case` validates and freezes
+the field-backed case; `propagate_simulation_case` consumes that immutable case
+and returns a typed normal or M-average result. `runner` now owns only the
+public/batch entry orchestration, explicit save decision, persistence dispatch,
+and population projection. The established call order, backend-native
+evolution, explicit host boundary, and D-017 block workflow remain fixed.
+
+P7.1-g/D-087 gives isolated case retry and failure reporting the internal
+application owner `simulation.safe_execution`. It receives one executor and
+returns a tuple-compatible `CaseRunOutcome`; it does not choose a model,
+algorithm, backend, process strategy, or checkpoint policy. Runner retains the
+multiprocessing-safe wrapper and batch orchestration until their later units.
+
+P7.1-i/D-088 gives fixed-size batch execution and checkpoint cadence the
+internal owner `simulation.batch`. The runner supplies the existing
+multiprocessing-safe executor, progress adapter, and pool factory; it retains
+configuration, process-count choice, save policy, resume filtering, and the
+distinct normal/resume summary sources. This is an ownership change only:
+case ordering, pool lifetime, checkpoint contents/timing, and result
+projection remain fixed.
+
+P7.1-k/D-089 gives the side-effectful case-path materialization to
+`simulation.case_paths`, while `simulation.sweep` remains pure. Both normal
+and resumed runs use the same expansion order, labels, `save` flag, eager
+directory creation, and `outdir` encoding. Runner still owns results-root
+choice, dry-run, and checkpoint-based resume filtering.
+
+P7.1-m/D-090 gives normal-run completion reporting and returned-population
+CSV writing the internal owner `simulation.reporting`. It does not read
+result files or alter resume reporting. Resume's file-backed summary remains
+with `io.storage.update_summary` pending its separately tested P7.2
+persistence work.
+
+P7.1-o/D-091 gives resume entry checks, saved-parameter loading, case
+reconstruction, and completed-case filtering the internal owner
+`simulation.resume`. The runner still coordinates the all-complete branch
+and batch execution. Post-batch resume completion reporting belongs to
+`simulation.reporting`, but the summary content remains owned by the
+file-backed `io.storage.update_summary` callback. No validation policy or
+persistence schema changes are included.
+
+P7.1-p/D-092 places shared strict checkpoint-interval validation with the
+`simulation.batch` process boundary. Both runner entry points call it before
+any case or checkpoint work. Valid positive-integer cadence is unchanged.
+
+P7.1-r/D-093 accepts this runner/application ownership split. The
+row-by-row evidence and deferred persistence, API, and CUDA work are in
+`PHASE7_RUNNER_ACCEPTANCE_AUDIT.md`; acceptance of P7.1 does not assert
+that Phase 7 or v0.3.0 release is complete.
+
+The final mapping boundary is closed rather than permissive: an unknown name is
+an error, and known names are accepted only by the model, field route, and
+algorithm that consume them. TwoLevel and VibLadder expose scalar coupling and
+therefore reject `polarization`. M-resolved LinMol generated fields require
+`polarization`; M averaging may only use its documented fixed-linear input.
+`split_interaction` exists only for M-resolved LinMol with
+`algorithm="split_operator"`; all other combinations reject it. Removed names
+retain dedicated migration errors. Python config loading filters imported module
+objects only, leaving other names visible to this strict boundary.
+
+Generated simulation fields use named, serialization-safe discriminators.
+`envelope_kind` resolves only the four existing three-argument envelopes:
+`gaussian`, `gaussian_fwhm`, `lorentzian`, and `lorentzian_fwhm`.
+`modulation_kind` is explicitly `none` or `sinusoidal`. Custom callables and
+the two-width Voigt functions cross the already-sampled injection boundary;
+construction never invents a second width or silently falls back to Gaussian.
+
+The two routes are mutually exclusive. External injection rejects pulse
+generation keys and performs no resampling or correction. Optional
+scalar/Jones decomposition metadata is carried only when explicitly known; it
+preserves the legacy generated `helicity_projected` approximation and is never
+invented for arbitrary Cartesian samples. Numerical convergence assessment is
+a separate application service, not a configuration fallback.
+
+That service is concretely
+`simulation.convergence.assess_simulation_convergence`. It executes two
+otherwise identical cases on caller-selected same-endpoint grids, applies the
+same caller-provided observable to both population results, and returns an
+immutable `ConvergenceReport`. Its standard metric is maximum absolute
+elementwise difference. Observable name, observable function, and finite
+nonnegative tolerance are required; generated cases differ only by `dt`, while
+external cases differ only by same-kind sampled fields. It cannot write,
+resample, refine, retry, or replace the requested calculation.
+
+Each model package owns a frozen parameter dataclass. Validation is complete
+before matrix allocation, while derived quantities such as Morse `N` remain
+instance-local properties. LinMol representation is a required enum-like
+choice rather than a boolean.
+
+Under D-056, configured optimization enters through a closed YAML/dict document
+validated by `optimization.config` and algorithm-specific key ownership in
+`optimization.options`. Model construction then reuses the frozen production
+schemas. Every algorithm requires its ordered two-axis adapter. GRAPE and
+`legacy_batch_overlap` require an explicit generated or sampled field branch on
+the canonical field grid. Standard Krotov requires an explicit generated or
+sampled interval-control branch whose sampled data exactly matches the interval
+count. Required output and plot sections have explicit
+API/CLI override precedence. This is the strict migration boundary; persistence
+schema versioning and final public result types remain Phase 7 work.
+
+Result files require a schema version independent of package version. A loader
+must either parse a known schema or raise an actionable error. It must not guess
+array meaning from key presence. P7.2-b/D-095 implements this for normal
+simulation results in `io.result_schema` using a v1 manifest and strict
+opt-in loader. P7.2-c/D-096 routes resumed-run file-backed summaries through
+that loader and surfaces invalid-result errors before CSV overwrite.
+P7.2-d/D-097 and P7.2-e/D-098 provide atomic replacement for each result
+and checkpoint file, respectively. P7.2-f/D-099 publishes a completed
+manifest-v1 result generation through one atomic pointer while preserving
+manifest-v1 direct-layout reads. P7.2-g/D-100 applies the same immutable
+publication pattern to the checkpoint/failure-list pair. P7.2-h/D-101 adds
+strict checkpoint payload schema v1 and binds resume to the complete ordered
+expanded case declaration through a named SHA-256 scope before case filtering.
+Unversioned/unknown checkpoints and declared-run mismatches raise rather than
+falling back or upgrading implicitly. The historical MD5 case identity and
+checkpoint cadence are unchanged. P7.2-i/D-102 routes all standalone
+result-directory plotters through a single strict `io.result_schema`
+projection. They consume only `t_E/E` or `t_p/pop`, reject legacy NPY
+collections and incompatible shapes, and never fall back from invalid
+publication state. The plot layer remains outside calculation. Full
+source/environment/generated-array provenance beyond the declared run remains
+separate work.
+
+P7.2-j/D-103 accepts this persistence architecture: the result writer, resumed
+summary, standalone plotters, runner, batch, and resume are wired to one result
+schema authority and one checkpoint authority. This acceptance does not widen
+the persisted provenance or durability contract. Concurrent writers,
+directory fsync, generation cleanup, migration, and full source/environment/
+numeric-input content provenance remain separate versioned work.
+
+## 12. Performance constraints
+
+Architecture abstractions stop before hot loops.
+
+Before and after each solver migration, record:
+
+- median wall time after JIT warmup;
+- peak resident memory or allocated trajectory size;
+- dense and sparse matrix dimension;
+- backend and dependency versions;
+- norm/trace error;
+- final-state numerical difference.
+
+A performance regression larger than 10% must be investigated. It may be
+accepted only when documented with a correctness, memory, or maintainability
+benefit and user approval.
+
+Benchmarks are not ordinary unit tests and should run in a dedicated job or
+marker.
+
+## 13. Forbidden target patterns
+
+- Generic `**kwargs` across public solver boundaries.
+- Global mutable physical parameters.
+- Unit strings inside numerical kernels.
+- Backend selection repeated independently by model, dipole, and solver.
+- Runtime fallback from requested GPU to CPU.
+- Importing package-root re-exports from inside the package.
+- Factories that guess capabilities after allocating matrices.
+- Boolean combinations that produce different undocumented return types.
+- Runners that contain model Hamiltonian or dipole formulas.
+- Serialization without a schema version.
+- Catch-all exception handlers that convert physics errors into success.

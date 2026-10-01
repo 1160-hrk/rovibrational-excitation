@@ -16,8 +16,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
+    rk4_lvne,
+    rk4_lvne_traj,
+)
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
 
 # CuPy可用性チェック
 try:
@@ -30,6 +35,33 @@ except ImportError:
 
 class TestRK4ErrorHandling:
     """RK4エラーハンドリングテスト"""
+
+    def test_cupy_error_when_unavailable(self):
+        """CuPy利用不可時のエラー"""
+        # CuPyを一時的に無効化
+        from rovibrational_excitation.dynamics.algorithms.rk4 import (
+            schrodinger_cupy as cupy_mod,
+        )
+
+        original_cp = cupy_mod.cp
+        cupy_mod.cp = None
+
+        try:
+            H0 = np.diag([0.0, 1.0])
+            mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
+            mu_y = np.zeros((2, 2), dtype=complex)
+            E_field = np.array([0, 0.1, 0])
+            psi0 = np.array([1, 0], dtype=complex)
+
+            with pytest.raises(
+                RuntimeError, match="backend='cupy' but CuPy is not installed"
+            ):
+                rk4_schrodinger(
+                    H0, mu_x, mu_y, E_field, E_field, psi0, dt=0.1, backend="cupy"
+                )
+        finally:
+            # 元に戻す
+            cupy_mod.cp = original_cp
 
     def test_rk4_schrodinger_dimension_mismatch(self):
         """次元不一致エラー"""
@@ -153,6 +185,7 @@ class TestRK4AdvancedOptions:
         np.testing.assert_allclose(result_no_traj[0], result_with_traj[-1], atol=1e-12)
 
 
+@pytest.mark.gpu
 @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
 class TestRK4CuPyBackend:
     """CuPyバックエンドテスト"""
@@ -176,8 +209,9 @@ class TestRK4CuPyBackend:
             H0, mu_x, mu_y, E_field, E_field, psi0, dt, backend="cupy"
         )
 
-        # 結果の一致確認
-        np.testing.assert_allclose(result_numpy, result_cupy, atol=1e-10)
+        # 結果の一致確認（ホスト変換はテスト境界でのみ明示する）
+        assert isinstance(result_cupy, cp.ndarray)
+        np.testing.assert_allclose(result_numpy, cp.asnumpy(result_cupy), atol=1e-10)
 
     def test_cupy_large_system(self):
         """CuPy大規模システム"""
@@ -200,31 +234,9 @@ class TestRK4CuPyBackend:
         )
 
         # 基本的な物理検証
-        norm = np.linalg.norm(result[0])
+        assert isinstance(result, cp.ndarray)
+        norm = cp.linalg.norm(result[-1]).item()
         np.testing.assert_allclose(norm, 1.0, atol=1e-6)
-
-    def test_cupy_error_when_unavailable(self):
-        """CuPy利用不可時のエラー"""
-        # CuPyを一時的に無効化
-        import rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger as rk4_mod
-
-        original_cp = rk4_mod.cp
-        rk4_mod.cp = None
-
-        try:
-            H0 = np.diag([0.0, 1.0])
-            mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
-            mu_y = np.zeros((2, 2), dtype=complex)
-            E_field = np.array([0, 0.1, 0])
-            psi0 = np.array([1, 0], dtype=complex)
-
-            with pytest.raises(RuntimeError, match="CuPy backend requested but CuPy not installed"):
-                rk4_schrodinger(
-                    H0, mu_x, mu_y, E_field, E_field, psi0, dt=0.1, backend="cupy"
-                )
-        finally:
-            # 元に戻す
-            rk4_mod.cp = original_cp
 
 
 class TestRK4LVNEComprehensive:
@@ -297,9 +309,9 @@ class TestRK4LVNEComprehensive:
         # 非対角要素を持つ初期密度行列
         rho0 = np.array(
             [
-                [0.5, 0.3 + 0.2j, 0.1],
-                [0.3 - 0.2j, 0.3, 0.2 + 0.1j],
-                [0.1, 0.2 - 0.1j, 0.2],
+                [0.5, 0.1 + 0.05j, 0.02],
+                [0.1 - 0.05j, 0.3, 0.05 + 0.02j],
+                [0.02, 0.05 - 0.02j, 0.2],
             ],
             dtype=complex,
         )
@@ -364,7 +376,7 @@ class TestRK4EdgeCases:
         np.testing.assert_allclose(np.abs(result[0, 0]), 1.0, atol=1e-12)
 
     def test_odd_even_field_lengths(self):
-        """奇数・偶数長電場の処理"""
+        """奇数長電場を受理し、偶数長電場を拒否する。"""
         H0 = np.diag([0.0, 1.0])
         mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
         mu_y = np.zeros((2, 2), dtype=complex)
@@ -374,12 +386,11 @@ class TestRK4EdgeCases:
         E_odd = np.array([0, 0.1, 0, 0.1, 0])  # 5点
         result_odd = rk4_schrodinger(H0, mu_x, mu_y, E_odd, E_odd, psi0, dt=0.1)
 
-        # 偶数長（末尾1点削除される）
-        E_even = np.array([0, 0.1, 0, 0.1, 0, 0.05])  # 6点 -> 5点使用
-        result_even = rk4_schrodinger(H0, mu_x, mu_y, E_even, E_even, psi0, dt=0.1)
+        E_even = np.array([0, 0.1, 0, 0.1, 0, 0.05])
+        with pytest.raises(ValueError, match=r"2\*n_steps \+ 1"):
+            rk4_schrodinger(H0, mu_x, mu_y, E_even, E_even, psi0, dt=0.1)
 
-        # 結果は同じになるはず（最後の1点は無視される）
-        np.testing.assert_allclose(result_odd, result_even, atol=1e-12)
+        assert result_odd.shape == (3, 2)
 
     def test_very_small_timestep(self):
         """非常に小さな時間ステップ"""

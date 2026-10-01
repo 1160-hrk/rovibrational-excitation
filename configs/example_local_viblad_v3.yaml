@@ -1,0 +1,54 @@
+system:
+  type: vibladder
+  params:
+    V_max: 3
+    vibrational_frequency: 2349.1
+    vibrational_frequency_units: "cm^-1"
+    anharmonic_shift: 25.0
+    anharmonic_shift_units: "cm^-1"
+    dipole_scale: 0.3
+    dipole_scale_units: "D"
+    potential_type: harmonic
+states:
+  initial: [0]
+  target: [3]
+time:
+  total_fs: 6000.0
+  field_dt_fs: 0.1
+  sample_stride: 1
+algorithm:
+  selected: local
+algorithms:
+  local:
+    control_axes: "zx"
+    gain: 1000.0
+    gain_units: "(GV/m)^2 fs"
+    field_max_v_per_m: 1.0e+12
+    use_sin2_shape: false
+    segment_size_steps: null
+    segment_size_fs: 0.5
+    initialization:
+      method: seed_field
+      amplitude: 1.0e+3
+      amplitude_units: "V/m"
+      max_segments: 5
+    c_abs_min: 1.0e-1
+    shape_floor: 1.0e-2
+    lookahead_enable: false
+    lookahead_fraction: 0.7
+    eval_mode: weights
+    weight_mode: by_v_power
+    weight_v_power: 0.125
+    weight_target_factor: 1.0
+    normalize_weights: true
+    weight_reverse: false
+    use_one_hot_target_in_weights: false
+    drive_abs_min: 1.0e-18
+    custom_weights: null
+    custom_weights_dict: null
+plot:
+  enabled: false
+  spectrum: false
+  spectrogram: false
+output:
+  dir: "results/optimization"

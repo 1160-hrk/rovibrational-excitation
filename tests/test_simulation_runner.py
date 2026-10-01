@@ -23,11 +23,16 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from rovibrational_excitation.io import (
+    deserialize_polarization as _deserialize_pol,
+)
+from rovibrational_excitation.io import (
+    json_safe as _json_safe,
+)
+from rovibrational_excitation.io.checkpoint import resolve_checkpoint_directory
 from rovibrational_excitation.simulation.runner import (
     CheckpointManager,
-    _deserialize_pol,
     _expand_cases,
-    _json_safe,
     _load_params_file,
     _run_one_safe,
     resume_run,
@@ -75,13 +80,21 @@ class TestCheckpointManager:
     def test_save_and_load_checkpoint(self):
         """チェックポイント保存・読み込みテスト"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            manager = CheckpointManager(Path(temp_dir))
-
             completed_cases = [
                 {"V_max": 5, "J_max": 3, "amplitude": 0.1},
                 {"V_max": 5, "J_max": 3, "amplitude": 0.2},
             ]
             failed_cases = [{"V_max": 10, "J_max": 5, "error": "Out of memory"}]
+            all_cases = [
+                *completed_cases,
+                {
+                    key: value
+                    for key, value in failed_cases[0].items()
+                    if key != "error"
+                },
+                *[{"case": index} for index in range(7)],
+            ]
+            manager = CheckpointManager(Path(temp_dir), all_cases=all_cases)
             total_cases = 10
             start_time = 1234567890.0
 
@@ -91,7 +104,9 @@ class TestCheckpointManager:
             )
 
             # ファイル存在確認
-            assert manager.checkpoint_file.exists()
+            assert (
+                resolve_checkpoint_directory(manager.root_dir) / "checkpoint.json"
+            ).exists()
 
             # 読み込み
             checkpoint = manager.load_checkpoint()
@@ -128,7 +143,7 @@ class TestCheckpointManager:
     def test_is_resumable(self):
         """再開可能性チェックテスト"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            manager = CheckpointManager(Path(temp_dir))
+            manager = CheckpointManager(Path(temp_dir), all_cases=[])
 
             # チェックポイントファイルなし
             assert not manager.is_resumable()
@@ -272,7 +287,7 @@ class TestExpandCases:
         assert "J_max" in sweep_keys
 
     def test_single_element_list(self):
-        """単一要素リストは固定値として扱われるテスト"""
+        """単一要素リストもスイープ次元としてscalar化されるテスト"""
         base = {"V_max": [5], "amplitude": [0.1, 0.2]}
 
         cases = list(_expand_cases(base))
@@ -396,8 +411,8 @@ class TestRunOneSafe:
         """リトライ機構テスト"""
         # 最初の2回は失敗、3回目は成功
         mock_run_one.side_effect = [
-            RuntimeError("First failure"),
-            RuntimeError("Second failure"),
+            OSError("First failure"),
+            OSError("Second failure"),
             np.array([[1.0, 0.0]]),
         ]
 
@@ -410,14 +425,14 @@ class TestRunOneSafe:
     @patch("rovibrational_excitation.simulation.runner._run_one")
     def test_failure_after_max_retries(self, mock_run_one):
         """最大リトライ後の失敗テスト"""
-        mock_run_one.side_effect = RuntimeError("Persistent error")
+        mock_run_one.side_effect = ValueError("Persistent error")
 
         with patch("time.sleep"):
             result, error = _run_one_safe({"save": False}, max_retries=1)
 
         assert result is None
         assert error is not None and "Persistent error" in error
-        assert mock_run_one.call_count == 2
+        assert mock_run_one.call_count == 1
 
 
 class TestRunAllBasic:
@@ -441,7 +456,7 @@ class TestRunAllBasic:
         assert any("Dry-run" in call for call in calls)
 
     @patch("rovibrational_excitation.simulation.runner._run_one")
-    def test_single_case_execution(self, mock_run_one):
+    def test_single_case_execution(self, mock_run_one, tmp_path):
         """単一ケース実行テスト"""
         mock_run_one.return_value = np.array([[1.0, 0.0]])
 
@@ -453,7 +468,11 @@ class TestRunAllBasic:
         }
 
         # save=Trueにしてcheckpoint_managerが作成されるようにする
-        result = run_all(params, save=True)
+        with patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=tmp_path,
+        ):
+            result = run_all(params, save=True)
 
         assert len(result) == 1
         mock_run_one.assert_called_once()
@@ -523,9 +542,11 @@ t_end = 5.0
 dt = 0.1
 duration = 2.0
 t_center = 0.0
-carrier_freq = 1.0
+carrier_frequency = 1.0
+carrier_frequency_units = "PHz"
 mu0_Cm = 1e-30
-omega_rad_phz = 1.0
+vibrational_frequency = 1.0
+vibrational_frequency_units = "rad/fs"
 polarization = [[1.0, 0.0]]
 description = "integration_test"
 """
@@ -560,7 +581,7 @@ class TestErrorHandling:
             run_all(None)  # type: ignore  # Noneは無効
 
     @patch("rovibrational_excitation.simulation.runner._run_one")
-    def test_partial_failure_handling(self, mock_run_one):
+    def test_partial_failure_handling(self, mock_run_one, tmp_path):
         """部分的失敗の処理テスト"""
         # 1つ目は成功、2つ目は失敗
         mock_run_one.side_effect = [
@@ -576,7 +597,11 @@ class TestErrorHandling:
         }
 
         # save=Trueにしてcheckpoint_managerが作成されるようにする
-        results = run_all(params, save=True)
+        with patch(
+            "rovibrational_excitation.simulation.runner._make_root",
+            return_value=tmp_path,
+        ):
+            results = run_all(params, save=True)
 
         # 成功したケースの結果のみ返される
         assert len(results) == 1

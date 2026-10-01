@@ -1,0 +1,250 @@
+"""
+Liouville-von Neumann equation propagator implementation.
+
+This module provides the LiouvillePropagator class for density matrix
+propagation using the Liouville-von Neumann equation.
+"""
+
+from typing import Any, Literal
+
+import numpy as np
+
+from ..core.states import DensityState
+from ..core.units.validators import validator
+from .algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
+from .base import PropagatorBase
+from .options import PropagationOptions
+from .problem import PropagationProblem
+from .result import PropagationResult, finalize_propagation_result
+from .utils import prepare_propagation_args
+
+
+class LiouvillePropagator(PropagatorBase[DensityState]):
+    """
+    Liouville-von Neumann equation propagator for density matrices.
+
+    This class implements the propagation of density matrices using
+    the Liouville-von Neumann equation.
+    """
+
+    def __init__(
+        self,
+        backend: Literal["numpy", "cupy"] = "numpy",
+        validate_units: bool = True,
+    ):
+        """
+        Initialize Liouville propagator.
+
+        Parameters
+        ----------
+        backend : {"numpy"}
+            Computational backend. Density-matrix propagation currently uses
+            the NumPy/Numba implementation only.
+        validate_units : bool
+            Whether to validate physical units
+        """
+        super().__init__(validate_units)
+        self.backend = backend
+
+        if backend != "numpy":
+            raise ValueError(
+                "LiouvillePropagator currently supports only backend='numpy'"
+            )
+
+    def get_algorithm_name(self) -> str:
+        """Get the name of the propagation algorithm."""
+        return "Liouville-von-Neumann"
+
+    def get_supported_backends(self) -> list[str]:
+        """Get list of supported computational backends."""
+        return ["numpy"]
+
+    def propagate(
+        self,
+        problem: PropagationProblem,
+        *,
+        options: PropagationOptions,
+        verbose: bool = False,
+    ) -> PropagationResult:
+        """Propagate one complete typed density-state problem."""
+        if not isinstance(problem, PropagationProblem):
+            raise TypeError("problem must be a PropagationProblem")
+        if not isinstance(problem.initial_state, DensityState):
+            raise TypeError("problem initial_state must be a DensityState")
+        self._validate_public_options(options)
+        times_fs, state, scales = self._propagate_array(
+            problem.model.hamiltonian,
+            problem.field,
+            problem.model.dipole,
+            problem.initial_state.matrix,
+            return_traj=options.return_trajectory,
+            return_time_rho=True,
+            sample_stride=1,
+            _return_context=True,
+            verbose=verbose,
+            nondimensional=options.nondimensional,
+            coupling_mode=problem.coupling_mode,
+            **problem.coupling_kwargs,
+            algorithm=options.algorithm_name,
+            sparse=options.sparse,
+        )
+        return finalize_propagation_result(
+            problem=problem,
+            options=options,
+            times_fs=times_fs,
+            state=state,
+            state_kind="density_matrix",
+            scales=scales,
+        )
+
+    def _validate_public_options(self, options: PropagationOptions) -> None:
+        """Reject options unsupported by density-matrix propagation."""
+        if not isinstance(options, PropagationOptions):
+            raise TypeError("options must be a PropagationOptions")
+        if options.algorithm_name != "rk4":
+            raise ValueError("LiouvillePropagator supports only algorithm='rk4'")
+        if options.backend_name != self.backend:
+            raise ValueError("options backend conflicts with the propagator")
+        if options.sparse:
+            raise ValueError(
+                "LiouvillePropagator does not support sparse matrix propagation"
+            )
+        if options.renorm:
+            raise ValueError("renorm is not applicable to density-state propagation")
+
+    def _propagate_array(
+        self,
+        hamiltonian: Any,
+        efield: Any,
+        dipole_matrix: Any,
+        initial_state: np.ndarray,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Propagate density matrix using Liouville-von Neumann equation.
+
+        Parameters
+        ----------
+        hamiltonian : Hamiltonian
+            Hamiltonian object with internal unit management
+        efield : ElectricField
+            Electric field object
+        dipole_matrix : DipoleMatrixBase
+            Dipole moment matrices with internal unit management
+        initial_state : np.ndarray
+            Initial density matrix
+        **kwargs
+            Additional parameters:
+            - axes : str, default "xy"
+                Polarization axes mapping
+            - return_traj : bool, default True
+                Return full trajectory vs final state only
+            - sample_stride : int, default 1
+                Sampling stride for trajectory
+            - return_time_rho : bool, default False
+                Return the physical time array together with the density matrix
+            - verbose : bool, default False
+                Print detailed information
+            - dt : None
+                A time-step override is not supported. The electric-field grid
+                is the single source of truth for the integration time step.
+
+        Returns
+        -------
+        np.ndarray or tuple[np.ndarray, np.ndarray]
+            Propagated density matrix or trajectory, optionally paired with time.
+        """
+        # Extract kwargs
+        axes = kwargs.get("axes", "xy")
+        return_traj = kwargs.get("return_traj", True)
+        return_time_rho = kwargs.get("return_time_rho", False)
+        return_context = kwargs.get("_return_context", False)
+        sample_stride = kwargs.get("sample_stride", 1)
+        nondimensional = kwargs.get("nondimensional", False)
+        if return_context and not return_time_rho:
+            raise ValueError("_return_context requires return_time_rho=True")
+        removed_timestep_options = {
+            key for key in ("auto_timestep", "target_accuracy") if key in kwargs
+        }
+        if removed_timestep_options:
+            names = ", ".join(sorted(removed_timestep_options))
+            raise ValueError(
+                f"{names} were removed; define the ElectricField grid explicitly"
+            )
+        allowed_options = {
+            "axes",
+            "_return_context",
+            "return_traj",
+            "return_time_rho",
+            "sample_stride",
+            "verbose",
+            "nondimensional",
+            "coupling_mode",
+            "coupling_axis",
+            "dt",
+            "algorithm",
+            "sparse",
+        }
+        unknown_options = sorted(set(kwargs) - allowed_options)
+        if unknown_options:
+            raise ValueError(
+                "unsupported propagation options: " + ", ".join(unknown_options)
+            )
+        coupling_mode = kwargs.get("coupling_mode", "cartesian")
+        coupling_axis = kwargs.get("coupling_axis")
+        if coupling_mode == "scalar" and "axes" in kwargs:
+            raise ValueError("axes is not applicable to scalar coupling")
+        if coupling_mode == "cartesian" and "coupling_axis" in kwargs:
+            raise ValueError("coupling_axis is not applicable to Cartesian coupling")
+        if kwargs.get("dt") is not None:
+            raise ValueError(
+                "dt override is unsupported; construct ElectricField with the desired grid"
+            )
+        if kwargs.get("algorithm", "rk4") != "rk4":
+            raise ValueError("LiouvillePropagator supports only algorithm='rk4'")
+        if kwargs.get("sparse", False):
+            raise ValueError(
+                "LiouvillePropagator does not support sparse matrix propagation"
+            )
+
+        rho0 = initial_state
+
+        if self.validate_units:
+            validator.validate_propagation_units(hamiltonian, dipole_matrix, efield)
+
+        # Prepare arguments using the same utility as SchrodingerPropagator
+        H0, mu_x, mu_y, Ex, Ey, _, _, dt_calc, scales_calc = prepare_propagation_args(
+            hamiltonian,
+            efield,
+            dipole_matrix,
+            axes=axes,
+            nondimensional=nondimensional,
+            coupling_mode=coupling_mode,
+            coupling_axis=coupling_axis,
+        )
+
+        # Calculate number of steps
+        steps = (len(Ex) - 1) // 2
+
+        # Prepare arguments for RK4
+        rho_work = np.array(rho0, dtype=np.complex128, order="C", copy=True)
+        rk4_args = (H0, mu_x, mu_y, Ex, Ey, rho_work, dt_calc, steps)
+
+        # Call the appropriate low-level propagator
+        if return_traj:
+            rho = rk4_lvne_traj(*rk4_args, sample_stride)
+        else:
+            rho = rk4_lvne(*rk4_args)
+
+        if return_time_rho:
+            if return_traj:
+                step_fs = dt_calc * sample_stride
+                if scales_calc is not None:
+                    step_fs *= scales_calc.t0 * 1e15
+                time = efield.tlist[0] + np.arange(rho.shape[0]) * step_fs
+            else:
+                time = np.array([efield.tlist[-1]], dtype=np.float64)
+            if return_context:
+                return time, rho, scales_calc
+            return time, rho
+        return rho

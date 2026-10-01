@@ -1,264 +1,131 @@
+"""Standard first-order Krotov optimization on interval controls."""
+
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
 
-from rovibrational_excitation.core.electric_field import ElectricField
-from rovibrational_excitation.core.propagation import SchrodingerPropagator
-from rovibrational_excitation.core.propagation.utils import cm_to_rad_phz
-from rovibrational_excitation.core.electric_field import gaussian_fwhm
-from rovibrational_excitation.core.units.converters import converter
-from .spectral_constraints import build_alpha_mask, solve_update_in_frequency
+from rovibrational_excitation.core.units import KrotovPenalty
+from rovibrational_excitation.dynamics.utils import cm_to_rad_phz
 
-DEFAULT_PARAMS = {
-    "max_iter": 1000,
-    "convergence_tol": 1.0e-18,
-    "lambda_a": 1.0e-20,
-    "target_fidelity": 1.0,
-    "control_axes": "xy",
-    "duration_initial": 200.0,
-    "carrier_freq_initial": 2300,
-    "unit_carrier_freq": "cm^-1",
-    "amplitude_initial": 1.0e9,
-    "pol_initial": [1.0, 1.0],
-    "gdd_initial": 0.0,
-    "tod_initial": 0.0,
-    "const_polarisation": False,
-    "propagator_func": None,
-}
+from .krotov_controls import parse_krotov_initial_control
+from .krotov_rk4 import evaluate_krotov_iteration, propagate_interval_controls
+from .krotov_timegrid import KrotovIntervalGrid
+from .objective import IndexedTargetPopulation
+from .options import validate_algorithm_options
+from .result import ControlLayout, OptimizationResult
+from .timegrid import sample_optimization_output
 
-class RunResult(TypedDict, total=False):
-    efield: ElectricField
-    time: np.ndarray
-    psi_traj: np.ndarray
-    metrics: dict
-    tlist: np.ndarray
-    field_data: np.ndarray
-    target_idx: int
+DEFAULT_MAX_ITER = 1000
+DEFAULT_TARGET_FIDELITY = 1.0
 
 
-def _shape_function(t: np.ndarray, T: float) -> np.ndarray:
-    return np.sin(np.pi * t / T) ** 2
+def _shape_function(control_times_fs: np.ndarray, total_fs: float) -> np.ndarray:
+    return np.sin(np.pi * control_times_fs / total_fs) ** 2
 
 
-def _rk4_consistent_tlist(time_total: float, dt: float) -> np.ndarray:
-    target_traj_steps = int(time_total / dt) + 1
-    required_field_steps = 2 * (target_traj_steps - 1) + 1
-    return np.linspace(0.0, time_total, required_field_steps)
+def run_krotov_optimization(
+    *,
+    basis: Any,
+    hamiltonian: Any,
+    dipole: Any,
+    states: Mapping[str, Any],
+    time_cfg: Mapping[str, Any],
+    params: Mapping[str, Any],
+) -> OptimizationResult:
+    """Optimize terminal population using sequential interval updates.
 
+    Controls are piecewise constant on ``[t_n, t_{n+1})`` and stored at the
+    interval midpoints.  This route intentionally does not accept the old
+    shared left/mid/right RK4 field grid; that calculation is available only
+    as ``legacy_batch_overlap``.
+    """
+    initial_control = parse_krotov_initial_control(params)
+    control_axes = validate_algorithm_options("krotov", params)
+    grid = KrotovIntervalGrid.from_config(time_cfg)
 
-def run_krotov_optimization(*, basis, hamiltonian, dipole, states: dict[str, Any], time_cfg: dict, params: dict) -> RunResult:
-    initial_state = tuple(states["initial"])  # (v,J,...) expected
-    target_state = tuple(states["target"]) if states.get("target") is not None else None
+    initial_idx = basis.get_index(tuple(states["initial"]))
+    target_raw = states.get("target")
+    if target_raw is None:
+        raise ValueError("standard Krotov requires a target state")
+    target_idx = basis.get_index(tuple(target_raw))
 
-    initial_idx = basis.get_index(initial_state)
-    target_idx = basis.get_index(target_state) if target_state is not None else None
-    if target_idx is None:
-        raise ValueError("Krotov requires a target state.")
+    penalty = KrotovPenalty(params["lambda_a"], params["lambda_a_units"])
+    lambda_a = penalty.inverse_volts_per_meter_squared_femtoseconds
+    max_iter = int(params.get("max_iter", DEFAULT_MAX_ITER))
+    target_fidelity = float(params.get("target_fidelity", DEFAULT_TARGET_FIDELITY))
 
-    time_total = float(time_cfg["total_fs"])
-    dt = float(time_cfg["dt_fs"])
-    sample_stride = int(time_cfg.get("sample_stride", 1))
+    dimension = basis.size()
+    initial_state = np.zeros(dimension, dtype=np.complex128)
+    initial_state[initial_idx] = 1.0
+    target_state = np.zeros(dimension, dtype=np.complex128)
+    target_state[target_idx] = 1.0
 
-    max_iter = int(params.get("max_iter", DEFAULT_PARAMS["max_iter"]))
-    convergence_tol = float(params.get("convergence_tol", DEFAULT_PARAMS["convergence_tol"]))
-    lambda_a = float(params.get("lambda_a", DEFAULT_PARAMS["lambda_a"]))
-    target_fidelity = float(params.get("target_fidelity", DEFAULT_PARAMS["target_fidelity"]))
-    propagator_func = params.get("propagator_func", DEFAULT_PARAMS["propagator_func"])
+    h0 = np.asarray(hamiltonian.get_matrix("rad/fs"), dtype=np.complex128)
+    dipoles: list[np.ndarray] = []
+    for axis in control_axes:
+        component = getattr(dipole, f"get_mu_{axis}_SI")()
+        if hasattr(component, "toarray"):
+            component = component.toarray()
+        dipoles.append(np.asarray(cm_to_rad_phz(component), dtype=np.complex128))
+    dipole_pair = (dipoles[0], dipoles[1])
 
-    # Build time list consistent with RK4 propagator
-    tlist = _rk4_consistent_tlist(time_total, dt)
-    n_field_steps = len(tlist)
-
-    # Propagator
-    propagator = SchrodingerPropagator(backend="numpy", validate_units=True, renorm=True)
-
-    # States
-    psi_initial = np.zeros(basis.size(), dtype=complex)
-    psi_initial[initial_idx] = 1.0
-    psi_target = np.zeros(basis.size(), dtype=complex)
-    psi_target[target_idx] = 1.0
-
-    # Dipole in propagation units
-    mu_x_si = dipole.get_mu_x_SI()
-    mu_y_si = dipole.get_mu_y_SI()
-    mu_z_si = dipole.get_mu_z_SI()
-    if hasattr(mu_x_si, 'toarray'): mu_x_si = mu_x_si.toarray()
-    if hasattr(mu_y_si, 'toarray'): mu_y_si = mu_y_si.toarray()
-    if hasattr(mu_z_si, 'toarray'): mu_z_si = mu_z_si.toarray()
-    mu_x_prime = cm_to_rad_phz(mu_x_si)
-    mu_y_prime = cm_to_rad_phz(mu_y_si)
-    mu_z_prime = cm_to_rad_phz(mu_z_si)
-    mu_map = {
-        "x": mu_x_prime,
-        "y": mu_y_prime,
-        "z": mu_z_prime,
-    }
-    control_axes = params.get("control_axes", DEFAULT_PARAMS["control_axes"])
-    mu_a_prime = mu_map[control_axes[0]]
-    mu_b_prime = mu_map[control_axes[1]]
-    
-
-    # Initial field (gaussian)
-    Efield_test = ElectricField(tlist=tlist)
-    carrier_freq = params.get("carrier_freq_initial", DEFAULT_PARAMS["carrier_freq_initial"])
-    unit_carrier_freq = params.get("unit_carrier_freq", DEFAULT_PARAMS["unit_carrier_freq"])
-    carrier_freq_phz = converter.convert_frequency(carrier_freq, unit_carrier_freq, "PHz") # PHz
-    Efield_test.add_dispersed_Efield(
-        envelope_func=gaussian_fwhm,
-        duration=params.get("duration_initial", time_total / 2),
-        t_center=params.get("t_center_initial", time_total / 2),
-        carrier_freq=float(carrier_freq_phz), # PHz
-        duration_units="fs",
-        t_center_units="fs",
-        carrier_freq_units="PHz",
-        amplitude=params.get("amplitude_initial", DEFAULT_PARAMS["amplitude_initial"]),
-        polarization=params.get("pol_initial", DEFAULT_PARAMS["pol_initial"]),
-        phase_rad=0.0,
-        gdd=params.get("gdd_initial", DEFAULT_PARAMS["gdd_initial"]),
-        tod=params.get("tod_initial", DEFAULT_PARAMS["tod_initial"]),
-        gdd_units="fs^2",
-        tod_units="fs^3",
-        const_polarisation=params.get("const_polarisation", DEFAULT_PARAMS["const_polarisation"]),
+    controls = initial_control.samples_on(grid)
+    shape = _shape_function(grid.control_times_fs, grid.state_times_fs[-1])
+    trajectory = propagate_interval_controls(
+        h0_rad_per_fs=h0,
+        dipoles_rad_per_fs_per_v_per_m=dipole_pair,
+        controls_v_per_m=controls,
+        initial_state=initial_state,
+        control_dt_fs=grid.control_dt_fs,
     )
-    field_data = params.get("efield_initial", Efield_test.get_Efield_SI())
+    target_evaluator = IndexedTargetPopulation(target_idx)
+    target_evaluation = target_evaluator.evaluate(trajectory[-1])
+    fidelity = target_evaluation.fidelity
+    fidelity_history = [fidelity]
+    completed_iterations = 0
 
-    # Precompute helpers
-    S_t = _shape_function(tlist, tlist[-1])
-    dt_fs = float(tlist[1] - tlist[0])
-    # Frequency grid for potential spectral constraints (PHz = cycles/fs)
-    freq_phz = np.fft.rfftfreq(n_field_steps, d=dt_fs)
-
-    # Spectrum constraints (monotonic kernel per paper)
-    sc_cfg = params.get("spectrum_constraints", None)
-    use_sc = False
-    alpha_mask = None
-    if isinstance(sc_cfg, dict):
-        method = str(sc_cfg.get("method", "")).strip().lower()
-        if method == "monotonic_kernel":
-            bands = sc_cfg.get("bands", [])
-            units = sc_cfg.get("units", "cm^-1")
-            mode = sc_cfg.get("mode", "pass")
-            combine = sc_cfg.get("combine", "max")
-            fwhm = bool(sc_cfg.get("fwhm", True))
-            weights = sc_cfg.get("weights", None)
-            alpha_scale = float(sc_cfg.get("alpha_scale", 1.0))
-            alpha_mask = build_alpha_mask(
-                freq_phz,
-                bands,
-                units=units,
-                mode=mode,
-                combine=combine,
-                fwhm=fwhm,
-                weights=weights,
-                alpha_scale=alpha_scale,
-            )
-            use_sc = True
-
-    def forward(ef_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        ef = ElectricField(tlist=tlist)
-        ef.add_arbitrary_Efield(ef_data)
-        result = propagator.propagate(
-            hamiltonian=hamiltonian,
-            efield=ef,
-            dipole_matrix=dipole,
-            initial_state=psi_initial,
-            axes=control_axes,
-            return_traj=True,
-            return_time_psi=True,
-            sample_stride=sample_stride,
-            algorithm="rk4",
-            sparse=False,
-            propagator_func=propagator_func,
-        )
-        return result[0], result[1]
-
-    def backward(ef_data: np.ndarray, psi_traj: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        psi_final = psi_traj[-1]
-        overlap = np.vdot(psi_target, psi_final)
-        chi_T = overlap * psi_target
-        # Reverse-time field
-        ef = ElectricField(tlist=tlist[::-1])
-        ef.add_arbitrary_Efield(ef_data[::-1])
-        result = propagator.propagate(
-            hamiltonian=hamiltonian,
-            efield=ef,
-            dipole_matrix=dipole,
-            initial_state=chi_T,
-            axes=control_axes,
-            return_traj=True,
-            return_time_psi=True,
-            sample_stride=sample_stride,
-            algorithm="rk4",
-            sparse=False,
-            propagator_func=propagator_func,
-        )
-        time_b = -result[0][::-1]
-        chi_traj = result[1][::-1]
-        return time_b, chi_traj
-
-    def fidelity_of(psi: np.ndarray) -> float:
-        return float(np.abs(psi[target_idx]) ** 2)
-
-    prev_fid = -1.0
-    for it in range(max_iter):
-        # Forward
-        time_f, psi_traj = forward(field_data)
-        fid = fidelity_of(psi_traj[-1])
-
-        # Convergence checks
-        if fid >= target_fidelity:
+    for _ in range(max_iter):
+        if fidelity >= target_fidelity:
             break
-        if prev_fid >= 0 and abs(fid - prev_fid) < convergence_tol:
-            # small change
-            pass
-        prev_fid = fid
+        iteration = evaluate_krotov_iteration(
+            h0_rad_per_fs=h0,
+            dipoles_rad_per_fs_per_v_per_m=dipole_pair,
+            controls_v_per_m=controls,
+            initial_state=initial_state,
+            target_state=target_state,
+            control_dt_fs=grid.control_dt_fs,
+            lambda_a_inverse_v_per_m_squared_fs=lambda_a,
+            shape_values=shape,
+        )
+        controls = iteration.updated_controls
+        trajectory = iteration.updated_trajectory
+        fidelity = iteration.fidelity_after
+        fidelity_history.append(fidelity)
+        completed_iterations += 1
 
-        # Backward
-        _, chi_traj = backward(field_data, psi_traj)
-
-        # Update (paper-compliant via spectral constraints if enabled)
-        n_traj = len(psi_traj)
-        delta_field = np.zeros_like(field_data)
-        for i in range(n_traj):
-            jf = i * 2
-            if jf >= n_field_steps:
-                break
-            psi_i = psi_traj[i]
-            chi_i = chi_traj[i]
-            grad_x = -2.0 * float(np.imag(np.vdot(chi_i, (mu_a_prime @ psi_i))))
-            grad_y = -2.0 * float(np.imag(np.vdot(chi_i, (mu_b_prime @ psi_i))))
-            S = float(S_t[jf])
-            dEx = (S / lambda_a) * grad_x
-            dEy = (S / lambda_a) * grad_y
-            delta_field[jf, 0] += dEx
-            delta_field[jf, 1] += dEy
-            if jf + 1 < n_field_steps:
-                delta_field[jf + 1, 0] += dEx
-                delta_field[jf + 1, 1] += dEy
-
-        if use_sc and alpha_mask is not None:
-            # Solve u = argmin with spectral penalty (monotonic kernel)
-            u_field = solve_update_in_frequency(delta_field, alpha_mask)
-            field_data = field_data + u_field
-        else:
-            # Fallback: plain time-local update
-            field_data = field_data + delta_field
-
-    # Final forward for outputs
-    ef_total = ElectricField(tlist=tlist)
-    ef_total.add_arbitrary_Efield(field_data)
-    time_full, psi_traj_full = forward(field_data)
-    fidelity = fidelity_of(psi_traj_full[-1])
-
-    return RunResult(
-        efield=ef_total,
-        time=time_full,
-        psi_traj=psi_traj_full,
-        metrics={"fidelity": fidelity},
-        tlist=tlist,
-        field_data=field_data,
-        target_idx=target_idx,
+    time_out, trajectory_out = sample_optimization_output(
+        grid.state_times_fs, trajectory, output_stride=grid.output_stride
+    )
+    control_times = np.array(grid.control_times_fs, copy=True)
+    control_data = np.array(controls, copy=True)
+    return OptimizationResult(
+        trajectory_times_fs=time_out,
+        trajectory=trajectory_out,
+        metrics={
+            "fidelity": fidelity,
+            "terminal_objective": 1.0 - fidelity,
+            "iterations": completed_iterations,
+            "fidelity_history": fidelity_history,
+        },
+        control_times_fs=control_times,
+        controls_v_per_m=control_data,
+        target_index=target_idx,
+        control_layout=ControlLayout.PIECEWISE_CONSTANT_INTERVALS,
+        electric_field=None,
     )
 
+
+__all__ = ["run_krotov_optimization"]

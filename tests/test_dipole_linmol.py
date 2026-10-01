@@ -3,14 +3,20 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
+import inspect
 import tempfile
 
 import numpy as np
 import pytest
 
-from rovibrational_excitation.core.basis import LinMolBasis
-from rovibrational_excitation.dipole.linmol import LinMolDipoleMatrix
-from rovibrational_excitation.dipole.linmol.builder import build_mu
+from rovibrational_excitation.models.linear_molecule import (
+    LinMolBasis,
+    LinMolDipoleMatrix,
+)
+from rovibrational_excitation.models.linear_molecule import (
+    dipole_builder as dipole_builder_module,
+)
+from rovibrational_excitation.models.linear_molecule.dipole_builder import _build_mu
 
 # CuPyが利用可能か判定
 try:
@@ -33,8 +39,10 @@ class TestLinMolDipoleMatrix:
 
     def test_initialization_default(self):
         """デフォルト初期化のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         assert dipole.basis is basis
         assert dipole.mu0 == 1.0
@@ -45,7 +53,9 @@ class TestLinMolDipoleMatrix:
 
     def test_initialization_custom(self):
         """カスタム初期化のテスト"""
-        basis = LinMolBasis(V_max=2, J_max=2, use_M=True)
+        basis = LinMolBasis(
+            V_max=2, J_max=2, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
         dipole = LinMolDipoleMatrix(
             basis, mu0=0.5, potential_type="morse", backend="numpy", dense=False
         )
@@ -57,8 +67,10 @@ class TestLinMolDipoleMatrix:
 
     def test_mu_x_property(self):
         """mu_xプロパティのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu_x
         assert mu_x.shape == (basis.size(), basis.size())
@@ -73,8 +85,10 @@ class TestLinMolDipoleMatrix:
 
     def test_mu_y_property(self):
         """mu_yプロパティのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_y = dipole.mu_y
         assert mu_y.shape == (basis.size(), basis.size())
@@ -82,8 +96,10 @@ class TestLinMolDipoleMatrix:
 
     def test_mu_z_property(self):
         """mu_zプロパティのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_z = dipole.mu_z
         assert mu_z.shape == (basis.size(), basis.size())
@@ -91,8 +107,10 @@ class TestLinMolDipoleMatrix:
 
     def test_mu_method_with_axis(self):
         """mu()メソッドの軸指定テスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu("x")
         mu_y = dipole.mu("y")
@@ -102,17 +120,19 @@ class TestLinMolDipoleMatrix:
         assert mu_y.shape == (basis.size(), basis.size())
         assert mu_z.shape == (basis.size(), basis.size())
 
-        # use_M=False（全てM=0）の場合の物理的期待値：
-        # μx, μy: ΔM=±1が必要だが、M=0のみなのでゼロ行列
-        # μz: ΔM=0が許されるので非ゼロ要素を持つ
-        assert np.allclose(mu_x, 0)  # μxはゼロ行列
-        assert np.allclose(mu_y, 0)  # μyはゼロ行列
-        assert np.any(mu_z != 0)  # μzは非ゼロ要素を持つ
+        # 明示的なM基底では各Cartesian成分に許容遷移がある。
+        assert np.any(mu_x != 0)
+        assert np.any(mu_y != 0)
+        assert np.any(mu_z != 0)
 
     def test_mu_method_dense_override(self):
         """mu()メソッドのdense上書きテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis, dense=True)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(
+            basis, dense=True, mu0=1.0, potential_type="harmonic"
+        )
 
         # まず通常のdense版を取得してキャッシュに登録
         dipole.mu("x", dense=True)
@@ -134,8 +154,10 @@ class TestLinMolDipoleMatrix:
 
     def test_stacked_method(self):
         """stacked()メソッドのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         # デフォルト（xyz順）
         stacked = dipole.stacked()
@@ -153,10 +175,12 @@ class TestLinMolDipoleMatrix:
     def test_potential_types(self):
         """異なるpotential_typeのテスト（use_M=Trueで確認）"""
         # M量子数がある場合で比較（より多くの非ゼロ要素）
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
+        basis = LinMolBasis(
+            V_max=2, J_max=1, use_M=True, delta_omega=0.1, omega=1.0, B=0.001, alpha=0.0
+        )
 
-        dipole_harm = LinMolDipoleMatrix(basis, potential_type="harmonic")
-        dipole_morse = LinMolDipoleMatrix(basis, potential_type="morse")
+        dipole_harm = LinMolDipoleMatrix(basis, potential_type="harmonic", mu0=1.0)
+        dipole_morse = LinMolDipoleMatrix(basis, potential_type="morse", mu0=1.0)
 
         mu_harm = dipole_harm.mu_x
         mu_morse = dipole_morse.mu_x
@@ -172,10 +196,12 @@ class TestLinMolDipoleMatrix:
 
     def test_mu0_scaling(self):
         """mu0スケーリングのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        dipole1 = LinMolDipoleMatrix(basis, mu0=1.0)
-        dipole2 = LinMolDipoleMatrix(basis, mu0=2.0)
+        dipole1 = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
+        dipole2 = LinMolDipoleMatrix(basis, mu0=2.0, potential_type="harmonic")
 
         mu1 = dipole1.mu_x
         mu2 = dipole2.mu_x
@@ -185,11 +211,19 @@ class TestLinMolDipoleMatrix:
 
     def test_different_basis_sizes(self):
         """異なる基底サイズでのテスト"""
-        basis_small = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        basis_large = LinMolBasis(V_max=3, J_max=2, use_M=False)
+        basis_small = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        basis_large = LinMolBasis(
+            V_max=3, J_max=2, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        dipole_small = LinMolDipoleMatrix(basis_small)
-        dipole_large = LinMolDipoleMatrix(basis_large)
+        dipole_small = LinMolDipoleMatrix(
+            basis_small, mu0=1.0, potential_type="harmonic"
+        )
+        dipole_large = LinMolDipoleMatrix(
+            basis_large, mu0=1.0, potential_type="harmonic"
+        )
 
         mu_small = dipole_small.mu_x
         mu_large = dipole_large.mu_x
@@ -200,8 +234,10 @@ class TestLinMolDipoleMatrix:
 
     def test_with_M_quantum_number(self):
         """M量子数ありの基底でのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=True)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y
@@ -220,8 +256,10 @@ class TestLinMolDipoleMatrix:
 
     def test_hermiticity_properties(self):
         """エルミート性のテスト"""
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=2, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y
@@ -232,11 +270,16 @@ class TestLinMolDipoleMatrix:
         np.testing.assert_array_almost_equal(mu_y, mu_y.conj().T, decimal=10)
         np.testing.assert_array_almost_equal(mu_z, mu_z.conj().T, decimal=10)
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_cupy_backend(self):
         """CuPyバックエンドのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(basis, backend="cupy")
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(
+            basis, backend="cupy", mu0=1.0, potential_type="harmonic"
+        )
 
         mu_x = dipole.mu_x
 
@@ -244,29 +287,49 @@ class TestLinMolDipoleMatrix:
         assert hasattr(mu_x, "device")  # CuPy特有の属性
         assert mu_x.shape == (basis.size(), basis.size())
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_numpy_vs_cupy_consistency(self):
-        """NumPyとCuPyの一貫性テスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        """All Cartesian and vibrational formulae agree across backends."""
+        import cupy as cp_local
 
-        dipole_np = LinMolDipoleMatrix(basis, backend="numpy")
-        dipole_cp = LinMolDipoleMatrix(basis, backend="cupy")
-
-        mu_np = dipole_np.mu_x
-        mu_cp = dipole_cp.mu_x
-
-        # 結果が一致するかテスト（CuPyが利用可能な場合のみ）
-        if HAS_CUPY:
-            import cupy as cp_local
-
-            np.testing.assert_array_almost_equal(
-                mu_np, cp_local.asnumpy(mu_cp), decimal=10
+        for potential_type in ("harmonic", "morse"):
+            basis = LinMolBasis(
+                V_max=2,
+                J_max=2,
+                use_M=True,
+                omega=1.0,
+                B=0.001,
+                alpha=0.0,
+                delta_omega=0.1,
             )
+            dipole_np = LinMolDipoleMatrix(
+                basis,
+                backend="numpy",
+                mu0=1.0,
+                potential_type=potential_type,
+            )
+            dipole_cp = LinMolDipoleMatrix(
+                basis,
+                backend="cupy",
+                mu0=1.0,
+                potential_type=potential_type,
+            )
+
+            for axis in ("x", "y", "z"):
+                expected = dipole_np.mu(axis)
+                actual = dipole_cp.mu(axis)
+                assert isinstance(actual, cp_local.ndarray)
+                np.testing.assert_array_almost_equal(
+                    cp_local.asnumpy(actual), expected, decimal=10
+                )
 
     @pytest.mark.skipif(not HAS_HDF5, reason="h5py not available")
     def test_hdf5_save_load(self):
         """HDF5保存・読込のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
         dipole_orig = LinMolDipoleMatrix(
             basis, mu0=0.5, potential_type="harmonic", dense=True
         )
@@ -299,11 +362,11 @@ class TestLinMolDipoleMatrix:
 
     def test_repr_string(self):
         """文字列表現のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
-        dipole = LinMolDipoleMatrix(
-            basis, mu0=0.3, potential_type="morse", dense=False
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, delta_omega=0.1, omega=1.0, B=0.001, alpha=0.0
         )
-        
+        dipole = LinMolDipoleMatrix(basis, mu0=0.3, potential_type="morse", dense=False)
+
         # reprにはクラス名、mu0、potential_type、backend、denseが含まれる
         repr_str = repr(dipole)
         assert "LinMolDipoleMatrix" in repr_str
@@ -311,50 +374,53 @@ class TestLinMolDipoleMatrix:
         assert "potential_type='morse'" in repr_str
         assert "backend='numpy'" in repr_str
         assert "dense=False" in repr_str
-        
+
         # キャッシュが機能していることを確認
         mu_x1 = dipole.mu_x
         mu_x2 = dipole.mu_x
         assert mu_x1 is mu_x2
 
 
-class TestBuildMuFunction:
-    """build_mu関数の直接テスト"""
+class TestBuildMuKernel:
+    """内部 _build_mu kernel の直接テスト"""
 
     def test_build_mu_basic(self):
         """基本的なbuild_muテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        mu_x = build_mu(basis, "x", mu0=1.0)
+        mu_x = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
 
         assert mu_x.shape == (basis.size(), basis.size())
         assert mu_x.dtype == np.complex128
 
     def test_build_mu_all_axes(self):
         """全軸のbuild_muテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        mu_x = build_mu(basis, "x", mu0=1.0)
-        mu_y = build_mu(basis, "y", mu0=1.0)
-        mu_z = build_mu(basis, "z", mu0=1.0)
+        mu_x = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_y = _build_mu(basis, "y", mu0=1.0, potential_type="harmonic")
+        mu_z = _build_mu(basis, "z", mu0=1.0, potential_type="harmonic")
 
         # 形状は同じ
         assert mu_x.shape == mu_y.shape == mu_z.shape
 
-        # use_M=False（全てM=0）の場合の物理的期待値：
-        # μx, μy: ΔM=±1が必要だが、M=0のみなのでゼロ行列
-        # μz: ΔM=0が許されるので非ゼロ要素を持つ
-        assert np.allclose(mu_x, 0)  # μxはゼロ行列
-        assert np.allclose(mu_y, 0)  # μyはゼロ行列
-        assert np.any(mu_z != 0)  # μzは非ゼロ要素を持つ
+        assert np.any(mu_x != 0)
+        assert np.any(mu_y != 0)
+        assert np.any(mu_z != 0)
 
     def test_build_mu_potential_types(self):
         """異なるpotential_typeのテスト（use_M=Trueで確認）"""
         # M量子数がある場合で比較（より多くの非ゼロ要素）
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=True)
+        basis = LinMolBasis(
+            V_max=2, J_max=1, use_M=True, delta_omega=0.1, omega=1.0, B=0.001, alpha=0.0
+        )
 
-        mu_harm = build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
-        mu_morse = build_mu(basis, "x", mu0=1.0, potential_type="morse")
+        mu_harm = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu_morse = _build_mu(basis, "x", mu0=1.0, potential_type="morse")
 
         assert mu_harm.shape == mu_morse.shape
         # 非ゼロ要素がある場合は値が異なることが期待される
@@ -366,10 +432,14 @@ class TestBuildMuFunction:
 
     def test_build_mu_dense_vs_sparse(self):
         """dense vs sparseの比較テスト"""
-        basis = LinMolBasis(V_max=2, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=2, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        mu_dense = build_mu(basis, "x", mu0=1.0, dense=True)
-        mu_sparse = build_mu(basis, "x", mu0=1.0, dense=False)
+        mu_dense = _build_mu(basis, "x", mu0=1.0, dense=True, potential_type="harmonic")
+        mu_sparse = _build_mu(
+            basis, "x", mu0=1.0, dense=False, potential_type="harmonic"
+        )
 
         # dense版は通常のnumpy配列
         assert isinstance(mu_dense, np.ndarray)
@@ -387,38 +457,102 @@ class TestBuildMuFunction:
 
     def test_build_mu_mu0_scaling(self):
         """mu0スケーリングのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        mu1 = build_mu(basis, "x", mu0=1.0)
-        mu2 = build_mu(basis, "x", mu0=2.5)
+        mu1 = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
+        mu2 = _build_mu(basis, "x", mu0=2.5, potential_type="harmonic")
 
         # 比例関係になっているはず
         np.testing.assert_array_almost_equal(mu2, 2.5 * mu1)
 
     def test_build_mu_invalid_axis(self):
         """無効な軸指定のエラーテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
         with pytest.raises(ValueError, match="axis must be x, y or z"):
             # 型チェッカー回避のためキャスト
-            build_mu(basis, "invalid", mu0=1.0)  # type: ignore
+            _build_mu(basis, "invalid", mu0=1.0, potential_type="harmonic")  # type: ignore
 
     def test_build_mu_invalid_potential(self):
         """無効なpotential_typeのエラーテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
         with pytest.raises(
             ValueError, match="potential_type must be harmonic or morse"
         ):
             # 型チェッカー回避のためキャスト
-            build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
+            _build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
 
+    def test_gpu_dense_avoids_unsupported_cupy_vectorize(self):
+        """CuPy does not implement numpy.vectorize with explicit otypes."""
+        source = inspect.getsource(dipole_builder_module)
+        assert ".vectorize(" not in source
+
+    def test_gpu_dense_formula_matches_cpu_reference_with_numpy_namespace(
+        self, monkeypatch
+    ):
+        """Freeze all GPU vector formulae against the existing CPU kernels."""
+        basis = LinMolBasis(
+            V_max=2,
+            J_max=2,
+            use_M=True,
+            omega=1.0,
+            B=0.001,
+            alpha=0.0,
+            delta_omega=0.1,
+        )
+        v_arr = np.asarray(basis.V_array, dtype=np.int64)
+        j_arr = np.asarray(basis.J_array, dtype=np.int64)
+        m_arr = np.asarray(basis.M_array, dtype=np.int64)
+        monkeypatch.setattr(dipole_builder_module, "_cp", np)
+
+        for potential_type in ("harmonic", "morse"):
+            vib_is_morse = potential_type == "morse"
+            level_parameter = (
+                dipole_builder_module.omega01_domega_to_N(
+                    basis.omega_rad_pfs, basis.delta_omega_rad_pfs
+                )
+                if vib_is_morse
+                else 0.0
+            )
+            for axis_index in range(3):
+                expected = dipole_builder_module._dense_core(
+                    v_arr,
+                    j_arr,
+                    m_arr,
+                    1.25,
+                    axis_index,
+                    vib_is_morse,
+                    level_parameter,
+                )
+                actual = dipole_builder_module._dense_gpu(
+                    v_arr,
+                    j_arr,
+                    m_arr,
+                    1.25,
+                    axis_index,
+                    vib_is_morse,
+                    level_parameter,
+                )
+                np.testing.assert_allclose(actual, expected, rtol=2e-15, atol=2e-15)
+
+    @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_build_mu_cupy_backend(self):
         """CuPyバックエンドのテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
-        mu_cupy = build_mu(basis, "x", mu0=1.0, backend="cupy")
+        mu_cupy = _build_mu(
+            basis, "x", mu0=1.0, backend="cupy", potential_type="harmonic"
+        )
 
         # CuPy配列かどうか確認
         assert hasattr(mu_cupy, "device")
@@ -426,12 +560,14 @@ class TestBuildMuFunction:
 
     def test_build_mu_case_insensitive(self):
         """大文字小文字非依存のテスト"""
-        basis = LinMolBasis(V_max=1, J_max=1, use_M=False)
+        basis = LinMolBasis(
+            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
 
         # 型チェッカー回避のため実行時に文字列操作
         axis_upper = "x".upper()
-        mu_x = build_mu(basis, axis_upper, mu0=1.0)  # type: ignore
-        mu_x_lower = build_mu(basis, "x", mu0=1.0)
+        mu_x = _build_mu(basis, axis_upper, mu0=1.0, potential_type="harmonic")  # type: ignore
+        mu_x_lower = _build_mu(basis, "x", mu0=1.0, potential_type="harmonic")
 
         np.testing.assert_array_equal(mu_x, mu_x_lower)
 
@@ -441,8 +577,10 @@ class TestPhysicalProperties:
 
     def test_selection_rules(self):
         """選択則のテスト"""
-        basis = LinMolBasis(V_max=2, J_max=2, use_M=True)
-        dipole = LinMolDipoleMatrix(basis)
+        basis = LinMolBasis(
+            V_max=2, J_max=2, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
+        )
+        dipole = LinMolDipoleMatrix(basis, mu0=1.0, potential_type="harmonic")
 
         mu_x = dipole.mu_x
         mu_y = dipole.mu_y

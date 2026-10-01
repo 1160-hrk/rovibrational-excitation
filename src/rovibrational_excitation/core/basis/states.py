@@ -13,12 +13,16 @@ class StateVector:
         self.data = np.zeros((basis.size(), 1), dtype=np.complex128)
 
     def set_state(self, state, amplitude=1.0):
+        """Replace the vector with one basis state."""
+        self.data[:] = 0
+        self.set_amplitude(state, amplitude)
+
+    def set_amplitude(self, state, amplitude=1.0):
+        """Set one amplitude without clearing the other components."""
         index = self.basis.get_index(state)
-        if index is not None:
-            self.data[:] = 0  # 他をゼロに
-            self.data[index] = amplitude
-        else:
+        if index is None:
             raise ValueError("指定された量子数は基底に存在しません。")
+        self.data[index] = amplitude
 
     def norm(self):
         return np.linalg.norm(self.data)

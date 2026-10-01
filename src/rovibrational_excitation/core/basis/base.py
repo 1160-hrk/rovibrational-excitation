@@ -3,12 +3,10 @@ Abstract base class for quantum basis sets.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING
-
-import numpy as np
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .hamiltonian import Hamiltonian
+    from ..operators import Hamiltonian
 
 
 class BasisBase(ABC):
@@ -69,7 +67,7 @@ class BasisBase(ABC):
     def generate_H0(self) -> "Hamiltonian":
         """
         Generate the free Hamiltonian for this basis.
-        
+
         Uses the physical parameters stored in the basis instance.
 
         Returns
@@ -82,14 +80,14 @@ class BasisBase(ABC):
     def generate_H0_with_params(self, **kwargs) -> "Hamiltonian":
         """
         Generate Hamiltonian with temporary parameter override.
-        
+
         This method allows backward compatibility and temporary parameter changes.
-        
+
         Parameters
         ----------
         **kwargs
             Temporary parameters to override instance values.
-            
+
         Returns
         -------
         Hamiltonian

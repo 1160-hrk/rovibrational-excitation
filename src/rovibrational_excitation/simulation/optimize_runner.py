@@ -16,116 +16,82 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterable, Mapping
+from copy import deepcopy
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
-from rovibrational_excitation.core.basis import (
-    LinMolBasis,
-    VibLadderBasis,
-    SymTopBasis,
-    TwoLevelBasis,
-)
 from rovibrational_excitation.optimization import ALGO_REGISTRY
-from rovibrational_excitation.dipole.factory import create_dipole_matrix
+from rovibrational_excitation.optimization.config import validate_optimization_config
+from rovibrational_excitation.optimization.model import (
+    OptimizationModelConfigurationError,
+    build_optimization_model,
+    validate_optimization_state,
+)
 
 
-def _load_yaml(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
+def _load_yaml(path: str) -> dict[str, Any]:
+    with open(path) as f:
+        loaded = yaml.safe_load(f)
+    if not isinstance(loaded, dict):
+        raise ValueError("optimization YAML root must be a mapping")
+    return loaded
 
 
-def _build_basis(system_cfg: dict):
-    t = str(system_cfg["type"]).lower()
-    p = dict(system_cfg.get("params", {}))
-    if t == "linmol":
-        return LinMolBasis(
-            V_max=int(p["V_max"]),
-            J_max=int(p["J_max"]),
-            use_M=bool(p.get("use_M", True)),
-            omega=p.get("omega_cm"),
-            delta_omega=p.get("delta_omega_cm", 0.0),
-            B=p.get("B_cm"),
-            alpha=p.get("alpha_cm", 0.0),
-            input_units=p.get("input_units", "cm^-1"),
-            output_units=p.get("output_units", "rad/fs"),
+def _build_states(basis: Any, states_cfg: object) -> dict[str, tuple[int, ...]]:
+    if not isinstance(states_cfg, dict):
+        raise OptimizationModelConfigurationError("states must be a mapping")
+    unknown = sorted(set(states_cfg) - {"initial", "target"})
+    if unknown:
+        raise OptimizationModelConfigurationError(
+            "Unknown optimization state keys: " + ", ".join(unknown)
         )
-    if t == "viblad":
-        return VibLadderBasis(
-            V_max=int(p["V_max"]),
-            omega=p.get("omega_cm"),
-            delta_omega=p.get("delta_omega_cm", 0.0),
-            input_units=p.get("input_units", "cm^-1"),
-            output_units=p.get("output_units", "rad/fs"),
+    missing = sorted({"initial", "target"} - set(states_cfg))
+    if missing:
+        raise OptimizationModelConfigurationError(
+            "Missing required optimization state keys: " + ", ".join(missing)
         )
-    if t == "symtop":
-        return SymTopBasis(
-            V_max=int(p["V_max"]),
-            J_max=int(p["J_max"]),
-            omega=p.get("omega_cm"),
-            B=p.get("B_cm"),
-            C=p.get("C_cm"),
-            alpha=p.get("alpha_cm", 0.0),
-            delta_omega=p.get("delta_omega_cm", 0.0),
-            input_units=p.get("input_units", "cm^-1"),
-            output_units=p.get("output_units", "rad/fs"),
-        )
-    if t == "twolevel":
-        return TwoLevelBasis(
-            energy_gap=p.get("energy_gap_cm"),
-            input_units=p.get("input_units", "cm^-1"),
-            output_units=p.get("output_units", "rad/fs"),
-        )
-    raise ValueError(f"Unknown system.type: {t}")
+    return {
+        "initial": validate_optimization_state(
+            basis,
+            states_cfg["initial"],
+            label="initial",
+        ),
+        "target": validate_optimization_state(
+            basis,
+            states_cfg["target"],
+            label="target",
+        ),
+    }
 
 
-def _build_dipole(basis, system_cfg: dict):
-    p = dict(system_cfg.get("params", {}))
-    mu0 = float(p.get("mu0", 1.0e-30))
-    unit_dipole = str(p.get("unit_dipole", "C*m"))
-    if unit_dipole not in ("C*m", "D", "ea0"):
-        unit_dipole = "C*m"
-    potential_type = str(p.get("potential_type", "harmonic"))
-    if potential_type not in ("harmonic", "morse"):
-        potential_type = "harmonic"
-    return create_dipole_matrix(
-        basis,
-        mu0=mu0,
-        potential_type=potential_type,
-        backend="numpy",
-        dense=False,
-        units=unit_dipole,  # type: ignore[arg-type]
-        units_input=unit_dipole,  # type: ignore[arg-type]
-    )
-
-
-def _normalize_state_for_basis(basis, state):
-    if getattr(basis, "use_M", False):
-        if len(state) == 2:
-            return (int(state[0]), int(state[1]), 0)
-        return tuple(int(x) for x in state)
-    if len(state) == 3:
-        return (int(state[0]), int(state[1]))
-    return tuple(int(x) for x in state)
-
-
-def _format_system_label(system_cfg: dict) -> str:
+def _format_system_label(system_cfg: Mapping[str, Any]) -> str:
     t = str(system_cfg.get("type", "")).lower()
     p = dict(system_cfg.get("params", {}))
     if t == "linmol":
-        v = p.get("V_max"); j = p.get("J_max"); use_m = p.get("use_M", True)
-        return f"linmol_V{v}_J{j}_M{int(bool(use_m))}"
-    if t == "viblad":
-        v = p.get("V_max"); return f"viblad_V{v}"
+        v = p.get("V_max")
+        j = p.get("J_max")
+        representation = p.get("representation", "unknown")
+        return f"linmol_V{v}_J{j}_{representation}"
+    if t == "vibladder":
+        v = p.get("V_max")
+        return f"viblad_V{v}"
     if t == "symtop":
-        v = p.get("V_max"); j = p.get("J_max"); return f"symtop_V{v}_J{j}"
+        v = p.get("V_max")
+        j = p.get("J_max")
+        return f"symtop_V{v}_J{j}"
     if t == "twolevel":
-        gap = p.get("energy_gap_cm"); return f"twolevel_gap{gap}cm" if gap is not None else "twolevel"
+        gap = p.get("energy_gap")
+        units = p.get("energy_gap_units")
+        return f"twolevel_gap{gap}{units}" if gap is not None else "twolevel"
     return t or "system"
 
 
-def _apply_overrides(cfg: dict, overrides: Iterable[str] | None) -> dict:
+def _apply_overrides(
+    cfg: dict[str, Any], overrides: Iterable[str] | None
+) -> dict[str, Any]:
     if not overrides:
         return cfg
     new_cfg = cfg
@@ -140,21 +106,20 @@ def _apply_overrides(cfg: dict, overrides: Iterable[str] | None) -> dict:
 
 
 def run_from_config(
-    config: str | Path | dict,
+    config: str | Path | dict[str, Any],
     algorithm: str | None = None,
     overrides: Iterable[str] | None = None,
     *,
-    out_dir: str | None = None,
-    do_plot: bool = True,
-    **kwargs
-) -> dict:
+    out_dir: str | Path | None = None,
+    do_plot: bool | None = None,
+) -> dict[str, Any]:
     """
     Execute optimization from a YAML (or dict) config.
 
-    Returns a dict containing results and metadata:
+    Returns a dict containing the typed in-memory result and metadata:
       {
         "basis": ..., "H0": ..., "dipole": ...,
-        "result": {efield, time, psi_traj, tlist, field_data, target_idx, metrics},
+        "result": OptimizationResult(...),
         "out_dir": "/abs/path/to/results",
       }
     """
@@ -162,83 +127,119 @@ def run_from_config(
     if isinstance(config, (str, Path)):
         cfg = _load_yaml(str(config))
     elif isinstance(config, dict):
-        cfg = dict(config)
+        cfg = deepcopy(config)
     else:
         raise TypeError("config must be filepath or dict")
+    if do_plot is not None and not isinstance(do_plot, bool):
+        raise TypeError("do_plot must be a bool or None")
 
     cfg = _apply_overrides(cfg, overrides)
+    validated = validate_optimization_config(
+        cfg,
+        algorithm_override=algorithm,
+    )
+    plot_enabled = validated.plot_enabled if do_plot is None else do_plot
+    if validated.algorithm == "krotov" and plot_enabled:
+        raise ValueError(
+            "standard Krotov plotting is unavailable for interval controls; "
+            "disable plotting or use an explicitly supported plot adapter"
+        )
 
-    # 2) Build basis and H0
-    basis = _build_basis(cfg["system"])
-    H0 = basis.generate_H0()
+    # 2) Build the same basis and operators as the production model layer.
+    model = build_optimization_model(cfg["system"])
+    basis = model.basis
+    H0 = model.hamiltonian
+    dipole = model.dipole
 
-    # 3) Dipole
-    dipole = _build_dipole(basis, cfg["system"])  # SI-managed dipole
+    # 3) Validate exact optimization quantum-number tuples.
+    states = _build_states(basis, cfg["states"])
 
-    # 4) States
-    initial = _normalize_state_for_basis(basis, tuple(cfg["states"]["initial"]))
-    target = _normalize_state_for_basis(basis, tuple(cfg["states"]["target"]))
-    states = {"initial": initial, "target": target}
-
-    # 5) Algorithm/time
-    selected = cfg["algorithm"]["selected"]
-    if algorithm is not None and str(algorithm).strip():
-        selected = str(algorithm).strip()
-    params = dict(cfg.get("algorithms", {}).get(selected, {}))
-    time_cfg = dict(cfg["time"])  # {total_fs, dt_fs, sample_stride}
+    # 4) Algorithm/time
+    selected = validated.algorithm
+    params = validated.algorithm_params
+    time_cfg = validated.time
 
     runner = ALGO_REGISTRY.get(selected)
     if runner is None:
         raise ValueError(f"Unknown algorithm: {selected}")
 
-    # 6) Output directory
+    # 5) Output directory
     ts = time.strftime("%Y%m%d_%H%M%S")
     system_label = _format_system_label(cfg.get("system", {}))
     safe_name = "".join(c if c.isalnum() or c in "_.-" else "_" for c in selected)
     if out_dir is None:
-        out_root = Path.cwd() / "results"
+        out_root = Path(validated.output_dir)
     else:
         out_root = Path(out_dir)
     out_path = out_root / f"{ts}_{safe_name}_{system_label}"
     os.makedirs(out_path, exist_ok=True)
 
-    # 7) Execute
+    # 6) Execute
     t0 = time.time()
-    # kwargsから追加パラメータを取得してparamsにマージ
-    if kwargs:
-        params.update(kwargs)
-    result = runner(basis=basis, hamiltonian=H0, dipole=dipole, states=states, time_cfg=time_cfg, params=params)
+    result = runner(
+        basis=basis,
+        hamiltonian=H0,
+        dipole=dipole,
+        states=states,
+        time_cfg=time_cfg,
+        params=params,
+    )
     elapsed = time.time() - t0
     print(f"{selected} elapsed: {elapsed:.2f} s")
 
-    # 8) Optional plotting
-    try:
-        if do_plot:
-            from rovibrational_excitation.plots.plot_all import plot_all  # lazy import
-            efield_obj = result.get("efield")
-            time_full = result.get("time")
-            psi_traj = result.get("psi_traj")
-            tlist = result.get("tlist") or time_full
-            field_data = result.get("field_data")
-            target_idx = result.get("target_idx", -1)
-            if efield_obj is not None and psi_traj is not None and field_data is not None and tlist is not None:
-                omega_center_cm = cfg["system"].get("params", {}).get("omega_cm")
-                plot_cfg = cfg.get("plot", {})
-                plot_all(
-                    basis=basis,
-                    optimizer_like=type("O", (), {"tlist": tlist, "target_idx": target_idx if target_idx is not None else -1})(),
-                    efield=efield_obj,
-                    psi_traj=psi_traj,
-                    field_data=field_data,
-                    sample_stride=int(cfg["time"].get("sample_stride", 1)),
-                    omega_center_cm=omega_center_cm,
-                    figures_dir=str(out_path),
-                    filename_prefix=safe_name,
-                    do_spectrum=bool(plot_cfg.get("spectrum", False)),
-                    do_spectrogram=bool(plot_cfg.get("spectrogram", False)),
-                )
-    except Exception as e:
-        print(f"Plotting failed: {e}")
+    # 7) Optional plotting. An explicitly requested plot must either succeed or raise.
+    if plot_enabled:
+        from rovibrational_excitation.visualization.plot_all import (
+            plot_all,  # lazy import
+        )
+
+        efield_obj = result.electric_field
+        time_full = result.trajectory_times_fs
+        psi_traj = result.trajectory
+        tlist = result.control_times_fs
+        field_data = result.controls_v_per_m
+        target_idx = result.target_index
+        missing_plot_data = [
+            name
+            for name, value in (
+                ("efield", efield_obj),
+                ("psi_traj", psi_traj),
+                ("field_data", field_data),
+                ("tlist", tlist),
+            )
+            if value is None
+        ]
+        if missing_plot_data:
+            raise ValueError(
+                "optimization result is missing data required for plotting: "
+                + ", ".join(missing_plot_data)
+            )
+        system_params = cfg["system"]["params"]
+        omega_center_cm = None
+        if system_params.get("vibrational_frequency_units") == "cm^-1":
+            omega_center_cm = system_params.get("vibrational_frequency")
+        plot_stride_key = "sample_stride" if selected == "local" else "output_stride"
+        plot_all(
+            basis=basis,
+            optimizer_like=type(
+                "O",
+                (),
+                {
+                    "tlist": tlist,
+                    "target_idx": target_idx if target_idx is not None else -1,
+                },
+            )(),
+            efield=efield_obj,
+            psi_traj=psi_traj,
+            field_data=field_data,
+            sample_stride=int(cfg["time"].get(plot_stride_key, 1)),
+            trajectory_times_fs=time_full,
+            omega_center_cm=omega_center_cm,
+            figures_dir=str(out_path),
+            filename_prefix=safe_name,
+            do_spectrum=validated.plot_spectrum,
+            do_spectrogram=validated.plot_spectrogram,
+        )
 
     return {
         "cfg": cfg,
@@ -249,5 +250,3 @@ def run_from_config(
         "out_dir": str(out_path),
         "elapsed_sec": elapsed,
     }
-
-

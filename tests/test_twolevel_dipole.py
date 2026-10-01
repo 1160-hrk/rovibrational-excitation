@@ -16,8 +16,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 import numpy as np
 
-from rovibrational_excitation.core.basis import TwoLevelBasis
-from rovibrational_excitation.dipole import TwoLevelDipoleMatrix
+from rovibrational_excitation.models.two_level import (
+    TwoLevelBasis,
+    TwoLevelDipoleMatrix,
+)
 
 
 class TestTwoLevelDipoleMatrix:
@@ -25,7 +27,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_basic_initialization(self):
         """基本初期化テスト"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.5)
 
         assert dipole.basis is basis
@@ -34,7 +36,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_mu_x_matrix_structure(self):
         """μx行列の構造テスト"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=2.0)
 
         mu_x = dipole.mu_x
@@ -49,7 +51,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_mu_y_matrix_structure(self):
         """μy行列の構造テスト"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.0)
 
         mu_y = dipole.mu_y
@@ -64,7 +66,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_mu_z_matrix_structure(self):
         """μz行列の構造テスト"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=3.0)
 
         mu_z = dipole.mu_z
@@ -79,7 +81,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_hermiticity_properties(self):
         """エルミート性の確認"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.0)
 
         mu_x = dipole.mu_x
@@ -93,7 +95,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_pauli_matrix_relations(self):
         """Pauli行列との関係確認"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.0)
 
         # Pauli行列
@@ -108,7 +110,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_mu0_scaling(self):
         """mu0スケーリングの確認"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
 
         dipole1 = TwoLevelDipoleMatrix(basis, mu0=1.0)
         dipole2 = TwoLevelDipoleMatrix(basis, mu0=3.5)
@@ -121,7 +123,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_zero_mu0_behavior(self):
         """mu0=0での動作"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=0.0)
 
         # すべてがゼロ行列
@@ -135,7 +137,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_commutation_relations(self):
         """交換関係の確認"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.0)
 
         mu_x = dipole.mu_x
@@ -151,7 +153,7 @@ class TestTwoLevelDipoleMatrix:
 
     def test_transition_matrix_elements(self):
         """遷移行列要素の物理的妥当性"""
-        basis = TwoLevelBasis()
+        basis = TwoLevelBasis(energy_gap=1.0)
         dipole = TwoLevelDipoleMatrix(basis, mu0=1.0)
 
         # 基底状態|0⟩から励起状態|1⟩への遷移

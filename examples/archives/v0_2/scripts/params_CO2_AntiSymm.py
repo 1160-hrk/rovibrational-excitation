@@ -1,0 +1,78 @@
+"""
+params_CO2_antisymm.py
+======================
+CO₂ 非対称伸縮振動 (ν₃) をポンプ・プローブで励起する簡易サンプル。
+runner.py（linmol_dipole 版）と 1 対 1 で対応するパラメータセット。
+
+単位
+----
+* 時間      : fs
+* 周波数    : rad/fs  (= 2π × THz)
+* 電場      : V·m⁻¹
+* 双極子    : C·m  （Debye → ×3.33564e-30）
+"""
+
+import numpy as np
+
+# ------------------------------------------------------------------
+# メタ情報
+# ------------------------------------------------------------------
+description = "CO2_antisymm_stretch"
+
+# ------------------------------------------------------------------
+# 時間軸
+# ------------------------------------------------------------------
+t_start = 0  # fs
+t_end = 1000.0  # fs
+dt = 0.01  # サンプリング数
+# runner.py 側では delay ごとに tlist を生成するので make_tlist は不要
+
+# ------------------------------------------------------------------
+# 電場パラメータ
+# ------------------------------------------------------------------
+duration = [100]  # fs (envelope σ)
+polarization_sweep = [
+    [1, 0],  # x 軸偏光
+    [1 / np.sqrt(2), 1j / np.sqrt(2)],  # RHC
+    # [1/np.sqrt(2), (1+1j)/2],                 # arbitrary
+]
+carrier_frequency = 2349.0  # 波数として入力
+carrier_frequency_units = "cm^-1"
+amplitude = 1e9  # V·m⁻¹
+gdd = 1e3  # fs²
+tod = 0.0  # fs³
+t_center = [500.0]  # fs
+
+axes = "xy"  # Ex↔μ_x, Ey↔μ_y
+
+# ------------------------------------------------------------------
+# 系パラメータ  (CO₂ 非対称伸縮)
+# ------------------------------------------------------------------
+V_max = 3
+J_max = 2
+
+# Morse / Harmonic 切替え
+potential_type = "harmonic"  # or "morse"
+
+vibrational_frequency = 2349.0
+vibrational_frequency_units = "cm^-1"
+anharmonic_shift = 10.0
+anharmonic_shift_units = "cm^-1"
+rotational_constant = 0.3902
+rotational_constant_units = "cm^-1"
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
+
+# 双極子スケール
+debye_unit = 3.33564e-30  # 1 D → C·m
+mu0_Cm = 0.3 * debye_unit  # 0.3 Debye 相当
+
+# ------------------------------------------------------------------
+# ランタイム設定
+# ------------------------------------------------------------------
+backend = "numpy"  # "numpy" or "cupy"
+dense = True  # True→ndarray / False→CSR
+sample_stride = 1  # プロパゲータ出力間引き
+return_traj = False
+
+# ---- ここまで -----------------------------------------------------

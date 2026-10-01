@@ -8,12 +8,10 @@ rovibrational-excitation パラメータファイル テンプレート
 使用方法:
     1. このファイルをコピー: cp params_template.py my_params.py
     2. 必要な部分を編集
-    3. 実行: python -m rovibrational_excitation.simulation.runner my_params.py
+    3. 実行: python -m rovibrational_excitation.cli.simulate my_params.py
 
 詳細: docs/PARAMETER_REFERENCE.md を参照
 """
-
-import numpy as np
 
 # ============================================================================
 # 1. メタ情報（推奨）
@@ -24,55 +22,74 @@ description = "template_simulation"  # 結果ディレクトリ名にも使用
 # 2. 必須パラメータ - 時間軸設定
 # ============================================================================
 # 時間軸の範囲と刻み（単位: fs）
-# ヒント: 計算時間を短くするには範囲を狭く、精度を上げるには刻みを細かく
+# 以下は実行可能な例示値。目的の観測量について別の刻み幅と比較して収束を確認する
 t_start = -50.0  # 開始時刻 [fs]
+t_start_units = "fs"
 t_end = 50.0  # 終了時刻 [fs]
-dt = 0.1  # 時間刻み [fs] - 通常 0.05～0.2
+t_end_units = "fs"
+dt = 0.1  # 電場サンプリング間隔 [fs]。伝播刻みはこの2倍
+dt_units = "fs"
 
 # ============================================================================
 # 3. 必須パラメータ - 量子系設定
 # ============================================================================
-# 基底サイズ（計算時間・メモリに大きく影響）
-# ヒント: 最初は小さな値で試して、必要に応じて増やす
-V_max = 3  # 最大振動量子数 - 通常 2～10
-J_max = 5  # 最大回転量子数 - 通常 2～20
+# モデルとM縮退の扱い（暗黙選択なし）
+basis_type = "linmol"
+representation = "m_resolved"  # または "m_incoherent_average"
+axes = "xy"  # m_resolvedで必須。M非干渉平均では指定しない
 
-# オプション: 磁気量子数を使用するか（デフォルト: True）
-# use_M = True
+# 基底サイズ（計算時間・メモリに大きく影響）。以下は例示値であり、
+# 目的の観測量について、より大きい基底と比較して収束を確認する
+V_max = 3  # 最大振動量子数
+J_max = 5  # 最大回転量子数
 
 # ============================================================================
 # 4. 必須パラメータ - 物理パラメータ
 # ============================================================================
 # 分子の物理定数
 # 例: CO2分子のν3振動モード
-omega_rad_phz = 2349 * 2 * np.pi * 3e10 / 1e15  # 振動周波数 [rad/fs]
-mu0_Cm = 0.3 * 3.33564e-30  # 双極子モーメント [C·m] (~0.3 Debye)
+vibrational_frequency = 2349.0  # 0→1振動遷移の波数
+vibrational_frequency_units = "cm^-1"
+dipole_scale = 0.3  # 双極子スケール
+dipole_scale_units = "D"  # 単位は必須。C*m, ea0 も選択可
+potential_type = "harmonic"  # "morse"では非ゼロの非調和性が必須
 
-# 回転定数 [rad/fs]
-B_rad_phz = 0.39 * 2 * np.pi * 3e10 / 1e15
-# 非調和性補正項 [rad/fs]
-# delta_omega_rad_phz = 0.001 * omega_rad_phz    # 非調和性
-delta_omega_rad_phz = 0
-# 振動-回転結合定数 [rad/fs]
-alpha_rad_phz = 0.0
+# 回転定数
+rotational_constant = 0.39
+rotational_constant_units = "cm^-1"
+# 隣接遷移周波数の準位ごとの減少量
+# anharmonic_shift = 10.0  # Morseでは非ゼロ必須
+anharmonic_shift = 0.0
+anharmonic_shift_units = "cm^-1"
+# 振動-回転結合定数
+vibration_rotation_coupling = 0.0
+vibration_rotation_coupling_units = "cm^-1"
 
 # ============================================================================
 # 5. 必須パラメータ - 電場設定
 # ============================================================================
 # 基本レーザーパルス設定
+envelope_kind = "gaussian_fwhm"  # durationをFWHMとして使うガウス包絡線
 duration = 20.0  # パルス幅（FWHM） [fs]
+duration_units = "fs"
 t_center = 0.0  # パルス中心時刻 [fs]
-carrier_freq = omega_rad_phz  # キャリア周波数 [rad/fs] - 通常は共鳴周波数
-amplitude = 1e9  # 電場振幅 [V/m] - 1e8～1e12の範囲
+t_center_units = "fs"
+modulation_kind = "none"  # "sinusoidal"を選ぶ場合は変調パラメータが必須
+carrier_frequency = 2349.0  # キャリア周波数（通常周波数の波数表現）
+carrier_frequency_units = "cm^-1"  # 単位は必須。THz, PHz, Hz, rad/fs も選択可
+amplitude = 1e9  # 例示用の電場振幅 [V/m]。強度ではない
+amplitude_units = "V/m"
 
 # 偏光設定（固定値キー - リストでもスイープされない）
 polarization = [1.0, 0.0]  # [x, y] 偏光ベクトル - (1,0)=x偏光, (0,1)=y偏光
 
 # オプション: 高度な電場設定
-# envelope_func = gaussian_fwhm      # 包絡線関数（デフォルト）
+# envelope_kind は上で明示必須。任意波形は ScalarField/CartesianField として注入
 # phase_rad = 0.0                    # キャリア位相 [rad]
-# gdd = 0.0                          # 群遅延分散（2次） [fs²]
-# tod = 0.0                          # 群遅延分散（3次） [fs³]
+# gdd = 0.0                          # 値と単位を対で指定
+# gdd_units = "fs^2"
+# tod = 0.0
+# tod_units = "fs^3"
 
 # ============================================================================
 # 6. 必須パラメータ - 初期状態
@@ -84,16 +101,15 @@ initial_states = [0]  # [0] = 基底状態のみ
 # initial_states = [0, 1, 2]        # v=0,1,2 の重ね合わせ
 
 # ============================================================================
-# 7. オプションパラメータ - 計算設定
+# 7. 必須パラメータ - 計算設定
 # ============================================================================
-# 計算バックエンド
-backend = "numpy"  # "numpy" または "cupy"（GPU）
-
-# 行列形式
-dense = True  # True=密行列（高速）, False=スパース行列（省メモリ）
-
-# その他の計算設定
-axes = "xy"  # 電場-双極子の軸対応
+# 実行方式（すべて明示必須）
+backend = "numpy"  # "numpy" または "cupy"（実 CUDA は未検証）
+storage = "dense"  # "dense" または "csr"
+algorithm = "rk4"  # "rk4" または "split_operator"
+nondimensional = False
+renorm = False
+return_traj = True
 sample_stride = 1  # サンプリング間隔（メモリ節約用）
 
 # ============================================================================
@@ -102,10 +118,6 @@ sample_stride = 1  # サンプリング間隔（メモリ節約用）
 # 結果の保存・出力設定
 save = True  # 結果を保存するか
 # outdir = "/custom/output/path"   # カスタム出力ディレクトリ（デフォルト: 自動生成）
-
-# 軌跡・時間配列の出力
-return_traj = True  # 軌跡を返すか
-return_time_psi = True  # 時間配列も返すか
 
 # ============================================================================
 # 9. スイープ設定の例（オプション）
@@ -122,32 +134,14 @@ return_time_psi = True  # 時間配列も返すか
 # duration = [10.0, 20.0]           # 2ケース
 # amplitude_sweep = [1e8, 1e9]      # 2ケース → 合計 2×2 = 4ケース
 
-# 注意: polarization, initial_states, envelope_func は常に固定値として扱われます
+# 注意: polarization, initial_states は常に固定値として扱われます
 
 # ============================================================================
-# 参考情報
+# 重要
 # ============================================================================
 """
-よく使われる物理定数・単位変換:
-
-【周波数変換】
-- cm⁻¹ → rad/fs: wavenumber * 2π * 3e10 / 1e15
-- THz → rad/fs: freq_THz * 2π * 1000
-- eV → rad/fs: energy_eV * 1.519e6
-
-【双極子モーメント変換】
-- Debye → C·m: dipole_D * 3.33564e-30
-
-【典型的な値】
-- CO2 ν3: 2349 cm⁻¹
-- CO2 双極子: ~0.3 Debye
-- レーザー強度: 1e8～1e12 V/m
-- パルス幅: 5～100 fs
-
-【計算サイズの目安】
-- 軽量（V_max=2, J_max=2）: 数秒～数分
-- 中程度（V_max=5, J_max=10）: 数分～数時間
-- 大規模（V_max=10, J_max=20）: 数時間～数日
-
-詳細は docs/PARAMETER_REFERENCE.md を参照してください。
+このテンプレートの数値は、現行APIを実行確認するための一例であり、
+一般的な推奨範囲ではありません。時間刻み、時間窓、基底打ち切り、電場振幅は、
+対象とする物理系と観測量に対して個別に収束・妥当性を確認してください。
+単位変換は手計算の近似式ではなく、ライブラリのunit boundaryを使用します。
 """

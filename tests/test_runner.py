@@ -6,21 +6,22 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 import numpy as np
 import pytest
 
+from rovibrational_excitation.io import json_safe
 from rovibrational_excitation.simulation import runner
 
 
 def test_json_safe_basic():
     # 複素数
     c = 1 + 2j
-    safe = runner._json_safe(c)
+    safe = json_safe(c)
     assert safe["__complex__"] and safe["r"] == 1 and safe["i"] == 2
     # ndarray
     arr = np.array([1, 2, 3])
-    safe_arr = runner._json_safe(arr)
+    safe_arr = json_safe(arr)
     assert safe_arr == [1, 2, 3]
     # dict, list
     d = {"a": 1 + 1j, "b": [2 + 2j, 3]}
-    safe_d = runner._json_safe(d)
+    safe_d = json_safe(d)
     assert "a" in safe_d and "b" in safe_d
 
 
@@ -47,17 +48,25 @@ def test_run_all_file_output():
     params = {
         "description": "testfile",
         "t_start": -1.0,
+        "t_start_units": "fs",
         "t_end": 1.0,
+        "t_end_units": "fs",
         "dt": 0.1,  # 十分な数の点数を確保
         "duration": 1.0,
+        "duration_units": "fs",
         "t_center": 0.0,
-        "carrier_freq": 1.0,
+        "t_center_units": "fs",
+        "carrier_frequency": 1.0,
+        "carrier_frequency_units": "PHz",
         "amplitude": 0.1,
+        "amplitude_units": "V/m",
         "polarization": [1.0, 0.0],
         "V_max": 0,
         "J_max": 0,
-        "omega_rad_phz": 1.0,
-        "mu0_Cm": 1.0,
+        "vibrational_frequency": 1.0,
+        "vibrational_frequency_units": "rad/fs",
+        "dipole_scale": 1.0,
+        "dipole_scale_units": "C*m",
         "initial_states": [0],
         "outdir": None,  # runner側で自動生成
         "save": True,

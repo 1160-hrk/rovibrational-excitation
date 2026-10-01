@@ -7,12 +7,30 @@ conversions, and validation throughout the codebase.
 
 from .constants import PhysicalConstants
 from .converters import UnitConverter, converter
+from .frequency import Frequency
+from .scalar_quantities import (
+    DipoleMoment,
+    ElectricFieldAmplitude,
+    GroupDelayDispersion,
+    KrotovPenalty,
+    LocalControlGain,
+    ThirdOrderDispersion,
+)
+from .time_quantity import TimeQuantity
 from .validators import UnitValidator, validator
-from .parameter_processor import ParameterProcessor, parameter_processor
 
 __all__ = [
-    "PhysicalConstants", 
-    "UnitConverter", "converter",
-    "UnitValidator", "validator",
-    "ParameterProcessor", "parameter_processor"
-] 
+    "PhysicalConstants",
+    "UnitConverter",
+    "Frequency",
+    "converter",
+    "TimeQuantity",
+    "DipoleMoment",
+    "ElectricFieldAmplitude",
+    "LocalControlGain",
+    "KrotovPenalty",
+    "GroupDelayDispersion",
+    "ThirdOrderDispersion",
+    "UnitValidator",
+    "validator",
+]

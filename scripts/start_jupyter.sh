@@ -1,63 +1,47 @@
-#!/bin/bash
-# Jupyter Lab 起動スクリプト
-# rovibrational-excitation 開発環境用
+#!/usr/bin/env bash
+# Safe local Jupyter Lab launcher for repository development.
 
-echo "🔬 Rovibrational Excitation - Jupyter Lab 起動中..."
-echo "================================================"
+set -euo pipefail
 
-# 作業ディレクトリの確認
-if [ ! -f "pyproject.toml" ]; then
-    echo "❌ エラー: プロジェクトルートディレクトリで実行してください"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+script_project_root="$(cd -- "${script_dir}/.." && pwd)"
+project_root="${RVE_JUPYTER_ROOT:-${script_project_root}}"
+host="${RVE_JUPYTER_HOST:-127.0.0.1}"
+port="${RVE_JUPYTER_PORT:-8888}"
+
+if [[ "${project_root}" != /* ]]; then
+    echo "RVE_JUPYTER_ROOT must be an absolute path" >&2
+    exit 2
+fi
+if ! [[ "${port}" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then
+    echo "RVE_JUPYTER_PORT must be an integer from 1 through 65535" >&2
+    exit 2
+fi
+if ! command -v jupyter >/dev/null 2>&1; then
+    echo "jupyter is not installed in the active environment" >&2
     exit 1
 fi
 
-# 必要なディレクトリの作成
-mkdir -p results notebooks
+mkdir -p "${project_root}/notebooks"
+cd "${project_root}"
 
-# Jupyter Lab設定の確認
-if [ ! -d "$HOME/.jupyter" ]; then
-    echo "📝 Jupyter設定ディレクトリを作成中..."
-    mkdir -p $HOME/.jupyter
-    
-    # 基本設定ファイルの作成
-    cat > $HOME/.jupyter/jupyter_lab_config.py << 'EOF'
-# Jupyter Lab 設定ファイル
-c.ServerApp.ip = '0.0.0.0'
-c.ServerApp.port = 8888
-c.ServerApp.open_browser = False
-c.ServerApp.allow_root = True
-c.ServerApp.token = ''
-c.ServerApp.password = ''
-
-# ワークスペース設定
-c.ServerApp.root_dir = '/workspace'
-c.ServerApp.preferred_dir = '/workspace'
-
-# セキュリティ設定（開発環境用）
-c.ServerApp.disable_check_xsrf = True
-c.ServerApp.allow_origin = '*'
-EOF
+echo "Rovibrational Excitation Jupyter Lab"
+echo "Root: ${project_root}"
+echo "URL: http://${host}:${port}"
+echo "Jupyter authentication and XSRF protection remain enabled."
+if [[ "${host}" != "127.0.0.1" && "${host}" != "localhost" ]]; then
+    echo "WARNING: Jupyter is binding beyond localhost; keep authentication enabled." >&2
 fi
 
-echo "🚀 Jupyter Lab を起動中..."
-echo "📍 アクセス URL: http://localhost:8888"
-echo "📁 作業ディレクトリ: /workspace"
-echo ""
-echo "💡 使用方法:"
-echo "   - examples/ フォルダで既存の例を確認"
-echo "   - notebooks/ フォルダで新しいノートブックを作成"
-echo "   - src/ フォルダでソースコードを編集"
-echo ""
-echo "🛑 終了するには Ctrl+C を押してください"
-echo "================================================"
+args=(
+    lab
+    "--ip=${host}"
+    "--port=${port}"
+    --no-browser
+    "--ServerApp.root_dir=${project_root}"
+)
+if [[ "$(id -u)" -eq 0 ]]; then
+    args+=(--allow-root)
+fi
 
-# Jupyter Lab の起動
-exec jupyter lab \
-    --ip=0.0.0.0 \
-    --port=8888 \
-    --no-browser \
-    --allow-root \
-    --ServerApp.token='' \
-    --ServerApp.password='' \
-    --ServerApp.disable_check_xsrf=True \
-    --ServerApp.allow_origin='*' 
+exec jupyter "${args[@]}" "$@"

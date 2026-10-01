@@ -7,12 +7,11 @@
 basisモジュールは以下の基底クラスを提供します：
 
 - `BasisBase`: 全ての基底クラスの抽象基底クラス
-- `LinMolBasis`: 線形分子の振動・回転基底
-- `SymTopBasis`: 対称コマ分子の振動・回転基底
-- `TwoLevelBasis`: 二準位系の基底
-- `VibLadderBasis`: 振動準位のみの基底（回転なし）
 - `StateVector`: 純粋状態を表現するクラス
 - `DensityMatrix`: 混合状態を表現するクラス
+
+モデル固有基底は各 `rovibrational_excitation.models.*` パッケージが
+所有します。
 
 ## 基本的な使い方
 
@@ -21,13 +20,16 @@ basisモジュールは以下の基底クラスを提供します：
 ```python
 def size(self) -> int:
     """基底の次元数を返す"""
-    
+
+
 def get_index(self, state) -> int:
     """量子数から基底のインデックスを取得"""
-    
+
+
 def get_state(self, index: int):
     """インデックスから量子数を取得"""
-    
+
+
 def generate_H0(self) -> Hamiltonian:
     """自由ハミルトニアンを生成"""
 ```
@@ -37,7 +39,8 @@ def generate_H0(self) -> Hamiltonian:
 ### 1. 二準位系の例
 
 ```python
-from rovibrational_excitation.core.basis import TwoLevelBasis, StateVector
+from rovibrational_excitation.core.basis import StateVector
+from rovibrational_excitation.models.two_level import TwoLevelBasis
 
 # 2.35 eVのエネルギーギャップを持つ二準位系
 basis = TwoLevelBasis(energy_gap=2.35, input_units="eV")
@@ -54,16 +57,16 @@ print(f"エネルギーギャップ: {H0.eigenvalues[1]} J")
 ### 2. 線形分子（CO2など）の例
 
 ```python
-from rovibrational_excitation.core.basis import LinMolBasis
+from rovibrational_excitation.models.linear_molecule import LinMolBasis
 
 # CO2分子のパラメータ（cm^-1単位）
 basis = LinMolBasis(
-    V_max=2,          # 最大振動量子数
-    J_max=10,         # 最大回転量子数
-    omega=2350,       # ν3モードの振動周波数
-    B=0.39,           # 回転定数
-    alpha=0.0042,     # 振動回転相互作用定数
-    input_units="cm^-1"
+    V_max=2,  # 最大振動量子数
+    J_max=10,  # 最大回転量子数
+    omega=2350,  # ν3モードの振動周波数
+    B=0.39,  # 回転定数
+    alpha=0.0042,  # 振動回転相互作用定数
+    input_units="cm^-1",
 )
 
 # 基底の大きさを確認
@@ -84,10 +87,10 @@ from rovibrational_excitation.core.basis import VibLadderBasis, DensityMatrix
 
 # 非調和振動子
 basis = VibLadderBasis(
-    V_max=5,              # 最大振動量子数
-    omega=500,            # 振動周波数
-    delta_omega=5,        # 非調和性パラメータ
-    input_units="cm^-1"
+    V_max=5,  # 最大振動量子数
+    omega=500,  # 振動周波数
+    delta_omega=5,  # 非調和性パラメータ
+    input_units="cm^-1",
 )
 
 # 混合状態を作成
@@ -101,27 +104,6 @@ H0 = basis.generate_H0()
 print("振動エネルギー準位:")
 for v, E in enumerate(H0.eigenvalues):
     print(f"|v={v}⟩: {E:.2e} J")
-```
-
-### 4. 対称コマ分子の例
-
-```python
-from rovibrational_excitation.core.basis import SymTopBasis
-
-# メチルフルオライド（CH3F）のような対称コマ分子
-basis = SymTopBasis(
-    V_max=1,          # 最大振動量子数
-    J_max=5,          # 最大回転量子数
-    omega=1000,       # 代表的な振動モード
-    B=1.0,           # 回転定数B
-    C=0.8,           # 回転定数C
-    input_units="cm^-1"
-)
-
-# ハミルトニアンを生成
-H0 = basis.generate_H0()
-print(f"基底の次元: {basis.size()}")
-print(f"最大エネルギー差: {H0.max_energy_difference():.2e} J")
 ```
 
 ## 注意事項
@@ -144,4 +126,4 @@ print(f"最大エネルギー差: {H0.max_energy_difference():.2e} J")
 ## 参考文献
 
 1. Cohen-Tannoudji, C., et al. "Quantum Mechanics"
-2. Herzberg, G. "Molecular Spectra and Molecular Structure" 
+2. Herzberg, G. "Molecular Spectra and Molecular Structure"

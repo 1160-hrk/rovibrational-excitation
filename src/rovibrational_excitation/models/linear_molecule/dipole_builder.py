@@ -1,0 +1,419 @@
+"""
+rovibrational_excitation.models.linear_molecule.dipole_builder
+========================
+μ-axis 行列 (x, y, z) を高速生成
+
+* potential_type = 'harmonic' | 'morse'
+* CPU : Numba  (dense／CSR)
+* GPU : CuPy   (broadcast → dense／CSR)
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Union
+
+import numpy as _np
+import scipy.sparse as _sp
+from numba import njit, prange
+
+try:  # GPU (optional)
+    import cupy as _cp
+    import cupyx.scipy.sparse as _csp
+except ImportError:
+    _cp = None
+    _csp = None
+
+from rovibrational_excitation.models.vibration.harmonic import tdm_vib_harm  # Python 版
+from rovibrational_excitation.models.vibration.morse import (
+    omega01_domega_to_N,
+    tdm_vib_morse,
+    validate_morse_v_max,
+)  # Python 版
+
+from .rotational import tdm_jm_x, tdm_jm_y, tdm_jm_z
+
+# ----------------------------------------------------------------------
+# 型エイリアス
+# ----------------------------------------------------------------------
+if TYPE_CHECKING:
+    from .basis import LinMolBasis
+
+if _cp is not None:
+    Array: type = Union[_np.ndarray, _cp.ndarray]  # type: ignore
+else:
+    Array: type = _np.ndarray  # type: ignore
+
+
+# ----------------------------------------------------------------------
+# --- 1. 小さな "ラッパー" を JIT しておく ------------------------------
+#   * Numba カーネル側で未型 global が残らないようにする
+# ----------------------------------------------------------------------
+@njit(cache=True, fastmath=True, inline="always")
+def _vib_harm(v1: int, v2: int) -> float:
+    """√v 選択則 (Δv = ±1)"""
+    if v1 == v2 + 1:
+        return _np.sqrt(v1)
+    elif v2 == v1 + 1:
+        return _np.sqrt(v2)
+    else:
+        return 0.0
+
+
+_vib_morse_jit = njit(cache=True, fastmath=True)(tdm_vib_morse)  # type: ignore[arg-type]
+
+
+# ----------------------------------------------------------------------
+# --- 2. 共通 Numba カーネル (dense) -----------------------------------
+#   * axis_idx : 0→x, 1→y, 2→z
+#   * vib_is_morse : True なら Morse、False なら Harmonic
+# ----------------------------------------------------------------------
+@njit(parallel=True, fastmath=True, cache=True)
+def _dense_core(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
+    dim = v_arr.size
+    out = _np.zeros((dim, dim), dtype=_np.complex128)
+
+    for i in prange(dim):
+        v1, J1, M1 = v_arr[i], J_arr[i], M_arr[i]
+        # if J1 == 0:
+        #     continue
+        for j in range(dim):
+            v2, J2, M2 = v_arr[j], J_arr[j], M_arr[j]
+            # if J2 == 0:
+            #     continue
+
+            # --- 選択則 ------------------------------------------------
+            # if abs(v1 - v2) != 1:
+            #     continue
+            if abs(J1 - J2) != 1:
+                continue
+            if abs(J1 - J2) > 1:  # 回転選択則: ΔJ = 0, ±1
+                continue
+            if abs(M1 - M2) > 1:  # 磁気選択則: ΔM = 0, ±1
+                continue
+
+            # --- 回転要素 ----------------------------------------------
+            if axis_idx == 0:
+                r = tdm_jm_x(J1, M1, J2, M2)
+            elif axis_idx == 1:
+                r = tdm_jm_y(J1, M1, J2, M2)
+            else:
+                r = tdm_jm_z(J1, M1, J2, M2)
+            if r == 0.0:
+                continue
+
+            # --- 振動ファクター ----------------------------------------
+            vfac = (
+                _vib_morse_jit(v1, v2, morse_level_parameter)
+                if vib_is_morse
+                else _vib_harm(v1, v2)
+            )
+            if vfac == 0.0:
+                continue
+
+            out[i, j] = mu0 * r * vfac
+    return out
+
+
+# ----------------------------------------------------------------------
+# --- 3. CPU sparse (Python loop) --------------------------------------
+# ----------------------------------------------------------------------
+def _sparse_cpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+):
+    rot_func = (tdm_jm_x, tdm_jm_y, tdm_jm_z)[axis_idx]
+    data, row, col = [], [], []
+
+    for i, (v1, J1, M1) in enumerate(zip(v_arr, J_arr, M_arr)):
+        # J=0状態もスキップしない（dense版と同じ）
+        mask = (abs(J1 - J_arr) <= 1) & (  # 回転選択則: ΔJ = 0, ±1
+            abs(M1 - M_arr) <= 1
+        )  # 磁気選択則: ΔM = 0, ±1
+        for j in _np.nonzero(mask)[0]:
+            r = rot_func(J1, M1, J_arr[j], M_arr[j])
+            if r == 0.0:
+                continue
+            vfac = (
+                tdm_vib_morse(v1, v_arr[j], morse_level_parameter)
+                if vib_is_morse
+                else tdm_vib_harm(v1, v_arr[j])
+            )
+            if vfac == 0.0:
+                continue
+            data.append(mu0 * r * vfac)
+            row.append(i)
+            col.append(j)
+
+    # 空の場合はshapeを明示的に指定
+    shape = (len(v_arr), len(v_arr))
+    return _sp.csr_matrix((data, (row, col)), shape=shape, dtype=_np.complex128)
+
+
+# ----------------------------------------------------------------------
+# --- 4. GPU dense helpers ---------------------------------------------
+# ----------------------------------------------------------------------
+def _selected_sqrt(numerator, denominator, selected, xp):
+    """Evaluate a non-negative branch factor only on selected entries."""
+    return xp.sqrt(xp.where(selected, numerator / denominator, 0.0))
+
+
+def _rotational_array(J1, M1, J2, M2, axis_idx: int, xp):
+    """Vectorized form of the established tdm_jm_* kernels."""
+    delta_j = J2 - J1
+    delta_m = M2 - M1
+
+    if axis_idx in (0, 1):
+        r_branch = (delta_j == 1) & (xp.abs(delta_m) == 1)
+        p_branch = (delta_j == -1) & (xp.abs(delta_m) == 1)
+
+        r_numerator = (J1 + delta_m * M1 + 1) * (J1 + delta_m * M1 + 2)
+        r_denominator = 4 * (2 * J1 + 1) * (2 * J1 + 3)
+        r_amplitude = _selected_sqrt(r_numerator, r_denominator, r_branch, xp)
+
+        p_delta_m = -delta_m
+        p_numerator = (J2 + p_delta_m * M2 + 1) * (J2 + p_delta_m * M2 + 2)
+        p_denominator = 4 * (2 * J2 + 1) * (2 * J2 + 3)
+        p_amplitude = _selected_sqrt(p_numerator, p_denominator, p_branch, xp)
+
+        if axis_idx == 0:
+            result = xp.where(
+                r_branch,
+                -delta_m * r_amplitude,
+                xp.where(p_branch, delta_m * p_amplitude, 0.0),
+            )
+        else:
+            result = xp.where(
+                r_branch,
+                1j * r_amplitude,
+                xp.where(p_branch, -1j * p_amplitude, 0.0j),
+            )
+        return xp.asarray(result, dtype=xp.complex128)
+
+    r_branch = (delta_j == 1) & (delta_m == 0)
+    p_branch = (delta_j == -1) & (delta_m == 0)
+    r_numerator = (J1 + 1 - M1) * (J1 + 1 + M1)
+    r_denominator = (2 * J1 + 1) * (2 * J1 + 3)
+    r_amplitude = _selected_sqrt(r_numerator, r_denominator, r_branch, xp)
+    p_numerator = (J2 + 1 - M2) * (J2 + 1 + M2)
+    p_denominator = (2 * J2 + 1) * (2 * J2 + 3)
+    p_amplitude = _selected_sqrt(p_numerator, p_denominator, p_branch, xp)
+    result = xp.where(r_branch, r_amplitude, xp.where(p_branch, p_amplitude, 0.0))
+    return xp.asarray(result, dtype=xp.complex128)
+
+
+def _harmonic_vibration_array(v1, v2, xp):
+    """Vectorized form of tdm_vib_harm."""
+    return xp.where(
+        v1 == v2 + 1,
+        xp.sqrt(v1),
+        xp.where(v2 == v1 + 1, xp.sqrt(v2), 0.0),
+    )
+
+
+def _morse_vibration_array(
+    v1,
+    v2,
+    level_parameter: float,
+    maximum_vibrational_delta: int,
+    xp,
+):
+    """Vectorized form of tdm_vib_morse with the same product order."""
+    upper = xp.maximum(v1, v2)
+    lower = xp.minimum(v1, v2)
+    delta = upper - lower
+    factorial_product = xp.ones_like(delta, dtype=xp.float64)
+    gamma_product = xp.ones_like(delta, dtype=xp.float64)
+
+    for offset in range(1, maximum_vibrational_delta + 1):
+        selected = delta >= offset
+        factorial_product *= xp.where(selected, lower + offset, 1.0)
+        gamma_product *= xp.where(selected, 2 * level_parameter - upper + offset, 1.0)
+
+    tdm0 = (
+        2
+        / (2 * level_parameter - 1)
+        * _np.sqrt((level_parameter - 1) * level_parameter / (2 * level_parameter))
+    )
+    safe_delta = xp.where(delta == 0, 1, delta)
+    sign = xp.where(delta % 2 == 1, 1.0, -1.0)
+    value = (
+        2
+        * sign
+        / (safe_delta * (2 * level_parameter - lower - upper))
+        * xp.sqrt(
+            (level_parameter - lower)
+            * (level_parameter - upper)
+            * factorial_product
+            / gamma_product
+        )
+        / tdm0
+    )
+    return xp.where(delta == 0, 0.0, value)
+
+
+def _dense_array_backend(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+    maximum_vibrational_delta: int,
+    xp,
+):
+    """Build the dense matrix using only NumPy/CuPy-compatible operations."""
+    v1 = xp.expand_dims(v_arr, 1)
+    v2 = xp.expand_dims(v_arr, 0)
+    J1 = xp.expand_dims(J_arr, 1)
+    J2 = xp.expand_dims(J_arr, 0)
+    M1 = xp.expand_dims(M_arr, 1)
+    M2 = xp.expand_dims(M_arr, 0)
+
+    mask = (xp.abs(J1 - J2) == 1) & (xp.abs(M1 - M2) <= 1)
+    rot = _rotational_array(J1, M1, J2, M2, axis_idx, xp)
+    if vib_is_morse:
+        vib = _morse_vibration_array(
+            v1,
+            v2,
+            morse_level_parameter,
+            maximum_vibrational_delta,
+            xp,
+        )
+    else:
+        mask &= xp.abs(v1 - v2) == 1
+        vib = _harmonic_vibration_array(v1, v2, xp)
+    return mu0 * rot * vib * mask
+
+
+def _dense_gpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+    maximum_vibrational_delta: int | None = None,
+):
+    """Build a dense CuPy matrix without unsupported Python vectorization."""
+    if maximum_vibrational_delta is None:
+        maximum_vibrational_delta = max(v_arr.shape[0] - 1, 0)
+    return _dense_array_backend(
+        v_arr,
+        J_arr,
+        M_arr,
+        mu0,
+        axis_idx,
+        vib_is_morse,
+        morse_level_parameter,
+        maximum_vibrational_delta,
+        _cp,
+    )
+
+
+# ----------------------------------------------------------------------
+# --- 5. Public API ----------------------------------------------------
+# ----------------------------------------------------------------------
+def _build_mu(
+    basis: LinMolBasis,
+    axis: Literal["x", "y", "z"],
+    mu0: float,
+    *,
+    potential_type: Literal["harmonic", "morse"],
+    backend: Literal["numpy", "cupy"] = "numpy",
+    dense: bool = True,
+):
+    """
+    Generate transition-dipole matrix μ_axis.
+
+    Parameters
+    ----------
+    basis : LinMolBasis   (must expose .V_array, .J_array, and optionally .M_array)
+    axis  : 'x' | 'y' | 'z'
+    mu0   : overall scaling
+    potential_type : 'harmonic' | 'morse'
+    backend : 'numpy' | 'cupy'
+    dense  : True → ndarray, False → CSR
+    """
+    # 大文字小文字を区別しないように正規化してからチェック
+    axis_normalized = axis.lower()
+    if axis_normalized not in ("x", "y", "z"):
+        raise ValueError("axis must be x, y or z")
+    pot = potential_type.lower()
+    if pot not in ("harmonic", "morse"):
+        raise ValueError("potential_type must be harmonic or morse")
+
+    v_arr = _np.asarray(basis.V_array, _np.int64)
+    J_arr = _np.asarray(basis.J_array, _np.int64)
+
+    if not hasattr(basis, "M_array"):
+        raise ValueError(
+            "LinMol dipoles require explicit M quantum numbers; "
+            "use_M=False must use the incoherent M-averaged workflow"
+        )
+    M_arr = _np.asarray(basis.M_array, _np.int64)
+
+    axis_idx = "xyz".index(axis_normalized)
+    vib_is_morse = pot == "morse"
+    morse_level_parameter = (
+        omega01_domega_to_N(
+            basis.omega_rad_pfs,
+            basis.delta_omega_rad_pfs,
+        )
+        if vib_is_morse
+        else 0.0
+    )
+    if vib_is_morse:
+        validate_morse_v_max(basis.V_max, morse_level_parameter)
+    # ---- GPU ---------------------------------------------------------
+    if backend == "cupy":
+        if _cp is None:
+            raise RuntimeError("CuPy backend requested but CuPy not installed")
+        mat = _dense_gpu(
+            _cp.asarray(v_arr),
+            _cp.asarray(J_arr),
+            _cp.asarray(M_arr),
+            float(mu0),
+            axis_idx,
+            vib_is_morse,
+            morse_level_parameter,
+            maximum_vibrational_delta=basis.V_max,
+        )
+        return mat if dense else _csp.csr_matrix(mat)  # type: ignore[arg-type]
+
+    # ---- CPU dense ---------------------------------------------------
+    if dense:
+        return _dense_core(
+            v_arr,
+            J_arr,
+            M_arr,
+            float(mu0),
+            axis_idx,
+            vib_is_morse,
+            morse_level_parameter,
+        )
+
+    # ---- CPU sparse --------------------------------------------------
+    return _sparse_cpu(
+        v_arr,
+        J_arr,
+        M_arr,
+        float(mu0),
+        axis_idx,
+        vib_is_morse,
+        morse_level_parameter,
+    )

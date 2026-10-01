@@ -1,0 +1,93 @@
+"""
+rovibrational_excitation.models.linear_molecule.dipole
+======================
+Lazy, cached wrapper around :mod:`.dipole_builder` that supports
+
+* NumPy / CuPy backend
+* dense or CSR-sparse matrices
+* vibrational potential switch: ``potential_type = "harmonic" | "morse"``
+
+Typical usage
+-------------
+>>> dip = LinMolDipoleMatrix(basis,
+...                          mu0=0.3,
+...                          potential_type="morse",
+...                          backend="cupy",
+...                          dense=False)
+>>> mu_x = dip.mu_x
+>>> mu_xyz = dip.stacked()
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal, Union
+
+import numpy as np
+
+from rovibrational_excitation.models.dipole_base import Array, DipoleMatrixBase
+
+try:
+    import cupy as cp  # optional GPU backend
+except ImportError:
+    cp = None  # noqa: N816  (keep lower-case)
+
+# ----------------------------------------------------------------------
+# Forward-refs for static type checkers only
+# ----------------------------------------------------------------------
+if TYPE_CHECKING:
+    from .basis import LinMolBasis
+
+# Runtime用の型エイリアス
+if cp is not None:
+    Array: type = Union[np.ndarray, cp.ndarray]  # type: ignore[assignment]
+else:
+    Array: type = np.ndarray  # type: ignore[assignment,no-redef]
+
+from .dipole_builder import _build_mu
+
+
+# ----------------------------------------------------------------------
+# Main class
+# ----------------------------------------------------------------------
+@dataclass(slots=True)
+class LinMolDipoleMatrix(DipoleMatrixBase):
+    basis: LinMolBasis
+    mu0: float
+    potential_type: Literal["harmonic", "morse"]
+    backend: Literal["numpy", "cupy"] = "numpy"
+    dense: bool = True
+    units: Literal["C*m", "D", "ea0"] = "C*m"  # internal storage units
+    units_input: Literal["C*m", "D", "ea0"] = "C*m"  # units in which mu0 is provided
+
+    _cache: dict[tuple[str, bool], Array] = field(  # type: ignore[type-arg]
+        init=False, default_factory=dict, repr=False
+    )
+
+    # ------------------------------------------------------------------
+    # concrete implementation required by DipoleMatrixBase
+    # ------------------------------------------------------------------
+    def _build_mu_axis(self, axis: Literal["x", "y", "z"], *, dense: bool) -> Array:  # type: ignore[override]
+        """Build dipole matrix for LinMol system (no caching here)."""
+        return _build_mu(
+            self.basis,
+            axis,
+            self.mu0,
+            potential_type=self.potential_type,
+            backend=self.backend,
+            dense=dense,
+        )
+
+    # ------------------------------------------------------------------
+    # DipoleMatrixBase already provides unit conversion, stacking, persistence, __repr__
+    # ------------------------------------------------------------------
+    def __post_init__(self):
+        if self.potential_type not in {"harmonic", "morse"}:
+            raise ValueError("potential_type must be harmonic or morse")
+        if not hasattr(self.basis, "M_array"):
+            raise ValueError(
+                "LinMolDipoleMatrix requires an explicit M-resolved basis; "
+                "use_M=False is an incoherent M-averaged simulation workflow"
+            )
+        # convert mu0 units using base helper
+        self._convert_mu0_if_needed()

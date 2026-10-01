@@ -1,0 +1,414 @@
+"""
+Utility functions for time propagation algorithms.
+
+This module contains common utilities used by various propagator implementations.
+"""
+
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import numpy as np
+import scipy.sparse
+
+from ..core.dipole import DipoleOperator
+from ..core.operators import Hamiltonian
+from ..core.time import FIELD_INTERVALS_PER_PROPAGATION_STEP
+from ..core.units.constants import CONSTANTS
+from ..fields import ElectricField
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+    Array = Union[NDArray[Any], Any]
+else:
+    Array = np.ndarray
+
+# Compatibility alias in J fs; PhysicalConstants.HBAR is authoritative.
+DIRAC_HBAR = CONSTANTS.get_hbar_in_units("J·fs")
+
+
+# Optional CuPy support
+try:
+    import cupy as cp  # type: ignore
+
+    HAS_CUPY = True
+except ImportError:
+    cp = None
+    HAS_CUPY = False
+
+
+def get_backend(name: str):
+    """
+    Get computational backend by name.
+
+    Parameters
+    ----------
+    name : str
+        Backend name ("numpy" or "cupy")
+
+    Returns
+    -------
+    module
+        NumPy or CuPy module
+
+    Raises
+    ------
+    RuntimeError
+        If CuPy is requested but not installed
+    """
+    if name == "numpy":
+        return np
+    elif name == "cupy":
+        if cp is None:
+            raise RuntimeError("CuPy backend requested but CuPy not installed")
+        return cp
+    else:
+        raise ValueError(f"Unknown backend: {name}")
+
+
+def cm_to_rad_phz(mu: Array) -> Array:
+    """
+    Convert dipole moment from C·m to rad / (PHz/(V·m⁻¹)).
+
+    Parameters
+    ----------
+    mu : Array
+        Dipole moment in C·m
+
+    Returns
+    -------
+    Array
+        Dipole moment in rad / (PHz/(V·m⁻¹))
+    """
+    return mu / DIRAC_HBAR
+
+
+def J_to_rad_phz(H0: Array) -> Array:
+    """
+    Convert energy from J to rad / fs.
+
+    Parameters
+    ----------
+    H0 : Array
+        Energy in Joules
+
+    Returns
+    -------
+    Array
+        Energy in rad / fs
+    """
+    return H0 / DIRAC_HBAR
+
+
+def get_dipole_component_SI(dipole_matrix, axis: str) -> Array:
+    """
+    Get dipole matrix component in SI units (C·m) for specified axis.
+
+    Parameters
+    ----------
+    dipole_matrix : LinMolDipoleMatrix | TwoLevelDipoleMatrix | VibLadderDipoleMatrix
+        Dipole matrix object with unit management
+    axis : str
+        Dipole axis ('x', 'y', 'z')
+
+    Returns
+    -------
+    Array
+        Dipole matrix in SI units (C·m)
+
+    Raises
+    ------
+    AttributeError
+        If the dipole matrix doesn't have the requested component
+    """
+    # Try to get SI units first (preferred method)
+    si_method = f"get_mu_{axis}_SI"
+    if hasattr(dipole_matrix, si_method):
+        return getattr(dipole_matrix, si_method)()
+
+    # Fallback to direct attribute access (for backward compatibility)
+    attr = f"mu_{axis}"
+    if not hasattr(dipole_matrix, attr):
+        raise AttributeError(
+            f"{type(dipole_matrix).__name__} has no attribute '{attr}' or '{si_method}'"
+        )
+    return getattr(dipole_matrix, attr)
+
+
+def get_field_components(efield) -> tuple[Array, Array]:
+    """
+    Get x and y components of the electric field.
+
+    Parameters
+    ----------
+    efield : ElectricField
+        Electric field object
+
+    Returns
+    -------
+    tuple
+        (Ex, Ey) field components
+    """
+    field = efield.get_Efield()
+    return field[:, 0], field[:, 1]
+
+
+def ensure_dense_matrix(matrix: Array) -> Array:
+    """
+    Convert sparse matrix to dense if necessary.
+
+    Parameters
+    ----------
+    matrix : Array or sparse matrix
+        Input matrix
+
+    Returns
+    -------
+    Array
+        Dense matrix
+    """
+    if scipy.sparse.issparse(matrix):
+        return matrix.toarray()  # type: ignore
+    return matrix
+
+
+def ensure_sparse_matrix(matrix: Array) -> scipy.sparse.csr_matrix:
+    """
+    Convert dense matrix to sparse CSR format if necessary.
+
+    Parameters
+    ----------
+    matrix : Array or sparse matrix
+        Input matrix
+
+    Returns
+    -------
+    scipy.sparse.csr_matrix
+        Sparse CSR matrix
+    """
+    if not scipy.sparse.issparse(matrix):
+        return scipy.sparse.csr_matrix(matrix)
+    return matrix.tocsr()  # type: ignore
+
+
+def validate_axes(axes: str) -> tuple[str, str]:
+    """
+    Validate and parse axes string.
+
+    Parameters
+    ----------
+    axes : str
+        Axes string (e.g., "xy", "zx")
+
+    Returns
+    -------
+    tuple
+        (axis0, axis1) individual axes
+
+    Raises
+    ------
+    ValueError
+        If axes string is invalid
+    """
+    axes = axes.lower()
+    if len(axes) != 2 or any(a not in "xyz" for a in axes):
+        raise ValueError("axes must be like 'xy', 'zx', ...")
+    return axes[0], axes[1]
+
+
+def prepare_propagation_args(
+    hamiltonian: Hamiltonian,
+    efield: ElectricField,
+    dipole_matrix: DipoleOperator,
+    *,
+    axes: str = "xy",
+    mu_x_override: Array | None = None,
+    mu_y_override: Array | None = None,
+    nondimensional: bool = False,
+    auto_timestep: bool | None = None,
+    target_accuracy: Literal["high", "standard", "fast"] | None = None,
+    coupling_mode: Literal["cartesian", "scalar"] = "cartesian",
+    coupling_axis: Literal["x", "y", "z"] | None = None,
+) -> tuple[
+    Array,
+    Array,
+    Array,
+    Array,
+    Array,
+    Array | None,
+    Array | None,
+    float,
+    Any,
+]:
+    """
+    Prepare arguments for propagation algorithms.
+
+    Parameters
+    ----------
+    hamiltonian : Hamiltonian
+        Hamiltonian object
+    efield : ElectricField
+        Electric field object
+    dipole_matrix : DipoleOperator
+        Dipole matrix object
+    axes : str
+        Polarization axes
+    mu_x_override : Array, optional
+        Override for x-component dipole
+    mu_y_override : Array, optional
+        Override for y-component dipole
+    nondimensional : bool
+        Use nondimensional units
+    auto_timestep, target_accuracy
+        Removed options retained only as migration guards. Supplying either
+        option raises instead of silently selecting or ignoring a time grid.
+
+    Returns
+    -------
+    tuple
+        (H0, mu_a, mu_b, Ex, Ey, dt) prepared for propagation
+        mu_a corresponds to Ex, mu_b corresponds to Ey
+
+    Notes
+    -----
+    The integration step is derived from the electric-field grid as
+    ``efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP``.
+    """
+    from .scaling.converter import nondimensionalize_from_objects
+
+    if coupling_mode == "cartesian":
+        ax0, ax1 = validate_axes(axes)
+        try:
+            pol = efield.get_pol()
+        except ValueError:
+            pol = None
+    elif coupling_mode == "scalar":
+        if coupling_axis not in {"x", "y", "z"}:
+            raise ValueError(
+                "coupling_axis must be 'x', 'y', or 'z' for scalar coupling"
+            )
+        ax0 = ax1 = coupling_axis
+        pol = np.array([1.0, 0.0])
+    else:
+        raise ValueError("coupling_mode must be 'cartesian' or 'scalar'")
+
+    if auto_timestep is not None or target_accuracy is not None:
+        raise ValueError(
+            "auto_timestep and target_accuracy were removed; provide the "
+            "ElectricField grid explicitly and validate convergence"
+        )
+
+    if nondimensional:
+        (
+            H0_prime,
+            mu_x_prime,
+            mu_y_prime,
+            mu_z_prime,
+            Efield_prime,
+            E_scalar,
+            _,
+            dt_prime,
+            scales,
+        ) = nondimensionalize_from_objects(
+            hamiltonian,
+            dipole_matrix,
+            efield,
+            verbose=False,
+            coupling_axes=(ax0,) if coupling_mode == "scalar" else (ax0, ax1),
+            scalar_coupling=coupling_mode == "scalar",
+        )
+        dt = dt_prime * FIELD_INTERVALS_PER_PROPAGATION_STEP
+
+        dipole_map = {"x": mu_x_prime, "y": mu_y_prime, "z": mu_z_prime}
+        if coupling_mode == "scalar":
+            if E_scalar is None:
+                raise ValueError("scalar coupling requires a scalar field waveform")
+            Ex = np.asarray(E_scalar)
+            Ey = np.zeros_like(Ex)
+            mu_a = dipole_map[ax0] * scales.lambda_coupling
+            mu_b = np.zeros_like(mu_a)
+        else:
+            Ex, Ey = Efield_prime[:, 0], Efield_prime[:, 1]
+            mu_a = dipole_map[ax0] * scales.lambda_coupling
+            mu_b = dipole_map[ax1] * scales.lambda_coupling
+        return H0_prime, mu_a, mu_b, Ex, Ey, pol, E_scalar, dt, scales
+
+    # Standard dimensional calculation
+    dt = efield.dt * FIELD_INTERVALS_PER_PROPAGATION_STEP
+
+    try:
+        E_scalar = efield.get_scalar_field()
+    except ValueError:
+        E_scalar = None
+
+    if coupling_mode == "scalar":
+        if E_scalar is None:
+            raise ValueError(
+                "scalar coupling requires a scalar electric-field waveform"
+            )
+        Ex = np.asarray(E_scalar)
+        Ey = np.zeros_like(Ex)
+    else:
+        Ex, Ey = get_field_components(efield)
+
+    # Get dipole components
+    mu_a_prime = None
+    mu_b_prime = None
+
+    if coupling_mode == "scalar":
+        mu_a_prime = dipole_matrix.get_mu_in_units(ax0, "rad/fs/(V/m)")
+        mu_b_prime = ensure_dense_matrix(mu_a_prime) * 0
+    elif mu_x_override is not None:
+        mu_a_prime = mu_x_override
+    else:
+        # mu_a = get_dipole_component_SI(dipole_matrix, ax0)
+        mu_a_prime = dipole_matrix.get_mu_in_units(ax0, "rad/fs/(V/m)")
+
+    if coupling_mode == "scalar":
+        pass
+    elif mu_y_override is not None:
+        mu_b_prime = mu_y_override
+    else:
+        # mu_b = get_dipole_component_SI(dipole_matrix, ax1)
+        mu_b_prime = dipole_matrix.get_mu_in_units(ax1, "rad/fs/(V/m)")
+
+    # Ensure dense matrices
+    mu_a_prime = ensure_dense_matrix(mu_a_prime)
+    mu_b_prime = ensure_dense_matrix(mu_b_prime)
+
+    # Convert to appropriate units
+    H0_prime = ensure_dense_matrix(hamiltonian.get_matrix("rad/fs"))
+    # mu_a_prime = cm_to_rad_phz(mu_a)
+    # mu_b_prime = cm_to_rad_phz(mu_b)
+
+    return H0_prime, mu_a_prime, mu_b_prime, Ex, Ey, pol, E_scalar, dt, None
+
+
+def is_sparse_matrix(dipole_matrix, threshold: float = 0.1) -> bool:
+    """
+    Check if dipole matrices are sparse.
+
+    Parameters
+    ----------
+    dipole_matrix : DipoleMatrixBase
+        Dipole moment matrices to check
+    threshold : float
+        Sparsity threshold (fraction of non-zero elements)
+
+    Returns
+    -------
+    bool
+        True if matrices are considered sparse
+    """
+    # Get matrices for all axes
+    matrices = [dipole_matrix.get_matrix(axis) for axis in dipole_matrix.available_axes]
+
+    # Calculate sparsity for each matrix
+    sparsities = []
+    for mat in matrices:
+        total_elements = mat.size
+        nonzero_elements = np.count_nonzero(mat)
+        sparsity = nonzero_elements / total_elements
+        sparsities.append(sparsity)
+
+    # Return True if any matrix is sparse
+    return any(sparsity < threshold for sparsity in sparsities)

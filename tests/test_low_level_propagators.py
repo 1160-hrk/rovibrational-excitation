@@ -14,9 +14,16 @@ import numpy as np
 import pytest
 
 # 低レベル伝播機能をインポート
-from rovibrational_excitation.core.propagation.algorithms.rk4.lvne import rk4_lvne, rk4_lvne_traj
-from rovibrational_excitation.core.propagation.algorithms.rk4.schrodinger import rk4_schrodinger
-from rovibrational_excitation.core.propagation.algorithms.split_operator.schrodinger import splitop_schrodinger
+from rovibrational_excitation.dynamics.algorithms.rk4.lvne import (
+    rk4_lvne,
+    rk4_lvne_traj,
+)
+from rovibrational_excitation.dynamics.algorithms.rk4.schrodinger import (
+    rk4_schrodinger,
+)
+from rovibrational_excitation.dynamics.algorithms.split_operator.schrodinger import (
+    splitop_schrodinger,
+)
 
 # CuPyが利用可能か判定
 try:
@@ -161,6 +168,7 @@ class TestRK4SchrodingerDetailed:
             overlap, 1.0, atol=1e-6, err_msg=f"時間可逆性誤差: {1 - overlap}"
         )
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(
         not HAS_CUPY, reason="CuPyがインストールされていないためスキップ"
     )
@@ -182,7 +190,10 @@ class TestRK4SchrodingerDetailed:
             H0, mu_x, mu_y, Ex, Ey, psi0, dt=0.1, return_traj=False, backend="cupy"
         )
 
-        np.testing.assert_allclose(result_numpy[0], result_cupy[0], atol=1e-12)
+        assert isinstance(result_cupy, cp.ndarray)
+        np.testing.assert_allclose(
+            result_numpy[0], cp.asnumpy(result_cupy[0]), atol=1e-12
+        )
 
     def test_renormalization_option(self):
         """再正規化オプションの効果"""
@@ -293,14 +304,23 @@ class TestSplitOperatorDetailed:
     def test_norm_conservation(self):
         """ノルム保存の確認"""
         H0, mu_x, mu_y = create_two_level_system()
-        pol = np.array([1.0, 0.0], dtype=np.float64)
-        # 奇数長の電場配列を作成（split operatorの要求に合わせる）
-        Efield = np.concatenate([np.zeros(5), create_gaussian_pulse(11, amplitude=0.1)[0], np.zeros(5)])
+        Efield = np.concatenate(
+            [np.zeros(5), create_gaussian_pulse(11, amplitude=0.1)[0], np.zeros(5)]
+        )
 
         psi0 = np.array([0.6, 0.8], dtype=complex)
 
-        traj = splitop_schrodinger(H0, mu_x, mu_y, pol, Efield, psi0, dt=0.1, 
-                                   return_traj=True, sample_stride=1)
+        traj = splitop_schrodinger(
+            H0,
+            mu_x,
+            mu_y,
+            Efield,
+            np.zeros_like(Efield),
+            psi0,
+            dt=0.1,
+            return_traj=True,
+            sample_stride=1,
+        )
 
         for i in range(traj.shape[0]):
             norm = np.linalg.norm(traj[i])
@@ -309,44 +329,72 @@ class TestSplitOperatorDetailed:
     def test_energy_conservation_free_evolution(self):
         """自由発展時のエネルギー保存"""
         H0, mu_x, mu_y = create_harmonic_oscillator(4)
-        pol = np.array([0.0, 0.0], dtype=np.float64)  # ゼロ偏光
         Efield = np.zeros(21)  # 奇数長
 
         psi0 = np.array([0.5, 0.6, 0.6, 0], dtype=complex)
         psi0 /= np.linalg.norm(psi0)
 
-        traj = splitop_schrodinger(H0, mu_x, mu_y, pol, Efield, psi0, dt=0.1,
-                                   return_traj=True, sample_stride=1)
+        traj = splitop_schrodinger(
+            H0,
+            mu_x,
+            mu_y,
+            Efield,
+            np.zeros_like(Efield),
+            psi0,
+            dt=0.1,
+            return_traj=True,
+            sample_stride=1,
+        )
 
         energies = [compute_energy(traj[i], H0) for i in range(traj.shape[0])]
 
         energy_variation = np.max(energies) - np.min(energies)
         assert energy_variation < 1e-12
 
+    @pytest.mark.gpu
     @pytest.mark.skipif(
         not HAS_CUPY, reason="CuPyがインストールされていないためスキップ"
     )
     def test_cupy_backend_consistency(self):
         """CuPyバックエンドの一貫性"""
         H0, mu_x, mu_y = create_two_level_system()
-        pol = np.array([1.0, 0.3], dtype=np.float64)
-        # 奇数長の電場配列を作成
-        Efield = np.concatenate([np.zeros(5), create_gaussian_pulse(11, amplitude=0.1)[0], np.zeros(5)])
+        Efield = np.concatenate(
+            [np.zeros(5), create_gaussian_pulse(11, amplitude=0.1)[0], np.zeros(5)]
+        )
 
         psi0 = np.array([0.7, 0.7], dtype=complex)
         psi0 /= np.linalg.norm(psi0)
 
         # NumPyバックエンド
         traj_numpy = splitop_schrodinger(
-            H0, mu_x, mu_y, pol, Efield, psi0, dt=0.1, return_traj=True, sample_stride=1, backend="numpy"
+            H0,
+            mu_x,
+            mu_y,
+            Efield,
+            np.zeros_like(Efield),
+            psi0,
+            dt=0.1,
+            return_traj=True,
+            sample_stride=1,
+            backend="numpy",
         )
 
         # CuPyバックエンド
         traj_cupy = splitop_schrodinger(
-            H0, mu_x, mu_y, pol, Efield, psi0, dt=0.1, return_traj=True, sample_stride=1, backend="cupy"
+            H0,
+            mu_x,
+            mu_y,
+            Efield,
+            np.zeros_like(Efield),
+            psi0,
+            dt=0.1,
+            return_traj=True,
+            sample_stride=1,
+            backend="cupy",
         )
 
-        np.testing.assert_allclose(traj_numpy, traj_cupy, atol=1e-12)
+        assert isinstance(traj_cupy, cp.ndarray)
+        np.testing.assert_allclose(traj_numpy, cp.asnumpy(traj_cupy), atol=1e-12)
 
 
 # =============================================================================
@@ -377,9 +425,7 @@ class TestErrorHandling:
 
         # 空の電場配列でエラーが発生することを確認
         with pytest.raises((ValueError, IndexError)):
-            rk4_schrodinger(
-                H0, mu_x, mu_y, np.array([]), np.array([]), psi0, dt=0.1
-            )
+            rk4_schrodinger(H0, mu_x, mu_y, np.array([]), np.array([]), psi0, dt=0.1)
 
 
 # =============================================================================
@@ -396,7 +442,6 @@ class TestAlgorithmComparison:
 
         # 弱い電場
         Ex, Ey = create_gaussian_pulse(21, amplitude=0.01)
-        pol = np.array([1.0, 0.5], dtype=np.float64)
         Efield = Ex  # x成分のみ使用
 
         psi0 = np.array([1, 0], dtype=complex)
@@ -407,7 +452,15 @@ class TestAlgorithmComparison:
 
         # Split-Operator
         traj_splitop = splitop_schrodinger(
-            H0, mu_x, mu_y, pol, Efield, psi0, dt, return_traj=True, sample_stride=1
+            H0,
+            mu_x,
+            mu_y,
+            Efield,
+            np.zeros_like(Efield),
+            psi0,
+            dt,
+            return_traj=True,
+            sample_stride=1,
         )
 
         # 弱電場では結果が近いはず

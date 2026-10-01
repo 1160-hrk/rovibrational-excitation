@@ -1,344 +1,98 @@
-"""
-Unit validation utilities for rovibrational excitation calculations.
+"""Strict structural validation at the canonical propagation-unit boundary."""
 
-This module provides validation functions to ensure physical quantities
-are within reasonable ranges for molecular physics calculations.
-"""
+from __future__ import annotations
 
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Any
+
 import numpy as np
 
-from .constants import CONSTANTS
-from .converters import converter
+
+def _shape_of(value: Any, *, name: str) -> tuple[int, ...]:
+    """Return an object's shape without converting backend-native storage."""
+    shape = getattr(value, "shape", None)
+    if shape is None:
+        raise TypeError(f"{name} must expose a shape")
+    try:
+        return tuple(int(length) for length in shape)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{name} has an invalid shape") from exc
+
+
+def _square_dimension(value: Any, *, name: str) -> int:
+    shape = _shape_of(value, name=name)
+    if len(shape) != 2 or shape[0] != shape[1] or shape[0] == 0:
+        raise ValueError(f"{name} must be a non-empty square matrix; got shape {shape}")
+    return shape[0]
+
+
+def _required_method(owner: Any, name: str):
+    method = getattr(owner, name, None)
+    if not callable(method):
+        raise TypeError(f"{type(owner).__name__} must provide callable {name}()")
+    return method
 
 
 class UnitValidator:
+    """Validate formal access to the canonical units used by propagation.
+
+    This validator intentionally does not classify numerical values as typical
+    or atypical. Physical-scale adequacy belongs to an explicit convergence
+    analysis, not to a warning or fallback at the propagation boundary.
     """
-    Validator for physical quantities and their units.
-    
-    This class provides methods to validate that physical quantities
-    are within reasonable ranges for molecular physics calculations.
-    """
-    
-    def __init__(self):
-        """Initialize validator with reasonable ranges."""
-        self._setup_ranges()
-    
-    def _setup_ranges(self):
-        """Set up reasonable ranges for different quantities."""
-        # Energy ranges in J
-        self._energy_ranges_J = {
-            "molecular": (1e-25, 1e-15),  # Typical molecular energies
-            "electronic": (1e-19, 1e-17),  # Electronic transitions
-            "vibrational": (1e-21, 1e-19),  # Vibrational energies
-            "rotational": (1e-23, 1e-21),  # Rotational energies
-        }
-        
-        # Frequency ranges in rad/fs
-        self._frequency_ranges_rad_fs = {
-            "molecular": (1e-6, 1e3),  # Typical molecular frequencies
-            "electronic": (1e2, 1e4),  # Electronic transitions
-            "vibrational": (1e-2, 1e1),  # Vibrational frequencies
-            "rotational": (1e-5, 1e-2),  # Rotational frequencies
-        }
-        
-        # Dipole moment ranges in C·m
-        self._dipole_ranges_Cm = {
-            "molecular": (1e-35, 1e-25),  # Typical molecular dipoles
-            "small": (1e-32, 1e-29),  # Small dipoles
-            "large": (1e-29, 1e-26),  # Large dipoles
-        }
-        
-        # Electric field ranges in V/m
-        self._field_ranges_Vm = {
-            "weak": (1e3, 1e6),  # Weak fields
-            "moderate": (1e6, 1e9),  # Moderate fields
-            "strong": (1e9, 1e12),  # Strong fields
-            "extreme": (1e12, 1e15),  # Extreme fields
-        }
-        
-        # Time ranges in fs
-        self._time_ranges_fs = {
-            "ultrafast": (0.001, 10),  # Ultrafast processes
-            "fast": (10, 1000),  # Fast processes
-            "slow": (1000, 1e6),  # Slow processes
-        }
-    
-    def validate_energy(self, value: Union[float, np.ndarray], 
-                       unit: str, context: str = "molecular") -> Tuple[bool, List[str]]:
+
+    def validate_propagation_units(
+        self,
+        hamiltonian: Any,
+        dipole_matrix: Any,
+        efield: Any,
+        expected_H0_units: str = "J",
+        expected_dipole_units: str = "C*m",
+    ) -> None:
+        """Require canonical unit accessors and mutually consistent shapes.
+
+        No exception is downgraded to a warning, and no raw attribute is used
+        when a canonical SI accessor is absent.
         """
-        Validate energy value.
-        
-        Parameters
-        ----------
-        value : float or np.ndarray
-            Energy value(s) to validate
-        unit : str
-            Unit of the energy
-        context : str
-            Context for validation ("molecular", "electronic", etc.)
-            
-        Returns
-        -------
-        valid : bool
-            Whether the value is valid
-        warnings : List[str]
-            List of warning messages
-        """
-        warnings = []
-        
-        # Convert to J for validation
-        try:
-            value_J = converter.convert_energy(value, unit, "J")
-        except ValueError as e:
-            return False, [str(e)]
-        
-        # Get appropriate range
-        if context not in self._energy_ranges_J:
-            warnings.append(f"Unknown context '{context}', using 'molecular'")
-            context = "molecular"
-        
-        min_E, max_E = self._energy_ranges_J[context]
-        
-        # Check range
-        if np.any(np.abs(value_J) < min_E):
-            warnings.append(
-                f"Energy {np.min(np.abs(value_J)):.2e} J is below typical "
-                f"{context} range ({min_E:.2e} - {max_E:.2e} J)"
-            )
-        
-        if np.any(np.abs(value_J) > max_E):
-            warnings.append(
-                f"Energy {np.max(np.abs(value_J)):.2e} J is above typical "
-                f"{context} range ({min_E:.2e} - {max_E:.2e} J)"
-            )
-        
-        return len(warnings) == 0, warnings
-    
-    def validate_frequency(self, value: Union[float, np.ndarray], 
-                          unit: str, context: str = "molecular") -> Tuple[bool, List[str]]:
-        """Validate frequency value."""
-        warnings = []
-        
-        # Convert to rad/fs for validation
-        try:
-            value_rad_fs = converter.convert_frequency(value, unit, "rad/fs")
-        except ValueError as e:
-            return False, [str(e)]
-        
-        # Get appropriate range
-        if context not in self._frequency_ranges_rad_fs:
-            warnings.append(f"Unknown context '{context}', using 'molecular'")
-            context = "molecular"
-        
-        min_f, max_f = self._frequency_ranges_rad_fs[context]
-        
-        # Check range
-        if np.any(np.abs(value_rad_fs) < min_f):
-            warnings.append(
-                f"Frequency {np.min(np.abs(value_rad_fs)):.2e} rad/fs is below typical "
-                f"{context} range ({min_f:.2e} - {max_f:.2e} rad/fs)"
-            )
-        
-        if np.any(np.abs(value_rad_fs) > max_f):
-            warnings.append(
-                f"Frequency {np.max(np.abs(value_rad_fs)):.2e} rad/fs is above typical "
-                f"{context} range ({min_f:.2e} - {max_f:.2e} rad/fs)"
-            )
-        
-        return len(warnings) == 0, warnings
-    
-    def validate_dipole_moment(self, value: Union[float, np.ndarray], 
-                              unit: str, context: str = "molecular") -> Tuple[bool, List[str]]:
-        """Validate dipole moment value."""
-        warnings = []
-        
-        # Convert to C·m for validation
-        try:
-            value_Cm = converter.convert_dipole_moment(value, unit, "C*m")
-        except ValueError as e:
-            return False, [str(e)]
-        
-        # Get appropriate range
-        if context not in self._dipole_ranges_Cm:
-            warnings.append(f"Unknown context '{context}', using 'molecular'")
-            context = "molecular"
-        
-        min_d, max_d = self._dipole_ranges_Cm[context]
-        
-        # Check range
-        if np.any(np.abs(value_Cm) < min_d):
-            warnings.append(
-                f"Dipole moment {np.min(np.abs(value_Cm)):.2e} C·m is below typical "
-                f"{context} range ({min_d:.2e} - {max_d:.2e} C·m)"
-            )
-        
-        if np.any(np.abs(value_Cm) > max_d):
-            warnings.append(
-                f"Dipole moment {np.max(np.abs(value_Cm)):.2e} C·m is above typical "
-                f"{context} range ({min_d:.2e} - {max_d:.2e} C·m)"
-            )
-        
-        return len(warnings) == 0, warnings
-    
-    def validate_electric_field(self, value: Union[float, np.ndarray], 
-                               unit: str, context: str = "moderate") -> Tuple[bool, List[str]]:
-        """Validate electric field value."""
-        warnings = []
-        
-        # Convert to V/m for validation
-        try:
-            value_Vm = converter.convert_electric_field(value, unit, "V/m")
-        except ValueError as e:
-            return False, [str(e)]
-        
-        # Get appropriate range
-        if context not in self._field_ranges_Vm:
-            warnings.append(f"Unknown context '{context}', using 'moderate'")
-            context = "moderate"
-        
-        min_E, max_E = self._field_ranges_Vm[context]
-        
-        # Check range
-        if np.any(np.abs(value_Vm) < min_E):
-            warnings.append(
-                f"Electric field {np.min(np.abs(value_Vm)):.2e} V/m is below typical "
-                f"{context} range ({min_E:.2e} - {max_E:.2e} V/m)"
-            )
-        
-        if np.any(np.abs(value_Vm) > max_E):
-            warnings.append(
-                f"Electric field {np.max(np.abs(value_Vm)):.2e} V/m is above typical "
-                f"{context} range ({min_E:.2e} - {max_E:.2e} V/m)"
-            )
-        
-        return len(warnings) == 0, warnings
-    
-    def validate_time(self, value: Union[float, np.ndarray], 
-                     unit: str, context: str = "fast") -> Tuple[bool, List[str]]:
-        """Validate time value."""
-        warnings = []
-        
-        # Convert to fs for validation
-        try:
-            value_fs = converter.convert_time(value, unit, "fs")
-        except ValueError as e:
-            return False, [str(e)]
-        
-        # Get appropriate range
-        if context not in self._time_ranges_fs:
-            warnings.append(f"Unknown context '{context}', using 'fast'")
-            context = "fast"
-        
-        min_t, max_t = self._time_ranges_fs[context]
-        
-        # Check range
-        if np.any(value_fs < min_t):
-            warnings.append(
-                f"Time {np.min(value_fs):.2e} fs is below typical "
-                f"{context} range ({min_t:.2e} - {max_t:.2e} fs)"
-            )
-        
-        if np.any(value_fs > max_t):
-            warnings.append(
-                f"Time {np.max(value_fs):.2e} fs is above typical "
-                f"{context} range ({min_t:.2e} - {max_t:.2e} fs)"
-            )
-        
-        return len(warnings) == 0, warnings
-    
-    def validate_propagation_units(self, hamiltonian, dipole_matrix, 
-                                  efield, expected_H0_units: str = "J",
-                                  expected_dipole_units: str = "C*m") -> List[str]:
-        """
-        Validate units before propagation calculation.
-        
-        This is a refactored version of the validate_propagation_units
-        function from propagator.py.
-        """
-        warnings = []
-        H0 = hamiltonian.get_matrix("J")
-        try:
-            # Energy scale analysis
-            if H0.ndim == 2:
-                eigenvals = np.diag(H0)
-            else:
-                eigenvals = H0
-            
-            energy_range = np.ptp(eigenvals)
-            
-            # Validate energy scale
-            valid, energy_warnings = self.validate_energy(
-                energy_range, expected_H0_units, "molecular"
-            )
-            warnings.extend(energy_warnings)
-            
-            # Dipole moment analysis
-            mu_x = self._get_dipole_component(dipole_matrix, 'x')
-            mu_y = self._get_dipole_component(dipole_matrix, 'y')
-            max_dipole = max(np.max(np.abs(mu_x)), np.max(np.abs(mu_y)))
-            
-            # Validate dipole scale
-            valid, dipole_warnings = self.validate_dipole_moment(
-                max_dipole, expected_dipole_units, "molecular"
-            )
-            warnings.extend(dipole_warnings)
-            
-            # Time scale analysis
-            if hasattr(efield, 'dt') and energy_range > 0:
-                if expected_H0_units == "J":
-                    char_time_fs = CONSTANTS.HBAR / energy_range * 1e15
-                elif expected_H0_units == "rad/fs":
-                    char_time_fs = 1 / energy_range
-                else:
-                    char_time_fs = 1000  # rough estimate
-                
-                if efield.dt > char_time_fs / 5:
-                    warnings.append(
-                        f"時間ステップ {efield.dt:.3f} fs が特性時間 "
-                        f"{char_time_fs:.3f} fs に対して大きすぎます "
-                        f"(推奨: < {char_time_fs/5:.3f} fs)"
-                    )
-            
-            # Electric field magnitude check
-            if hasattr(efield, 'Efield'):
-                max_field = np.max(np.abs(efield.Efield))
-                valid, field_warnings = self.validate_electric_field(
-                    max_field, "V/m", "moderate"
+        if expected_H0_units != "J":
+            raise ValueError("expected_H0_units must be 'J'")
+        if expected_dipole_units != "C*m":
+            raise ValueError("expected_dipole_units must be 'C*m'")
+
+        h0 = _required_method(hamiltonian, "get_matrix")("J")
+        dimension = _square_dimension(h0, name="Hamiltonian in J")
+
+        for axis in ("x", "y"):
+            component = _required_method(dipole_matrix, f"get_mu_{axis}_SI")()
+            shape = _shape_of(component, name=f"mu_{axis} in C*m")
+            if shape != (dimension, dimension):
+                raise ValueError(
+                    f"mu_{axis} in C*m must have shape "
+                    f"{(dimension, dimension)}; got {shape}"
                 )
-                warnings.extend(field_warnings)
-                
-                # Interaction strength analysis
-                if max_dipole > 0 and energy_range > 0:
-                    if expected_H0_units == "J" and expected_dipole_units == "C*m":
-                        interaction_strength = max_field * max_dipole / energy_range
-                        if interaction_strength > 0.1:
-                            warnings.append(
-                                f"強電場域です (相互作用強度 = {interaction_strength:.3f}). "
-                                "小さな時間ステップを検討してください"
-                            )
-            
-        except Exception as e:
-            warnings.append(f"単位検証中にエラーが発生しました: {e}")
-        
-        return warnings
-    
-    def _get_dipole_component(self, dipole_matrix, axis: str) -> np.ndarray:
-        """Extract dipole matrix component."""
-        # Try to get SI units first (preferred method)
-        si_method = f"get_mu_{axis}_SI"
-        if hasattr(dipole_matrix, si_method):
-            return getattr(dipole_matrix, si_method)()
-        
-        # Fallback to direct attribute access
-        attr = f"mu_{axis}"
-        if hasattr(dipole_matrix, attr):
-            return getattr(dipole_matrix, attr)
-        
-        raise AttributeError(
-            f"{type(dipole_matrix).__name__} has no attribute '{attr}' or '{si_method}'"
-        )
+
+        time_fs = _required_method(efield, "get_time_SI")()
+        time_shape = _shape_of(time_fs, name="time grid in fs")
+        if len(time_shape) != 1 or time_shape[0] < 2:
+            raise ValueError(
+                "time grid in fs must be one-dimensional with at least 2 points"
+            )
+
+        field_v_per_m = _required_method(efield, "get_Efield_SI")()
+        field_shape = _shape_of(field_v_per_m, name="electric field in V/m")
+        if len(field_shape) not in (1, 2) or field_shape[0] != time_shape[0]:
+            raise ValueError(
+                "electric field in V/m must have one sample per time-grid point; "
+                f"got field shape {field_shape} and time shape {time_shape}"
+            )
+
+        try:
+            field_dt_fs = float(efield.dt)
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise TypeError("electric field must expose scalar dt in fs") from exc
+        if not np.isfinite(field_dt_fs) or field_dt_fs <= 0.0:
+            raise ValueError("electric-field dt in fs must be finite and positive")
 
 
-# Create a singleton instance
-validator = UnitValidator() 
+validator = UnitValidator()
+
+__all__ = ["UnitValidator", "validator"]

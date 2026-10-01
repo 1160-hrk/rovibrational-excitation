@@ -1,0 +1,43 @@
+system:
+  type: vibladder
+  params:
+    V_max: 3
+    vibrational_frequency: 2349.1
+    vibrational_frequency_units: "cm^-1"
+    anharmonic_shift: 25.0
+    anharmonic_shift_units: "cm^-1"
+    dipole_scale: 0.3
+    dipole_scale_units: "D"
+    potential_type: harmonic
+states:
+  initial: [0]
+  target: [3]
+time:
+  total_fs: 500.0
+  field_dt_fs: 0.05
+  output_stride: 1
+algorithm:
+  selected: legacy_batch_overlap
+algorithms:
+  legacy_batch_overlap:
+    max_iter: 1000
+    convergence_tol: 1.0e-18
+    lambda_a: 1.0e-20
+    target_fidelity: 1.0
+    control_axes: "zx"
+    initial_field_kind: generated
+    initial_carrier_frequency: 2300.0
+    initial_carrier_frequency_units: "cm^-1"
+    initial_amplitude: 1.0e+9
+    initial_amplitude_units: "V/m"
+    initial_polarization: [1.0, 0.0]
+    initial_duration: 200.0
+    initial_duration_units: "fs"
+    initial_center: 250.0
+    initial_center_units: "fs"
+plot:
+  enabled: false
+  spectrum: false
+  spectrogram: false
+output:
+  dir: "benchmarks/results"

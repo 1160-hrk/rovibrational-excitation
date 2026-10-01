@@ -1,0 +1,48 @@
+{
+  "algorithm": "legacy_batch_overlap",
+  "artifact": "krotov-v0-v3-v0.3",
+  "configuration": "configs/reference_krotov_viblad_v3.yaml",
+  "created_utc": "2026-08-12T03:53:08.995422+00:00",
+  "current_configuration": "configs/reference_legacy_batch_overlap_viblad_v3.yaml",
+  "dimension": 4,
+  "environment": {
+    "numpy": "2.3.5",
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.12"
+  },
+  "fidelity": 0.9999999931434966,
+  "field_peak_V_per_m": [
+    3907095160.89118,
+    0.0
+  ],
+  "field_rms_V_per_m": [
+    1402069036.7609608,
+    0.0
+  ],
+  "field_shape": [
+    10001,
+    2
+  ],
+  "final_populations": [
+    1.7836340801535811e-09,
+    4.225079711750588e-09,
+    8.477895029895472e-10,
+    0.9999999931434966
+  ],
+  "independent_trajectory_max_abs_difference": 0.0,
+  "interpretation": "Deterministic legacy_batch_overlap end-to-end regression reference; not an independent validation of the standard Krotov objective or update equation.",
+  "maximum_non_target_population": 4.225079711750588e-09,
+  "norm_max": 1.0000000000000009,
+  "norm_min": 0.9999999999999993,
+  "npz": "benchmarks/krotov-v0-v3-v0.3.npz",
+  "reported_fidelity": 0.9999999931434966,
+  "source": {
+    "commit": "8f8ec68acfb1653bde280b826bd1336d5a0d7a51",
+    "worktree_dirty": false
+  },
+  "target_index": 3,
+  "trajectory_shape": [
+    5001,
+    4
+  ]
+}

@@ -1,396 +1,242 @@
 # rovibrational-excitation
 
-<!-- Core Information -->
-[![PyPI version](https://img.shields.io/pypi/v/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
-[![Python](https://img.shields.io/pypi/pyversions/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
-[![Downloads](https://img.shields.io/pypi/dm/rovibrational-excitation.svg)](https://pypi.org/project/rovibrational-excitation/)
-[![License](https://img.shields.io/github/license/1160-hrk/rovibrational-excitation.svg)](https://github.com/1160-hrk/rovibrational-excitation/blob/main/LICENSE)
+[![CI](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<!-- Quality Assurance -->
-[![Tests](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/tests.yml)
-[![Coverage](https://codecov.io/gh/1160-hrk/rovibrational-excitation/branch/main/graph/badge.svg)](https://codecov.io/gh/1160-hrk/rovibrational-excitation)
-[![Code Quality](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml/badge.svg)](https://github.com/1160-hrk/rovibrational-excitation/actions/workflows/ci.yml)
+[日本語](README_JP.md)
 
-Python package for **time-dependent quantum dynamics** of
-linear molecules (rotation × vibration) driven by femtosecond–picosecond
-laser pulses.
+A Python library for time-dependent rovibrational quantum dynamics driven by
+laser fields. The current development version is `0.3.0.dev1`; its API is
+intentionally incompatible with v0.2.
 
-<div align="center">
+The library provides explicit-unit model construction, generated or externally
+sampled electric fields, typed propagation choices, optimal-control methods,
+linear-response spectroscopy, batch execution, strict result/checkpoint
+schemas, and plotting helpers.
 
-| CPU / GPU (CuPy) | Numba-JIT RK4 propagator | Lazy, cached dipole matrices |
-|------------------|--------------------------|------------------------------|
+## Current status
 
-</div>
+CPU calculations are the verified production path. CI runs Python 3.10–3.13,
+the complete CPU suite, physics references, branch coverage, supported
+examples, type checks, and clean-wheel imports; see the
+[CI workflow](.github/workflows/ci.yml).
 
----
+Real-CUDA execution is numerically accepted for the supported dense pure-state
+RK4 and split-operator routes. On the clean `b9de848` source commit, all 15
+GPU-marked tests and the five-case schema-v1 report passed on an RTX 5070 Ti;
+see the [accepted evidence](benchmarks/real-cuda-v0.3-b9de848.json). Results stayed
+as CuPy `complex128` arrays and met the fixed parity and norm bounds. This
+32-state diagnostic does not establish a general GPU speed advantage. A requested
+CuPy backend never silently falls back to NumPy.
 
-## Key features
+## Supported physical models
 
-### 🔧 High-Performance Time Evolution Engine
-* **Runge–Kutta 4 (RK-4)** propagators for the Schrödinger and Liouville–von Neumann equations (`complex128`, cache-friendly).
-* **Split-operator method** with CPU/GPU backends for efficient propagation.
+| Model | Coupling and current scope |
+|---|---|
+| Two-level | Scalar coupling; explicit gap and dipole units |
+| Vibrational ladder | Scalar harmonic or Morse ladder; Morse requires nonzero anharmonicity |
+| Linear molecule | Harmonic or Morse vibration with rotation; Cartesian M-resolved propagation or scalar-z incoherent M averaging |
+| Symmetric top | Rigid parallel band in signed `|v,J,K,M>` order; CH3F ortho/para filtering; NumPy dense/CSR RK4 only |
 
-### ⚡ High-Speed Dipole Matrix Construction
-* **Lazy, high-speed construction** of transition-dipole matrices (`rovibrational_excitation.dipole.*`)  
-  * rigid-rotor + harmonic / Morse vibration  
-  * Numba (CPU) or CuPy (GPU) backend
-* **Lazy evaluation & caching** for fast computation
+Symmetric-top simulation requires explicit axes, all constants and units, and
+exactly one nuclear-spin isomer sector. CuPy, split operator, all-isomer pure
+states, and optimization are rejected explicitly for this model.
 
-### 🌊 Flexible Electric Field Control
-* **Vector electric-field objects** with Gaussian envelopes, chirp, optional sinusoidal and binned modulation.
-* Gaussian envelope, chirp functionality
-* Sinusoidal and binned modulation options
-* Vector field support
+## Numerical capability summary
 
-### 📊 Batch Processing & Analysis
-* **Batch runner** for pump–probe / parameter sweeps with automatic directory creation, progress-bar and compressed output (`.npz`).
-* Pump-probe experiment simulation
-* Parameter sweep capabilities
-* Automatic directory creation
-* Progress bar display
-* Compressed output (`.npz`)
+- Pure-state Schrödinger propagation supports RK4 with NumPy dense or CSR
+  storage. The Numba CSR path performs sparse matvecs inside the compiled RK4
+  loop.
+- Split-operator propagation provides the exact Cartesian interaction route and
+  an explicit helicity-projected approximation. The interaction mode is always
+  required; it is never selected by fallback.
+- Incoherent mixtures use a dedicated mixed-state propagator and normalized
+  statistical weights.
+- Density-matrix/Liouville propagation supports NumPy dense RK4 only.
+- The electric-field sampling interval is half a propagation step. Canonical
+  RK4 fields therefore contain `2 * n_steps + 1` samples.
+- The interaction convention is `H(t) = H0 - mu E(t)` throughout.
 
-### 🔬 Supported Molecules
-* Currently, only **linear molecules** are supported; that is, only the rotational quantum numbers J and M are taken into account.
-* Future extension to non-linear molecules is planned.
-
-### 🏗️ Pure Python Implementation
-* 100 % pure-Python, **no compiled extension to ship** (Numba compiles at runtime).
-
----
-
-## Testing & Coverage
-
-The package includes a comprehensive test suite with **63% code coverage** across all modules.
-
-- 🟢 **Basis classes**: 100% coverage (LinMol, TwoLevel, VibLadder)
-- 🟡 **Core physics**: 55% overall coverage
-  - States: 98% coverage  
-  - Propagator: 83% coverage
-  - Hamiltonian: 67% coverage
-- 🟡 **Electric field**: 53% coverage
-- 🟡 **Dipole matrices**: 52-96% coverage (varies by subsystem)
-- 🔴 **Low-level propagators**: 25-38% coverage (ongoing development)
-- 🟡 **Simulation runner**: 62% coverage
-
-See [`tests/README.md`](tests/README.md) for detailed coverage reports and test instructions.
-
-```bash
-# Run tests
-cd tests/ && python -m pytest -v
-
-# Generate coverage report
-coverage run -m pytest && coverage report
-```
-
----
+See [physics contracts](docs/refactoring/PHYSICS_CONTRACTS.md) and the
+[Cartesian split-operator explanation](docs/CARTESIAN_SPLIT_OPERATOR.md) for
+the fixed conventions and limitations.
 
 ## Installation
 
-### Stable Release (PyPI)
+Python 3.10 or newer is required.
+
 ```bash
-# From PyPI  (stable)
-pip install rovibrational-excitation          # installs sub-packages as well
+pip install rovibrational-excitation
 ```
 
-### Development Version (GitHub)
+For the current source checkout:
+
 ```bash
-# Or from GitHub (main branch, bleeding-edge)
-pip install git+https://github.com/1160-hrk/rovibrational-excitation.git
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e ".[dev,io,plot]"
 ```
 
-### GPU Acceleration (Optional)
-> **CuPy (optional)** – for GPU acceleration
->
-> ```bash
-> pip install cupy-cuda12x     # pick the wheel that matches your CUDA
-> ```
+The optional `gpu` extra installs `cupy-cuda12x[ctk]`, including the CUDA 12
+user-space runtime, headers, and libraries needed on a driver-only host. It
+still requires a compatible NVIDIA driver; the accepted target-host evidence is
+linked above.
 
----
+## Quick start
 
-## Requirements
-
-### Python Environment
-- **Python**: 3.10+
-- **NumPy**: Array operations & numerical computing
-- **SciPy**: Scientific computing library
-- **Numba**: JIT compilation (CPU acceleration)
-
-### Optional Dependencies
-- **CuPy**: GPU computing (requires CUDA)
-- **Matplotlib**: Graph plotting
-- **tqdm**: Progress bars
-
----
-
-## 📚 Documentation
-
-For detailed usage instructions and parameter reference:
-
-| Document | Description | Audience |
-|----------|-------------|----------|
-| **[docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)** | **Complete parameter reference** | All users |
-| [docs/SWEEP_SPECIFICATION.md](docs/SWEEP_SPECIFICATION.md) | Parameter sweep specification | Intermediate |
-| [docs/README.md](docs/README.md) | Documentation index & quick guides | All users |
-| [examples/params_template.py](examples/params_template.py) | Parameter file template | Beginners |
-
-### 🚀 Getting Started
-
-1. **Read the parameter reference**: [docs/PARAMETER_REFERENCE.md](docs/PARAMETER_REFERENCE.md)
-2. **Copy the template**: `cp examples/params_template.py my_params.py`
-3. **Edit parameters** according to your system
-4. **Run simulation**: `python -m rovibrational_excitation.simulation.runner my_params.py`
-
----
-
-## Quick start : library API
+This generated-field example is executed directly by the README contract test.
+Every physical scalar carries an explicit unit, and the caller explicitly
+selects the generated-field route with `field=None`.
 
 ```python
+# README_SMOKE
 import numpy as np
-import rovibrational_excitation as rve
 
-# --- 1. Basis & dipole matrices ----------------------------------
-c_vacuum = 299792458 * 1e2 / 1e15  # cm/fs
-debye_unit = 3.33564e-30                       # 1 D → C·m
-Omega01_rad_phz = 2349*2*np.pi*c_vacuum
-Delta_omega_rad_phz = 25*2*np.pi*c_vacuum
-B_rad_phz = 0.39e-3*2*np.pi*c_vacuum
-Mu0_Cm = 0.3 * debye_unit                      # 0.3 Debye 相当
-Potential_type = "harmonic"  # or "morse"
-V_max = 2
-J_max = 4
+from rovibrational_excitation import run_simulation_case
 
-basis = rve.LinMolBasis(
-            V_max=V_max,
-            J_max=J_max,
-            use_M = True,
-            omega_rad_phz = Omega01_rad_phz,
-            delta_omega_rad_phz = Delta_omega_rad_phz
-            )           # |v J M⟩ direct-product
+params = {
+    "basis_type": "twolevel",
+    "energy_gap": 0.2,
+    "energy_gap_units": "rad/fs",
+    "dipole_scale": 3.0e-30,
+    "dipole_scale_units": "C*m",
+    "t_start": -10.0,
+    "t_start_units": "fs",
+    "t_end": 10.0,
+    "t_end_units": "fs",
+    "dt": 0.1,
+    "dt_units": "fs",
+    "duration": 4.0,
+    "duration_units": "fs",
+    "t_center": 0.0,
+    "t_center_units": "fs",
+    "envelope_kind": "gaussian_fwhm",
+    "modulation_kind": "none",
+    "carrier_frequency": 0.05,
+    "carrier_frequency_units": "PHz",
+    "amplitude": 1.0e8,
+    "amplitude_units": "V/m",
+    "initial_states": [0],
+    "backend": "numpy",
+    "storage": "dense",
+    "algorithm": "rk4",
+    "return_traj": True,
+    "sample_stride": 1,
+    "nondimensional": False,
+    "renorm": False,
+    "save": False,
+}
 
-dip   = rve.LinMolDipoleMatrix(
-            basis, mu0=Mu0_Cm, potential_type=Potential_type,
-            backend="numpy", dense=True)            # CSR on GPU
-
-mu_x  = dip.mu_x            # lazy-built, cached thereafter
-mu_y  = dip.mu_y
-mu_z  = dip.mu_z
-
-# --- 2. Hamiltonian ----------------------------------------------
-H0 = rve.generate_H0_LinMol(
-        basis,
-        omega_rad_phz       = Omega01_rad_phz,
-        delta_omega_rad_phz = Delta_omega_rad_phz,
-        B_rad_phz           = B_rad_phz,
-)
-
-# --- 3. Electric field -------------------------------------------
-t  = np.linspace(-200, 200, 4001)                   # fs
-E  = rve.ElectricField(tlist=t)
-E.add_dispersed_Efield(
-        envelope_func=rve.core.electric_field.gaussian_fwhm,
-        duration=50.0,             # FWHM (fs)
-        t_center=0.0,
-        carrier_freq=2349*2*np.pi*c_vacuum,   # rad/fs
-        amplitude=1.0,
-        polarization=[1.0, 0.0],   # x-pol.
-)
-
-# --- 4. Initial state |v=0,J=0,M=0⟩ ------------------------------
-from rovibrational_excitation.core.states import StateVector
-psi0 = StateVector(basis)
-psi0.set_state((0,0,0), 1.0)
-psi0.normalize()
-
-# --- 5. Time propagation (Schrödinger) ---------------------------
-psi_t = rve.schrodinger_propagation(
-            H0, E, dip,
-            psi0.data,
-            axes="xy",              # Ex→μx, Ey→μy
-            sample_stride=10,
-            backend="numpy")        # or "cupy"
-
-population = np.abs(psi_t)**2
-print(population.shape)            # (Nt, dim)
+population = run_simulation_case(params, field=None)
+np.testing.assert_allclose(population.sum(axis=1), 1.0, rtol=1e-9, atol=1e-11)
+print("final populations:", population[-1])
 ```
 
----
+For externally supplied waveforms, construct `TimeGrid` and `ScalarField` or
+`CartesianField` explicitly. Samples are copied and converted once to the
+canonical V/m representation; they are never resampled, padded, normalized, or
+repaired. See
+[`example_external_scalar_field.py`](examples/example_external_scalar_field.py).
 
-## Quick start : batch runner
+## Public API
 
-1. **Create a parameter file** (`params_CO2.py`)
+The package root deliberately exports only:
 
-```python
-# description is used in results/<timestamp>_<description>/
-description = "CO2_antisymm_stretch"
-
-# --- time axis (fs) ---------------------------------------------
-t_start, t_end, dt = -200.0, 200.0, 0.1       # Unit is fs
-
-# --- electric-field scan ----------------------------------------
-duration       = [50.0, 80.0]                 # Gaussian FWHM (fs)
-polarization   = [[1,0], [1/2**0.5,1j/2**0.5]]
-t_center       = [0.0, 100.0]
-
-carrier_freq   = 2349*2*np.pi*1e12*1e-15      # rad/fs
-amplitude      = 1.0e9                        # V/m
-
-# --- molecular constants ----------------------------------------
-V_max, J_max   = 2, 4
-omega_rad_phz   = carrier_freq * 2 * np.pi
-mu0_Cm         = 0.3 * 3.33564e-30            # 0.3 D
+```text
+__version__, ElectricField, TimeGrid, ExecutionPolicy,
+PropagationProblem, PropagationOptions, PropagationResult,
+run_simulation_case
 ```
 
-2. **Run**
+Use explicit subpackages for the rest:
+
+- `rovibrational_excitation.models` — schemas and model construction;
+- `rovibrational_excitation.core` — low-level states, operators, units, and
+  model-independent contracts;
+- `rovibrational_excitation.fields` — sampled fields, envelopes, and
+  modulation;
+- `rovibrational_excitation.dynamics` — propagators and capability contracts;
+- `rovibrational_excitation.optimization` — GRAPE, standard Krotov,
+  `legacy_batch_overlap`, and local control;
+- `rovibrational_excitation.spectroscopy` — standard absorption and typed
+  complex analyzer response;
+- `rovibrational_excitation.visualization` — optional plotting helpers.
+
+There are no compatibility shims for the old v0.2 root convenience names.
+
+## CLI and supported examples
+
+Run the executable parameter template without writing results:
 
 ```bash
-python -m rovibrational_excitation.simulation.runner \
-       examples/params_CO2.py     -j 4      # 4 processes
+rve-simulate examples/params_template.py --no-save
 ```
 
-* Creates `results/YYYY-MM-DD_hh-mm-ss_CO2_antisymm_stretch/…`
-* For each case a folder with `result.npz`, `parameters.json`
-* Top-level `summary.csv` (final populations etc.)
-
-> Add `--dry-run` to just list cases without running.
-
----
-
-## Applications
-
-### CO2 Antisymmetric Stretch Vibration Excitation
-- **Molecule**: CO2 (linear triatomic molecule)
-- **Excitation mode**: Antisymmetric stretch vibration (ν₃ ≈ 2349 cm⁻¹)
-- **Laser**: Femtosecond pulse
-- **Analysis**: Population transfer between vibrational levels
-
-### Pump-Probe Experiments
-- **Pump pulse**: Molecular excitation
-- **Probe pulse**: State exploration after time delay
-- **Measurements**: Time-resolved spectra, population dynamics
-
----
-
-## Directory layout
-
-```
-rovibrational_excitation/
-├── src/rovibrational_excitation/
-│   ├── __init__.py          # public re-export
-│   ├── core/                # low-level numerics
-│   │   ├── basis/           # quantum basis classes
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py      # abstract base class
-│   │   │   ├── linmol.py    # linear molecule basis
-│   │   │   ├── twolevel.py  # two-level system
-│   │   │   └── viblad.py    # vibrational ladder
-│   │   ├── propagator.py    # time evolution
-│   │   ├── electric_field.py
-│   │   ├── hamiltonian.py   # DEPRECATED
-│   │   ├── states.py        # quantum state vectors
-│   │   ├── _rk4_schrodinger.py
-│   │   ├── _rk4_lvne.py
-│   │   └── _splitop_schrodinger.py
-│   ├── dipole/              # transition dipole matrices
-│   │   ├── linmol/          # linear molecules
-│   │   │   ├── builder.py   # matrix construction
-│   │   │   └── cache.py     # caching system
-│   │   ├── twolevel/        # two-level systems
-│   │   ├── viblad/          # vibrational ladder
-│   │   ├── rot/             # rotational elements
-│   │   │   ├── j.py         # J quantum number
-│   │   │   └── jm.py        # J,M quantum numbers
-│   │   └── vib/             # vibrational elements
-│   │       ├── harmonic.py  # harmonic oscillator
-│   │       └── morse.py     # Morse oscillator
-│   ├── plots/               # visualization helpers
-│   │   ├── plot_electric_field.py
-│   │   ├── plot_electric_field_vector.py
-│   │   └── plot_population.py
-│   └── simulation/          # batch runner & CLI
-│       ├── runner.py        # main execution engine
-│       ├── manager.py       # execution management
-│       └── config.py        # configuration handling
-├── tests/                   # unit tests (pytest)
-├── validation/              # physics validation scripts
-│   ├── core/                # core physics validation
-│   ├── dipole/              # dipole matrix validation
-│   └── simulation/          # integration validation
-├── examples/                # usage examples
-└── docs/                    # documentation
-```
-
-### Validation vs Testing
-
-- **`tests/`**: Unit tests for code correctness (fast, comprehensive)
-- **`validation/`**: Physics validation for scientific accuracy (slower, focused on physical laws)
+List or run the three supported examples:
 
 ```bash
-# Run unit tests
-pytest tests/ -v
-
-# Run physics validation
-python validation/core/check_core_basis.py
-find validation/ -name "check_*.py" -exec python {} \;
+python examples/launcher.py --list
+python examples/launcher.py --run quickstart --quick
+python scripts/smoke_examples.py
 ```
 
----
+Only the top-level files listed in [examples/README.md](examples/README.md) are
+supported. `examples/archives/v0_2/` is historical migration evidence and is
+not executed or repaired.
 
-## Development
+For optimization, start from one of the three strict current configurations:
 
 ```bash
-git clone https://github.com/1160-hrk/rovibrational-excitation.git
-cd rovibrational-excitation
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
-pytest -v
+rve-optimize --config configs/example_local_viblad_v3.yaml --no-plot
 ```
 
-### Development Tools
-- **Black**: Code formatter
-- **Ruff**: High-speed linter  
-- **MyPy**: Static type checking
-- **pytest**: Testing framework
+See [configs/README.md](configs/README.md) for the different time-grid
+contracts, required seed/penalty/gain units, and Python-supplied field routes.
 
-Black + Ruff + MyPy configs are in *pyproject.toml*.
+## Spectroscopy
 
----
+Standard absorption uses a typed projection and returns mOD. A Cartesian
+analyzer can instead return the projected complex molecular response. Analyzer
+intensity/absorbance and a production thermal-state constructor are not
+implemented; the library raises rather than inventing a reference field or
+measurement convention.
 
-## Contributing
+## Results and restart
 
-1. **Issue Reports**: Bug reports & feature requests
-2. **Pull Requests**: Code improvements & new features
-3. **Documentation**: Usage examples & tutorials
+Saved simulations use immutable result generations selected by an atomic
+`result_current.json` pointer. Checkpoints use the corresponding versioned pair
+and validate the complete ordered expanded run before resume. Invalid,
+unversioned, corrupt, or different-run data raises; no legacy fallback or
+implicit repair is attempted. See [result storage](docs/RESULT_STORAGE.md).
 
-### Development Guidelines
-- PEP8-compliant code style
-- Type hints required
-- Maintain test coverage
-- Detailed docstrings
+## Development checks
 
----
+```bash
+pytest -q
+coverage run --data-file=/tmp/rve-coverage \
+  --source=src/rovibrational_excitation --branch -m pytest -q
+coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
+ruff check --no-fix src tests examples benchmarks scripts
+ruff format --check src tests examples benchmarks scripts
+python -m mypy --no-incremental
+```
 
-## References
+The current local checkpoint is 1532 passing CPU tests with 15 optional-GPU
+skips and 81% measured branch coverage. A skipped GPU test is not CUDA
+evidence.
 
-1. **Quantum Mechanics**: Griffiths, "Introduction to Quantum Mechanics"
-2. **Molecular Spectroscopy**: Herzberg, "Molecular Spectra and Molecular Structure"
-3. **Numerical Methods**: Press et al., "Numerical Recipes"
+## Documentation
 
----
+- [Documentation index](docs/README.md)
+- [v0.3 migration guide](docs/MIGRATION_V0_3.md)
+- [Parameter reference](docs/PARAMETER_REFERENCE.md)
+- [Time propagation](docs/TIME_PROPAGATION.md)
+- [Unit system](docs/UNIT_SYSTEM.md)
+- [Sweep specification](docs/SWEEP_SPECIFICATION.md)
+- [Version and release process](docs/VERSION_MANAGEMENT.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
 [MIT](LICENSE)
-
-© 2025 Hiroki Tsusaka. All rights reserved.
-
----
-
-## Contact
-
-- **GitHub Issues**: [Repository](https://github.com/1160-hrk/rovibrational-excitation)
-- **Email**: Please check the project page
-
----
-
-*Last updated: January 2025*
