@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-09-23
+Last updated: 2026-10-01
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -2273,6 +2273,17 @@ P8.5-d/D-150 makes successful local release preparation an explicit
 non-acceptance handoff. It names the required changelog commit and all external
 pre-tag gates instead of suggesting immediate tag creation. Commands, mutations,
 and calculation behavior are unchanged.
+
+P8.5-e/D-151 makes normal-CI diagnostics reproducible after the first hosted
+run exposed a local/hosted ShellCheck mismatch. The quality job pins and
+checksum-verifies ShellCheck 0.11.0 and gives its exact path to actionlint; the
+coverage-summary SC2129 violation is removed without changing coverage policy.
+Failed normal, physics, and coverage pytest runs publish escaped JUnit
+annotations, and the container smoke publishes its failing stage. Diagnostics
+never turn a failed calculation/test into success and do not alter package or
+calculation behavior. The complete local suite has 1526 passes and 16
+optional-GPU skips (1542 collected); a successful hosted rerun remains required.
+
 
 ### Phase 8 acceptance
 

@@ -42,8 +42,16 @@ def test_one_workflow_enforces_declared_python_and_physics_matrix():
         "3.12",
         "3.13",
     ]
-    assert "pytest -q" in _commands(jobs["test"])
-    assert "tests/physics tests/contracts" in _commands(jobs["physics"])
+    test_commands = _commands(jobs["test"])
+    physics_commands = _commands(jobs["physics"])
+    assert "pytest -q" in test_commands
+    assert "python scripts/report_junit_failures.py /tmp/test-results.xml" in (
+        test_commands
+    )
+    assert "tests/physics tests/contracts" in physics_commands
+    assert "python scripts/report_junit_failures.py /tmp/physics-results.xml" in (
+        physics_commands
+    )
     assert "continue-on-error" not in CI_WORKFLOW.read_text()
 
 
@@ -88,7 +96,7 @@ def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
     install_step = next(
         step
         for step in quality_job["steps"]
-        if step.get("name") == "Install actionlint"
+        if step.get("name") == "Install actionlint and ShellCheck"
     )
     lint_step = next(
         step
@@ -101,11 +109,18 @@ def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
         "ACTIONLINT_SHA256": (
             "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
         ),
+        "SHELLCHECK_VERSION": "0.11.0",
+        "SHELLCHECK_SHA256": (
+            "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
+        ),
     }
     install_command = install_step["run"]
     assert "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" in install_command
-    assert "sha256sum -c -" in install_command
-    assert lint_step["run"] == "/tmp/actionlint -no-color"
+    assert install_command.count("sha256sum -c -") == 2
+    assert "shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" in install_command
+    assert lint_step["run"] == (
+        "/tmp/actionlint -no-color -shellcheck /tmp/shellcheck-v0.11.0/shellcheck"
+    )
 
     actionlint_config = yaml.load(ACTIONLINT_CONFIG.read_text(), Loader=yaml.BaseLoader)
     assert actionlint_config == {"self-hosted-runner": {"labels": ["gpu"]}}

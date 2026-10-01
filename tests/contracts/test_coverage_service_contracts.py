@@ -28,6 +28,10 @@ def test_coverage_has_one_local_ci_authority_and_no_unwired_codecov_files() -> N
     coverage = _workflow()["jobs"]["coverage"]
     commands = _commands(coverage)
     assert "coverage run --data-file=/tmp/rve-coverage" in commands
+    assert "--junitxml=/tmp/coverage-results.xml" in commands
+    assert (
+        "python scripts/report_junit_failures.py /tmp/coverage-results.xml" in commands
+    )
     assert "coverage report --data-file=/tmp/rve-coverage" in commands
     assert "--fail-under=47" in commands
     assert "coverage xml --data-file=/tmp/rve-coverage -o /tmp/coverage.xml" in commands
@@ -43,6 +47,7 @@ def test_coverage_has_one_local_ci_authority_and_no_unwired_codecov_files() -> N
     )
     assert "/tmp/coverage-report.txt" in artifact["with"]["path"]
     assert "/tmp/coverage.xml" in artifact["with"]["path"]
+    assert artifact["with"]["if-no-files-found"] == "warn"
 
 
 def test_public_readmes_do_not_claim_codecov_evidence() -> None:

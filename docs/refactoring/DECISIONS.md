@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-09-28
+Last updated: 2026-10-01
 
 ## How to use this log
 
@@ -5164,6 +5164,43 @@ A source contract prevents these handoff conditions from silently disappearing.
 
 The complete local suite remains 1524 passes and 16 optional-GPU skips out of
 1540 collected. No external gate is reported as passed.
+
+Implementation commit: this checkpoint.
+
+
+### D-151: Hosted CI diagnostics are reproducible and publicly observable
+
+Status: Implemented on 2026-10-01 as P8.5-e.
+
+Scope: Normal-CI lint installation, failed-test reporting, container-smoke
+diagnostics, and their contracts. No package source, physical formula,
+numerical path, simulation input, or result changes.
+
+The first normal hosted run for commit `ac8c092` (run `36743001996`) showed
+that the local actionlint check had silently omitted ShellCheck because no
+executable was installed. The hosted runner did have ShellCheck and rejected
+the coverage-summary shell block with SC2129. The public Checks view identified
+the failed jobs and steps but did not expose the individual pytest failures or
+the failing container stage without authenticated log/artifact access.
+
+The required quality job now downloads the official ShellCheck 0.11.0 Linux
+x86_64 archive, verifies its published SHA-256, and passes its exact path to
+actionlint. The coverage summary uses one grouped redirect, so the same
+actionlint-plus-ShellCheck command passes locally and in CI. A small repository
+script converts JUnit failures and errors into escaped GitHub error annotations.
+Normal, physics-contract, and coverage pytest jobs invoke it only after failure.
+Missing or unreadable XML emits a diagnostic and returns success so it cannot
+replace the original failing test status. Coverage artifacts warn when the
+failed test command could not create reports instead of adding a second
+unrelated failure.
+
+The container smoke records its current stage and emits that stage as a GitHub
+error annotation from its cleanup trap. It still fails hard, prints available
+container logs, and executes the same build, import, authentication, and
+non-root checks. Focused contracts, checksum-verified actionlint with the pinned
+ShellCheck binary, and the complete local suite pass: 1526 passed and 16
+optional-GPU tests skipped out of 1542 collected. A successful hosted rerun is
+still required; this local change is not CUDA, container, or release acceptance.
 
 Implementation commit: this checkpoint.
 

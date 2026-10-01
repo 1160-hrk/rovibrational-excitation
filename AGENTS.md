@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-09-30
+Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-d/D-150 truthful release handoff; P8.5-c/D-149 OIDC PyPI publication
+Verified checkpoints: P8.5-e/D-151 reproducible CI diagnostics; P8.5-d/D-150 truthful release handoff
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -185,14 +185,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.5-b:
+Current local CPU baseline after P8.5-e:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1524 passed, 16 GPU tests skipped (1540 collected)
+1526 passed, 16 GPU tests skipped (1542 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -327,6 +327,14 @@ requires version/changelog review and names required CI, accepted real-CUDA,
 hosted container, manual Dev Containers UI, and exact Trusted Publisher gates
 before tagging. Commands and mutations are unchanged. The suite remains 1524
 passes and 16 optional-GPU skips (1540 collected).
+
+P8.5-e/D-151 pins and checksum-verifies ShellCheck 0.11.0 beside actionlint
+after the first hosted run exposed that local workflow lint had omitted it.
+Normal, physics, and coverage failures now emit escaped JUnit annotations;
+container smoke failures name their exact stage. Diagnostic steps preserve the
+original failing status and do not change package calculations. The suite has
+1526 passes and 16 optional-GPU skips (1542 collected). A successful hosted
+rerun remains required.
 
 ## Current next work
 

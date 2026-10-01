@@ -1,6 +1,6 @@
 # Documentation, YAML, and GitHub workflow audit
 
-Verified: 2026-09-30
+Verified: 2026-10-01
 Scope: all repository Markdown, YAML/YML, and .github/workflows files.
 Disposition: **Public guides and mechanical repository-content/workflow gates are current; final external release evidence remains open.**
 
@@ -22,9 +22,10 @@ sign, model parameter, or time step.
   require every conventional local link target to exist, and reject unclosed
   backtick or tilde fences. They do not prove that an externally linked API or
   an unmarked prose snippet remains current.
-- Official actionlint v1.7.12 passes all three workflows locally. CI downloads the
-  pinned Linux amd64 release archive, verifies its published SHA-256 before
-  extraction, and runs actionlint as part of the required `quality` job.
+- Official actionlint v1.7.12 passes all three workflows locally. Normal CI
+  downloads pinned Linux amd64 actionlint and ShellCheck 0.11.0 archives,
+  verifies both published SHA-256 values before extraction, and passes the
+  explicit ShellCheck path to actionlint in the required `quality` job.
   `.github/actionlint.yaml` declares only the intentional `gpu` label used by
   the self-hosted CUDA runners.
 - Loaded the three supported configs/*.yaml documents and passed each through
@@ -72,7 +73,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12, Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147 container smoke. `required` rejects failed/skipped container and other jobs. D-148 pins every external Action to an approved commit. | GPU tests may skip; normal CI is not real-GPU evidence. A queued/unrun container job is not container evidence. |
+| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, mypy, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147 container smoke. D-151 publishes failed JUnit cases and the failing container stage as Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. | GPU tests may skip; normal CI is not real-GPU evidence. Diagnostics are not acceptance, and only a successful hosted container job is container evidence. |
 | .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation runs the trusted parity case, every GPU-marked test, and the schema-v1 evidence recorder; it retains success or diagnostic JSON for 90 days. D-148 pins every external Action. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer. A CPU skip, queued job, or status=error artifact is not acceptance evidence. |
 | .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. | The workflow is blocked until GPU, Docker, protected environment, and exact PyPI Trusted Publisher infrastructure pass. Structural contracts do not substitute for those external executions. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
@@ -99,4 +100,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    Code attach/Ports, configure the exact D-149 PyPI Trusted Publisher and
    protected environment, then repeat the final-version gates from a clean
    commit. D-150 makes the local apply command print this as a non-acceptance
-   handoff rather than suggesting immediate tag creation.
+   handoff rather than suggesting immediate tag creation. D-151 pins the
+   ShellCheck implementation used by actionlint and exposes failed tests and
+   container stages through public Check annotations; rerun normal CI and
+   require every gate to pass before the final transition.

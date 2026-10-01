@@ -1,6 +1,6 @@
 # Refactoring source of truth
 
-Last verified: 2026-09-30
+Last verified: 2026-10-01
 Branch: `refactor/v0.3`
 Behavioral baseline: `613ce93`
 
@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1524 passed, 16 skipped (1540 collected) |
+| Pytest | 1526 passed, 16 skipped (1542 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -593,6 +593,14 @@ P8.5-d/D-150 corrects the local release tool handoff without changing any gate
 or mutation. Successful apply now says it is not release acceptance, requires
 both version and changelog review, and names every external pre-tag blocker. The
 suite remains 1524 passes and 16 optional-GPU skips (1540 collected).
+
+P8.5-e/D-151 closes the local/hosted workflow-lint mismatch found by the first
+normal hosted run. CI now pins and checksum-verifies ShellCheck 0.11.0, invokes
+it explicitly through actionlint, annotates JUnit failures, and reports the
+failing container-smoke stage. Coverage-summary and missing-artifact cascades
+no longer obscure the original failure. The suite has 1526 passes and 16
+optional-GPU skips (1542 collected); a successful hosted rerun remains external
+evidence.
 
 P6.2-c
 implements D-069:

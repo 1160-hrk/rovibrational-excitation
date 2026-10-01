@@ -105,6 +105,10 @@ def test_container_smoke_builds_and_checks_nonroot_authenticated_jupyter() -> No
         "Authorization: token",
         "docker port",
         "unauthenticated HTTP",
+        "::error title=Container smoke failed::stage=${stage}",
+        'stage="image build"',
+        'stage="authenticated Jupyter readiness"',
+        'stage="runtime user validation"',
     ):
         assert required in source
     for forbidden in ("exit 0 #", "SKIP", "fallback"):

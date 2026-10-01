@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whose successful apply is a non-acceptance handoff and never suggests tagging
   before the external release gates pass
 - CI smoke coverage for the supported parameter template and example index
+- Reproducible actionlint/ShellCheck workflow lint plus GitHub Check
+  annotations for failed JUnit cases and container-smoke stages
 
 ### 🔧 Changed
 - The package root now exposes only the exact lazy typed v0.3 API; v0.2 root

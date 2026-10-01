@@ -29,17 +29,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Install actionlint
+      - name: Install actionlint and ShellCheck
         env:
           ACTIONLINT_VERSION: "1.7.12"
           ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+          SHELLCHECK_VERSION: "0.11.0"
+          SHELLCHECK_SHA256: "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
         run: |
           curl -fsSLo /tmp/actionlint.tar.gz \
             "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
           echo "${ACTIONLINT_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c -
           tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          curl -fsSLo /tmp/shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  /tmp/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/shellcheck.tar.xz -C /tmp
       - name: Lint GitHub Actions workflows
-        run: /tmp/actionlint -no-color
+        run: /tmp/actionlint -no-color -shellcheck /tmp/shellcheck-v0.11.0/shellcheck
       - name: Ruff lint
         run: ruff check --no-fix src tests examples benchmarks scripts
       - name: Ruff format
@@ -71,6 +77,9 @@ jobs:
           pip install -e ".[dev,io,plot]"
       - name: Run complete test suite
         run: pytest -q --junitxml=/tmp/test-results.xml
+      - name: Annotate test failures
+        if: failure()
+        run: python scripts/report_junit_failures.py /tmp/test-results.xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -95,6 +104,9 @@ jobs:
           pip install -e ".[dev,io,plot]"
       - name: Run physics and contract tests
         run: pytest -q tests/physics tests/contracts --junitxml=/tmp/physics-results.xml
+      - name: Annotate physics failures
+        if: failure()
+        run: python scripts/report_junit_failures.py /tmp/physics-results.xml
       - name: Upload physics results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -126,16 +138,25 @@ jobs:
           pip install -e ".[dev,io,plot]"
       - name: Measure and enforce branch coverage
         run: |
-          coverage run --data-file=/tmp/rve-coverage --source=src/rovibrational_excitation --branch -m pytest -q
+          coverage run --data-file=/tmp/rve-coverage --source=src/rovibrational_excitation --branch -m pytest -q --junitxml=/tmp/coverage-results.xml
           coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47 | tee /tmp/coverage-report.txt
           coverage xml --data-file=/tmp/rve-coverage -o /tmp/coverage.xml
+      - name: Annotate coverage-test failures
+        if: failure()
+        run: python scripts/report_junit_failures.py /tmp/coverage-results.xml
       - name: Add coverage summary
         if: always()
         run: |
-          echo '## Branch coverage' >> "$GITHUB_STEP_SUMMARY"
-          echo '```text' >> "$GITHUB_STEP_SUMMARY"
-          cat /tmp/coverage-report.txt >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '## Branch coverage'
+            echo '```text'
+            if [[ -f /tmp/coverage-report.txt ]]; then
+              cat /tmp/coverage-report.txt
+            else
+              echo 'Coverage report unavailable because the test command failed.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -144,7 +165,7 @@ jobs:
           path: |
             /tmp/coverage-report.txt
             /tmp/coverage.xml
-          if-no-files-found: error
+          if-no-files-found: warn
 
   build:
     name: Build and clean-wheel import
