@@ -55,7 +55,11 @@ jobs:
       - name: Verify supported-example index
         run: python examples/tools/build_index.py --check
       - name: Type-check named typed modules
-        run: mypy --no-incremental
+        run: |
+          python -m mypy --no-incremental 2>&1 | tee /tmp/mypy-output.txt
+      - name: Annotate mypy failure
+        if: failure()
+        run: python scripts/report_ci_failures.py text "mypy failed" /tmp/mypy-output.txt
 
   test:
     name: Tests (Python ${{ matrix.python-version }})
@@ -79,7 +83,7 @@ jobs:
         run: pytest -q --junitxml=/tmp/test-results.xml
       - name: Annotate test failures
         if: failure()
-        run: python scripts/report_junit_failures.py /tmp/test-results.xml
+        run: python scripts/report_ci_failures.py junit /tmp/test-results.xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -106,7 +110,7 @@ jobs:
         run: pytest -q tests/physics tests/contracts --junitxml=/tmp/physics-results.xml
       - name: Annotate physics failures
         if: failure()
-        run: python scripts/report_junit_failures.py /tmp/physics-results.xml
+        run: python scripts/report_ci_failures.py junit /tmp/physics-results.xml
       - name: Upload physics results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -143,7 +147,7 @@ jobs:
           coverage xml --data-file=/tmp/rve-coverage -o /tmp/coverage.xml
       - name: Annotate coverage-test failures
         if: failure()
-        run: python scripts/report_junit_failures.py /tmp/coverage-results.xml
+        run: python scripts/report_ci_failures.py junit /tmp/coverage-results.xml
       - name: Add coverage summary
         if: always()
         run: |

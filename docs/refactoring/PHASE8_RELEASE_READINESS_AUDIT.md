@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P8.5-f/D-152 candidate
+Local code checkpoint: P8.5-g/D-153 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,8 +14,8 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-152 candidate contains only the reviewed P8.5-f unit | Pass |
-| Complete CPU suite | 1526 passed, 16 optional-GPU skipped; 1542 collected | Pass |
+| Clean source checkpoint | D-153 candidate contains only the reviewed P8.5-g unit | Pass |
+| Complete CPU suite | 1527 passed, 16 optional-GPU skipped; 1543 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 317 files formatted | Pass |
@@ -24,7 +24,7 @@ reported as complete v0.3 release acceptance.
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
-| Container gate wiring | minimal build context, shell syntax, required normal/release jobs | Pass locally; Docker execution external |
+| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; hosted run `36813179835` succeeded | Pass hosted; manual UI check external |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -77,10 +77,10 @@ Shell, content, workflow, and actionlint-plus-ShellCheck contracts pass, and
 Docker absence fails rather than skips. Hosted run `36812082890` localized
 Docker exit 125 to the Jupyter-launch stage. D-152 removes the absent nested
 mount target by placing the read-only project and writable notebooks mounts at
-sibling paths. Docker CLI/daemon is unavailable here, so a successful
-hosted-runner build/HTTP result is still pending. VS Code Dev Containers UI
-attach and its Ports view also remain an explicit manual check; neither is
-inferred from static validation.
+sibling paths. The corrected container-smoke job passed on hosted run
+`36813179835`, including image build/import and authenticated HTTP checks.
+VS Code Dev Containers UI attach and its Ports view remain an explicit manual
+check; neither is inferred from that automated smoke.
 
 ### 3. Publication infrastructure
 
@@ -113,12 +113,12 @@ After it passes:
 ## Release decision
 
 Local CPU, documentation, packaging, and dry-run preparation are complete at
-this checkpoint. Hosted run `36812082890` verified the D-151 diagnostic path
-and exposed only the portable frozen-sample bound, Python 3.10 `tomllib` import,
-mypy environment, and container mount issues addressed by D-152. A passing
-rerun has not yet been recorded. The project is close to a version transition,
-but it is not a
-release candidate while the supported CUDA paths lack real-hardware numerical,
-transfer, and performance evidence and the container gate lacks hosted
-execution. The version remains `0.3.0.dev1` and no tag or publication is
-authorized by this audit.
+this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
+physics, coverage, build, and container corrections; only the quality job's
+bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
+module entrypoint and publishes captured command output while retaining hard
+failure. Its hosted rerun remains pending. The project is close to a version
+transition, but it is not a release candidate while the supported CUDA paths
+lack real-hardware numerical, transfer, and performance evidence and the manual
+Dev Containers UI and publication prerequisites remain open. The version
+remains `0.3.0.dev1` and no tag or publication is authorized by this audit.

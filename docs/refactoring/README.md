@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1526 passed, 16 skipped (1542 collected) |
+| Pytest | 1527 passed, 16 skipped (1543 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -609,7 +609,17 @@ absolute cross-architecture noise. The release tool uses the declared Python
 3.10 `tomli` fallback; mypy is pinned/nonincremental in a Python 3.12 quality
 environment; and container smoke mounts read-only project and writable
 notebooks as siblings. The local suite remains 1526 passes and 16 optional-GPU
-skips (1542 collected); hosted rerun evidence remains pending.
+skips (1542 collected). Hosted run `36813179835` accepted the complete Python
+matrix, physics, coverage, build, and corrected container smoke; only the bare
+mypy command in the quality job failed without public output.
+
+P8.5-g/D-153 makes that final normal-CI failure reproducible and observable.
+Normal and release workflows invoke the pinned checker through `python -m
+mypy --no-incremental`; the quality job captures output under pipefail and the
+renamed CI reporter emits escaped text or JUnit annotations without masking the
+original failure. No package source, type configuration, or calculation logic
+changed. The local suite has 1527 passes and 16 optional-GPU skips (1543
+collected); hosted rerun acceptance remains pending.
 
 P6.2-c
 implements D-069:

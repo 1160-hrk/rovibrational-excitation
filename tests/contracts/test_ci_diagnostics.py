@@ -8,11 +8,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-REPORTER = ROOT / "scripts" / "report_junit_failures.py"
+REPORTER = ROOT / "scripts" / "report_ci_failures.py"
 
 
 def _load_reporter():
-    spec = importlib.util.spec_from_file_location("report_junit_failures", REPORTER)
+    spec = importlib.util.spec_from_file_location("report_ci_failures", REPORTER)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -47,7 +47,7 @@ def test_junit_reporter_exposes_missing_xml_without_masking_failure(
     missing = tmp_path / "missing.xml"
 
     completed = subprocess.run(
-        [sys.executable, str(REPORTER), str(missing)],
+        [sys.executable, str(REPORTER), "junit", str(missing)],
         cwd=ROOT,
         check=False,
         capture_output=True,
@@ -57,3 +57,27 @@ def test_junit_reporter_exposes_missing_xml_without_masking_failure(
     assert completed.returncode == 0
     assert "JUnit diagnostics unavailable" in completed.stdout
     assert str(missing) in completed.stdout
+
+
+def test_text_reporter_escapes_command_output(tmp_path: Path) -> None:
+    output = tmp_path / "mypy.txt"
+    output.write_text("first line\nsecond line: 50%")
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(REPORTER),
+            "text",
+            "mypy: failed, hosted",
+            str(output),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip() == (
+        "::error title=mypy%3A failed%2C hosted::first line%0Asecond line: 50%25"
+    )

@@ -45,11 +45,11 @@ def test_one_workflow_enforces_declared_python_and_physics_matrix():
     test_commands = _commands(jobs["test"])
     physics_commands = _commands(jobs["physics"])
     assert "pytest -q" in test_commands
-    assert "python scripts/report_junit_failures.py /tmp/test-results.xml" in (
+    assert "python scripts/report_ci_failures.py junit /tmp/test-results.xml" in (
         test_commands
     )
     assert "tests/physics tests/contracts" in physics_commands
-    assert "python scripts/report_junit_failures.py /tmp/physics-results.xml" in (
+    assert "python scripts/report_ci_failures.py junit /tmp/physics-results.xml" in (
         physics_commands
     )
     assert "continue-on-error" not in CI_WORKFLOW.read_text()
@@ -64,7 +64,11 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert f"ruff format --check {active_scope}" in quality
     assert "python scripts/smoke_examples.py" in quality
     assert "python examples/tools/build_index.py --check" in quality
-    assert "mypy --no-incremental" in quality
+    assert "python -m mypy --no-incremental" in quality
+    assert "tee /tmp/mypy-output.txt" in quality
+    assert (
+        'python scripts/report_ci_failures.py text "mypy failed" /tmp/mypy-output.txt'
+    ) in quality
 
     coverage = _commands(jobs["coverage"])
     assert "--data-file=/tmp/rve-coverage" in coverage

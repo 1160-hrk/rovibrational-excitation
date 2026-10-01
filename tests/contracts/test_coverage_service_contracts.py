@@ -30,7 +30,8 @@ def test_coverage_has_one_local_ci_authority_and_no_unwired_codecov_files() -> N
     assert "coverage run --data-file=/tmp/rve-coverage" in commands
     assert "--junitxml=/tmp/coverage-results.xml" in commands
     assert (
-        "python scripts/report_junit_failures.py /tmp/coverage-results.xml" in commands
+        "python scripts/report_ci_failures.py junit /tmp/coverage-results.xml"
+        in commands
     )
     assert "coverage report --data-file=/tmp/rve-coverage" in commands
     assert "--fail-under=47" in commands

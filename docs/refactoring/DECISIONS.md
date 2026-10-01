@@ -5259,6 +5259,42 @@ acceptance evidence for those two corrections.
 Implementation commit: this checkpoint.
 
 
+### D-153: CI invokes mypy through the active Python and reports its output
+
+Status: Implemented on 2026-10-01 as P8.5-g.
+
+Scope: Normal/tag-time mypy invocation and generic CI failure diagnostics. No
+package source, type-check configuration, physical formula, numerical path,
+simulation input, or result changes.
+
+Hosted normal-CI run `36813179835` accepted the complete Python 3.10-3.13 test
+matrix, physics contracts, branch coverage, distribution build, and corrected
+development-container smoke. The quality job alone failed with exit 2 at the
+bare `mypy` console entrypoint. Its action produced no public diagnostic body,
+while the same pinned mypy 1.19.1 package and nonincremental 84-module scope
+pass locally and under a separately prepared Python 3.13 environment.
+
+Both normal and final-tag CPU workflows now invoke the installed checker as
+`python -m mypy --no-incremental`, binding it explicitly to the interpreter and
+environment selected by the workflow. The quality command tees stdout/stderr
+to a temporary file; GitHub's bash pipefail behavior retains mypy's nonzero
+status. The former JUnit-only reporter becomes `report_ci_failures.py` with
+explicit `junit` and `text` modes. Both escape GitHub workflow-command content,
+bound annotation detail to 4,000 characters, and return success for missing or
+unreadable diagnostic files so diagnostics cannot replace the original failing
+status. A text-mode contract fixes newline, percent, title-colon, and
+title-comma escaping.
+
+The complete local suite passes with 1527 tests and 16 optional-GPU skips out
+of 1543 collected. Focused CI contracts, Ruff, formatting, strict
+nonincremental module-invoked mypy for 84 modules, actionlint with pinned
+ShellCheck, and diff checks pass. A hosted rerun is still required before normal
+CI is accepted; if mypy fails again, the public annotation now exposes its
+actual output instead of inviting another inferred fix.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

@@ -2294,8 +2294,21 @@ nonincrementally under the fixed Python 3.12 quality environment while the
 runtime matrix still tests 3.10-3.13. The container smoke avoids an absent
 nested destination inside a read-only bind by mounting the checkout and
 writable notebooks as siblings. The local suite remains 1526 passes and 16
-optional-GPU skips (1542 collected); hosted Python 3.10 and Docker acceptance
-remain pending.
+optional-GPU skips (1542 collected). Hosted run `36813179835` subsequently
+accepted Python 3.10 and the corrected Docker smoke; only the quality job's
+mypy invocation failed.
+
+
+P8.5-g/D-153 follows hosted run `36813179835`, which accepted the Python
+3.10-3.13 matrix, physics, coverage, build, and corrected container smoke but
+failed only at the bare mypy console command without a public diagnostic body.
+Normal and release CI now invoke the pinned checker as `python -m mypy
+--no-incremental`. The quality job tees output under pipefail and publishes it
+through the same escaped Check-annotation reporter, which now has explicit
+JUnit and text modes. The reporter cannot mask the original command failure.
+No package source, type configuration, or calculation changes. The complete
+local suite has 1527 passes and 16 optional-GPU skips (1543 collected); hosted
+normal-CI acceptance remains pending.
 
 
 ### Phase 8 acceptance

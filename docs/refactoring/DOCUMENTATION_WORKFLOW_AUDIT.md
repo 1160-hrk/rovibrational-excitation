@@ -73,7 +73,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy under Python 3.12, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151 publishes failed JUnit cases and the failing container stage as Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. | GPU tests may skip; normal CI is not real-GPU evidence. Diagnostics are not acceptance, and only a successful hosted container job is container evidence. |
+| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy through the Python 3.12 module, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151/D-153 publish failed JUnit cases, captured command output, and the failing container stage as escaped Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. Hosted run `36813179835` accepted every job except the pre-D-153 mypy invocation. | GPU tests may skip; normal CI is not real-GPU evidence. Diagnostics are not acceptance. The automated container smoke is hosted-accepted, but manual Dev Containers UI/Ports verification remains. |
 | .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation runs the trusted parity case, every GPU-marked test, and the schema-v1 evidence recorder; it retains success or diagnostic JSON for 90 days. D-148 pins every external Action. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer. A CPU skip, queued job, or status=error artifact is not acceptance evidence. |
 | .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. | The workflow is blocked until GPU, Docker, protected environment, and exact PyPI Trusted Publisher infrastructure pass. Structural contracts do not substitute for those external executions. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
@@ -104,5 +104,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    ShellCheck implementation used by actionlint and exposes failed tests and
    container stages through public Check annotations. D-152 consumes those
    diagnostics for Python 3.10, cross-architecture FFT-test, mypy, and clean
-   checkout mount portability; rerun normal CI and require every gate to pass
-   before the final transition.
+   checkout mount portability. Hosted run `36813179835` accepted all of those
+   paths except the bare mypy command. D-153 invokes mypy through the active
+   Python module and exposes captured output; rerun normal CI and require every
+   gate to pass before the final transition.

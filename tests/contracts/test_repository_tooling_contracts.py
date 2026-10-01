@@ -137,7 +137,7 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     assert "pytest -q" in cpu
     assert "ruff check --no-fix" in cpu
     assert "python scripts/smoke_examples.py" in cpu
-    assert "mypy --no-incremental" in cpu
+    assert "python -m mypy --no-incremental" in cpu
     assert jobs["gpu-validation"]["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
     assert "getDeviceCount" in gpu
     assert "test_numpy_and_cupy_final_state_agree" in gpu

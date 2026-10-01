@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-f/D-152 hosted CPU portability; P8.5-e/D-151 reproducible CI diagnostics
+Verified checkpoints: P8.5-g/D-153 reproducible mypy entrypoint; P8.5-f/D-152 hosted CPU portability
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -342,7 +342,17 @@ calculation code. The retained zero-dispersion FFT field path keeps a strict
 tooling imports `tomli` on Python 3.10; mypy 1.19.1 runs nonincrementally in
 the fixed Python 3.12 quality environment; and container smoke uses sibling
 read-only-project/writable-notebooks mounts. The suite remains 1526 passes and
-16 optional-GPU skips (1542 collected). Hosted rerun evidence remains required.
+16 optional-GPU skips (1542 collected). Hosted run `36813179835` subsequently
+accepted the complete Python matrix, physics, coverage, build, and container
+jobs; only the mypy command in the quality job failed without public output.
+
+P8.5-g/D-153 invokes the pinned mypy installation through its Python module,
+captures its output without weakening pipeline failure, and extends the escaped
+Check reporter to both JUnit and text-command diagnostics. Release CI uses the
+same module entrypoint. No package source, type configuration, or calculation
+changes. The suite has 1527 passes and 16 optional-GPU skips (1543 collected),
+and strict nonincremental mypy covers 84 modules. Hosted rerun evidence remains
+required for this last normal-CI correction.
 
 ## Current next work
 
