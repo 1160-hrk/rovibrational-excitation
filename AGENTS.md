@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-h/D-159 accepted real-CUDA evidence; P8.5-h/D-154 hosted normal-CI acceptance
+Verified checkpoints: P8.5-i/D-160 main real-CUDA workflow acceptance; P5.5-h/D-159 Phase 5 completion
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -195,13 +195,14 @@ pytest -q
 ~~~
 
 ~~~text
-1532 passed, 15 GPU tests skipped (1547 collected)
+1533 passed, 15 GPU tests skipped (1548 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
 Numba CSR comparison is `benchmarks/numba-csr-v0.2.10.json`; exact Liouville
 endpoint reuse is `benchmarks/liouville-endpoint-reuse-v0.3.json`; accepted
-real-CUDA evidence is `benchmarks/real-cuda-v0.3-b9de848.json`.
+real-CUDA evidence is recorded for both the D-159 implementation commit and the
+D-160 main workflow in `benchmarks/real-cuda-v0.3-*.json`.
 
 Use Ruff without broad automatic fixes while a worktree contains unrelated
 changes:
@@ -401,6 +402,14 @@ shapes, parity, norm, transfer bytes, and synchronized timings. The largest
 maximum-absolute difference is `1.44e-13` and norm error is `9.60e-14` under
 `2e-10` bounds. The 32-state GPU timings are slower than CPU and make no speed
 claim. Phase 5 is complete; final-candidate manual and tag-time reruns remain.
+
+P8.5-i/D-160 records that PR #11 merged the complete refactor to main commit
+`4f7efaed`. Normal CI run `36887536595` and manual real-CUDA run `36887643743`
+both pass. The latter uses the correctly labelled ephemeral `ashilab-gpu`
+runner, passes all 15 GPU tests and five evidence cases, and uploads the
+90-day artifact. Its raw JSON is committed separately and schema-tested. The
+package remains `0.3.0.dev1`; the final version commit still requires a fresh
+manual CUDA run, and the tag workflow must repeat it.
 
 ## Current next work
 
@@ -862,9 +871,10 @@ The next work is:
 2. Preserve the characterized `dynamics.utils.get_dipole_component_SI`
    fallback until a separately approved behavior change; preserve all unit
    conversion and unrelated persistence behavior.
-3. Phase 5 is complete under D-159 using the accepted clean `b9de848` artifact.
-   Keep the release blocked until the D-146 manual workflow produces a fresh
-   accepted schema-v1 artifact on the exact final candidate; the tag workflow
+3. Phase 5 is complete under D-159, and D-160 accepts the manual workflow on
+   the main `0.3.0.dev1` merge commit. Keep the release blocked until the same
+   workflow produces a fresh accepted artifact on the exact final version
+   candidate; the tag workflow
    must repeat it. Do not treat source inspection, CPU doubles, skipped tests,
    queued jobs, status=error diagnostics, or a different commit as release
    CUDA evidence.

@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1532 passed, 15 skipped (1547 collected) |
+| Pytest | 1533 passed, 15 skipped (1548 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -663,6 +663,15 @@ and norm bounds, transfer volumes, and synchronized timings are committed in
 `benchmarks/real-cuda-v0.3-b9de848.json` and schema-tested. The 32-state timing
 is diagnostic and shows no GPU speed advantage. Phase 5 is complete; the exact
 final release candidate still requires manual and tag-time CUDA reruns.
+
+P8.5-i/D-160 accepts the repository-owned manual CUDA workflow itself on the
+PR #11 `main` merge `4f7efaed`: normal-CI run `36887536595` and real-CUDA run
+`36887643743` both pass. The workflow-generated report is committed as
+`benchmarks/real-cuda-v0.3-4f7efaed.json` and independently schema-tested with
+its exact source binding. The ephemeral runner had the required
+`[self-hosted, linux, x64, gpu]` labels, and the retained timing remains
+diagnostic rather than a speed claim. The package is still `0.3.0.dev1`, so the
+exact final-version commit and its tag workflow must repeat real-CUDA validation.
 
 P6.2-c
 implements D-069:

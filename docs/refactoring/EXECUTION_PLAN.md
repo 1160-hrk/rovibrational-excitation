@@ -2372,6 +2372,15 @@ schema-tested. The 32-state GPU timings are slower than CPU and therefore make
 no speed claim. Phase 5 is complete; manual and tag-time CUDA workflows must
 still repeat on the exact final release commit.
 
+P8.5-i/D-160 accepts that manual workflow on the PR #11 merged `main` commit
+`4f7efaed992b05691e204f78536dd9f2c54abfd3`. Normal-CI run `36887536595` and
+manual real-CUDA run `36887643743` both pass; the latter uses the required
+ephemeral `[self-hosted, linux, x64, gpu]` runner and publishes the accepted
+schema-v1 report now committed as `real-cuda-v0.3-4f7efaed.json`. This closes
+the workflow-execution uncertainty for the development merge without changing
+any calculation. The exact final-version candidate and tag workflow still
+require fresh source-bound CUDA runs.
+
 
 ### Phase 8 acceptance
 

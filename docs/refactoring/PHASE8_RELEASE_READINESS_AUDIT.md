@@ -1,8 +1,9 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P5.5-h/D-159 candidate
-Hosted accepted checkpoint: P5.5-g/D-158 (`b9de848`; run `36876859856`)
+Local code checkpoint: P8.5-i/D-160 candidate
+Hosted normal-CI checkpoint: main merge `4f7efaed`; run `36887536595`
+Hosted real-CUDA checkpoint: main merge `4f7efaed`; run `36887643743`
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -16,19 +17,19 @@ reported as complete v0.3 release acceptance.
 | Gate | Evidence | Status |
 |---|---|---|
 | Clean source checkpoint | D-158 ignores local virtualenvs while retaining strict source provenance | Pass |
-| Real-CUDA numerical acceptance | D-159: 15 GPU tests and five schema-v1 cases pass on clean `b9de848`; committed raw report | Pass |
-| Complete CPU suite | 1532 passed, 15 optional-GPU skipped; 1547 collected | Pass |
+| Real-CUDA numerical acceptance | D-159 implementation report plus D-160 main manual-workflow report; both raw JSON artifacts committed | Pass |
+| Complete CPU suite | 1533 passed, 15 optional-GPU skipped; 1548 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
-| Active-scope format | 307 files formatted | Pass |
+| Active-scope format | 317 files formatted | Pass |
 | Strict mypy scope | pinned 1.19.1, nonincremental, 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
-| Hosted normal CI | run `36814129738`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
+| Hosted normal CI | main merge run `36887536595`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
 | Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
-| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; hosted run `36814129738` succeeded | Pass hosted; manual UI check external |
+| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; main hosted run `36887536595` succeeded | Pass hosted; manual UI check external |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -47,27 +48,28 @@ checkout and publishes only artifacts built in that run.
 
 ## Blocking release gates
 
-### 1. Final-candidate real-CUDA workflow repetition
+### 1. Final-version real-CUDA workflow repetition
 
-Phase 5 is complete under D-159. The clean `b9de848` target-host run passed all
-15 GPU-marked tests and produced an accepted five-case schema-v1 report on an
-RTX 5070 Ti. It verifies device-native CuPy `complex128` results for RK4
-final/trajectory and all three split modes, fixed parity and norm bounds,
-transfer volumes, synchronized timings, hardware/software identity, and exact
-source provenance. The report is committed as
-`benchmarks/real-cuda-v0.3-b9de848.json` and revalidated by a contract test.
+Phase 5 is complete under D-159. D-160 additionally accepts the actual manual
+GitHub workflow on main merge commit
+`4f7efaed992b05691e204f78536dd9f2c54abfd3`. Normal CI run `36887536595`
+and real-CUDA run `36887643743` both completed successfully. The ephemeral
+`ashilab-gpu` runner carried the required `self-hosted`, `linux`, `x64`, and
+`gpu` labels; device recognition, the trusted NumPy/CuPy reference, all 15 GPU
+tests, five schema-v1 evidence cases, artifact upload, and post-job cleanup all
+passed. The accepted raw report is committed as
+`benchmarks/real-cuda-v0.3-4f7efaed.json`.
 
-This does not eliminate the release-specific gate. D-159's documentation and
-evidence commit is newer than the tested source, and the final version/changelog
-commit will be newer again. Before tagging, dispatch `Real CUDA validation` on
-the exact final candidate using an online `[self-hosted, linux, x64, gpu]`
-runner version 2.327.1 or newer. Review its `status: pass` artifact and require
-the tag workflow to repeat the same recorder. A local artifact from a different
-commit, queued job, skip, source inspection, or `status: error` is not release
+This main checkpoint remains `0.3.0.dev1`. The eventual version/changelog
+commit changes the exact source identity, so before tagging, dispatch
+`Real CUDA validation` again on that final version candidate. Review its
+`status: pass` artifact and provision another ephemeral runner for the tag
+workflow, which repeats the same recorder. A report from a different commit,
+queued job, skip, source inspection, or `status: error` is not final-release
 acceptance.
 
-The accepted 32-state timings are diagnostic: GPU public-call medians were
-approximately 16-68 ms versus 0.31-0.52 ms on CPU and include validation and
+The accepted 32-state timings remain diagnostic: GPU public-call medians were
+approximately 17-76 ms versus 0.33-0.61 ms on CPU and include validation and
 algorithm setup. No GPU speed advantage, workload crossover, or production
 performance threshold is claimed.
 
@@ -124,10 +126,11 @@ this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
 physics, coverage, build, and container corrections; only the quality job's
 bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
 module entrypoint and publishes captured command output while retaining hard
-failure. Hosted run `36814129738` accepted D-153 and every required normal-CI
-job, including the automated container smoke. The project is close to a version
-transition. Phase 5 now has accepted real-hardware numerical, transfer, norm,
-and timing evidence, but the exact final candidate still requires a fresh
-manual CUDA workflow, manual Dev Containers UI/Ports verification, and the
-publication prerequisites. The version remains `0.3.0.dev1` and no tag or
-publication is authorized by this audit.
+failure. Hosted run `36814129738` accepted D-153, and main merge run `36887536595`
+subsequently accepted every required normal-CI job, including the automated
+container smoke. The project is close to a version transition. Phase 5 and the main development-merge CUDA workflow now have
+accepted real-hardware numerical, transfer, norm, and timing evidence, but the
+exact final version candidate still requires a fresh manual CUDA workflow,
+manual Dev Containers UI/Ports verification, and the publication prerequisites.
+The version remains `0.3.0.dev1` and no tag or publication is authorized by
+this audit.

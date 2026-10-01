@@ -1,14 +1,15 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-10-01
-Checkpoint: P5.5-h / D-159 accepted real-CUDA evidence; Phase 5 complete
+Checkpoint: P8.5-i / D-160 main-workflow real-CUDA evidence; Phase 5 complete
 
 ## Scope
 
 This audit compares the current implementation and executable tests with every
 Phase 5 acceptance row. CPU-backed doubles verify dispatch and calculation graphs;
-D-159 separately supplies accepted numerical, backend, transfer, norm, and synchronized
-timing evidence from real CUDA hardware.
+D-159 and D-160 separately supply accepted numerical, backend, transfer, norm,
+and synchronized timing evidence from real CUDA hardware. D-160 additionally
+proves that the repository-owned manual workflow executes that gate on `main`.
 
 D-155 verifies the environment boundary on the intended WSL2 host: plain
 `cupy-cuda12x` enumerated the real device but lacked CUDA user-space runtime,
@@ -28,7 +29,7 @@ recorder.
 | Field left/mid/right indices and `-mu E` agree | Verified | solver physics and density contracts |
 | NumPy performance is measured | Verified | Numba CSR and Liouville endpoint-reuse artifacts |
 | CuPy RK4 graph matches CPU and remains device-native | Verified on real GPU | D-144; D-159; accepted schema-v1 artifact |
-| Real CUDA parity and diagnostic timing | Verified | D-159; `real-cuda-v0.3-b9de848.json` |
+| Real CUDA parity and diagnostic timing | Verified | D-159/D-160; both accepted `real-cuda-v0.3-*.json` reports |
 
 D-144 removes the former fused RawKernel. That kernel used `H0 + mu E`, added
 its `dt*k3` stage a second time during the final update, ignored trajectory,
@@ -112,14 +113,20 @@ The synchronized 32-state public-call medians were about 16-68 ms on GPU and
 retained as honest diagnostics and demonstrate no speed advantage at this
 size; no size crossover or equal-accuracy production benchmark is inferred.
 
-The accepted report is committed as
-`benchmarks/real-cuda-v0.3-b9de848.json` and its schema and source binding are
-executable contracts. Before tagging, rerun the manual `Real CUDA validation`
-workflow on the exact final candidate commit. The tag workflow independently
-repeats the same test and recorder and attaches its accepted JSON to the GitHub
-Release. A queued job, skipped GPU test, `status: error` diagnostic, source
-inspection, or an artifact from a different source commit is not release
-acceptance evidence.
+The D-159 implementation report is committed as
+`benchmarks/real-cuda-v0.3-b9de848.json`. D-160 commits the report emitted by
+the actual manual `Real CUDA validation` workflow on the merged `main` commit
+`4f7efaed992b05691e204f78536dd9f2c54abfd3` as
+`benchmarks/real-cuda-v0.3-4f7efaed.json`. GitHub run `36887643743` passed on
+the ephemeral `[self-hosted, linux, x64, gpu]` runner after normal-CI run
+`36887536595` passed on the same commit. Both reports' schemas and source
+bindings are executable contracts.
+
+Before tagging, rerun the manual workflow on the exact final-version candidate
+commit. The tag workflow independently repeats the same test and recorder and
+attaches its accepted JSON to the GitHub Release. A queued job, skipped GPU
+test, `status: error` diagnostic, source inspection, or an artifact from a
+different source commit is not release acceptance evidence.
 
 Further work may not change formula, precision, polarization, tolerance, or
 renormalization semantics without a separate approved decision.

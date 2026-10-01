@@ -190,12 +190,19 @@ unverified.
 
 ## Real-CUDA v0.3 acceptance evidence
 
-[`real-cuda-v0.3-b9de848.json`](real-cuda-v0.3-b9de848.json) is the accepted
-clean-source hardware report for commit `b9de848cf3fa8322e5f685f60191857e528531d4`.
-It was recorded on an RTX 5070 Ti with CuPy 14.2.0, CUDA runtime 12.9, and driver
-13.1 after all 15 GPU-marked tests passed. All five required cases passed the
-fixed `2e-10` maximum-absolute and norm-error bounds; the largest observed
-values were about `1.44e-13` and `9.60e-14`, respectively.
+[`real-cuda-v0.3-4f7efaed.json`](real-cuda-v0.3-4f7efaed.json) is the
+accepted manual-GitHub-workflow report for main merge commit
+`4f7efaed992b05691e204f78536dd9f2c54abfd3`. Normal CI run `36887536595` and
+`Real CUDA validation` run `36887643743` both passed. The CUDA run used the
+labelled ephemeral `ashilab-gpu` runner and uploaded its schema-v1 artifact for
+90-day retention.
+
+[`real-cuda-v0.3-b9de848.json`](real-cuda-v0.3-b9de848.json) is the earlier
+accepted clean-source implementation report. Both were recorded on an RTX 5070
+Ti with CuPy 14.2.0, CUDA runtime 12.9, and driver 13.1 after all 15 GPU-marked
+tests passed. Every required case passed the fixed `2e-10` maximum-absolute and
+norm-error bounds; the largest observed values were about `1.44e-13` and
+`9.60e-14`, respectively.
 
 The recorded 32-state public-call timings are diagnostics, not a speed claim.
 They include validation and algorithm setup and were slower on GPU than CPU for

@@ -5505,6 +5505,52 @@ repeat it before publication and attach the resulting accepted JSON.
 Implementation commit: this checkpoint.
 
 
+### D-160: Main accepts the manual real-CUDA workflow
+
+Status: Implemented on 2026-10-01 as P8.5-i.
+
+Scope: Main-branch integration evidence, manual self-hosted workflow acceptance,
+second source-bound CUDA artifact, executable artifact contract, and release
+readiness documentation. No package source, physical formula, numerical
+tolerance, backend dispatch, array path, workflow logic, or calculation result
+changes.
+
+PR #11 merged the complete refactor to main commit
+`4f7efaed992b05691e204f78536dd9f2c54abfd3`. Main normal CI run
+`36887536595` completed successfully. The repository's manual `Real CUDA
+validation` workflow then ran as dispatch `36887643743` on the same commit.
+The ephemeral `ashilab-gpu` runner had exactly the required routing labels, and
+its CUDA-device probe, trusted NumPy/CuPy reference, all 15 GPU-marked tests,
+five-case evidence recorder, artifact upload, and Action post-steps all passed.
+
+The resulting schema-v1 report has `status: pass`, `worktree_dirty: false`, and
+the exact main merge SHA. It records the RTX 5070 Ti, Python 3.12.15, NumPy
+2.5.3, CuPy 14.2.0, CUDA runtime 12.9, driver 13.1, and compute capability
+12.0. All five CuPy `complex128` device results retain the required shapes.
+The largest maximum-absolute difference is `1.4376699353313202e-13`, and the
+largest norm error is `9.592326932761353e-14`, both below the fixed `2e-10`
+bounds.
+
+The raw report is committed separately as
+`benchmarks/real-cuda-v0.3-4f7efaed.json`, while the D-159 implementation report
+remains intact. A parameterized contract loads both through the production
+schema validator and fixes each source commit. The GitHub artifact
+`real-cuda-evidence-4f7efaed992b05691e204f78536dd9f2c54abfd3` is retained
+until 2026-12-30.
+
+The main checkpoint still identifies as `0.3.0.dev1`. D-160 therefore proves
+the workflow infrastructure and integrated development source, but it does not
+authorize a tag. The exact final version/changelog commit must receive another
+manual CUDA pass, and the tag workflow must receive a newly provisioned
+ephemeral GPU runner and repeat the evidence before publication.
+
+The dimension-32 GPU public-call medians are approximately 17-76 ms versus
+0.33-0.61 ms on CPU. They include validation and setup, remain diagnostic, and
+support no general GPU speed or crossover claim.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
