@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P5.5-e/D-156 candidate
+Local code checkpoint: P5.5-f/D-157 candidate
 Hosted accepted checkpoint: P8.5-h/D-154 (`8a543b6`; run `36814615696`)
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
@@ -15,11 +15,11 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-156 candidate changes only GPU validation dependency provisioning, contracts, and documentation | Pass |
-| Complete CPU suite | 1527 passed, 16 optional-GPU skipped; 1543 collected | Pass |
+| Clean source checkpoint | D-157 candidate changes the approved LinMol CuPy implementation, tests, and documentation | Pass |
+| Complete CPU suite | 1530 passed, 15 optional-GPU skipped; 1545 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
-| Active-scope format | 317 files formatted | Pass |
+| Active-scope format | 307 files formatted | Pass |
 | Strict mypy scope | pinned 1.19.1, nonincremental, 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
@@ -53,14 +53,18 @@ separate device-native CuPy owners. Source contracts forbid `.get()` and
 `cp.asnumpy` before the explicit host boundary. CPU-backed doubles verify the
 calculation graphs but cannot verify CUDA execution or performance.
 
-Sixteen GPU tests are collected but skipped locally. D-155 makes the `gpu`
+Fifteen GPU tests are collected but skipped locally. D-155 makes the `gpu`
 extra install the complete CUDA 12 user-space components; a driver-only WSL2
 probe on the intended RTX 5070 Ti host now executes a basic CuPy kernel. The
 focused library parity case also passes there. D-156 repairs the manual job after
 the all-GPU command exposed a missing `plot` extra during global collection;
-manual and tag-time jobs now install `dev,io,plot,gpu`. These are bootstrap
-and collection evidence only, not library acceptance. D-146 adds a manual pre-tag
-workflow and a release job for the real
+manual and tag-time jobs now install `dev,io,plot,gpu`. D-157 addresses
+the resulting real-device LinMol failures: 12 GPU cases passed, three reached
+unsupported `cupy.vectorize`, and one was a misclassified CPU error test. The
+approved replacement preserves every existing dipole factor and phase in
+device array operations; CPU-reference characterization passes, while a full
+hardware rerun remains required. These are not library acceptance. D-146 adds
+a manual pre-tag workflow and a release job for the real
 `[self-hosted, linux, x64, gpu]` runner. Both run the trusted TwoLevel case,
 every `gpu`-marked test, and a hard-failing schema-v1 recorder covering RK4
 final/trajectory plus all three split modes. The report records NumPy/CuPy

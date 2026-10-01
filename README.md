@@ -216,10 +216,10 @@ coverage run --data-file=/tmp/rve-coverage \
 coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
 ruff check --no-fix src tests examples benchmarks scripts
 ruff format --check src tests examples benchmarks scripts
-mypy
+python -m mypy --no-incremental
 ```
 
-The current local checkpoint is 1514 passing CPU tests with 16 optional-GPU
+The current local checkpoint is 1530 passing CPU tests with 15 optional-GPU
 skips and 81% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 

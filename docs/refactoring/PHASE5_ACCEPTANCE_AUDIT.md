@@ -1,7 +1,7 @@
 # Phase 5 numerical-engine acceptance audit
 
 Last verified: 2026-10-01
-Checkpoint: P5.5-e / D-156 complete manual-CUDA test environment; full hardware run pending
+Checkpoint: P5.5-f / D-157 device-native LinMol CuPy dipoles; full hardware rerun pending
 
 ## Scope
 
@@ -27,7 +27,7 @@ recorder.
 | Field left/mid/right indices and `-mu E` agree | Verified | solver physics and density contracts |
 | NumPy performance is measured | Verified | Numba CSR and Liouville endpoint-reuse artifacts |
 | CuPy RK4 graph matches CPU and remains device-native | Implemented; real GPU pending | D-144; `test_cuda_rk4_contracts.py` |
-| Real CUDA parity and performance | Harness complete; not verified | D-146; 16 GPU cases skip here |
+| Real CUDA parity and performance | Harness complete; not verified | D-146; 15 GPU cases skip here |
 
 D-144 removes the former fused RawKernel. That kernel used `H0 + mu E`, added
 its `dt*k3` stage a second time during the final update, ignored trajectory,
@@ -100,8 +100,11 @@ timing scopes, hardware/software/source identity, failure behavior, and
 artifact retention. D-155 makes the pyproject `gpu` extra provision the
 complete CUDA 12 user-space environment. D-156 additionally makes the manual
 workflow install `dev,io,plot,gpu`, matching the tag-time job so global pytest
-collection has every optional dependency. Run the manual `Real CUDA validation`
-workflow before tagging. Accept Phase 5 only if
+collection has every optional dependency. D-157 then replaces the real-device
+LinMol failure at unsupported `cupy.vectorize` with the approved,
+formula-preserving device-array implementation; all six axis/potential
+combinations match the existing CPU reference at `2e-15`. Run the manual
+`Real CUDA validation` workflow before tagging. Accept Phase 5 only if
 its schema-v1 report has `status: pass`, then
 rerun the complete CPU/release gates at that exact commit.
 

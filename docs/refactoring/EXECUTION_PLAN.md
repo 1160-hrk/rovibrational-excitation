@@ -2343,6 +2343,18 @@ package source or calculation logic changes; full GPU execution and evidence
 remain mandatory.
 
 
+P5.5-f/D-157 resolves the next real-device failure with explicit user approval.
+The target host passed 12 GPU cases, while three LinMol cases failed because
+CuPy 14.2 does not implement the existing `vectorize(..., otypes=...)` call;
+a fourth failure was a GPU-misclassified CPU error-contract test. LinMol now
+evaluates the unchanged Cartesian Hönl-London and harmonic/Morse formulae with
+device array operations. All six axis/potential combinations agree with the
+existing CPU dense reference at `2e-15` in a NumPy-namespace
+characterization. No host fallback or repair is allowed. The suite has 1530
+passes and 15 optional-GPU skips (1545 collected); a real-GPU rerun remains
+mandatory.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

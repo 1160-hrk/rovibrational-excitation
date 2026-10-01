@@ -36,6 +36,33 @@ except ImportError:
 class TestRK4ErrorHandling:
     """RK4エラーハンドリングテスト"""
 
+    def test_cupy_error_when_unavailable(self):
+        """CuPy利用不可時のエラー"""
+        # CuPyを一時的に無効化
+        from rovibrational_excitation.dynamics.algorithms.rk4 import (
+            schrodinger_cupy as cupy_mod,
+        )
+
+        original_cp = cupy_mod.cp
+        cupy_mod.cp = None
+
+        try:
+            H0 = np.diag([0.0, 1.0])
+            mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
+            mu_y = np.zeros((2, 2), dtype=complex)
+            E_field = np.array([0, 0.1, 0])
+            psi0 = np.array([1, 0], dtype=complex)
+
+            with pytest.raises(
+                RuntimeError, match="backend='cupy' but CuPy is not installed"
+            ):
+                rk4_schrodinger(
+                    H0, mu_x, mu_y, E_field, E_field, psi0, dt=0.1, backend="cupy"
+                )
+        finally:
+            # 元に戻す
+            cupy_mod.cp = original_cp
+
     def test_rk4_schrodinger_dimension_mismatch(self):
         """次元不一致エラー"""
         H0 = np.diag([0.0, 1.0])  # 2x2
@@ -210,33 +237,6 @@ class TestRK4CuPyBackend:
         assert isinstance(result, cp.ndarray)
         norm = cp.linalg.norm(result[-1]).item()
         np.testing.assert_allclose(norm, 1.0, atol=1e-6)
-
-    def test_cupy_error_when_unavailable(self):
-        """CuPy利用不可時のエラー"""
-        # CuPyを一時的に無効化
-        from rovibrational_excitation.dynamics.algorithms.rk4 import (
-            schrodinger_cupy as cupy_mod,
-        )
-
-        original_cp = cupy_mod.cp
-        cupy_mod.cp = None
-
-        try:
-            H0 = np.diag([0.0, 1.0])
-            mu_x = np.array([[0, 1], [1, 0]], dtype=complex)
-            mu_y = np.zeros((2, 2), dtype=complex)
-            E_field = np.array([0, 0.1, 0])
-            psi0 = np.array([1, 0], dtype=complex)
-
-            with pytest.raises(
-                RuntimeError, match="CuPy backend requested but CuPy not installed"
-            ):
-                rk4_schrodinger(
-                    H0, mu_x, mu_y, E_field, E_field, psi0, dt=0.1, backend="cupy"
-                )
-        finally:
-            # 元に戻す
-            cupy_mod.cp = original_cp
 
 
 class TestRK4LVNEComprehensive:

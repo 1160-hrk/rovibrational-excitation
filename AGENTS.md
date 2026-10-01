@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P5.5-e/D-156 complete manual-CUDA test environment; P8.5-h/D-154 hosted normal-CI acceptance
+Verified checkpoints: P5.5-f/D-157 device-native LinMol CuPy dipoles; P8.5-h/D-154 hosted normal-CI acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -113,6 +113,9 @@ The authoritative details and formulas are in
   global state or a fixed `N=200`.
 - TwoLevel and VibLadder use scalar coupling and reject the inapplicable
   `polarization` input. LinMol M-resolved coupling is Cartesian.
+- LinMol CuPy dense dipoles reproduce the established Cartesian
+  Hönl-London phases and harmonic/Morse vibrational factors without
+  `vectorize`, host fallback, symmetrization, or renormalization.
 - Production SymTop is a rigid parallel band in signed `|v,J,K,M>` order with
   CH3F ortho/para filtering, Delta K=0, and Cartesian Delta M=0,+/-1. It
   requires all constants and units, explicit axes, and exactly one spin-isomer
@@ -192,7 +195,7 @@ pytest -q
 ~~~
 
 ~~~text
-1526 passed, 16 GPU tests skipped (1542 collected)
+1530 passed, 15 GPU tests skipped (1545 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -376,6 +379,14 @@ passed; the broader command had stopped during collection solely because
 Matplotlib was absent. A workflow contract fixes the complete environment. No
 package source or numerical behavior changes; all GPU cases and evidence still
 need to pass.
+
+P5.5-f/D-157 replaces the non-executable LinMol `cupy.vectorize` path with
+the user-approved device-array transcription of the same x/y/z Hönl-London
+branches and harmonic/Morse factors. A CPU namespace characterization agrees
+with the existing Numba reference at `2e-15` for all six combinations. The
+unavailable-CuPy test is no longer incorrectly GPU-marked. The local suite has
+1530 passes and 15 optional-GPU skips (1545 collected); the hardware rerun and
+schema-v1 evidence remain pending.
 
 ## Current next work
 

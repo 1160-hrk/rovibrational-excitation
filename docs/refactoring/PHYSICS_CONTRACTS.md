@@ -800,6 +800,11 @@ Additional constraints:
   unsupported. The legacy factory rejection is transitional.
 - A backend name must govern both dipole construction and time propagation for
   a simulation case to avoid cross-backend array mismatches.
+- D-157 requires LinMol CuPy dense dipoles to evaluate the same Cartesian
+  Hönl-London branches, phases, harmonic selection rule, and ordered Morse
+  products as the NumPy/Numba reference. The implementation uses device array
+  operations only; it must not use unsupported `cupy.vectorize`, construct the
+  matrix on NumPy, or repair it by symmetrization or normalization.
 - `PropagatorFactory` requires typed state path, algorithm, execution policy,
   and renormalization choice; it never selects from polarization or sparsity.
 - Low-level pure-state propagation returns shape `(saved_times, dimension)`.

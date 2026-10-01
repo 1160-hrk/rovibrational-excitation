@@ -63,7 +63,7 @@ Active source/test/example/tooling の品質 gate:
 ```bash
 ruff check --no-fix src tests examples benchmarks scripts
 ruff format --check src tests examples benchmarks scripts
-mypy
+python -m mypy --no-incremental
 python scripts/smoke_examples.py
 python examples/tools/build_index.py --check
 ```

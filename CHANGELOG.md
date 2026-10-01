@@ -97,6 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that remain outside this checkpoint.
 
 ### 🐛 Fixed
+- LinMol CuPy dipole construction now evaluates the established x/y/z
+  Hönl-London and harmonic/Morse formulae with device array operations instead
+  of unsupported `cupy.vectorize`, without host fallback or result repair.
+- The simulated CuPy-unavailable RK4 contract is now a CPU test and checks the
+  actual low-level error instead of running only on installed-CuPy hosts.
 - Manual real-CUDA validation now installs the same complete `dev,io,plot,gpu`
   environment as tag-time validation, preventing optional visualization imports
   from aborting collection before GPU-marked tests execute.

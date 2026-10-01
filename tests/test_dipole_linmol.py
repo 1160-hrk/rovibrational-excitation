@@ -3,6 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
+import inspect
 import tempfile
 
 import numpy as np
@@ -11,6 +12,9 @@ import pytest
 from rovibrational_excitation.models.linear_molecule import (
     LinMolBasis,
     LinMolDipoleMatrix,
+)
+from rovibrational_excitation.models.linear_molecule import (
+    dipole_builder as dipole_builder_module,
 )
 from rovibrational_excitation.models.linear_molecule.dipole_builder import _build_mu
 
@@ -286,28 +290,39 @@ class TestLinMolDipoleMatrix:
     @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
     def test_numpy_vs_cupy_consistency(self):
-        """NumPyとCuPyの一貫性テスト"""
-        basis = LinMolBasis(
-            V_max=1, J_max=1, use_M=True, omega=1.0, B=0.001, alpha=0.0, delta_omega=0.0
-        )
+        """All Cartesian and vibrational formulae agree across backends."""
+        import cupy as cp_local
 
-        dipole_np = LinMolDipoleMatrix(
-            basis, backend="numpy", mu0=1.0, potential_type="harmonic"
-        )
-        dipole_cp = LinMolDipoleMatrix(
-            basis, backend="cupy", mu0=1.0, potential_type="harmonic"
-        )
-
-        mu_np = dipole_np.mu_x
-        mu_cp = dipole_cp.mu_x
-
-        # 結果が一致するかテスト（CuPyが利用可能な場合のみ）
-        if HAS_CUPY:
-            import cupy as cp_local
-
-            np.testing.assert_array_almost_equal(
-                mu_np, cp_local.asnumpy(mu_cp), decimal=10
+        for potential_type in ("harmonic", "morse"):
+            basis = LinMolBasis(
+                V_max=2,
+                J_max=2,
+                use_M=True,
+                omega=1.0,
+                B=0.001,
+                alpha=0.0,
+                delta_omega=0.1,
             )
+            dipole_np = LinMolDipoleMatrix(
+                basis,
+                backend="numpy",
+                mu0=1.0,
+                potential_type=potential_type,
+            )
+            dipole_cp = LinMolDipoleMatrix(
+                basis,
+                backend="cupy",
+                mu0=1.0,
+                potential_type=potential_type,
+            )
+
+            for axis in ("x", "y", "z"):
+                expected = dipole_np.mu(axis)
+                actual = dipole_cp.mu(axis)
+                assert isinstance(actual, cp_local.ndarray)
+                np.testing.assert_array_almost_equal(
+                    cp_local.asnumpy(actual), expected, decimal=10
+                )
 
     @pytest.mark.skipif(not HAS_HDF5, reason="h5py not available")
     def test_hdf5_save_load(self):
@@ -473,6 +488,59 @@ class TestBuildMuKernel:
         ):
             # 型チェッカー回避のためキャスト
             _build_mu(basis, "x", mu0=1.0, potential_type="invalid")  # type: ignore
+
+    def test_gpu_dense_avoids_unsupported_cupy_vectorize(self):
+        """CuPy does not implement numpy.vectorize with explicit otypes."""
+        source = inspect.getsource(dipole_builder_module)
+        assert ".vectorize(" not in source
+
+    def test_gpu_dense_formula_matches_cpu_reference_with_numpy_namespace(
+        self, monkeypatch
+    ):
+        """Freeze all GPU vector formulae against the existing CPU kernels."""
+        basis = LinMolBasis(
+            V_max=2,
+            J_max=2,
+            use_M=True,
+            omega=1.0,
+            B=0.001,
+            alpha=0.0,
+            delta_omega=0.1,
+        )
+        v_arr = np.asarray(basis.V_array, dtype=np.int64)
+        j_arr = np.asarray(basis.J_array, dtype=np.int64)
+        m_arr = np.asarray(basis.M_array, dtype=np.int64)
+        monkeypatch.setattr(dipole_builder_module, "_cp", np)
+
+        for potential_type in ("harmonic", "morse"):
+            vib_is_morse = potential_type == "morse"
+            level_parameter = (
+                dipole_builder_module.omega01_domega_to_N(
+                    basis.omega_rad_pfs, basis.delta_omega_rad_pfs
+                )
+                if vib_is_morse
+                else 0.0
+            )
+            for axis_index in range(3):
+                expected = dipole_builder_module._dense_core(
+                    v_arr,
+                    j_arr,
+                    m_arr,
+                    1.25,
+                    axis_index,
+                    vib_is_morse,
+                    level_parameter,
+                )
+                actual = dipole_builder_module._dense_gpu(
+                    v_arr,
+                    j_arr,
+                    m_arr,
+                    1.25,
+                    axis_index,
+                    vib_is_morse,
+                    level_parameter,
+                )
+                np.testing.assert_allclose(actual, expected, rtol=2e-15, atol=2e-15)
 
     @pytest.mark.gpu
     @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")

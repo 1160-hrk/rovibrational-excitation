@@ -163,10 +163,108 @@ def _sparse_cpu(
 
 
 # ----------------------------------------------------------------------
-# --- 4. GPU dense helper ---------------------------------------------
-#   CuPy では Python vectorize を使うのでラップ不要
+# --- 4. GPU dense helpers ---------------------------------------------
 # ----------------------------------------------------------------------
-def _dense_gpu(
+def _selected_sqrt(numerator, denominator, selected, xp):
+    """Evaluate a non-negative branch factor only on selected entries."""
+    return xp.sqrt(xp.where(selected, numerator / denominator, 0.0))
+
+
+def _rotational_array(J1, M1, J2, M2, axis_idx: int, xp):
+    """Vectorized form of the established tdm_jm_* kernels."""
+    delta_j = J2 - J1
+    delta_m = M2 - M1
+
+    if axis_idx in (0, 1):
+        r_branch = (delta_j == 1) & (xp.abs(delta_m) == 1)
+        p_branch = (delta_j == -1) & (xp.abs(delta_m) == 1)
+
+        r_numerator = (J1 + delta_m * M1 + 1) * (J1 + delta_m * M1 + 2)
+        r_denominator = 4 * (2 * J1 + 1) * (2 * J1 + 3)
+        r_amplitude = _selected_sqrt(r_numerator, r_denominator, r_branch, xp)
+
+        p_delta_m = -delta_m
+        p_numerator = (J2 + p_delta_m * M2 + 1) * (J2 + p_delta_m * M2 + 2)
+        p_denominator = 4 * (2 * J2 + 1) * (2 * J2 + 3)
+        p_amplitude = _selected_sqrt(p_numerator, p_denominator, p_branch, xp)
+
+        if axis_idx == 0:
+            result = xp.where(
+                r_branch,
+                -delta_m * r_amplitude,
+                xp.where(p_branch, delta_m * p_amplitude, 0.0),
+            )
+        else:
+            result = xp.where(
+                r_branch,
+                1j * r_amplitude,
+                xp.where(p_branch, -1j * p_amplitude, 0.0j),
+            )
+        return xp.asarray(result, dtype=xp.complex128)
+
+    r_branch = (delta_j == 1) & (delta_m == 0)
+    p_branch = (delta_j == -1) & (delta_m == 0)
+    r_numerator = (J1 + 1 - M1) * (J1 + 1 + M1)
+    r_denominator = (2 * J1 + 1) * (2 * J1 + 3)
+    r_amplitude = _selected_sqrt(r_numerator, r_denominator, r_branch, xp)
+    p_numerator = (J2 + 1 - M2) * (J2 + 1 + M2)
+    p_denominator = (2 * J2 + 1) * (2 * J2 + 3)
+    p_amplitude = _selected_sqrt(p_numerator, p_denominator, p_branch, xp)
+    result = xp.where(r_branch, r_amplitude, xp.where(p_branch, p_amplitude, 0.0))
+    return xp.asarray(result, dtype=xp.complex128)
+
+
+def _harmonic_vibration_array(v1, v2, xp):
+    """Vectorized form of tdm_vib_harm."""
+    return xp.where(
+        v1 == v2 + 1,
+        xp.sqrt(v1),
+        xp.where(v2 == v1 + 1, xp.sqrt(v2), 0.0),
+    )
+
+
+def _morse_vibration_array(
+    v1,
+    v2,
+    level_parameter: float,
+    maximum_vibrational_delta: int,
+    xp,
+):
+    """Vectorized form of tdm_vib_morse with the same product order."""
+    upper = xp.maximum(v1, v2)
+    lower = xp.minimum(v1, v2)
+    delta = upper - lower
+    factorial_product = xp.ones_like(delta, dtype=xp.float64)
+    gamma_product = xp.ones_like(delta, dtype=xp.float64)
+
+    for offset in range(1, maximum_vibrational_delta + 1):
+        selected = delta >= offset
+        factorial_product *= xp.where(selected, lower + offset, 1.0)
+        gamma_product *= xp.where(selected, 2 * level_parameter - upper + offset, 1.0)
+
+    tdm0 = (
+        2
+        / (2 * level_parameter - 1)
+        * _np.sqrt((level_parameter - 1) * level_parameter / (2 * level_parameter))
+    )
+    safe_delta = xp.where(delta == 0, 1, delta)
+    sign = xp.where(delta % 2 == 1, 1.0, -1.0)
+    value = (
+        2
+        * sign
+        / (safe_delta * (2 * level_parameter - lower - upper))
+        * xp.sqrt(
+            (level_parameter - lower)
+            * (level_parameter - upper)
+            * factorial_product
+            / gamma_product
+        )
+        / tdm0
+    )
+    return xp.where(delta == 0, 0.0, value)
+
+
+def _dense_array_backend(
     v_arr,
     J_arr,
     M_arr,
@@ -174,10 +272,10 @@ def _dense_gpu(
     axis_idx: int,
     vib_is_morse: bool,
     morse_level_parameter: float,
+    maximum_vibrational_delta: int,
+    xp,
 ):
-    xp = _cp
-    rot_func = (tdm_jm_x, tdm_jm_y, tdm_jm_z)[axis_idx]
-
+    """Build the dense matrix using only NumPy/CuPy-compatible operations."""
     v1 = xp.expand_dims(v_arr, 1)
     v2 = xp.expand_dims(v_arr, 0)
     J1 = xp.expand_dims(J_arr, 1)
@@ -186,17 +284,45 @@ def _dense_gpu(
     M2 = xp.expand_dims(M_arr, 0)
 
     mask = (xp.abs(J1 - J2) == 1) & (xp.abs(M1 - M2) <= 1)
-    if not vib_is_morse:
-        mask &= xp.abs(v1 - v2) == 1
-
-    rot = xp.vectorize(rot_func, otypes=[xp.complex128])(J1, M1, J2, M2)
+    rot = _rotational_array(J1, M1, J2, M2, axis_idx, xp)
     if vib_is_morse:
-        vib = xp.vectorize(tdm_vib_morse, otypes=[xp.float64])(
-            v1, v2, morse_level_parameter
+        vib = _morse_vibration_array(
+            v1,
+            v2,
+            morse_level_parameter,
+            maximum_vibrational_delta,
+            xp,
         )
     else:
-        vib = xp.vectorize(tdm_vib_harm, otypes=[xp.float64])(v1, v2)
+        mask &= xp.abs(v1 - v2) == 1
+        vib = _harmonic_vibration_array(v1, v2, xp)
     return mu0 * rot * vib * mask
+
+
+def _dense_gpu(
+    v_arr,
+    J_arr,
+    M_arr,
+    mu0: float,
+    axis_idx: int,
+    vib_is_morse: bool,
+    morse_level_parameter: float,
+    maximum_vibrational_delta: int | None = None,
+):
+    """Build a dense CuPy matrix without unsupported Python vectorization."""
+    if maximum_vibrational_delta is None:
+        maximum_vibrational_delta = max(v_arr.shape[0] - 1, 0)
+    return _dense_array_backend(
+        v_arr,
+        J_arr,
+        M_arr,
+        mu0,
+        axis_idx,
+        vib_is_morse,
+        morse_level_parameter,
+        maximum_vibrational_delta,
+        _cp,
+    )
 
 
 # ----------------------------------------------------------------------
@@ -265,6 +391,7 @@ def _build_mu(
             axis_idx,
             vib_is_morse,
             morse_level_parameter,
+            maximum_vibrational_delta=basis.V_max,
         )
         return mat if dense else _csp.csr_matrix(mat)  # type: ignore[arg-type]
 

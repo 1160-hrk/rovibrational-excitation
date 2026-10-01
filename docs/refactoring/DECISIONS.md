@@ -5388,6 +5388,45 @@ pass at the same clean commit.
 Implementation commit: this checkpoint.
 
 
+### D-157: LinMol CuPy dipoles use device-native closed-form array operations
+
+Status: Implemented on 2026-10-01 as P5.5-f with the user-approved requirement
+that the physical formula remain unchanged.
+
+Scope: LinMol dense CuPy dipole construction and its tests. No basis ordering,
+Hönl-London factor, Cartesian phase, selection rule, Morse normalization,
+Hamiltonian, propagation algorithm, tolerance, or result schema changes.
+
+The first complete real-GPU marker run passed 12 cases and exposed four failures.
+Three LinMol cases reached `cupy.vectorize(..., otypes=...)`, which CuPy 14.2
+does not implement. The fourth was a CPU unavailability test inherited from a
+GPU-marked class and expected a stale low-level error string; it did not indicate
+a device calculation failure.
+
+The approved replacement writes the existing `tdm_jm_x/y/z` closed forms as
+NumPy/CuPy-compatible array operations. It retains Delta J = +/-1; the x/y Delta M =
++/-1 and z Delta M = 0 branches; all real and imaginary phases; the harmonic
+Delta v = +/-1 factors; and the Morse sign, denominator, normalization, and
+ascending factorial/gamma-product order. Production passes the model `V_max`
+to bound the Morse product loop. No state or matrix crosses to the host, and no
+fallback, clipping, symmetrization, or renormalization is introduced.
+
+A CPU-executable characterization evaluates the new array formulae through a
+NumPy namespace and agrees with the existing Numba dense reference for every
+Cartesian axis and both harmonic and Morse potentials at `rtol=atol=2e-15`.
+The real-GPU parity case now covers all six axis/potential combinations at the
+established CUDA comparison tolerance. A source contract forbids `.vectorize(`
+in this module. The unavailable-CuPy test is now an ordinary CPU error-contract
+test and uses the actual low-level message.
+
+The full local suite has 1530 passes and 15 optional-GPU skips out of 1545
+collected; branch coverage remains 81%. Ruff, formatting, strict mypy, examples,
+and diff checks pass. Real-GPU acceptance remains pending a rerun of the 15
+GPU-marked tests and schema-v1 evidence recorder at this commit.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

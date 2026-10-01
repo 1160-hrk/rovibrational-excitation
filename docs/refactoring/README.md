@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1527 passed, 16 skipped (1543 collected) |
+| Pytest | 1530 passed, 15 skipped (1545 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -642,6 +642,13 @@ collection for the all-GPU command exposed the missing `plot` dependency before
 any selected GPU test ran. The workflow contract now prevents that incomplete
 environment. No package source or calculation changed; full hardware acceptance
 remains pending.
+
+P5.5-f/D-157 implements the user-approved, formula-preserving repair for the
+next real-device failure. LinMol CuPy dipoles now use device array operations
+for the same Cartesian Hönl-London branches and harmonic/Morse factors instead
+of unsupported `cupy.vectorize`. All six formula combinations agree with
+the existing CPU dense reference at `2e-15`. The suite has 1530 passes and
+15 optional-GPU skips (1545 collected); real-hardware rerun remains pending.
 
 P6.2-c
 implements D-069:
