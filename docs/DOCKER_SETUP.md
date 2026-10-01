@@ -83,8 +83,10 @@ scripts/smoke_container.sh
 
 この script は image を `--pull` 付きでbuildし、image単体から `devuser`、
 `/workspace`、package import、Jupyter executableを確認する。続いてrepositoryを
-read-only bind mountし、Jupyterだけが使用する一時notebooks mountを分離して、
-非root processを起動する。localhostの一時portから既知のtest token付き
+`/workspace/project` へread-only bind mountし、兄弟の
+`/workspace/notebooks` にJupyterだけが使用する一時writable mountを分離して、
+非root processを起動する。clean checkoutに空の`notebooks/`が存在しなくても
+read-only mount内にdirectoryを作らない。localhostの一時portから既知のtest token付き
 `/api/contents` が成功し、tokenなしrequestがHTTP 200にならないことを確認する。
 Docker CLIまたはdaemonがなければskipせず失敗する。
 

@@ -231,7 +231,11 @@ def test_krotov_generated_initial_field_preserves_frozen_legacy_samples(
             [1.0627984523092236e4, 1.0627984523092236e4],
         ]
     )
-    np.testing.assert_allclose(result.controls_v_per_m, expected, rtol=2e-15, atol=0.0)
+    # The frozen route intentionally retains a zero-dispersion FFT/IFFT
+    # round trip. FFT implementations differ below 1e-7 V/m across CPU
+    # architectures; an absolute bound keeps the 1e9 V/m peak constrained to
+    # approximately 1e-16 without changing any generated sample.
+    np.testing.assert_allclose(result.controls_v_per_m, expected, rtol=0.0, atol=1e-7)
     np.testing.assert_array_equal(spy.calls[0]["field"], result.controls_v_per_m)
 
 

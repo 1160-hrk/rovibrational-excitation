@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-e/D-151 reproducible CI diagnostics; P8.5-d/D-150 truthful release handoff
+Verified checkpoints: P8.5-f/D-152 hosted CPU portability; P8.5-e/D-151 reproducible CI diagnostics
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -335,6 +335,14 @@ container smoke failures name their exact stage. Diagnostic steps preserve the
 original failing status and do not change package calculations. The suite has
 1526 passes and 16 optional-GPU skips (1542 collected). A successful hosted
 rerun remains required.
+
+P8.5-f/D-152 consumes D-151 hosted diagnostics without changing production
+calculation code. The retained zero-dispersion FFT field path keeps a strict
+`1e-7 V/m` absolute frozen-sample bound across CPU architectures; release
+tooling imports `tomli` on Python 3.10; mypy 1.19.1 runs nonincrementally in
+the fixed Python 3.12 quality environment; and container smoke uses sibling
+read-only-project/writable-notebooks mounts. The suite remains 1526 passes and
+16 optional-GPU skips (1542 collected). Hosted rerun evidence remains required.
 
 ## Current next work
 

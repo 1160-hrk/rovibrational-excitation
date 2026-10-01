@@ -2285,6 +2285,19 @@ calculation behavior. The complete local suite has 1526 passes and 16
 optional-GPU skips (1542 collected); a successful hosted rerun remains required.
 
 
+P8.5-f/D-152 consumes the public diagnostics from hosted run `36812082890`
+without changing any production calculation. The frozen legacy generated-field
+test now uses a `1e-7 V/m` absolute cross-architecture FFT bound with zero
+relative tolerance; the observed x86/arm64 difference was `7.94e-8 V/m`.
+Python 3.10 uses the declared `tomli` release-tool fallback. Mypy 1.19.1 runs
+nonincrementally under the fixed Python 3.12 quality environment while the
+runtime matrix still tests 3.10-3.13. The container smoke avoids an absent
+nested destination inside a read-only bind by mounting the checkout and
+writable notebooks as siblings. The local suite remains 1526 passes and 16
+optional-GPU skips (1542 collected); hosted Python 3.10 and Docker acceptance
+remain pending.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

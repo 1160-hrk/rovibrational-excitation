@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.13"
+          python-version: "3.12"
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install quality dependencies
@@ -55,7 +55,7 @@ jobs:
       - name: Verify supported-example index
         run: python examples/tools/build_index.py --check
       - name: Type-check named typed modules
-        run: mypy
+        run: mypy --no-incremental
 
   test:
     name: Tests (Python ${{ matrix.python-version }})

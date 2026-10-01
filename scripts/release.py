@@ -17,7 +17,10 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
@@ -113,7 +116,7 @@ def _run_release_gates(target_version: str) -> None:
     commands = [
         [python, "-m", "ruff", "check", "--no-fix", *scope],
         [python, "-m", "ruff", "format", "--check", *scope],
-        [python, "-m", "mypy"],
+        [python, "-m", "mypy", "--no-incremental"],
         [python, "-m", "pytest", "-q"],
         [python, str(ROOT / "scripts" / "smoke_examples.py")],
         [python, "-m", "build"],

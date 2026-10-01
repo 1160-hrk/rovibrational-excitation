@@ -81,6 +81,8 @@ def test_jupyter_launcher_is_valid_shell_and_keeps_security_owned_by_jupyter() -
     assert completed.returncode == 0, completed.stderr
     source = JUPYTER_SCRIPT.read_text()
     assert "RVE_JUPYTER_HOST:-127.0.0.1" in source
+    assert "RVE_JUPYTER_ROOT:-${script_project_root}" in source
+    assert "RVE_JUPYTER_ROOT must be an absolute path" in source
     assert "authentication and XSRF protection remain enabled" in source
     for forbidden in ("token=''", "password=''", "disable_check_xsrf"):
         assert forbidden not in source
@@ -109,10 +111,15 @@ def test_container_smoke_builds_and_checks_nonroot_authenticated_jupyter() -> No
         'stage="image build"',
         'stage="authenticated Jupyter readiness"',
         'stage="runtime user validation"',
+        "--env RVE_JUPYTER_ROOT=/workspace",
+        "dst=/workspace/project,readonly",
+        "dst=/workspace/notebooks",
+        "--entrypoint /workspace/project/scripts/start_jupyter.sh",
     ):
         assert required in source
     for forbidden in ("exit 0 #", "SKIP", "fallback"):
         assert forbidden not in source
+    assert "dst=/workspace,readonly" not in source
 
 
 def test_container_guide_matches_current_commands_and_discloses_unrun_build() -> None:

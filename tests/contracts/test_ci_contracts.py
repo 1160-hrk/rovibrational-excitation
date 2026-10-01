@@ -64,7 +64,7 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert f"ruff format --check {active_scope}" in quality
     assert "python scripts/smoke_examples.py" in quality
     assert "python examples/tools/build_index.py --check" in quality
-    assert "mypy" in quality
+    assert "mypy --no-incremental" in quality
 
     coverage = _commands(jobs["coverage"])
     assert "--data-file=/tmp/rve-coverage" in coverage
@@ -93,6 +93,11 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
 def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
     workflow = _workflow()
     quality_job = workflow["jobs"]["quality"]
+    setup_step = next(
+        step
+        for step in quality_job["steps"]
+        if step.get("uses", "").startswith("actions/setup-python@")
+    )
     install_step = next(
         step
         for step in quality_job["steps"]
@@ -104,6 +109,7 @@ def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
         if step.get("name") == "Lint GitHub Actions workflows"
     )
 
+    assert setup_step["with"]["python-version"] == "3.12"
     assert install_step["env"] == {
         "ACTIONLINT_VERSION": "1.7.12",
         "ACTIONLINT_SHA256": (
@@ -231,7 +237,9 @@ def test_build_metadata_uses_supported_spdx_license_and_runtime_dependencies():
     assert pyproject["build-system"]["requires"][0] == "setuptools>=77"
     assert pyproject["project"]["license"] == "MIT"
     assert "sympy" in pyproject["project"]["dependencies"]
-    assert "ruff==0.16.2" in pyproject["project"]["optional-dependencies"]["dev"]
+    dev_dependencies = pyproject["project"]["optional-dependencies"]["dev"]
+    assert "ruff==0.16.2" in dev_dependencies
+    assert "mypy==1.19.1" in dev_dependencies
 
 
 def test_supported_examples_are_explicit_and_archives_are_excluded():

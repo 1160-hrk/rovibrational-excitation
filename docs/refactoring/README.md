@@ -602,6 +602,15 @@ no longer obscure the original failure. The suite has 1526 passes and 16
 optional-GPU skips (1542 collected); a successful hosted rerun remains external
 evidence.
 
+P8.5-f/D-152 uses D-151 diagnostics to remove hosted-environment false
+failures without changing production calculations. The fixed legacy field
+still uses its exact FFT path, but its frozen test now accepts only `1e-7 V/m`
+absolute cross-architecture noise. The release tool uses the declared Python
+3.10 `tomli` fallback; mypy is pinned/nonincremental in a Python 3.12 quality
+environment; and container smoke mounts read-only project and writable
+notebooks as siblings. The local suite remains 1526 passes and 16 optional-GPU
+skips (1542 collected); hosted rerun evidence remains pending.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping

@@ -1,7 +1,7 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P8.5-e/D-151 candidate
+Local code checkpoint: P8.5-f/D-152 candidate
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,12 +14,12 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-151 candidate contains only the reviewed P8.5-e unit | Pass |
+| Clean source checkpoint | D-152 candidate contains only the reviewed P8.5-f unit | Pass |
 | Complete CPU suite | 1526 passed, 16 optional-GPU skipped; 1542 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 317 files formatted | Pass |
-| Strict mypy scope | 84 named modules | Pass |
+| Strict mypy scope | pinned 1.19.1, nonincremental, 84 named modules | Pass |
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
@@ -74,10 +74,11 @@ read-only checkout and isolated writable notebooks mount. Unauthenticated HTTP
 200 is rejected.
 
 Shell, content, workflow, and actionlint-plus-ShellCheck contracts pass, and
-Docker absence fails rather than skips. The first hosted normal-CI attempt
-failed before acceptance; D-151 now publishes the exact failing smoke stage.
-Docker CLI/daemon is unavailable here, so a successful hosted-runner build/HTTP
-result is still pending. VS Code Dev Containers UI
+Docker absence fails rather than skips. Hosted run `36812082890` localized
+Docker exit 125 to the Jupyter-launch stage. D-152 removes the absent nested
+mount target by placing the read-only project and writable notebooks mounts at
+sibling paths. Docker CLI/daemon is unavailable here, so a successful
+hosted-runner build/HTTP result is still pending. VS Code Dev Containers UI
 attach and its Ports view also remain an explicit manual check; neither is
 inferred from static validation.
 
@@ -112,10 +113,11 @@ After it passes:
 ## Release decision
 
 Local CPU, documentation, packaging, and dry-run preparation are complete at
-this checkpoint. The first hosted normal-CI run failed; D-151 fixes its known
-ShellCheck violation and makes remaining pytest/container failures observable,
-but a passing rerun has not yet been recorded. The project is close to a
-version transition, but it is not a
+this checkpoint. Hosted run `36812082890` verified the D-151 diagnostic path
+and exposed only the portable frozen-sample bound, Python 3.10 `tomllib` import,
+mypy environment, and container mount issues addressed by D-152. A passing
+rerun has not yet been recorded. The project is close to a version transition,
+but it is not a
 release candidate while the supported CUDA paths lack real-hardware numerical,
 transfer, and performance evidence and the container gate lacks hosted
 execution. The version remains `0.3.0.dev1` and no tag or publication is

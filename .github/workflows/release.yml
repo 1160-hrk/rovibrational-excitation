@@ -55,7 +55,7 @@ jobs:
         run: |
           ruff check --no-fix src tests examples benchmarks scripts
           ruff format --check src tests examples benchmarks scripts
-          mypy
+          mypy --no-incremental
       - name: Run complete CPU suite
         run: pytest -q
       - name: Run supported examples and parameter template

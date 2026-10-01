@@ -4,10 +4,15 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-project_root="$(cd -- "${script_dir}/.." && pwd)"
+script_project_root="$(cd -- "${script_dir}/.." && pwd)"
+project_root="${RVE_JUPYTER_ROOT:-${script_project_root}}"
 host="${RVE_JUPYTER_HOST:-127.0.0.1}"
 port="${RVE_JUPYTER_PORT:-8888}"
 
+if [[ "${project_root}" != /* ]]; then
+    echo "RVE_JUPYTER_ROOT must be an absolute path" >&2
+    exit 2
+fi
 if ! [[ "${port}" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then
     echo "RVE_JUPYTER_PORT must be an integer from 1 through 65535" >&2
     exit 2

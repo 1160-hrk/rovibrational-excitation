@@ -50,7 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enforced locally in CI and retained as report/XML artifacts.
 - Repository-wide Markdown links, code fences, and YAML syntax are checked by
   contracts; the required CI quality job runs pinned, checksum-verified
-  actionlint.
+  actionlint and ShellCheck. Mypy is pinned and runs without cross-environment
+  incremental cache reuse.
+- Hosted CPU tests accept only a `1e-7 V/m` absolute FFT round-trip difference
+  for the frozen generated Krotov seed, and Python 3.10 release tooling uses
+  the declared `tomli` compatibility dependency.
+- Container smoke mounts the read-only clean checkout and writable notebooks
+  directory as siblings, avoiding an absent nested target inside a read-only
+  bind.
 - `pyproject.toml` is now the only dependency manifest; stale duplicate
   requirements files and unrelated spectroscopy version/contact metadata were
   removed, and the test guide matches the actual CI policy.

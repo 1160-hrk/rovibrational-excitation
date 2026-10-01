@@ -59,9 +59,10 @@ container_args=(
     --name "${container_name}"
     --publish 127.0.0.1::8888
     --env RVE_JUPYTER_HOST=0.0.0.0
-    --mount "type=bind,src=${project_root},dst=/workspace,readonly"
+    --env RVE_JUPYTER_ROOT=/workspace
+    --mount "type=bind,src=${project_root},dst=/workspace/project,readonly"
     --mount "type=bind,src=${temporary_root}/notebooks,dst=/workspace/notebooks"
-    --entrypoint /workspace/scripts/start_jupyter.sh
+    --entrypoint /workspace/project/scripts/start_jupyter.sh
 )
 stage="Jupyter launch"
 docker run "${container_args[@]}" "${image_tag}" \
