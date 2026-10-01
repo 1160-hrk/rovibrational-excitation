@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-01
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-g/D-153 reproducible mypy entrypoint; P8.5-f/D-152 hosted CPU portability
+Verified checkpoints: P8.5-h/D-154 hosted normal-CI acceptance; P8.5-g/D-153 reproducible mypy entrypoint
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -351,8 +351,14 @@ captures its output without weakening pipeline failure, and extends the escaped
 Check reporter to both JUnit and text-command diagnostics. Release CI uses the
 same module entrypoint. No package source, type configuration, or calculation
 changes. The suite has 1527 passes and 16 optional-GPU skips (1543 collected),
-and strict nonincremental mypy covers 84 modules. Hosted rerun evidence remains
-required for this last normal-CI correction.
+and strict nonincremental mypy covers 84 modules. Hosted run `36814129738`
+accepted the correction and every required normal-CI job.
+
+P8.5-h/D-154 records that hosted run `36814129738` accepted commit `98e04fb`:
+quality, Python 3.10-3.13, physics, coverage, build/clean-wheel, container smoke,
+and the required aggregate all succeeded. This is normal-CPU/container evidence,
+not real-CUDA, manual Dev Containers UI, tag-workflow, or publication evidence.
+No code, workflow, calculation, or test behavior changes.
 
 ## Current next work
 
@@ -803,10 +809,10 @@ The next work is:
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
    checksum-verified actionlint, and immutable external Action refs are complete.
-   Actual real-GPU evidence,
-   hosted container-smoke success, manual VS Code attach/Ports verification,
+   Actual real-GPU evidence, manual VS Code attach/Ports verification,
    exact PyPI Trusted Publisher/protected-environment setup, and the final
-   version bump remain open Phase 8 gates. The
+   version bump remain open Phase 8 gates. Automated hosted container smoke is
+   accepted by D-154 and must run again in the final tag workflow. The
    explicit breaking-change migration note is complete under D-141.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
@@ -818,10 +824,9 @@ The next work is:
    schema-v1 artifact for RK4 and all three split modes. Do not treat source
    inspection, CPU doubles, skipped tests, queued jobs, or status=error
    diagnostics as CUDA evidence.
-4. Keep the release blocked until D-147 passes on a hosted Docker runner and
-   the VS Code Dev Containers attach and Ports view are checked manually. Local
-   shell/content contracts and an explicit no-Docker failure are not runtime
-   container evidence.
+4. D-154 accepts D-147 on a hosted Docker runner. Keep the release blocked
+   until the VS Code Dev Containers attach and Ports view are checked manually;
+   the final tag workflow must also repeat the hard-failing container job.
 5. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.

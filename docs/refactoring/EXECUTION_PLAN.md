@@ -2307,8 +2307,18 @@ Normal and release CI now invoke the pinned checker as `python -m mypy
 through the same escaped Check-annotation reporter, which now has explicit
 JUnit and text modes. The reporter cannot mask the original command failure.
 No package source, type configuration, or calculation changes. The complete
-local suite has 1527 passes and 16 optional-GPU skips (1543 collected); hosted
-normal-CI acceptance remains pending.
+local suite has 1527 passes and 16 optional-GPU skips (1543 collected).
+Hosted run `36814129738` accepted the correction and every required normal-CI
+job.
+
+
+P8.5-h/D-154 records the external acceptance of P8.5-g commit `98e04fb`.
+Run `36814129738` passed quality, Python 3.10-3.13, physics/contracts, branch
+coverage, build/clean-wheel import, development-container smoke, and the
+required aggregate. This closes normal hosted CPU/container acceptance only;
+real CUDA, manual Dev Containers UI/Ports, exact publication infrastructure,
+the final version transition, and tag-time repetition remain open. No code,
+workflow, calculation, or test behavior changes.
 
 
 ### Phase 8 acceptance

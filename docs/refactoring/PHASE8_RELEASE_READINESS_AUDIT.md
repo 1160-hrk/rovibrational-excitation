@@ -1,7 +1,8 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-01
-Local code checkpoint: P8.5-g/D-153 candidate
+Local documentation checkpoint: P8.5-h/D-154 candidate
+Hosted code checkpoint: P8.5-g/D-153 (`98e04fb`; run `36814129738`)
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
 Disposition: **not ready to tag**
@@ -14,7 +15,7 @@ reported as complete v0.3 release acceptance.
 
 | Gate | Evidence | Status |
 |---|---|---|
-| Clean source checkpoint | D-153 candidate contains only the reviewed P8.5-g unit | Pass |
+| Clean source checkpoint | D-154 candidate is evidence-only documentation over accepted D-153 code | Pass |
 | Complete CPU suite | 1527 passed, 16 optional-GPU skipped; 1543 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
@@ -23,8 +24,9 @@ reported as complete v0.3 release acceptance.
 | Supported examples/template | three supported examples and `params_template.py --no-save` | Pass |
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
+| Hosted normal CI | run `36814129738`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
 | Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
-| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; hosted run `36813179835` succeeded | Pass hosted; manual UI check external |
+| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; hosted run `36814129738` succeeded | Pass hosted; manual UI check external |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -64,7 +66,7 @@ commit. The tag workflow repeats the recorder, retains the artifact for 90
 days, and attaches it to the GitHub Release. Source inspection, CPU skips,
 queued jobs, and diagnostic `status: error` reports are not acceptance.
 
-### 2. Development-container execution
+### 2. Development-container manual UI verification
 
 D-147 supplies one hard-failing smoke script to both required normal-CI and
 final-tag jobs. It builds the minimal-context image, verifies its non-root
@@ -94,10 +96,10 @@ No local command in this audit publishes, tags, pushes, or creates a release.
 
 ### 4. Final version transition
 
-Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA, hosted
-container smoke, manual Dev Containers UI, and external publication
-prerequisites are ready. That command changes only `pyproject.toml`, runs local
-gates, and never commits/tags/pushes/publishes. Its success message explicitly
+Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA, manual
+Dev Containers UI, and external publication prerequisites are ready. That
+command changes only `pyproject.toml`, runs local gates, and never
+commits/tags/pushes/publishes. Its success message explicitly
 states that this is not release acceptance and repeats the external blockers.
 After it passes:
 
@@ -117,7 +119,8 @@ this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
 physics, coverage, build, and container corrections; only the quality job's
 bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
 module entrypoint and publishes captured command output while retaining hard
-failure. Its hosted rerun remains pending. The project is close to a version
+failure. Hosted run `36814129738` accepted D-153 and every required normal-CI
+job, including the automated container smoke. The project is close to a version
 transition, but it is not a release candidate while the supported CUDA paths
 lack real-hardware numerical, transfer, and performance evidence and the manual
 Dev Containers UI and publication prerequisites remain open. The version

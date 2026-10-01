@@ -619,7 +619,13 @@ mypy --no-incremental`; the quality job captures output under pipefail and the
 renamed CI reporter emits escaped text or JUnit annotations without masking the
 original failure. No package source, type configuration, or calculation logic
 changed. The local suite has 1527 passes and 16 optional-GPU skips (1543
-collected); hosted rerun acceptance remains pending.
+collected). Hosted run `36814129738` accepted the correction and every required
+normal-CI job.
+
+P8.5-h/D-154 records that hosted acceptance for commit `98e04fb`: quality,
+Python 3.10-3.13, physics, coverage, build/clean-wheel, container smoke, and the
+required aggregate all succeeded. This is not CUDA, manual Dev Containers UI,
+tag-workflow, or publication evidence. No code or calculation changed.
 
 P6.2-c
 implements D-069:

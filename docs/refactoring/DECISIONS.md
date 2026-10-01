@@ -5295,6 +5295,34 @@ actual output instead of inviting another inferred fix.
 Implementation commit: this checkpoint.
 
 
+### D-154: Required normal CI accepts the D-153 checkpoint
+
+Status: Recorded on 2026-10-01 as P8.5-h.
+
+Scope: External hosted evidence for commit `98e04fb` and release-readiness
+status only. No source, workflow, test, calculation, or packaging behavior
+changes.
+
+GitHub Actions run `36814129738` completed successfully. Its quality job
+accepted checksum-verified actionlint/ShellCheck, Ruff, formatting, supported
+examples/index, and the D-153 module-invoked mypy gate. Python 3.10, 3.11, 3.12,
+and 3.13 test jobs passed. Physics/contracts, 47%-floor branch coverage,
+distribution build/clean-wheel import, and development-container smoke passed.
+The required aggregate also passed, so no failed or skipped required job was
+hidden.
+
+This accepts the normal hosted CPU matrix and automated container smoke for the
+D-153 code checkpoint. It is not real-CUDA evidence: optional GPU tests may
+still skip in normal CI. It also does not replace manual VS Code Dev Containers
+attach/Ports verification, a final-tag workflow run, the exact PyPI Trusted
+Publisher/protected environment, or the final explicit version/changelog
+transition.
+
+Evidence-only documentation contracts and diff checks pass.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit
