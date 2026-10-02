@@ -5680,6 +5680,68 @@ release, and no origin `v0.3.0` tag.
 Implementation commit: this checkpoint.
 
 
+### D-164: Run strict mypy in its declared Python 3.10 environment
+
+Status: Implemented on 2026-10-02 as P8.5-m; hosted acceptance pending.
+
+Scope: Normal-CI and final-tag typing-job ownership, workflow contracts, and
+release recovery after a pre-publication tag failure. No package runtime source,
+dependency constraint, physical formula, numerical algorithm, backend, input,
+or calculation result changes.
+
+PR #15 merged the final-version candidate to main commit
+`c497318b0a72ca63f7b2e67704638c3ceb815dcd`. Normal-CI run `36968773740` and
+manual real-CUDA run `36969653438` passed on that exact commit. The manual
+schema-v1 artifact reported `status: pass`, `worktree_dirty: false`, all five
+required cases passing, and maximum state/norm discrepancies below `1.44e-13`
+and `9.60e-14` under the fixed `2e-10` limits.
+
+The first annotated `v0.3.0` tag then started release run `36970840715`.
+Attempts 1 and 2 both passed final-version identity, real CUDA, and container
+smoke but failed immediately in the combined CPU quality/typing step with exit
+2; build, OIDC publication, and GitHub Release remained skipped. An exact fresh
+`.[dev,io,plot]` reproducer isolated the failure after successful Ruff lint and
+format checks:
+
+~~~text
+numpy/__init__.pyi:737: error: Type statement is only supported in Python 3.12 and greater [syntax]
+~~~
+
+The checker was configured with `python_version = 3.10` but executed under
+Python 3.12, whose dependency resolver selected NumPy 2.5.3 and its Python
+3.12-only type-stub syntax. This mixed the Python 3.10 source contract with a
+Python 3.12 third-party stub environment. It was not an application type error
+or calculation failure.
+
+Strict mypy is now a separate mandatory job executed with Python 3.10 in both
+normal CI and the tag workflow. The existing Python 3.12 quality, examples,
+complete CPU suite, build, and Python 3.10-3.13 runtime matrix remain intact.
+The required normal-CI aggregate and release build explicitly depend on the new
+typing jobs. Contracts require the normal typing interpreter to equal the mypy
+Python target and require the release build to wait for its typing gate.
+Failures capture and annotate mypy output.
+
+Do not solve this mismatch by constraining runtime NumPy, changing the declared
+mypy target to 3.12, ignoring NumPy stubs, weakening strict mode, or removing the
+gate. The environment must match the oldest supported/type-checked Python while
+runtime jobs continue to test the supported matrix and current dependencies.
+
+Because PyPI `0.3.0` and the GitHub Release were never created, the user
+explicitly approved retirement of the failed local and remote `v0.3.0` tag.
+The replacement workflow commit must merge and pass normal CI, and a fresh
+manual real-CUDA workflow must bind evidence to that new main commit before a
+new annotated `v0.3.0` tag can be created. Evidence from `c497318b` remains
+valid historical diagnosis but cannot authorize the replacement tag.
+
+Local verification passes 1537 tests with 15 optional-GPU skips out of 1552
+collected, 81% branch coverage, zero active-scope Ruff/format findings, strict
+mypy for 84 modules, supported examples/index, actionlint plus ShellCheck,
+exact `0.3.0` build/Twine, and isolated wheel import. The failed tag is absent
+locally and on origin; PyPI `0.3.0` and the GitHub Release remain absent.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

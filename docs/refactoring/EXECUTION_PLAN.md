@@ -2412,6 +2412,20 @@ on that exact main commit, and every tag-time gate remain mandatory; recording
 the external pass must not create a different source commit before tagging.
 
 
+P8.5-m/D-164 recovers the pre-publication `v0.3.0` failure without changing
+runtime or calculations. PR #15 main `c497318b` passed normal CI and manual
+real-CUDA validation, but release run `36970840715` attempts 1-2 failed before
+CPU tests because Python 3.12 loaded NumPy 2.5.3 stubs while strict mypy still
+correctly targeted Python 3.10. Ruff, CUDA, and container gates passed; build,
+PyPI, and GitHub Release were skipped. Normal and tag workflows now give mypy
+its own mandatory Python 3.10 job while retaining Python 3.12 quality/CPU/build
+and the Python 3.10-3.13 runtime matrix. Contracts bind the typing interpreter
+to the declared target and bind both aggregate/build gates to typing success.
+The unpublished failed tag was retired with explicit user approval. After this
+checkpoint merges, normal CI and fresh manual CUDA must pass on the new main
+commit before a replacement annotated `v0.3.0` tag is permitted.
+
+
 ### Phase 8 acceptance
 
 - documented examples execute;

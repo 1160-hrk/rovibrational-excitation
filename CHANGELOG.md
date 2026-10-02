@@ -99,6 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that remain outside this checkpoint.
 
 ### 🐛 Fixed
+- Strict mypy now runs in a dedicated Python 3.10 job matching its declared
+  target in both normal and release CI, preventing Python 3.12-only NumPy stubs
+  from aborting the pre-publication release gate.
 - Local release validation requires the exact final sdist and wheel filenames;
   stale development artifacts cannot satisfy or broaden the Twine gate.
 - Documented in-tree `.venv` and `.venv-cuda` environments no longer

@@ -2,8 +2,8 @@
 
 Last verified: 2026-10-02
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-l/D-163 untagged 0.3.0 candidate; P8.5-k/D-162 publication configuration; P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
-Latest infrastructure checkpoint: `c89ff8b`
+Verified checkpoints: P8.5-m/D-164 release typing remediation pending hosted acceptance; P8.5-l/D-163 0.3.0 candidate; P8.5-k/D-162 publication configuration; P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
+Latest infrastructure checkpoint: `c497318b` (failed tag retired; D-164 replacement pending)
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
 
@@ -433,6 +433,15 @@ replace the stale-development-matching Twine glob. No runtime or calculation
 changed. The exact merged main commit must next pass normal CI and manual CUDA;
 `v0.3.0` must then point to that same commit without an intervening source
 change.
+
+P8.5-m/D-164 recovers release run `36970840715`, whose first two attempts
+passed version, CUDA, and container gates but failed before publication when a
+Python 3.12 checker environment loaded NumPy 2.5.3 stubs for a Python 3.10 mypy
+target. Strict mypy now owns a mandatory Python 3.10 job in normal and release
+CI; Python 3.12 quality/CPU/build and the Python 3.10-3.13 runtime matrix remain.
+The unpublished failed `v0.3.0` tag was retired with explicit approval. The
+D-164 merge commit must pass normal CI and fresh manual CUDA before a new
+annotated `v0.3.0` tag is allowed.
 
 ## Current next work
 

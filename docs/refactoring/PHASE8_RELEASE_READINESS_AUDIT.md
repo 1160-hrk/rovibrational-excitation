@@ -1,12 +1,12 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-02
-Local code checkpoint: P8.5-l/D-163 final candidate
-Hosted normal-CI checkpoint: D-162 main merge `c89ff8b`; run `36966229314`
-Hosted real-CUDA checkpoint: main merge `4f7efaed`; run `36887643743`
+Local code checkpoint: P8.5-m/D-164 release typing remediation
+Hosted normal-CI checkpoint: PR #15 main merge `c497318b`; run `36968773740`
+Hosted real-CUDA checkpoint: main merge `c497318b`; run `36969653438`
 Target release: `0.3.0`
-Current package version: `0.3.0` (untagged)
-Disposition: **ready for exact-candidate external gates; not ready to tag**
+Current package version: `0.3.0` (failed tag retired; unpublished)
+Disposition: **typing remediation pending merge and exact-candidate revalidation**
 
 This audit separates locally verified release inputs from evidence that requires
 external infrastructure. Passing CPU checks or skipped GPU tests must not be
@@ -27,9 +27,10 @@ reported as complete v0.3 release acceptance.
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
-| Hosted normal CI | D-162 main merge run `36966229314`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
+| Hosted normal CI | PR #15 main merge run `36968773740`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass for superseded `c497318b`; D-164 replacement pending |
 | Publication authentication | D-162 tag-`v*` protected `pypi` environment and exact Trusted Publisher; isolated job-scoped OIDC with no username/password/secret/fallback | Pre-tag configuration pass; PyPI exchange remains tag-time |
-| Target identity availability | PyPI latest is `0.2.10`, PyPI has no `0.3.0`, and origin has no `v0.3.0` tag on 2026-10-02 | Pass pre-tag |
+| Target identity availability | PyPI latest is `0.2.10`; PyPI and GitHub Release have no `0.3.0`; the failed local/remote `v0.3.0` tag was retired with explicit user approval | Pass pre-tag |
+| Failed tag diagnosis | Release run `36970840715` attempts 1-2 passed version, CUDA, and container gates; Python-3.12 mypy execution against its Python-3.10 target failed on NumPy 2.5.3 stub syntax before build/publication | Remediated locally by D-164; hosted acceptance pending |
 | Container gate | D-162 main run `36966229314` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
 | Release transition | `python scripts/release.py 0.3.0 --apply` changed only the authoritative version before running every local release gate | Pass |
 | Distribution build | exact `0.3.0` sdist and pure-Python wheel | Pass |
@@ -105,7 +106,8 @@ automated hard-failing container job.
 
 ### 3. Publication infrastructure — pre-tag configuration complete
 
-D-162 accepts the external configuration. The existing GitHub environment is
+D-162 accepts the external configuration after PR #13 main normal-CI run
+`36964166468` passed every required gate. The existing GitHub environment is
 named exactly `pypi` and its public API exposes one custom deployment rule:
 tag pattern `v*`. The user confirmed registration of the existing PyPI project
 with the exact Trusted Publisher identity: owner `1160-hrk`, repository
@@ -123,41 +125,50 @@ from PyPI until that run, and the ephemeral self-hosted GPU runner must be
 online at version 2.327.1 or newer. No local command in this audit publishes,
 tags, pushes, or creates a release.
 
-### 4. Final version transition — local candidate complete
+### 4. Final version transition and failed-tag recovery
 
-D-163 ran `python scripts/release.py 0.3.0 --apply` from a clean
-`0.3.0.dev1` worktree. The command changed only `pyproject.toml`, then passed
-Ruff, format, strict mypy, the complete CPU suite, supported examples, build,
-and Twine. The changelog is now dated `2026-10-02`, current public guides name
-`0.3.0`, and exact distribution selection rejects stale development artifacts.
-No command committed, tagged, pushed a tag, published, or created a release.
+D-163 produced the final `0.3.0` metadata and artifacts. PR #15 then merged it
+to `c497318b0a72ca63f7b2e67704638c3ceb815dcd`; normal-CI run `36968773740`
+and manual real-CUDA run `36969653438` passed on that exact source. The latter
+used the required RTX 5070 Ti runner, passed all 15 GPU-marked tests and five
+schema-v1 cases, and recorded a clean source commit.
 
-The remaining sequence is deliberately source-stable:
+The first annotated `v0.3.0` tag started release run `36970840715`. Attempts 1
+and 2 passed tag/version verification, real CUDA, and container smoke, then
+failed before the CPU suite in the combined quality/typing step. Build, PyPI
+OIDC publication, and GitHub Release were skipped. A clean reproducer confirmed
+Ruff and format success followed by mypy exit 2: NumPy 2.5.3 installed under
+Python 3.12 contains Python-3.12-only stub syntax, while mypy intentionally
+targets Python 3.10.
 
-1. commit and push this exact version/changelog candidate;
-2. merge it to main and confirm normal required CI;
-3. provision the ephemeral GPU runner and dispatch `Real CUDA validation` on
-   that exact main commit;
-4. review the schema-v1 `status: pass` artifact without adding another commit;
-5. create and push annotated tag `v0.3.0` on the same accepted main commit;
-6. require the tag workflow to pass CPU, real CUDA, container, build,
-   clean-wheel, OIDC PyPI, and GitHub Release gates.
+D-164 keeps the target and strictness intact and separates mandatory mypy into
+Python 3.10 jobs in normal and release CI. Python 3.12 continues to own Ruff,
+examples, the complete release CPU suite, and build; normal CI still tests the
+full Python 3.10-3.13 runtime matrix. No runtime dependency is pinned to hide
+the mismatch, and no type import is suppressed.
+
+PyPI `0.3.0` and the GitHub Release were absent. With explicit user approval,
+the failed remote and local `v0.3.0` tag was retired. The corrected release
+sequence is now:
+
+1. commit D-164 and merge it to main;
+2. require normal CI, including the new Python 3.10 typing job, to pass;
+3. dispatch manual real-CUDA validation on that exact new main commit;
+4. review its schema-v1 `status: pass` clean-source artifact;
+5. create a new annotated `v0.3.0` tag on the same accepted commit;
+6. require the tag workflow to pass Python 3.10 typing, Python 3.12 CPU,
+   real CUDA, container, build, clean-wheel, OIDC PyPI, and GitHub Release.
+
+Evidence from `c497318b` documents the failure and CUDA correctness but cannot
+authorize a tag on the replacement source commit.
 
 ## Release decision
 
-Local CPU, documentation, packaging, and dry-run preparation are complete at
-this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
-physics, coverage, build, and container corrections; only the quality job's
-bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
-module entrypoint and publishes captured command output while retaining hard
-failure. Hosted run `36814129738` accepted D-153, PR #12 main merge run
-`36893481772` accepted D-161, and PR #13 main merge run `36964166468`
-subsequently accepted every required normal-CI job, including the automated
-container smoke. D-162 closes the pre-tag publication-configuration
-prerequisite, and D-163 prepares the exact untagged `0.3.0` source and
-artifacts. The candidate still requires merge-time normal CI and a fresh manual
-CUDA workflow on the resulting exact main commit. The tag workflow must then
-repeat CUDA, container, build, OIDC publication, and GitHub Release gates.
+The package remains unpublished at version `0.3.0`. D-164 fixes a release-only
+tooling-environment mismatch without touching package runtime or calculations.
+The failed tag has been retired, but no replacement tag is authorized until
+the D-164 main commit passes normal CI and fresh source-bound manual CUDA.
 
-The source version is `0.3.0`, but no tag or publication is authorized by this
-audit alone.
+The self-hosted GPU runner may remain registered for those gates. PyPI Trusted
+Publishing is still configured exactly as required, but no OIDC exchange has
+occurred and no GitHub Release exists.

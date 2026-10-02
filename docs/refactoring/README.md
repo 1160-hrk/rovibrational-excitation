@@ -699,6 +699,15 @@ runtime or calculation changed. After merge, the resulting exact main commit
 must pass normal CI and fresh manual CUDA validation, then receive `v0.3.0`
 without an intervening evidence-documentation commit.
 
+P8.5-m/D-164 records that PR #15 main `c497318b` passed normal CI and fresh
+manual CUDA, but release run `36970840715` attempts 1-2 failed before
+publication because Python 3.12 loaded NumPy 2.5.3 stubs while mypy targeted
+Python 3.10. Strict mypy now has an independent mandatory Python 3.10 job in
+normal and tag workflows; Python 3.12 quality, CPU, examples, and build gates
+remain unchanged. The failed unpublished `v0.3.0` tag was retired with explicit
+approval. The replacement source must pass normal CI and fresh manual CUDA
+before the tag name can be reused.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -959,7 +968,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | Complete — CPU acceptance plus device-native RK4/split and clean real-CUDA evidence accepted by D-159 |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | Complete — P7.1 through P7.4 accepted by D-093, D-103, D-111, and D-129 |
-| 8 | Public API, documentation, and release | In progress — exact untagged 0.3.0 candidate prepared; merge-time CI, exact-candidate CUDA, and tag-time gates remain |
+| 8 | Public API, documentation, and release | In progress — D-164 typing remediation pending merge, exact-candidate CI/CUDA repetition, and final tag-time gates |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

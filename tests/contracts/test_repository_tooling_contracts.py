@@ -164,13 +164,21 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     jobs = workflow["jobs"]
     verify = _commands(jobs["verify-version"])
     cpu = _commands(jobs["cpu-release-gates"])
+    typing = _commands(jobs["typing-release-gate"])
     gpu = _commands(jobs["gpu-validation"])
 
     assert "final X.Y.Z" in verify
     assert "pytest -q" in cpu
     assert "ruff check --no-fix" in cpu
     assert "python scripts/smoke_examples.py" in cpu
-    assert "python -m mypy --no-incremental" in cpu
+    assert "python -m mypy --no-incremental" not in cpu
+    assert "python -m mypy --no-incremental" in typing
+    typing_setup = next(
+        step
+        for step in jobs["typing-release-gate"]["steps"]
+        if step.get("uses", "").startswith("actions/setup-python@")
+    )
+    assert typing_setup["with"]["python-version"] == "3.10"
     assert jobs["gpu-validation"]["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
     assert 'pip install -e ".[dev,io,plot,gpu]"' in gpu
     assert "getDeviceCount" in gpu
@@ -191,6 +199,7 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
     assert set(jobs["build-and-test"]["needs"]) == {
         "verify-version",
         "cpu-release-gates",
+        "typing-release-gate",
         "gpu-validation",
         "container-validation",
     }

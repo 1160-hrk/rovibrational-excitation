@@ -59,16 +59,27 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     jobs = _workflow()["jobs"]
 
     quality = _commands(jobs["quality"])
+    typing = _commands(jobs["typing"])
     active_scope = "src tests examples benchmarks scripts"
     assert f"ruff check --no-fix {active_scope}" in quality
     assert f"ruff format --check {active_scope}" in quality
     assert "python scripts/smoke_examples.py" in quality
     assert "python examples/tools/build_index.py --check" in quality
-    assert "python -m mypy --no-incremental" in quality
-    assert "tee /tmp/mypy-output.txt" in quality
+    assert "python -m mypy --no-incremental" not in quality
+    assert "python -m mypy --no-incremental" in typing
+    assert "tee /tmp/mypy-output.txt" in typing
     assert (
         'python scripts/report_ci_failures.py text "mypy failed" /tmp/mypy-output.txt'
-    ) in quality
+    ) in typing
+    typing_setup = next(
+        step
+        for step in jobs["typing"]["steps"]
+        if step.get("uses", "").startswith("actions/setup-python@")
+    )
+    mypy_target = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["mypy"][
+        "python_version"
+    ]
+    assert typing_setup["with"]["python-version"] == mypy_target == "3.10"
 
     coverage = _commands(jobs["coverage"])
     assert "--data-file=/tmp/rve-coverage" in coverage
@@ -83,6 +94,7 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     assert _commands(jobs["container-smoke"]).strip() == "scripts/smoke_container.sh"
     assert set(jobs["required"]["needs"]) == {
         "quality",
+        "typing",
         "test",
         "physics",
         "coverage",
@@ -91,6 +103,7 @@ def test_ci_enforces_quality_coverage_and_wheel_import():
     }
     required = _commands(jobs["required"])
     assert "CONTAINER_RESULT" in required
+    assert "TYPING_RESULT" in required
     assert "= success" in required
 
 
