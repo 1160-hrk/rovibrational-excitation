@@ -122,13 +122,15 @@ def test_container_smoke_builds_and_checks_nonroot_authenticated_jupyter() -> No
     assert "dst=/workspace,readonly" not in source
 
 
-def test_container_guide_matches_current_commands_and_discloses_unrun_build() -> None:
+def test_container_guide_matches_current_commands_and_verified_execution() -> None:
     text = GUIDE.read_text()
 
     assert "`.[dev,io,plot]`".replace("`", chr(96)) in text
     assert "`127.0.0.1`".replace("`", chr(96)) in text
     assert "認証と XSRF は無効にならない" in text
-    assert "Docker CLI/daemon がないため" in text
+    assert "36893481772" in text
+    assert "D-161" in text
+    assert "手動attach/Ports確認は完了" in text
     assert "scripts/smoke_container.sh" in text
     assert "container-smoke" in text
     for forbidden in (
@@ -140,6 +142,20 @@ def test_container_guide_matches_current_commands_and_discloses_unrun_build() ->
         "sudo chown -R",
     ):
         assert forbidden not in text
+
+
+def test_container_guide_documents_wsl_path_translation_recovery() -> None:
+    text = GUIDE.read_text()
+
+    for required in (
+        "Failed to translate",
+        "[automount]",
+        "enabled=true",
+        "[interop]",
+        "appendWindowsPath=true",
+        "wsl --shutdown",
+    ):
+        assert required in text
 
 
 def test_container_guide_local_links_resolve() -> None:

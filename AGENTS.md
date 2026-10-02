@@ -1,8 +1,8 @@
 # Codex repository instructions
 
-Last verified: 2026-10-01
+Last verified: 2026-10-02
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-i/D-160 main real-CUDA workflow acceptance; P5.5-h/D-159 Phase 5 completion
+Verified checkpoints: P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -195,7 +195,7 @@ pytest -q
 ~~~
 
 ~~~text
-1533 passed, 15 GPU tests skipped (1548 collected)
+1534 passed, 15 GPU tests skipped (1549 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -410,6 +410,14 @@ runner, passes all 15 GPU tests and five evidence cases, and uploads the
 90-day artifact. Its raw JSON is committed separately and schema-tested. The
 package remains `0.3.0.dev1`; the final version commit still requires a fresh
 manual CUDA run, and the tag workflow must repeat it.
+
+P8.5-j/D-161 accepts the manual development-container gate after PR #12 merged
+D-160 to main commit `841cb56` and normal-CI run `36893481772` passed. The
+Windows 11/WSL2 Ubuntu 24.04 path successfully reopened in the repository
+container as `devuser` at `/workspace`, used `/usr/local/bin/python`, imported
+editable package `0.3.0.dev1` from `/workspace/src`, forwarded port 8888, and
+opened authenticated Jupyter in the browser. The guide now diagnoses disabled
+WSL automount/interop before destructive server repair. No calculation changed.
 
 ## Current next work
 
@@ -860,10 +868,11 @@ The next work is:
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
    checksum-verified actionlint, and immutable external Action refs are complete.
-   Actual real-GPU evidence, manual VS Code attach/Ports verification,
-   exact PyPI Trusted Publisher/protected-environment setup, and the final
-   version bump remain open Phase 8 gates. Automated hosted container smoke is
-   accepted by D-154 and must run again in the final tag workflow. The
+   Exact final-version real-GPU repetition, exact PyPI Trusted
+   Publisher/protected-environment setup, and the final version bump remain
+   open Phase 8 gates. Automated hosted container smoke is accepted by D-154,
+   manual attach/Ports is accepted by D-161, and the automated smoke must run
+   again in the final tag workflow. The
    explicit breaking-change migration note is complete under D-141.
    Preserve the distinct normal in-memory and resume file-backed summaries
    until an explicit tested policy decision changes them; do not conflate
@@ -878,9 +887,9 @@ The next work is:
    must repeat it. Do not treat source inspection, CPU doubles, skipped tests,
    queued jobs, status=error diagnostics, or a different commit as release
    CUDA evidence.
-4. D-154 accepts D-147 on a hosted Docker runner. Keep the release blocked
-   until the VS Code Dev Containers attach and Ports view are checked manually;
-   the final tag workflow must also repeat the hard-failing container job.
+4. D-154 accepts D-147 on a hosted Docker runner, and D-161 accepts the manual
+   VS Code Dev Containers attach and Ports/Jupyter path. The final tag workflow
+   must still repeat the hard-failing automated container job.
 5. Preserve D-061 endpoint reuse. The explored full output-buffer rewrite was
    slower on representative dimensions and introduced sub-ulp differences;
    do not revive it without a separate reference and benchmark.
