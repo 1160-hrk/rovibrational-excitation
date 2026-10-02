@@ -1,12 +1,12 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-02
-Local code checkpoint: P8.5-k/D-162 candidate
-Hosted normal-CI checkpoint: main merge `cb84241`; run `36964166468`
+Local code checkpoint: P8.5-l/D-163 final candidate
+Hosted normal-CI checkpoint: D-162 main merge `c89ff8b`; run `36966229314`
 Hosted real-CUDA checkpoint: main merge `4f7efaed`; run `36887643743`
 Target release: `0.3.0`
-Current package version: `0.3.0.dev1`
-Disposition: **not ready to tag**
+Current package version: `0.3.0` (untagged)
+Disposition: **ready for exact-candidate external gates; not ready to tag**
 
 This audit separates locally verified release inputs from evidence that requires
 external infrastructure. Passing CPU checks or skipped GPU tests must not be
@@ -18,7 +18,7 @@ reported as complete v0.3 release acceptance.
 |---|---|---|
 | Clean source checkpoint | D-158 ignores local virtualenvs while retaining strict source provenance | Pass |
 | Real-CUDA numerical acceptance | D-159 implementation report plus D-160 main manual-workflow report; both raw JSON artifacts committed | Pass |
-| Complete CPU suite | 1535 passed, 15 optional-GPU skipped; 1550 collected | Pass |
+| Complete CPU suite | 1537 passed, 15 optional-GPU skipped; 1552 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 317 files formatted | Pass |
@@ -27,13 +27,14 @@ reported as complete v0.3 release acceptance.
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
-| Hosted normal CI | main merge run `36964166468`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
+| Hosted normal CI | D-162 main merge run `36966229314`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
 | Publication authentication | D-162 tag-`v*` protected `pypi` environment and exact Trusted Publisher; isolated job-scoped OIDC with no username/password/secret/fallback | Pre-tag configuration pass; PyPI exchange remains tag-time |
-| Container gate | main run `36964166468` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
-| Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
-| Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
+| Target identity availability | PyPI latest is `0.2.10`, PyPI has no `0.3.0`, and origin has no `v0.3.0` tag on 2026-10-02 | Pass pre-tag |
+| Container gate | D-162 main run `36966229314` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
+| Release transition | `python scripts/release.py 0.3.0 --apply` changed only the authoritative version before running every local release gate | Pass |
+| Distribution build | exact `0.3.0` sdist and pure-Python wheel | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
-| Isolated wheel import | temporary venv outside checkout imports the wheel from site-packages and reports `0.3.0.dev1` | Pass |
+| Isolated wheel import | temporary venv outside checkout imports the exact wheel from site-packages and reports `0.3.0` | Pass |
 | Console entry points | installed `rve-simulate --help` and `rve-optimize --help` | Pass |
 | Wheel payload | 155 entries, including both CuPy owners; no tests, archived examples, or removed dependency manifests | Pass |
 
@@ -42,9 +43,11 @@ wheel installation, import origin, metadata version, and entry-point creation.
 It does not replace the clean-network dependency-resolution job in GitHub
 Actions. Build isolation and Twine completed in this environment.
 
-Ignored `dist/` contained older local artifacts, so local inspection selected
-the new `0.3.0.dev1` files explicitly. GitHub Actions starts from a clean
-checkout and publishes only artifacts built in that run.
+Ignored `dist/` contained older development artifacts. D-163 therefore
+requires the exact `rovibrational_excitation-0.3.0.tar.gz` and
+`rovibrational_excitation-0.3.0-py3-none-any.whl` names; stale substring matches
+cannot satisfy or broaden the local Twine gate. GitHub Actions starts from a
+clean checkout and publishes only artifacts built in that run.
 
 ## Release gates and remaining blockers
 
@@ -60,9 +63,9 @@ tests, five schema-v1 evidence cases, artifact upload, and post-job cleanup all
 passed. The accepted raw report is committed as
 `benchmarks/real-cuda-v0.3-4f7efaed.json`.
 
-This main checkpoint remains `0.3.0.dev1`. The eventual version/changelog
-commit changes the exact source identity, so before tagging, dispatch
-`Real CUDA validation` again on that final version candidate. Review its
+D-163 creates the untagged `0.3.0` version/changelog candidate. After it is
+merged without further source changes, dispatch `Real CUDA validation` on that
+exact main commit before tagging. Review its
 `status: pass` artifact and provision another ephemeral runner for the tag
 workflow, which repeats the same recorder. A report from a different commit,
 queued job, skip, source inspection, or `status: error` is not final-release
@@ -120,23 +123,25 @@ from PyPI until that run, and the ephemeral self-hosted GPU runner must be
 online at version 2.327.1 or newer. No local command in this audit publishes,
 tags, pushes, or creates a release.
 
-### 4. Final version transition
+### 4. Final version transition — local candidate complete
 
-Do not run `python scripts/release.py 0.3.0 --apply` until the final-CUDA runner
-and external publication prerequisites are ready. That
-command changes only `pyproject.toml`, runs local gates, and never
-commits/tags/pushes/publishes. Its success message explicitly
-states that this is not release acceptance and repeats the external blockers.
-After it passes:
+D-163 ran `python scripts/release.py 0.3.0 --apply` from a clean
+`0.3.0.dev1` worktree. The command changed only `pyproject.toml`, then passed
+Ruff, format, strict mypy, the complete CPU suite, supported examples, build,
+and Twine. The changelog is now dated `2026-10-02`, current public guides name
+`0.3.0`, and exact distribution selection rejects stale development artifacts.
+No command committed, tagged, pushed a tag, published, or created a release.
 
-1. update the changelog from an Unreleased development record to the reviewed
-   final `0.3.0` release date;
-2. review the version diff and rerun the clean local gates;
-3. commit the version/changelog change explicitly;
-4. push the commit and confirm normal required CI;
-5. create and push the annotated `v0.3.0` tag explicitly;
+The remaining sequence is deliberately source-stable:
+
+1. commit and push this exact version/changelog candidate;
+2. merge it to main and confirm normal required CI;
+3. provision the ephemeral GPU runner and dispatch `Real CUDA validation` on
+   that exact main commit;
+4. review the schema-v1 `status: pass` artifact without adding another commit;
+5. create and push annotated tag `v0.3.0` on the same accepted main commit;
 6. require the tag workflow to pass CPU, real CUDA, container, build,
-   clean-wheel, and PyPI gates before GitHub Release creation.
+   clean-wheel, OIDC PyPI, and GitHub Release gates.
 
 ## Release decision
 
@@ -149,10 +154,10 @@ failure. Hosted run `36814129738` accepted D-153, PR #12 main merge run
 `36893481772` accepted D-161, and PR #13 main merge run `36964166468`
 subsequently accepted every required normal-CI job, including the automated
 container smoke. D-162 closes the pre-tag publication-configuration
-prerequisite. The project is ready for an explicit version/changelog transition,
-but the resulting exact final candidate still requires a fresh manual CUDA
-workflow and normal CI before tagging. The tag workflow must then repeat CUDA,
-container, build, OIDC publication, and GitHub Release gates.
+prerequisite, and D-163 prepares the exact untagged `0.3.0` source and
+artifacts. The candidate still requires merge-time normal CI and a fresh manual
+CUDA workflow on the resulting exact main commit. The tag workflow must then
+repeat CUDA, container, build, OIDC publication, and GitHub Release gates.
 
-The version remains `0.3.0.dev1` and no tag or publication is authorized by
-this audit.
+The source version is `0.3.0`, but no tag or publication is authorized by this
+audit alone.

@@ -6,8 +6,8 @@
 [English](README.md)
 
 レーザー電場で駆動される振動回転量子ダイナミクスを計算する Python
-ライブラリです。現在の開発版は `0.3.0.dev1` で、v0.2 との後方互換性は
-意図的にありません。
+ライブラリです。バージョン `0.3.0` は v0.2 との後方互換性を意図的に
+持ちません。
 
 明示単位付きのモデル構築、生成電場・外部サンプル電場、型付き時間発展、
 最適制御、線形応答分光、バッチ実行、厳格な結果/checkpoint schema、可視化を
@@ -209,7 +209,7 @@ ruff format --check src tests examples benchmarks scripts
 python -m mypy --no-incremental
 ```
 
-現在の local checkpoint は CPU 1535 tests pass、optional GPU 15 tests skip、
+現在の local checkpoint は CPU 1537 tests pass、optional GPU 15 tests skip、
 実測 branch coverage 81% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント

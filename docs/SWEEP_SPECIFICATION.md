@@ -1,7 +1,7 @@
 # parameter sweep specification
 
 通常 simulation の parameter file は、実行前に ordered Cartesian product へ展開されます。
-この文書は開発版 `0.3.0.dev1` の実装を説明します。各 case の物理 key と unit は
+この文書はバージョン `0.3.0` の実装を説明します。各 case の物理 key と unit は
 [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md) に従います。
 
 ## 最初に dry run する

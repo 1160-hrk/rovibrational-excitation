@@ -136,9 +136,9 @@ def test_ci_uses_checksum_verified_actionlint_for_declared_runner_labels():
     assert actionlint_config == {"self-hosted-runner": {"labels": ["gpu"]}}
 
 
-def test_v03_checkpoint_version_is_development_or_final():
+def test_v03_release_candidate_version_is_final():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    assert pyproject["project"]["version"] in {"0.3.0.dev1", "0.3.0"}
+    assert pyproject["project"]["version"] == "0.3.0"
 
 
 def test_mypy_is_mandatory_only_for_named_typed_modules():

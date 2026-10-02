@@ -1,6 +1,6 @@
 # 単位系と変換境界
 
-この文書は開発版 `0.3.0.dev1` の公開入力、内部 canonical 単位、保存時の
+この文書はバージョン `0.3.0` の公開入力、内部 canonical 単位、保存時の
 provenance を説明する。通常シミュレーションで各キーが必要になる条件は
 [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)、時間格子の意味は
 [TIME_PROPAGATION.md](TIME_PROPAGATION.md) を参照する。

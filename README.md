@@ -6,8 +6,7 @@
 [日本語](README_JP.md)
 
 A Python library for time-dependent rovibrational quantum dynamics driven by
-laser fields. The current development version is `0.3.0.dev1`; its API is
-intentionally incompatible with v0.2.
+laser fields. Version `0.3.0` is intentionally incompatible with v0.2.
 
 The library provides explicit-unit model construction, generated or externally
 sampled electric fields, typed propagation choices, optimal-control methods,
@@ -223,7 +222,7 @@ ruff format --check src tests examples benchmarks scripts
 python -m mypy --no-incremental
 ```
 
-The current local checkpoint is 1535 passing CPU tests with 15 optional-GPU
+The current local checkpoint is 1537 passing CPU tests with 15 optional-GPU
 skips and 81% measured branch coverage. A skipped GPU test is not CUDA
 evidence.
 

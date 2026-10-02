@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-02
+
 ### 🚀 Added
 - Final-version consistency checks between pyproject.toml and Git tags
 - Release workflow with complete CPU gates and mandatory real-CUDA evidence
@@ -97,6 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that remain outside this checkpoint.
 
 ### 🐛 Fixed
+- Local release validation requires the exact final sdist and wheel filenames;
+  stale development artifacts cannot satisfy or broaden the Twine gate.
 - Documented in-tree `.venv` and `.venv-cuda` environments no longer
   dirty strict CUDA source evidence; tracked and other untracked changes remain
   visible, and repository-content scans skip the same prefix.

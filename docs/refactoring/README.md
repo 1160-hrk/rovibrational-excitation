@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1535 passed, 15 skipped (1550 collected) |
+| Pytest | 1537 passed, 15 skipped (1552 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -691,6 +691,14 @@ the pre-tag infrastructure prerequisite only; the final tag workflow must still
 prove the OIDC exchange and publication after the final-version CUDA and normal
 CI gates pass.
 
+P8.5-l/D-163 prepares the exact untagged `0.3.0` source candidate. The version,
+dated changelog, and current public guides are synchronized; every local release
+gate passes. The release tool now requires the exact final sdist and wheel, so
+ignored `0.3.0.dev1` artifacts cannot satisfy or broaden the Twine check. No
+runtime or calculation changed. After merge, the resulting exact main commit
+must pass normal CI and fresh manual CUDA validation, then receive `v0.3.0`
+without an intervening evidence-documentation commit.
+
 P6.2-c
 implements D-069:
 the frozen schema now belongs to `models/vib_ladder`, and the unused mapping
@@ -951,7 +959,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | Complete — CPU acceptance plus device-native RK4/split and clean real-CUDA evidence accepted by D-159 |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | Complete — P7.1 through P7.4 accepted by D-093, D-103, D-111, and D-129 |
-| 8 | Public API, documentation, and release | In progress — API/docs, CUDA/container evidence, and Trusted Publisher configuration complete; final version/CUDA/tag gates remain |
+| 8 | Public API, documentation, and release | In progress — exact untagged 0.3.0 candidate prepared; merge-time CI, exact-candidate CUDA, and tag-time gates remain |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

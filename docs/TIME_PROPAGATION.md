@@ -1,6 +1,6 @@
 # 時間発展の数値契約
 
-この文書は開発版 `0.3.0.dev1` の公開時間発展境界を説明する。通常シミュレーションの
+この文書はバージョン `0.3.0` の公開時間発展境界を説明する。通常シミュレーションの
 設定項目は [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)、Cartesian
 split-operator の導出は
 [CARTESIAN_SPLIT_OPERATOR.md](CARTESIAN_SPLIT_OPERATOR.md) を参照する。

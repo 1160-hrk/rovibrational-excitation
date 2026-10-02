@@ -1,6 +1,6 @@
 # Refactoring decision log
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 ## How to use this log
 
@@ -5626,6 +5626,56 @@ runner for the tag job, and every tag-time release gate remain mandatory.
 The new documentation contract and the complete suite pass: 1535 tests passed
 and 15 optional-GPU tests skipped out of 1550 collected. The release dry-run
 still reports `0.3.0.dev1 -> 0.3.0` without writing files.
+
+Implementation commit: this checkpoint.
+
+
+### D-163: Prepare the exact untagged 0.3.0 release candidate
+
+Status: Implemented on 2026-10-02 as P8.5-l.
+
+Scope: Final package metadata, changelog and current-version documentation,
+local release-artifact selection, release contracts, and release-readiness
+status. No package runtime source, dependency, workflow, physical formula,
+numerical algorithm, backend, input, or calculation result changes.
+
+PR #14 merged D-162 to main commit
+`c89ff8ba09deef604760a3ae8c83060a8d9b88a6`. Normal-CI run `36966229314`
+completed successfully with every required quality, Python 3.10-3.13, physics,
+coverage, build, container, and aggregate job.
+
+From that clean checkpoint, `python scripts/release.py 0.3.0 --apply` changed the
+single authoritative `pyproject.toml` version from `0.3.0.dev1` to `0.3.0` and
+passed Ruff, formatting, strict nonincremental mypy, the complete CPU suite,
+all supported examples, package build, and Twine. `CHANGELOG.md` now owns the
+dated `0.3.0` section while retaining an empty Unreleased section. Current
+user-facing guides identify version `0.3.0`; historical evidence continues to
+record `0.3.0.dev1` where that was the version actually tested.
+
+The apply run exposed that the local Twine selection glob for `0.3.0` also
+included ignored `0.3.0.dev1` artifacts. The build did create the correct final
+sdist and wheel, but substring matching could permit a stale artifact to broaden
+or, if an expected artifact were absent, falsely satisfy the local check. The
+release tool now requires exactly
+`rovibrational_excitation-0.3.0.tar.gz` and
+`rovibrational_excitation-0.3.0-py3-none-any.whl`. A temporary-directory
+contract proves stale development files are insufficient and the exact ordered
+pair is returned only when both final artifacts exist.
+
+This is an untagged candidate, not release acceptance. After this exact tree is
+merged, normal CI and manual real-CUDA validation must pass on the resulting
+main commit. No evidence-recording commit may then change that source identity:
+the annotated `v0.3.0` tag must point to the same accepted commit, and the tag
+workflow must independently repeat CPU, CUDA, container, build, OIDC PyPI, and
+GitHub Release gates.
+
+The final local verification has 1537 passes and 15 optional-GPU skips out of
+1552 collected, 81% branch coverage, zero active-scope Ruff/format failures,
+and clean strict mypy for 84 modules. Supported examples/index, exact-artifact
+build/Twine, checkout-external wheel import, both console entry points, and the
+155-entry wheel payload pass. The installed module and metadata both report
+`0.3.0`. The final pre-tag lookup finds PyPI latest `0.2.10`, no PyPI `0.3.0`
+release, and no origin `v0.3.0` tag.
 
 Implementation commit: this checkpoint.
 
