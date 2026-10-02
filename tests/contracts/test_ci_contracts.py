@@ -58,6 +58,8 @@ def test_one_workflow_enforces_declared_python_and_physics_matrix():
 def test_ci_enforces_quality_coverage_and_wheel_import():
     jobs = _workflow()["jobs"]
 
+    assert jobs["quality"]["name"] == "Ruff and example checks"
+    assert jobs["typing"]["name"] == "Python 3.10 typed-module checks"
     quality = _commands(jobs["quality"])
     typing = _commands(jobs["typing"])
     active_scope = "src tests examples benchmarks scripts"
