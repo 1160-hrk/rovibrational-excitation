@@ -1,6 +1,6 @@
 # Dev Container 開発環境
 
-このガイドは開発版 `0.3.0.dev1` の `Dockerfile` と
+このガイドはバージョン `0.3.0` の `Dockerfile` と
 `.devcontainer/devcontainer.json` に対応する。これは開発環境であり、production
 image や simulation deployment の仕様ではない。
 

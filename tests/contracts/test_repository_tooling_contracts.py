@@ -18,6 +18,7 @@ RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 CUDA_WORKFLOW = ROOT / ".github" / "workflows" / "cuda-validation.yml"
 RELEASE_AUDIT = ROOT / "docs" / "refactoring" / "PHASE8_RELEASE_READINESS_AUDIT.md"
 VERSION_GUIDE = ROOT / "docs" / "VERSION_MANAGEMENT.md"
+CHANGELOG = ROOT / "CHANGELOG.md"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
 INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
 TEST_GUIDE = ROOT / "tests" / "README.md"
@@ -110,6 +111,36 @@ def test_release_dry_run_is_read_only_and_supports_current_version() -> None:
     assert completed.returncode == 0, completed.stderr
     assert f"{current} -> {target}" in completed.stdout
     assert (ROOT / "pyproject.toml").read_bytes() == before
+
+
+def test_release_distribution_selection_requires_exact_final_artifacts(
+    tmp_path: Path,
+) -> None:
+    release = _load_release_module()
+    stale_wheel = tmp_path / "rovibrational_excitation-0.3.0.dev1-py3-none-any.whl"
+    stale_sdist = tmp_path / "rovibrational_excitation-0.3.0.dev1.tar.gz"
+    stale_wheel.touch()
+    stale_sdist.touch()
+
+    with pytest.raises(RuntimeError, match="exact release distributions"):
+        release._release_distributions("0.3.0", dist_dir=tmp_path)
+
+    expected = [
+        tmp_path / "rovibrational_excitation-0.3.0.tar.gz",
+        tmp_path / "rovibrational_excitation-0.3.0-py3-none-any.whl",
+    ]
+    for path in expected:
+        path.touch()
+
+    assert release._release_distributions("0.3.0", dist_dir=tmp_path) == expected
+
+
+def test_v03_changelog_is_final_and_keeps_an_unreleased_section() -> None:
+    text = CHANGELOG.read_text()
+
+    assert "## [Unreleased]\n\n## [0.3.0] - 2026-10-02" in text
+    assert text.count("## [0.3.0] - 2026-10-02") == 1
+    assert "exact final sdist and wheel filenames" in text
 
 
 def test_local_release_tool_never_commits_tags_or_pushes() -> None:

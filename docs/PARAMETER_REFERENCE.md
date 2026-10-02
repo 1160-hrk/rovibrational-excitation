@@ -1,6 +1,6 @@
 # 通常シミュレーション parameter reference
 
-対象は開発版 `0.3.0.dev1` の normal simulation です。最適化 YAML は
+対象はバージョン `0.3.0` の normal simulation です。最適化 YAML は
 [configs/README.md](../configs/README.md)、保存 schema は
 [RESULT_STORAGE.md](RESULT_STORAGE.md) を参照してください。v0.2 の parameter 名や
 暗黙 default は移行しません。unknown key と model/algorithm に不適用な key は

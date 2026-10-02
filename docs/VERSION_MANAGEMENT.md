@@ -11,8 +11,9 @@ Last verified: 2026-10-02
 - 公開前にCPU品質ゲートと実CUDAゲートの両方が必須です。
 - PyPI公開成功後にだけGitHub Releaseを作成します。
 
-現在の開発版は 0.3.0.dev1 です。正式版へ進む場合の対象は 0.3.0
-ですが、Phase 8の受入条件を満たすまではタグを作成しません。
+現在のsource versionは正式版候補 `0.3.0` です。まだtagもPyPI公開も
+行っていません。exact final candidateで通常CIとmanual real-CUDA workflowを
+通し、同じmain commitへだけ`v0.3.0`を付けます。
 
 D-162で公開基盤の事前設定を確認済みです。GitHub environmentは正確に
 `pypi`、deployment policyはtag `v*`のみで、既存PyPI projectにはowner
@@ -21,33 +22,36 @@ environment `pypi`のTrusted Publisherを登録しています。API token secre
 credential fallbackはありません。実際のOIDC交換と公開成功は最終tag workflow
 で初めて検証されるため、この設定だけではrelease受入完了ではありません。
 
-## ローカル準備
+## 0.3.0 ローカル準備（完了）
 
-### 読み取り専用の確認
+### 実施済みの読み取り専用確認
 
 ~~~bash
 python scripts/release.py 0.3.0 --dry-run
 ~~~
 
-このコマンドは現在版から対象版への遷移だけを検証し、ファイル、Git、
-タグ、外部サービスを変更しません。
+このコマンドは開発版から対象版への遷移だけを検証し、ファイル、Git、
+タグ、外部サービスを変更しません。D-163では更新前に実行済みです。
 
-### バージョン更新とローカルゲート
+### 実施済みのバージョン更新とローカルゲート
 
-cleanなworktreeで次を実行します。
+D-163ではcleanな`0.3.0.dev1` worktreeで次を実行しました。
 
 ~~~bash
 python scripts/release.py 0.3.0 --apply
 ~~~
 
-applyは次を順に行います。
+このapplyは次を順に実行し、すべて成功しました。
 
 1. worktreeがcleanであることを確認する。
 2. pyproject.tomlのversionだけを更新する。
 3. Ruff lint/format、strict mypy、全pytestを実行する。
 4. 3個のsupported exampleとparams_template.pyを実行する。
-5. sdist/wheelをbuildし、Twineで検証する。
+5. sdist/wheelをbuildしてTwine検証し、選択修正後に正確な`0.3.0`の2成果物だけを再検証する。
 6. 失敗時はpyproject.tomlを元の内容へ戻す。
+
+現在版はすでに`0.3.0`なので、同じapplyを再実行しません。以後はversion、
+CHANGELOG、通常CI、manual CUDA、tag-time gateを確認します。
 
 成功してもrelease受入完了ではなく、commitやtagも作りません。完了表示は
 pyproject.tomlとCHANGELOGの明示的レビュー・commitに加え、通常CI、accepted

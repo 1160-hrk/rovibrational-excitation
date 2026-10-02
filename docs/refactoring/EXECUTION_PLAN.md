@@ -1,6 +1,6 @@
 # Executable refactoring plan
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 Working branch: `refactor/v0.3`
 Starting baseline: `613ce93`
 
@@ -2401,6 +2401,15 @@ infrastructure prerequisite, not the OIDC exchange or publication itself.
 The final version/changelog commit still requires fresh manual CUDA evidence,
 normal CI, an online ephemeral tag-time GPU runner, and every release-workflow
 gate before `v0.3.0` can be accepted.
+
+P8.5-l/D-163 prepares the exact untagged `0.3.0` candidate after PR #14 main
+run `36966229314` accepted D-162. The authoritative version and dated changelog
+are final, current public guides name `0.3.0`, and the local release tool now
+requires the exact final sdist/wheel names instead of a substring glob that also
+matched stale development artifacts. All local release gates pass without a
+runtime or calculation change. Merge-time normal CI, fresh manual CUDA evidence
+on that exact main commit, and every tag-time gate remain mandatory; recording
+the external pass must not create a different source commit before tagging.
 
 
 ### Phase 8 acceptance

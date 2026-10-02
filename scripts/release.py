@@ -24,6 +24,8 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
+DIST = ROOT / "dist"
+DIST_NAME = "rovibrational_excitation"
 _ACTIVE_SCOPE = ("src", "tests", "examples", "benchmarks", "scripts")
 _CURRENT_VERSION = re.compile(
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
@@ -110,6 +112,24 @@ def _require_clean_worktree() -> None:
         )
 
 
+def _release_distributions(
+    target_version: str,
+    *,
+    dist_dir: Path = DIST,
+) -> list[Path]:
+    expected = [
+        dist_dir / f"{DIST_NAME}-{target_version}.tar.gz",
+        dist_dir / f"{DIST_NAME}-{target_version}-py3-none-any.whl",
+    ]
+    missing = [path.name for path in expected if not path.is_file()]
+    if missing:
+        raise RuntimeError(
+            "build did not produce the exact release distributions: "
+            + ", ".join(missing)
+        )
+    return expected
+
+
 def _run_release_gates(target_version: str) -> None:
     python = sys.executable
     scope = list(_ACTIVE_SCOPE)
@@ -124,11 +144,7 @@ def _run_release_gates(target_version: str) -> None:
     for command in commands:
         _run(command)
 
-    distributions = sorted((ROOT / "dist").glob(f"*{target_version}*"))
-    if not distributions:
-        raise RuntimeError(
-            f"build did not produce a distribution for version {target_version}"
-        )
+    distributions = _release_distributions(target_version)
     _run([python, "-m", "twine", "check", *(str(path) for path in distributions)])
 
 

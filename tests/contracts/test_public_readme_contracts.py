@@ -33,6 +33,8 @@ def test_public_readme_uses_current_api_and_ci_evidence(readme: Path):
     assert ".github/workflows/ci.yml" in text
     assert "actions/workflows/tests.yml" not in text
     assert "63%" not in text
+    assert "`0.3.0`" in text
+    assert "0.3.0.dev1" not in text
     for removed in REMOVED_PUBLIC_CALLS:
         assert removed not in text
 

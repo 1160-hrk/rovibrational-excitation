@@ -2,8 +2,8 @@
 
 Last verified: 2026-10-02
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-k/D-162 publication configuration; P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
-Latest infrastructure checkpoint: `7d4368b`
+Verified checkpoints: P8.5-l/D-163 untagged 0.3.0 candidate; P8.5-k/D-162 publication configuration; P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
+Latest infrastructure checkpoint: `c89ff8b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
 
@@ -188,14 +188,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.5-k:
+Current local CPU baseline after P8.5-l:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1535 passed, 15 GPU tests skipped (1550 collected)
+1537 passed, 15 GPU tests skipped (1552 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -425,6 +425,14 @@ GitHub environment is exactly `pypi`, permits only tags matching `v*`, and the
 existing PyPI project has the exact `1160-hrk/rovibrational-excitation`,
 `release.yml`, `pypi` Trusted Publisher identity without an API-token fallback.
 The final tag must still prove the OIDC exchange and publication.
+
+P8.5-l/D-163 prepares the exact untagged `0.3.0` candidate after PR #14 main
+run `36966229314` accepted D-162. Version, changelog, and current public guides
+are synchronized, all local release gates pass, and exact final artifact names
+replace the stale-development-matching Twine glob. No runtime or calculation
+changed. The exact merged main commit must next pass normal CI and manual CUDA;
+`v0.3.0` must then point to that same commit without an intervening source
+change.
 
 ## Current next work
 
@@ -875,9 +883,9 @@ The next work is:
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
    checksum-verified actionlint, and immutable external Action refs are complete.
-   Exact final-version real-GPU repetition and the final version bump remain
-   open Phase 8 gates; the exact PyPI Trusted Publisher and tag-only protected
-   environment are accepted by D-162. Automated hosted container smoke is accepted by D-154,
+   The final version bump is prepared by D-163. Exact-candidate real-GPU
+   repetition remains open; the exact PyPI Trusted Publisher and tag-only
+   protected environment are accepted by D-162. Automated hosted container smoke is accepted by D-154,
    manual attach/Ports is accepted by D-161, and the automated smoke must run
    again in the final tag workflow. The
    explicit breaking-change migration note is complete under D-141.
