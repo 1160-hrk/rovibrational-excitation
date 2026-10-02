@@ -2,7 +2,7 @@
 
 Last verified: 2026-10-02
 Active refactor branch: `refactor/v0.3`
-Verified checkpoints: P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
+Verified checkpoints: P8.5-k/D-162 publication configuration; P8.5-j/D-161 manual Dev Container acceptance; P8.5-i/D-160 main real-CUDA workflow acceptance
 Latest infrastructure checkpoint: `7d4368b`
 Documentation/workflow audit: `docs/refactoring/DOCUMENTATION_WORKFLOW_AUDIT.md`
 Release readiness: `docs/refactoring/PHASE8_RELEASE_READINESS_AUDIT.md`
@@ -188,14 +188,14 @@ temporary and removed within the same phase where practical.
 
 ## Validation commands
 
-Current local CPU baseline after P8.5-e:
+Current local CPU baseline after P8.5-k:
 
 ~~~bash
 pytest -q
 ~~~
 
 ~~~text
-1534 passed, 15 GPU tests skipped (1549 collected)
+1535 passed, 15 GPU tests skipped (1550 collected)
 ~~~
 
 The pre-change Phase 0 artifact is `benchmarks/baseline-v0.2.10.json`; the
@@ -418,6 +418,13 @@ container as `devuser` at `/workspace`, used `/usr/local/bin/python`, imported
 editable package `0.3.0.dev1` from `/workspace/src`, forwarded port 8888, and
 opened authenticated Jupyter in the browser. The guide now diagnoses disabled
 WSL automount/interop before destructive server repair. No calculation changed.
+
+P8.5-k/D-162 accepts the external publication configuration after PR #13 merged
+D-161 to main `cb84241` and normal-CI run `36964166468` passed. The protected
+GitHub environment is exactly `pypi`, permits only tags matching `v*`, and the
+existing PyPI project has the exact `1160-hrk/rovibrational-excitation`,
+`release.yml`, `pypi` Trusted Publisher identity without an API-token fallback.
+The final tag must still prove the OIDC exchange and publication.
 
 ## Current next work
 
@@ -868,9 +875,9 @@ The next work is:
    D-105 corrects the release workflow and repository tooling before any tag.
    Root README, Codecov disposition, repository-wide Markdown/YAML contracts,
    checksum-verified actionlint, and immutable external Action refs are complete.
-   Exact final-version real-GPU repetition, exact PyPI Trusted
-   Publisher/protected-environment setup, and the final version bump remain
-   open Phase 8 gates. Automated hosted container smoke is accepted by D-154,
+   Exact final-version real-GPU repetition and the final version bump remain
+   open Phase 8 gates; the exact PyPI Trusted Publisher and tag-only protected
+   environment are accepted by D-162. Automated hosted container smoke is accepted by D-154,
    manual attach/Ports is accepted by D-161, and the automated smoke must run
    again in the final tag workflow. The
    explicit breaking-change migration note is complete under D-141.

@@ -5589,6 +5589,47 @@ that recovery advice.
 Implementation commit: this checkpoint.
 
 
+### D-162: Accept the protected PyPI Trusted Publisher configuration
+
+Status: Implemented on 2026-10-02 as P8.5-k.
+
+Scope: External GitHub deployment-environment and PyPI Trusted Publisher
+configuration, hosted main-CI evidence, release-readiness status, and one
+documentation contract. No package source, workflow logic, dependency,
+physical formula, numerical algorithm, backend, or calculation result changes.
+
+PR #13 merged D-161 to main commit
+`cb84241a097d66e35eaa30889175da9751c3ceb6`. Normal-CI run `36964166468`
+completed successfully with every required job, including the automated
+container smoke and aggregate gate.
+
+The existing GitHub environment is named exactly `pypi`. The public GitHub API
+confirms a custom deployment policy with exactly one allowed rule: tag pattern
+`v*`. No repository or environment API-token secret is used. For this
+single-maintainer repository, an independent required reviewer is not claimed;
+the deliberate annotated-tag operation, final-version verification, complete
+release jobs, and tag-only environment policy remain the publication gates.
+
+The user registered the existing PyPI project with a GitHub Actions Trusted
+Publisher whose identity is owner `1160-hrk`, repository
+`rovibrational-excitation`, workflow filename `release.yml`, and environment
+`pypi`. This satisfies the exact D-149 pre-tag configuration and keeps the
+release workflow fail-closed without a long-lived API token or credential
+fallback.
+
+This checkpoint does not prove an OIDC token exchange or publish a package.
+Those operations occur only in the final-tag workflow. The package remains
+`0.3.0.dev1`; the version/changelog transition, fresh source-bound manual CUDA
+evidence on that final candidate, successful normal CI, an online ephemeral GPU
+runner for the tag job, and every tag-time release gate remain mandatory.
+
+The new documentation contract and the complete suite pass: 1535 tests passed
+and 15 optional-GPU tests skipped out of 1550 collected. The release dry-run
+still reports `0.3.0.dev1 -> 0.3.0` without writing files.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

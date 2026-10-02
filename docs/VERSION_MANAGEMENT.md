@@ -1,6 +1,6 @@
 # バージョン管理とリリース
 
-Last verified: 2026-09-30
+Last verified: 2026-10-02
 
 ## 原則
 
@@ -13,6 +13,13 @@ Last verified: 2026-09-30
 
 現在の開発版は 0.3.0.dev1 です。正式版へ進む場合の対象は 0.3.0
 ですが、Phase 8の受入条件を満たすまではタグを作成しません。
+
+D-162で公開基盤の事前設定を確認済みです。GitHub environmentは正確に
+`pypi`、deployment policyはtag `v*`のみで、既存PyPI projectにはowner
+`1160-hrk`、repository `rovibrational-excitation`、workflow `release.yml`、
+environment `pypi`のTrusted Publisherを登録しています。API token secretや
+credential fallbackはありません。実際のOIDC交換と公開成功は最終tag workflow
+で初めて検証されるため、この設定だけではrelease受入完了ではありません。
 
 ## ローカル準備
 
@@ -99,7 +106,7 @@ CIでのGPU skipはリリース
 証拠にはなりません。タグ前の同じ検証はActions画面または次で明示実行します。
 
 ~~~bash
-gh workflow run cuda-validation.yml --ref refactor/v0.3
+gh workflow run cuda-validation.yml --ref main
 ~~~
 
 生成された `real-cuda-evidence-<commit>` artifactのsource commit、device、

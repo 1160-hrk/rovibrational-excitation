@@ -206,10 +206,10 @@ coverage run --data-file=/tmp/rve-coverage \
 coverage report --data-file=/tmp/rve-coverage --show-missing --fail-under=47
 ruff check --no-fix src tests examples benchmarks scripts
 ruff format --check src tests examples benchmarks scripts
-mypy
+python -m mypy --no-incremental
 ```
 
-現在の local checkpoint は CPU 1534 tests pass、optional GPU 15 tests skip、
+現在の local checkpoint は CPU 1535 tests pass、optional GPU 15 tests skip、
 実測 branch coverage 81% です。skip された GPU test は CUDA の検証根拠ではありません。
 
 ## ドキュメント
