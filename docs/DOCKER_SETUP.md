@@ -139,6 +139,36 @@ artifact であり、repository 構造の一部として作成を前提にしな
 
 ## Troubleshooting
 
+### WSLでWindows pathを変換できない
+
+WSL extensionのlogが `Failed to translate 'C:\Users\...'` と
+`/scripts/wslServer.sh: not found` を続けて示す場合、VS Code Serverの
+download失敗とは限らない。まず `/mnt/c` とWindows interopを確認する。
+
+```bash
+findmnt -T /mnt/c
+wslpath 'C:\Users\username'
+```
+
+`/mnt/c`がmountされず、`wslpath`がWindows pathをそのまま返す場合は、
+`/etc/wsl.conf`で標準のdrive automountとinteropを無効化していないか確認する。
+このrepositoryを検証したWSL2設定は次のとおり。
+
+```ini
+[automount]
+enabled=true
+root=/mnt/
+mountFsTab=true
+
+[interop]
+enabled=true
+appendWindowsPath=true
+```
+
+設定変更後はUbuntu shellを閉じ、Windows PowerShellから `wsl --shutdown` を
+実行してdistributionを起動し直す。path変換を直す前に `.vscode-server` を
+削除したり、WSL内へ別のVS Codeを導入したりしない。
+
 ### Python interpreter
 
 ```bash
@@ -175,12 +205,13 @@ repository 全体へ再帰的な `chown` や permission 緩和を安易に行わ
 
 ## 検証状態
 
-この checkpoint では Dockerfile の安全既定、Dev Container JSON、launcher と
-container smokeのshell syntax、repository test contracts、通常/release workflow
-wiringを検証している。この実行環境には Docker CLI/daemon がないため、ここでは
-clean image build とHTTP smokeを実行していない。GitHubの `container-smoke` 成功を
-実行証拠とし、VS Code attachとPorts viewはrelease前に人が確認する。未実行やqueued
-jobを成功扱いしない。
+Dockerfile の安全既定、Dev Container JSON、launcher、container smokeのshell
+syntax、repository contracts、通常/release workflow wiringを自動検証している。
+GitHub main run `36893481772` ではclean image build、non-root import、認証付きHTTP
+smokeが成功した。D-161ではWindows 11/WSL2 Ubuntu 24.04から実際に
+`Dev Containers: Reopen in Container`を実行し、`devuser`、`/workspace`、
+`/usr/local/bin/python`、editable package `0.3.0.dev1`、port 8888経由のJupyter
+表示を確認した。これでrelease前の手動attach/Ports確認は完了している。
 
 - [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
 - [Jupyter Server security](https://jupyter-server.readthedocs.io/en/latest/operators/security.html)

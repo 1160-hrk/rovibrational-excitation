@@ -5551,6 +5551,44 @@ support no general GPU speed or crossover claim.
 Implementation commit: this checkpoint.
 
 
+### D-161: Accept the manual WSL2 development-container path
+
+Status: Implemented on 2026-10-02 as P8.5-j.
+
+Scope: External Windows/WSL2/VS Code Dev Containers acceptance, WSL path-
+translation troubleshooting, release-readiness status, and documentation
+contracts. No package source, physical formula, numerical algorithm, backend,
+workflow, container image, or calculation result changes.
+
+PR #12 merged D-160 to main commit `841cb56`. Normal-CI run `36893481772`
+passed every required job, including the automated clean development-container
+build, non-root package import, authenticated Jupyter HTTP smoke, and aggregate
+gate.
+
+The independent manual path was then exercised on Windows 11 with WSL2 Ubuntu
+24.04. The first VS Code WSL connection downloaded and checksum-verified its
+server but failed with `Failed to translate` because `/etc/wsl.conf` explicitly
+disabled both fixed-drive automount and Windows interop. Restoring
+`[automount] enabled=true` and `[interop] enabled=true` with
+`appendWindowsPath=true`, followed by `wsl --shutdown`, restored Windows-path
+translation. This is a host repair only; it does not modify repository source.
+
+`Dev Containers: Reopen in Container` then completed. The attached environment
+reported user `devuser`, workspace `/workspace`, interpreter
+`/usr/local/bin/python`, Python 3.12.15, package `0.3.0.dev1`, and the editable
+module under `/workspace/src/rovibrational_excitation/__init__.py`. Port 8888
+forwarding opened authenticated Jupyter in the Windows browser. The distinct
+manual attach/Ports release gate is accepted. The final tag workflow must still
+repeat its automated hard-failing container job.
+
+The container guide now routes the paired `Failed to translate` and missing
+`wslServer.sh` symptoms through automount/interop diagnosis before any VS Code
+Server deletion or alternate Linux-side VS Code installation. A contract fixes
+that recovery advice.
+
+Implementation commit: this checkpoint.
+
+
 ## Open decisions
 
 ### O-014: Spectroscopy constructor polarization must become fully explicit

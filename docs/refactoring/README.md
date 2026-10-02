@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1533 passed, 15 skipped (1548 collected) |
+| Pytest | 1534 passed, 15 skipped (1549 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -672,6 +672,15 @@ its exact source binding. The ephemeral runner had the required
 `[self-hosted, linux, x64, gpu]` labels, and the retained timing remains
 diagnostic rather than a speed claim. The package is still `0.3.0.dev1`, so the
 exact final-version commit and its tag workflow must repeat real-CUDA validation.
+
+P8.5-j/D-161 accepts the manual Dev Containers gate after PR #12 merged to
+main `841cb56` and normal-CI run `36893481772` passed. Windows 11/WSL2 Ubuntu
+24.04 successfully reopened the repository container as `devuser` at
+`/workspace`, used `/usr/local/bin/python`, imported editable `0.3.0.dev1`,
+forwarded port 8888, and opened authenticated Jupyter. The guide and a contract
+now diagnose explicitly disabled WSL automount/interop before destructive
+server repair. Only final-version CUDA repetition, publication infrastructure,
+the version transition, and tag-time gates remain.
 
 P6.2-c
 implements D-069:

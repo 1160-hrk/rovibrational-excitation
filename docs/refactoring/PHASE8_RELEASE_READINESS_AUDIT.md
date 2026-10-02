@@ -1,8 +1,8 @@
 # Phase 8 release-readiness audit
 
-Last verified: 2026-10-01
-Local code checkpoint: P8.5-i/D-160 candidate
-Hosted normal-CI checkpoint: main merge `4f7efaed`; run `36887536595`
+Last verified: 2026-10-02
+Local code checkpoint: P8.5-j/D-161 candidate
+Hosted normal-CI checkpoint: main merge `841cb56`; run `36893481772`
 Hosted real-CUDA checkpoint: main merge `4f7efaed`; run `36887643743`
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
@@ -18,7 +18,7 @@ reported as complete v0.3 release acceptance.
 |---|---|---|
 | Clean source checkpoint | D-158 ignores local virtualenvs while retaining strict source provenance | Pass |
 | Real-CUDA numerical acceptance | D-159 implementation report plus D-160 main manual-workflow report; both raw JSON artifacts committed | Pass |
-| Complete CPU suite | 1533 passed, 15 optional-GPU skipped; 1548 collected | Pass |
+| Complete CPU suite | 1534 passed, 15 optional-GPU skipped; 1549 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 317 files formatted | Pass |
@@ -27,9 +27,9 @@ reported as complete v0.3 release acceptance.
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
-| Hosted normal CI | main merge run `36887536595`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
+| Hosted normal CI | main merge run `36893481772`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
 | Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
-| Container gate wiring | minimal build context, shell syntax, required normal/release jobs; main hosted run `36887536595` succeeded | Pass hosted; manual UI check external |
+| Container gate | main run `36893481772` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -46,7 +46,7 @@ Ignored `dist/` contained older local artifacts, so local inspection selected
 the new `0.3.0.dev1` files explicitly. GitHub Actions starts from a clean
 checkout and publishes only artifacts built in that run.
 
-## Blocking release gates
+## Release gates and remaining blockers
 
 ### 1. Final-version real-CUDA workflow repetition
 
@@ -73,7 +73,7 @@ approximately 17-76 ms versus 0.33-0.61 ms on CPU and include validation and
 algorithm setup. No GPU speed advantage, workload crossover, or production
 performance threshold is claimed.
 
-### 2. Development-container manual UI verification
+### 2. Development-container manual UI verification — complete
 
 D-147 supplies one hard-failing smoke script to both required normal-CI and
 final-tag jobs. It builds the minimal-context image, verifies its non-root
@@ -88,8 +88,17 @@ Docker exit 125 to the Jupyter-launch stage. D-152 removes the absent nested
 mount target by placing the read-only project and writable notebooks mounts at
 sibling paths. The corrected container-smoke job passed on hosted run
 `36813179835`, including image build/import and authenticated HTTP checks.
-VS Code Dev Containers UI attach and its Ports view remain an explicit manual
-check; neither is inferred from that automated smoke.
+PR #12 merged D-160 to main commit `841cb56`, whose normal-CI run
+`36893481772` again passed the complete container smoke. D-161 then exercised
+the independent UI path on Windows 11 with WSL2 Ubuntu 24.04. An explicitly
+disabled WSL drive automount/interop configuration first produced the expected
+`Failed to translate` error; restoring those standard facilities allowed
+`Dev Containers: Reopen in Container` to complete. The opened container
+reported `devuser`, `/workspace`, `/usr/local/bin/python`, Python 3.12.15,
+package `0.3.0.dev1`, and the editable `/workspace/src` import. Port 8888
+forwarding opened authenticated Jupyter in the browser. The manual attach and
+Ports gate is therefore complete; the tag workflow must still repeat its
+automated hard-failing container job.
 
 ### 3. Publication infrastructure
 
@@ -103,8 +112,8 @@ No local command in this audit publishes, tags, pushes, or creates a release.
 
 ### 4. Final version transition
 
-Do not run `python scripts/release.py 0.3.0 --apply` until the CUDA, manual
-Dev Containers UI, and external publication prerequisites are ready. That
+Do not run `python scripts/release.py 0.3.0 --apply` until the final-CUDA runner
+and external publication prerequisites are ready. That
 command changes only `pyproject.toml`, runs local gates, and never
 commits/tags/pushes/publishes. Its success message explicitly
 states that this is not release acceptance and repeats the external blockers.
@@ -126,11 +135,12 @@ this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
 physics, coverage, build, and container corrections; only the quality job's
 bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
 module entrypoint and publishes captured command output while retaining hard
-failure. Hosted run `36814129738` accepted D-153, and main merge run `36887536595`
-subsequently accepted every required normal-CI job, including the automated
-container smoke. The project is close to a version transition. Phase 5 and the main development-merge CUDA workflow now have
+failure. Hosted run `36814129738` accepted D-153, and PR #12 main merge run
+`36893481772` subsequently accepted every required normal-CI job, including the automated
+container smoke. The project is close to a version transition. Phase 5 and the
+main development-merge CUDA workflow now have
 accepted real-hardware numerical, transfer, norm, and timing evidence, but the
-exact final version candidate still requires a fresh manual CUDA workflow,
-manual Dev Containers UI/Ports verification, and the publication prerequisites.
+exact final version candidate still requires a fresh manual CUDA workflow and
+the publication prerequisites.
 The version remains `0.3.0.dev1` and no tag or publication is authorized by
 this audit.

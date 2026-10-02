@@ -2381,6 +2381,16 @@ the workflow-execution uncertainty for the development merge without changing
 any calculation. The exact final-version candidate and tag workflow still
 require fresh source-bound CUDA runs.
 
+P8.5-j/D-161 accepts the manual development-container route. PR #12 main merge
+`841cb56` passed normal-CI run `36893481772`, including the automated container
+smoke. Windows 11/WSL2 Ubuntu 24.04 then reopened the repository container,
+verified the intended non-root workspace/interpreter/editable package, and
+opened Jupyter through forwarded port 8888. Explicitly disabled WSL automount
+and interop caused the observed first-attempt path-translation failure; the
+guide now records the verified standard-setting recovery. No calculation or
+container implementation changed. Tag-time automated container repetition
+remains mandatory.
+
 
 ### Phase 8 acceptance
 
