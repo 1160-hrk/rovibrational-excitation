@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Ruff and typed-module checks
+    name: Ruff and example checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +54,21 @@ jobs:
         run: python scripts/smoke_examples.py
       - name: Verify supported-example index
         run: python examples/tools/build_index.py --check
+
+  typing:
+    name: Python 3.10 typed-module checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install typing dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
       - name: Type-check named typed modules
         run: |
           python -m mypy --no-incremental 2>&1 | tee /tmp/mypy-output.txt
@@ -214,12 +229,13 @@ jobs:
   required:
     name: Required CI gates
     if: always()
-    needs: [quality, test, physics, coverage, build, container-smoke]
+    needs: [quality, typing, test, physics, coverage, build, container-smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Reject failed, skipped, or cancelled gates
         env:
           QUALITY_RESULT: ${{ needs.quality.result }}
+          TYPING_RESULT: ${{ needs.typing.result }}
           TEST_RESULT: ${{ needs.test.result }}
           PHYSICS_RESULT: ${{ needs.physics.result }}
           COVERAGE_RESULT: ${{ needs.coverage.result }}
@@ -227,6 +243,7 @@ jobs:
           CONTAINER_RESULT: ${{ needs.container-smoke.result }}
         run: |
           test "$QUALITY_RESULT" = success
+          test "$TYPING_RESULT" = success
           test "$TEST_RESULT" = success
           test "$PHYSICS_RESULT" = success
           test "$COVERAGE_RESULT" = success

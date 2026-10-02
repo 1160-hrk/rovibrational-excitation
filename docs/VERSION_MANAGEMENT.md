@@ -125,6 +125,13 @@ gh workflow run cuda-validation.yml --ref main
 cleanなworktreeから再実行します。distはignoredな生成物であり、公開入力には
 GitHub Actionsがタグcommitから再生成した成果物だけを使います。
 
+### 型検査が外部packageの構文エラーで失敗した
+
+mypyの`python_version`とtyping jobのPython版が一致するか確認します。通常CIと
+release workflowではPython 3.10 typing jobが必須であり、Python 3.12の最新依存
+stubをPython 3.10 targetとして解析してはいけません。runtime依存を古い版へ固定、
+mypy targetを引き上げ、stubを無視する方法では回避しません。
+
 ### タグとversionが一致しない
 
 release workflowは外部公開前に停止します。既にpushした誤タグをそのまま
