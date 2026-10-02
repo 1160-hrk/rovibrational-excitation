@@ -16,6 +16,8 @@ CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 RELEASE_SCRIPT = ROOT / "scripts" / "release.py"
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 CUDA_WORKFLOW = ROOT / ".github" / "workflows" / "cuda-validation.yml"
+RELEASE_AUDIT = ROOT / "docs" / "refactoring" / "PHASE8_RELEASE_READINESS_AUDIT.md"
+VERSION_GUIDE = ROOT / "docs" / "VERSION_MANAGEMENT.md"
 JUPYTER_SCRIPT = ROOT / "scripts" / "start_jupyter.sh"
 INDEX_SCRIPT = ROOT / "examples" / "tools" / "build_index.py"
 TEST_GUIDE = ROOT / "tests" / "README.md"
@@ -183,6 +185,26 @@ def test_release_workflow_requires_final_version_cpu_and_real_gpu_gates() -> Non
         for step in release_steps
     )
     assert "cuda-evidence/*.json" in _commands(jobs["create-release"])
+
+
+def test_release_docs_record_exact_trusted_publisher_acceptance() -> None:
+    audit = RELEASE_AUDIT.read_text()
+    guide = VERSION_GUIDE.read_text()
+
+    for expected in (
+        "D-162",
+        "1160-hrk",
+        "rovibrational-excitation",
+        "release.yml",
+        "`pypi`",
+        "`v*`",
+        "36964166468",
+    ):
+        assert expected in audit
+    assert "API-token" in audit
+    assert "API token" in guide
+    assert "OIDC" in audit
+    assert "--ref main" in guide
 
 
 def test_manual_cuda_workflow_records_pre_tag_evidence() -> None:

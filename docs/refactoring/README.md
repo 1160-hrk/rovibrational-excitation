@@ -54,7 +54,7 @@ physics changes are detected by tests.
 
 | Item | Baseline |
 |---|---:|
-| Pytest | 1534 passed, 15 skipped (1549 collected) |
+| Pytest | 1535 passed, 15 skipped (1550 collected) |
 | Measured branch coverage | 81% |
 | Mandatory CI coverage floor | 47% |
 | Ruff findings (active source, tests, examples, benchmarks, scripts) | 0 |
@@ -679,8 +679,17 @@ main `841cb56` and normal-CI run `36893481772` passed. Windows 11/WSL2 Ubuntu
 `/workspace`, used `/usr/local/bin/python`, imported editable `0.3.0.dev1`,
 forwarded port 8888, and opened authenticated Jupyter. The guide and a contract
 now diagnose explicitly disabled WSL automount/interop before destructive
-server repair. Only final-version CUDA repetition, publication infrastructure,
-the version transition, and tag-time gates remain.
+server repair. Only final-version CUDA repetition, the version transition, and tag-time
+gates remain.
+
+P8.5-k/D-162 accepts the external publication configuration after PR #13 merged
+to main `cb84241` and normal-CI run `36964166468` passed. The existing GitHub
+environment `pypi` permits only tags matching `v*`, and the existing PyPI
+project has the exact `1160-hrk/rovibrational-excitation`, `release.yml`,
+`pypi` Trusted Publisher identity without an API-token fallback. This closes
+the pre-tag infrastructure prerequisite only; the final tag workflow must still
+prove the OIDC exchange and publication after the final-version CUDA and normal
+CI gates pass.
 
 P6.2-c
 implements D-069:
@@ -942,7 +951,7 @@ These commits are the starting point, not the final architecture.
 | 5 | Numerical dynamics engine | Complete — CPU acceptance plus device-native RK4/split and clean real-CUDA evidence accepted by D-159 |
 | 6 | Model consolidation | Complete — P6.1-P6.6-b; model formulas have one owner and supported CPU dense/CSR references pass |
 | 7 | Simulation, optimization, spectroscopy decomposition | Complete — P7.1 through P7.4 accepted by D-093, D-103, D-111, and D-129 |
-| 8 | Public API, documentation, and release | In progress — P8.0-a tooling and P8.0-b archive consolidation complete; root API/docs, external release evidence, and final bump remain |
+| 8 | Public API, documentation, and release | In progress — API/docs, CUDA/container evidence, and Trusted Publisher configuration complete; final version/CUDA/tag gates remain |
 
 Status must be updated only when the acceptance criteria in
 `EXECUTION_PLAN.md` are met.

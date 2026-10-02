@@ -2391,6 +2391,17 @@ guide now records the verified standard-setting recovery. No calculation or
 container implementation changed. Tag-time automated container repetition
 remains mandatory.
 
+P8.5-k/D-162 accepts the external publication configuration after PR #13
+merged D-161 to main `cb84241` and normal-CI run `36964166468` passed. The
+GitHub environment is exactly `pypi` and permits only tags matching `v*`; the
+existing PyPI project has the exact D-149 Trusted Publisher identity
+`1160-hrk/rovibrational-excitation`, workflow `release.yml`, environment
+`pypi`, with no API-token fallback. This closes the pre-tag publication-
+infrastructure prerequisite, not the OIDC exchange or publication itself.
+The final version/changelog commit still requires fresh manual CUDA evidence,
+normal CI, an online ephemeral tag-time GPU runner, and every release-workflow
+gate before `v0.3.0` can be accepted.
+
 
 ### Phase 8 acceptance
 

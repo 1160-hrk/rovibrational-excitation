@@ -74,9 +74,9 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
 
 | File | Verified behavior | Risk / next action |
 |---|---|---|
-| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy through the Python 3.12 module, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151/D-153 publish failed JUnit cases, captured command output, and the failing container stage as escaped Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. Hosted run `36893481772` accepted every required normal-CI job on the PR #12 `main` merge. | GPU tests may skip; normal CI is not real-GPU evidence. The automated container smoke and D-161 manual Dev Containers UI/Ports path are accepted. |
+| .github/workflows/ci.yml | Runs checksum-verified actionlint v1.7.12 with pinned ShellCheck 0.11.0, Ruff, pinned nonincremental mypy through the Python 3.12 module, four smoke executions, Python 3.10-3.13 tests, physics contracts, Markdown/YAML contracts, 47% branch coverage, wheel import, and the D-147/D-152 container smoke. D-151/D-153 publish failed JUnit cases, captured command output, and the failing container stage as escaped Check annotations; `required` still rejects failed/skipped jobs. D-148 pins every external Action to an approved commit. Hosted run `36964166468` accepted every required normal-CI job on the PR #13 `main` merge. | GPU tests may skip; normal CI is not real-GPU evidence. The automated container smoke and D-161 manual Dev Containers UI/Ports path are accepted. |
 | .github/workflows/cuda-validation.yml | Manual pre-tag real-CUDA validation installs the D-155 CTK-complete GPU extra plus the complete test-collection extras under D-156, runs the trusted parity case, every GPU-marked test (including the D-157 LinMol formula parity), and the schema-v1 evidence recorder, and retains success or diagnostic JSON for 90 days. D-148 pins every external Action; D-159 accepts the clean local hardware report, and D-160 accepts actual manual workflow run `36887643743` on merged `main` commit `4f7efaed`. Its raw artifact is committed and source-bound. | It requires an online [self-hosted, linux, x64, gpu] runner at version 2.327.1 or newer and must rerun at the exact final candidate. A basic CuPy probe, CPU skip, queued job, status=error artifact, or different commit is not release acceptance evidence. |
-| .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. | The workflow is blocked until the final GPU runner, protected `pypi` environment, and exact PyPI Trusted Publisher identity are ready. The final tag must still execute every gate. |
+| .github/workflows/release.yml | Rejects non-final tags; requires CPU, self-hosted real-CUDA, and D-147 container jobs; retains CUDA evidence, builds/clean-installs distributions, publishes PyPI, then attaches distributions and CUDA JSON to the GitHub Release. D-148 pins every external Action. D-149 gives only the isolated publish job OIDC permission and removes API-token input/fallback. D-162 accepts the exact Trusted Publisher and tag-`v*` protected `pypi` environment. | Pre-tag publication configuration is ready. The final tag must still prove the OIDC exchange and execute every CPU, CUDA, container, build, publish, and release gate. |
 | removed codecov.yml | D-139 removes the unused service configuration. CI continues to enforce branch coverage and upload report/XML artifacts to GitHub Actions. | The repository-owned CI coverage job is the sole current authority. |
 | removed requirements.txt, requirements-dev.txt | D-142 removes dependency manifests that diverged from the build metadata. `pyproject.toml` now solely owns runtime, optional, and development dependencies; D-155 makes its GPU extra CTK-complete for driver-only hosts. | Add dependencies only to the appropriate pyproject group and its tested installation route. |
 | configs/*.yaml | All three current optimization configs parse and pass strict validation. | Keep them smoke-tested after optimization schema changes. No inferred physical values. |
@@ -98,9 +98,10 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    manual and tag-time CUDA evidence collection without claiming a local GPU
    result. D-159 accepts the clean implementation artifact, and D-160 accepts
    the actual manual workflow on merged `main`. D-161 accepts the independent
-   VS Code attach/Ports/Jupyter path. Before the final `0.3.0` tag, configure
-   the exact D-149 PyPI Trusted Publisher and protected environment, then
-   repeat the real-CUDA and all other final-version gates from a clean commit. D-150 makes the local apply command print this as a non-acceptance
+   VS Code attach/Ports/Jupyter path. D-162 accepts the exact D-149 PyPI
+   Trusted Publisher and tag-`v*` protected environment. Before the final
+   `0.3.0` tag, repeat the real-CUDA and all other final-version gates from a
+   clean commit. D-150 makes the local apply command print this as a non-acceptance
    handoff rather than suggesting immediate tag creation. D-151 pins the
    ShellCheck implementation used by actionlint and exposes failed tests and
    container stages through public Check annotations. D-152 consumes those
@@ -111,6 +112,7 @@ capability evidence. Refactoring docs remain the agent-facing source of truth.
    `36814129738`, where every required normal-CI gate passed. D-160 records
    normal-CI run `36887536595` and real-CUDA run `36887643743` passing on the
    merged `main` development commit. D-161 records PR #12 main run
-   `36893481772` and the successful manual Dev Containers path. Retain
-   exact-final-version CUDA, publication, and tag-time gates before the final
-   transition.
+   `36893481772` and the successful manual Dev Containers path. D-162 records
+   PR #13 main run `36964166468` and the completed pre-tag publication
+   configuration. Retain exact-final-version CUDA, OIDC publication, and all
+   tag-time gates before the final transition.

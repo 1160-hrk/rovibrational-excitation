@@ -1,8 +1,8 @@
 # Phase 8 release-readiness audit
 
 Last verified: 2026-10-02
-Local code checkpoint: P8.5-j/D-161 candidate
-Hosted normal-CI checkpoint: main merge `841cb56`; run `36893481772`
+Local code checkpoint: P8.5-k/D-162 candidate
+Hosted normal-CI checkpoint: main merge `cb84241`; run `36964166468`
 Hosted real-CUDA checkpoint: main merge `4f7efaed`; run `36887643743`
 Target release: `0.3.0`
 Current package version: `0.3.0.dev1`
@@ -18,7 +18,7 @@ reported as complete v0.3 release acceptance.
 |---|---|---|
 | Clean source checkpoint | D-158 ignores local virtualenvs while retaining strict source provenance | Pass |
 | Real-CUDA numerical acceptance | D-159 implementation report plus D-160 main manual-workflow report; both raw JSON artifacts committed | Pass |
-| Complete CPU suite | 1534 passed, 15 optional-GPU skipped; 1549 collected | Pass |
+| Complete CPU suite | 1535 passed, 15 optional-GPU skipped; 1550 collected | Pass |
 | Branch coverage | `coverage ... --branch`; total 81%, required floor 47% | Pass |
 | Active-scope Ruff | `ruff check --no-fix src tests examples benchmarks scripts` | Pass |
 | Active-scope format | 317 files formatted | Pass |
@@ -27,9 +27,9 @@ reported as complete v0.3 release acceptance.
 | Example index | `examples/tools/build_index.py --check` | Pass |
 | Workflow semantics | checksum-verified actionlint v1.7.12 plus ShellCheck 0.11.0; every external Action is an approved exact commit | Pass |
 | GPU dependency metadata | wheel and pyproject require `cupy-cuda12x[ctk]`; both GPU workflows install the `gpu` extra | Pass locally |
-| Hosted normal CI | main merge run `36893481772`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
-| Publication authentication | isolated job-scoped OIDC; no username/password/secret/fallback | Pass locally; PyPI exchange external |
-| Container gate | main run `36893481772` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
+| Hosted normal CI | main merge run `36964166468`: quality, Python 3.10-3.13, physics, coverage, build, container, and required aggregate | Pass |
+| Publication authentication | D-162 tag-`v*` protected `pypi` environment and exact Trusted Publisher; isolated job-scoped OIDC with no username/password/secret/fallback | Pre-tag configuration pass; PyPI exchange remains tag-time |
+| Container gate | main run `36964166468` passed the automated smoke; D-161 verified WSL attach, non-root environment, editable import, port 8888, and Jupyter in the browser | Pass hosted and manual |
 | Release transition | `python scripts/release.py 0.3.0 --dry-run` reports `0.3.0.dev1 -> 0.3.0` and writes nothing | Pass |
 | Distribution build | sdist and pure-Python wheel for `0.3.0.dev1` | Pass |
 | Distribution metadata | Twine accepts the new sdist and wheel | Pass |
@@ -100,15 +100,25 @@ forwarding opened authenticated Jupyter in the browser. The manual attach and
 Ports gate is therefore complete; the tag workflow must still repeat its
 automated hard-failing container job.
 
-### 3. Publication infrastructure
+### 3. Publication infrastructure — pre-tag configuration complete
 
-The protected `pypi` environment, exact PyPI Trusted Publisher identity,
-availability of the target version on PyPI, and online self-hosted GPU runner at
-version 2.327.1 or newer must be confirmed externally. D-148 fixes every
-external Action to a reviewed immutable commit, and D-149 removes long-lived
-publication secrets in favor of job-scoped OIDC. Neither proves execution on
-that infrastructure.
-No local command in this audit publishes, tags, pushes, or creates a release.
+D-162 accepts the external configuration. The existing GitHub environment is
+named exactly `pypi` and its public API exposes one custom deployment rule:
+tag pattern `v*`. The user confirmed registration of the existing PyPI project
+with the exact Trusted Publisher identity: owner `1160-hrk`, repository
+`rovibrational-excitation`, workflow filename `release.yml`, and environment
+`pypi`. No long-lived API-token secret or fallback is configured. For this
+single-maintainer repository, this audit does not claim an independent required
+reviewer; deliberate annotated-tag creation plus the tag-only environment and
+complete release workflow are the human and automated gates.
+
+D-148 still fixes every external Action to a reviewed immutable commit, and
+D-149 restricts `id-token: write` to the isolated publish job. Configuration
+cannot prove the first OIDC exchange or publication: both remain hard-failing
+operations in the final-tag workflow. The target `0.3.0` must also remain absent
+from PyPI until that run, and the ephemeral self-hosted GPU runner must be
+online at version 2.327.1 or newer. No local command in this audit publishes,
+tags, pushes, or creates a release.
 
 ### 4. Final version transition
 
@@ -135,12 +145,14 @@ this checkpoint. Hosted run `36813179835` accepted the D-152 Python matrix,
 physics, coverage, build, and container corrections; only the quality job's
 bare mypy command failed with exit 2 and no public body. D-153 uses the pinned
 module entrypoint and publishes captured command output while retaining hard
-failure. Hosted run `36814129738` accepted D-153, and PR #12 main merge run
-`36893481772` subsequently accepted every required normal-CI job, including the automated
-container smoke. The project is close to a version transition. Phase 5 and the
-main development-merge CUDA workflow now have
-accepted real-hardware numerical, transfer, norm, and timing evidence, but the
-exact final version candidate still requires a fresh manual CUDA workflow and
-the publication prerequisites.
+failure. Hosted run `36814129738` accepted D-153, PR #12 main merge run
+`36893481772` accepted D-161, and PR #13 main merge run `36964166468`
+subsequently accepted every required normal-CI job, including the automated
+container smoke. D-162 closes the pre-tag publication-configuration
+prerequisite. The project is ready for an explicit version/changelog transition,
+but the resulting exact final candidate still requires a fresh manual CUDA
+workflow and normal CI before tagging. The tag workflow must then repeat CUDA,
+container, build, OIDC publication, and GitHub Release gates.
+
 The version remains `0.3.0.dev1` and no tag or publication is authorized by
 this audit.
